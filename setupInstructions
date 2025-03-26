@@ -1,0 +1,129 @@
+# Scientific Paper Planner - Setup Instructions
+
+This application helps scientists design research projects by walking through a structured process from question formulation to abstract writing, with AI assistance at each step. The app is specifically designed around Professor Konrad Kording's methodology for designing hypothesis-based neuroscience projects.
+
+## Prerequisites
+
+- Node.js (v14 or newer)
+- npm or yarn
+- OpenAI API Key
+
+## Installation
+
+1. Clone or download the repository containing these files.
+
+2. Open a terminal and navigate to the project directory.
+
+3. Install the dependencies:
+   ```
+   npm install
+   ```
+   or
+   ```
+   yarn install
+   ```
+
+4. Add your OpenAI API key:
+   - Open the file `src/services/openaiService.js`
+   - Replace `YOUR_OPENAI_API_KEY` with your actual OpenAI API key
+
+## Running the Application
+
+1. Start the development server:
+   ```
+   npm start
+   ```
+   or
+   ```
+   yarn start
+   ```
+
+2. Open your browser and go to `http://localhost:3000`
+
+## Features
+
+1. **Step-by-Step Research Planning:** The app walks you through seven critical steps:
+   - Research Question Formulation
+   - Hypothesis Development
+   - Research Philosophy Selection
+   - Experimental Design
+   - Data Analysis Planning
+   - Process & Skills Assessment
+   - Abstract Writing
+
+2. **AI Assistant:** Each section features a chat interface with "Konrad Kording," an AI assistant that provides guidance tailored to the specific section you're working on.
+
+3. **Auto-Save:** Your progress is automatically saved to your browser's localStorage.
+
+4. **Export:** When you're finished, you can export your complete project plan as a markdown file.
+
+5. **Progress Tracking:** The navigation tabs show your progress through color-coding.
+
+## Project Structure
+
+The main components of this application are:
+
+- `src/PaperPlannerApp.js` - The main component that handles user input and section navigation
+- `src/services/openaiService.js` - The service that handles communication with OpenAI API
+- `src/App.js` - The root component that renders the PaperPlannerApp
+- `src/index.js` - The entry point that renders the App component
+
+## How To Use
+
+1. **Start with the Question**: Begin by formulating your research question. The instructions will guide you on what makes a good scientific question.
+
+2. **Chat with the AI**: If you need help, use the chat interface at the bottom of each section to ask questions. The AI assistant will provide feedback specific to the section you're working on.
+
+3. **Navigate Between Sections**: Use the numbered tabs at the top or the "Next"/"Previous" buttons to move between sections.
+
+4. **Track Your Progress**: Completed sections will be highlighted in green in the navigation tabs.
+
+5. **Export Your Work**: When you're finished, click the "Export Project" button to download a markdown file containing your complete research plan.
+
+## Customization
+
+You can customize the following aspects of the application:
+
+1. **API Model**: In `openaiService.js`, you can change the model from "gpt-4-turbo" to any other available OpenAI model.
+
+2. **Sections**: In `PaperPlannerApp.js`, you can modify the `sections` array to add, remove, or reorder sections.
+
+3. **Instructions**: You can modify the instructional text in each section by editing the `instructions` field in the sections array.
+
+4. **Philosophy Options**: In `PaperPlannerApp.js`, you can modify the `philosophyOptions` array to change the available philosophy options.
+
+## Deployment
+
+To create a production build, run:
+```
+npm run build
+```
+or
+```
+yarn build
+```
+
+The build files will be created in the `build` folder, which you can deploy to any static hosting service like Netlify, Vercel, or GitHub Pages.
+
+## Troubleshooting
+
+1. **API Key Issues**: If the AI assistant isn't responding correctly, check that your OpenAI API key is valid and has sufficient credits.
+
+2. **Local Storage Problems**: If your progress isn't being saved, your browser may have localStorage disabled or full. Try clearing some space or using a different browser.
+
+3. **Model Responses**: If the AI responses aren't helpful enough, you might want to try changing the model in the `openaiService.js` file to a more capable one like "gpt-4-0125-preview" (if available).
+
+4. **Rate Limiting**: If you're using the app extensively, you might hit OpenAI's rate limits. The app doesn't currently have built-in rate limit handling, so you might need to wait a bit before trying again.
+
+## Contributing
+
+If you'd like to contribute to this project, please feel free to submit pull requests or open issues for bugs and feature requests.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE.md file for details.
+
+## Acknowledgments
+
+- Konrad Kording for the original worksheet methodology
+- OpenAI for providing the API that powers the AI assistant
