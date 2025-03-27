@@ -298,7 +298,6 @@ ${userInputs.abstract || "Not completed yet"}
     // Render instructions
     const instructionsElement = (
       <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-gray-700 overflow-y-auto max-h-96">
-        <h3 className="font-bold text-lg mb-2">Instructions:</h3>
         <div className="whitespace-pre-line">{formatInstructions(section)}</div>
       </div>
     );
