@@ -13,12 +13,12 @@ const PaperPlannerApp = () => {
 
 The cornerstone of scientific inquiry is selecting a well-defined question. Ask yourself: What do you want to study and why? A strong question can drive understanding, foster innovation, and solve real-world problems. Consider who else might share your interest. Often, a well-crafted question serves as a conceptual model that frames reality in distinct ways.
 
-WORK STEP 1A: QUESTION
+WORK STEP: QUESTION
 
 Draft your question in detail—spend about 5 minutes on your initial version and plan to refine it as you gain new insights. You may have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the question you want to work on. Include a brief explanation of why this question matters to you (objectives).
 
 Make a list of scientists who will also care about the question. We recommend starting with about 5 to have a crosssection of the field.`,
-      llmInstructions: `Above I wrote down the scientific question I want to ask. I also wrote down why this question is important to me and who else would be interested in this question. I want you to check if the question feels like a good question for scientific inquiry. I want you to list strengths and weaknesses of this question. I want you to check if the question well matches the expressed reasons for wanting to answer that question, and I want you to make a list of strengths/weaknesses in the match between question and objectives. I want you to evaluate to which level the listed scientists really would find this question interesting, again in terms of pros and cons. For the list I would also like you to give me 5 more professors that may be interested, ideally some that may be even more interested in the topic.`
+      llmInstructions: `Above, I wrote down the scientific question I want to ask. I also wrote down why this question is important to me and who else would be interested in this question. I want you to check if the question feels like a good question for scientific inquiry. I want you to list strengths and weaknesses of this question. I want you to check if the question well matches the expressed reasons for wanting to answer that question, and I want you to make a list of strengths/weaknesses in the match between question and objectives. I want you to evaluate to which level the listed scientists really would find this question interesting, again in terms of pros and cons. For the list I would also like you to give me 5 more professors that may be interested, ideally some that may be even more interested in the topic.`
     },
     { 
       id: 'hypothesis', 
@@ -30,7 +30,7 @@ A strong scientific question invites at least two plausible explanations, leadin
 
 When formulating your hypotheses, clarify whether they are novel or have been previously tested, and if the latter, emphasize the importance of replication. And make sure they are fully specified with every word clearly defined. They should specify which exact scenarios they apply to. Finally, verify that you can express your hypotheses as a mathematical model or equation that predicts data probabilities—a key step for robust statistical analysis.
 
-WORK STEP 1B: HYPOTHESES
+WORK STEP: HYPOTHESES
 
 Draft your hypotheses in detail (spend about 5 minutes initially), and remember that early versions can be refined later. You may also have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the hypotheses you want to distinguish.
 
@@ -73,7 +73,7 @@ There are many methods that might inadvertently favor a preferred hypothesis. Ri
 ● Have some diversity of analysed samples to be able to speak to internal validity and think through external validity.
 ● Make sure you have the ethical side, ACUC and IRB covered.
 
-WORK STEP 2: EXPERIMENT DESIGN
+WORK STEP: EXPERIMENT DESIGN
 
 Write out how you plan to run the experiment. You may also have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea for the experiment you want to use to distinguish the hypotheses. This will have to include stimulus protocols, apparatus, sample size, recruitment strategy, all the things that are meaningfully part of your experimental design.
 
@@ -104,7 +104,7 @@ There are so many ways how we our data analysis pipeline can favor a hypothesis 
 ● If asking multiple questions, consider the false discovery rate.
 ● If you can, pre-register the study.
 
-WORK STEP 3: DATA ANALYSIS
+WORK STEP: DATA ANALYSIS
 Write out how you plan to analyze the expected data. The key is that the input are the data as measured. You will then probably want to do some sanity checks. Then this will cumulate in an analysis that assigns probabilities to hypotheses. Write out how you will quantify uncertainty (say p-values). Also consider how you will handle free parameters that you may need to fit.`,
       llmInstructions: `I want you to check if the data analysis pipeline cleanly tests the hypotheses set up above based on the experiment described above. I want you to check if it does so as directly and cleanly as possible. Lastly, I want to go through the above mentioned potential rigor problems and help the user make sure they do not violate any of them. Focus on the ones that matter for their design. Feel free to interactively refine this with the user. I want you to be super constructive and make proposals to improve the data analysis design.`
     },
@@ -114,7 +114,7 @@ Write out how you plan to analyze the expected data. The key is that the input a
       type: 'text',
       instructions: `A fourth aspect of science is how we use processes and skills that allow us to do good science that is meaningful and works well in a community.
 
-WORK STEP 4: PROCESSES
+WORK STEP 5: PROCESSES
 Write out the skills you will need and the collaborations you may need to cover skills you do not currently have. Make a timeline of how long each task in the pipeline will take you. (5 minutes max).
 
 SKILLS
