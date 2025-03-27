@@ -19,7 +19,7 @@
       "title": "Hypothesis",
       "type": "text",
       "instructions": {
-        "title": "MULTIPLE SPECIFIED HYPOTHESES",
+        "title": "MULTIPLE WELL-SPECIFIED HYPOTHESES",
         "description": "A strong scientific question invites at least two plausible explanations or hypotheses, leading to distinct interpretations. It thus has a consequential answer—the result will change how you or others approach the field in the future. A detailed question asks if we should prefer one hypothesis over others, which can be decided by data. Ideally, hypotheses should be expressed in precise terms—whether mathematically or through computational models.\n\nWhen formulating your hypotheses, clarify whether they are novel or have been previously tested, and if the latter, emphasize the importance of replication. And make sure they are fully specified with every word clearly defined. They should specify which exact scenarios they apply to. Finally, verify that you can express your hypotheses as a mathematical model or equation that predicts data probabilities—a key step for robust statistical analysis.",
         "workStep": {
           "title": "WORK STEP: HYPOTHESES",
