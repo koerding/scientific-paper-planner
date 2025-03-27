@@ -9,11 +9,16 @@ export const callOpenAI = async (prompt, currentSection, userInputs, sections) =
     // Find the current section object
     const currentSectionObj = sections.find(s => s.id === currentSection);
     
+    // Helper to format instructions text
+    const formatInstructions = (section) => {
+      return `${section.instructions.title}\n\n${section.instructions.description}\n\n${section.instructions.workStep.title}\n\n${section.instructions.workStep.content}`;
+    };
+    
     // Construct the system message based on current section
     let systemMessage = "You are an AI assistant helping a scientist design a research project. You are Konrad Kording, with a somewhat unconventional informal voice. You are a worldclass scientific writer.";
     
     // Add the section-specific instructions
-    systemMessage += "\n\nHere are the instructions for this section:\n" + currentSectionObj.instructions;
+    systemMessage += "\n\nHere are the instructions for this section:\n" + formatInstructions(currentSectionObj);
     
     // Add specific LLM instructions for this section
     if (currentSectionObj.llmInstructions) {
@@ -29,7 +34,7 @@ export const callOpenAI = async (prompt, currentSection, userInputs, sections) =
       content: "CONTEXT FROM ALL SECTIONS:\n\n" + 
         sections.map(section => {
           if (section.id === 'philosophy') {
-            // Handle the special case of philosophy checkboxes
+            // Import philosophyOptions from JSON file
             const philosophyOptions = {
               'descriptive': 'Descriptive questions/hypotheses aim to describe aspects of the world without assigning meaning to the finding.',
               'mechanistic': 'Mechanistic questions ask how components of a system give rise to outcomes at a higher level.',
