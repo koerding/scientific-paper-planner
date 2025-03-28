@@ -99,14 +99,6 @@ textarea:focus, input:focus {
   background: #a0a0a0;
 }
 
-/* Dark mode transitions */
-.dark-mode {
-  --bg-primary: #1f2937;
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-  --border-color: #374151;
-}
-
 /* Glassmorphism elements */
 .glass {
   background: rgba(255, 255, 255, 0.25);
@@ -115,18 +107,12 @@ textarea:focus, input:focus {
   border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-.dark .glass {
-  background: rgba(17, 24, 39, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
 /* Gradient text for emphasis */
 .gradient-text {
   background: linear-gradient(90deg, #6366F1 0%, #A855F7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-fill-color: transparent;
 }
 
 /* Soft shadows for depth */
