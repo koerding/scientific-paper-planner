@@ -6,6 +6,7 @@ import ChatInterface from './ChatInterface';
 import Navigation from './Navigation';
 import ConfirmDialog from './ConfirmDialog';
 import { exportProject } from '../../utils/exportUtils';
+import './PaperPlanner.css'; // Import custom styles
 
 /**
  * Main Paper Planner Application Component
