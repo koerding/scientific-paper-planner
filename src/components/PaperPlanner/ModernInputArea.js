@@ -93,7 +93,7 @@ const ModernInputArea = ({
         </p>
       )}
 
-      {section.confirmFirstVersion && hasUserContent(section, userInputs) && (
+      {section.confirmFirstVersion  && (
         <button
           className="mt-6 px-5 py-2 bg-green-600 text-white font-medium rounded shadow hover:bg-green-700 transition"
           onClick={handleFirstVersionFinished}
