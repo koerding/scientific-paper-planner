@@ -1,0 +1,26 @@
+/* Paper Planner custom styles */
+
+/* Fix for inconsistent font sizes in instructions */
+.instruction-text {
+  font-size: 1rem !important; /* Force consistent font size */
+  line-height: 1.5 !important; /* Force consistent line height */
+}
+
+/* Add extra space between bullet points for readability */
+.instruction-text ul {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.instruction-text li {
+  margin-bottom: 0.5rem;
+}
+
+/* Make sure the bullet points display consistently */
+.instruction-text ul li::before {
+  content: "• ";
+  color: #4A5568; /* gray-700 in Tailwind */
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+}
