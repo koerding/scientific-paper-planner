@@ -2,8 +2,7 @@ import React, { useEffect } from 'react';
 import { countWords } from '../../utils/formatUtils';
 
 /**
- * Modern input area component with pre-filled templates that are fully editable
- * and improved content detection
+ * Modern input area with instructions and AI submission
  */
 const ModernInputArea = ({ 
   section, 
@@ -12,6 +11,7 @@ const ModernInputArea = ({
   handleInputChange,
   handleCheckboxChange,
   handleFirstVersionFinished,
+  handleSendMessage,
   loading
 }) => {
   useEffect(() => {
@@ -24,82 +24,83 @@ const ModernInputArea = ({
     }
   }, [section.id, section.placeholder, section.type, userInputs, handleInputChange]);
 
-  const formatInstructions = (section) => {
-    return section.instructions.description;
-  };
-
-  const hasUserContent = (section, userInput) => {
+  const hasUserContent = () => {
     if (section.type === 'checklist') {
-      return userInput.philosophy && userInput.philosophy.length > 0;
+      return userInputs.philosophy && userInputs.philosophy.length > 0;
     }
-    const input = userInput[section.id] || '';
+    const input = userInputs[section.id] || '';
     const placeholder = section.placeholder || '';
     return input.trim() !== '' && input.trim() !== placeholder.trim();
   };
 
-  let inputElement;
-  if (section.type === 'checklist') {
-    inputElement = (
-      <div className="mt-4">
-        {philosophyOptions.map(option => (
-          <div key={option.id} className="flex items-start mb-3">
-            <input
-              type="checkbox"
-              id={option.id}
-              checked={userInputs.philosophy.includes(option.id)}
-              onChange={() => handleCheckboxChange(option.id)}
-              className="mt-1 mr-2 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <label htmlFor={option.id} className="text-gray-700 text-base">{option.label}</label>
-          </div>
-        ))}
-      </div>
-    );
-  } else {
-    inputElement = (
-      <textarea
-        rows={10}
-        className="w-full p-4 border border-gray-300 rounded-md text-base text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        placeholder="Write your answer here..."
-        value={userInputs[section.id] || ''}
-        onChange={(e) => handleInputChange(section.id, e.target.value)}
-        disabled={loading}
-      />
-    );
-  }
-
   const instructionsElement = (
-    <div className="mb-6 p-5 bg-blue-50 border-l-4 border-blue-500 rounded-md shadow-sm text-gray-700">
-      <div className="font-semibold text-lg mb-2">{section.instructions.title}</div>
-      <div className="instruction-text text-base whitespace-pre-line">{formatInstructions(section)}</div>
+    <div className="mb-6 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+      <div className="font-semibold text-xl mb-2">{section.instructions.title}</div>
+      <div className="text-gray-600 mb-4 leading-relaxed">{section.instructions.description}</div>
       {section.instructions.workStep.content && (
-        <div className="mt-2 instruction-text text-base text-blue-800">{section.instructions.workStep.content}</div>
+        <div className="bg-indigo-50 rounded-lg p-4 border-l-4 border-indigo-400">
+          <div className="text-sm text-indigo-700 leading-relaxed">
+            {section.instructions.workStep.content}
+          </div>
+        </div>
       )}
     </div>
   );
 
+  const inputElement = (
+    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">Your {section.title}</h3>
+      <textarea
+        value={userInputs[section.id] || ''}
+        onChange={(e) => handleInputChange(section.id, e.target.value)}
+        className="w-full p-4 border border-gray-200 rounded-lg font-mono text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+        rows={12}
+        maxLength={1200}
+      />
+      <div className="flex justify-between mt-2 text-sm text-gray-500">
+        <div>{countWords(userInputs[section.id] || '')} words</div>
+        <div>{1200 - (userInputs[section.id]?.length || 0)} characters left</div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="mt-4">
-      <h2 className="text-2xl font-bold text-gray-800 mb-1">{section.title}</h2>
-      <p className="text-gray-600 mb-4 text-base">{section.description}</p>
-
+    <div className="space-y-6">
       {instructionsElement}
-
       {inputElement}
 
-      {section.wordLimit && (
-        <p className="text-sm text-gray-500 mt-2">
-          Word count: {countWords(userInputs[section.id] || '')} / {section.wordLimit}
-        </p>
-      )}
-
-      {section.confirmFirstVersion  && (
-        <button
-          className="mt-6 px-5 py-2 bg-green-600 text-white font-medium rounded shadow hover:bg-green-700 transition"
-          onClick={handleFirstVersionFinished}
-        >
-          I’m done with this version
-        </button>
+      {section.confirmFirstVersion && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => {
+              handleFirstVersionFinished();
+              handleSendMessage();
+            }}
+            disabled={!hasUserContent() || loading}
+            className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
+              hasUserContent() && !loading
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md hover:shadow-lg transform hover:-translate-y-1'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            {loading ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Processing...
+              </span>
+            ) : (
+              <span className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                </svg>
+                Mark First Version Complete
+              </span>
+            )}
+          </button>
+        </div>
       )}
     </div>
   );
