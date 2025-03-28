@@ -46,7 +46,6 @@ const PaperPlannerApp = () => {
     </div>
   );
 
-  // Rename the original component to ClassicPaperPlannerApp
   return (
     <>
       {uiVersion === 'classic' ? <ClassicPaperPlannerApp /> : <ModernPaperPlannerApp />}
