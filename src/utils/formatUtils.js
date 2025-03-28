@@ -17,11 +17,5 @@ export const countWords = (text) => {
  * @returns {string} - Formatted instructions
  */
 export const formatInstructions = (section) => {
-  // Format bullet points with proper line spacing
-  let text = section.instructions.description;
-  
-  // Ensure bullet points are properly formatted
-  text = text.replace(/•\s+/g, '• ');
-  
-  return text;
+  return section.instructions.description;
 };
