@@ -38,7 +38,7 @@ const ModernChatInterface = ({
           </div>
           <div>
             <h3 className="font-medium">AI Feedback</h3>
-            <p className="text-xs text-indigo-100">Research Design Specialist</p>
+            <p className="text-xs text-indigo-100">All of Konrad's prompts in one LLM</p>
           </div>
         </div>
       </div>
