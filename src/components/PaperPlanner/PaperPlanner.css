@@ -6,23 +6,43 @@
   line-height: 1.6 !important; /* Improve readability with better line height */
 }
 
-/* Add extra space between bullet points for readability */
+/* Improved bullet point formatting */
 .instruction-text ul {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
+  list-style-position: outside;
+  padding-left: 1.5rem;
 }
 
 .instruction-text li {
   margin-bottom: 0.5rem;
+  display: list-item;
+  padding-left: 0.5rem;
 }
 
-/* Make sure the bullet points display consistently */
+/* Make sure bullet points display one per line with proper spacing */
+.instruction-text ul li {
+  padding-bottom: 0.5rem;
+  position: relative;
+}
+
 .instruction-text ul li::before {
   content: "• ";
   color: #4F46E5; /* indigo-600 in Tailwind */
-  display: inline-block;
-  width: 1em;
-  margin-left: -1em;
+  position: absolute;
+  left: -1.2rem;
+}
+
+/* Ensure proper paragraph spacing */
+.instruction-text p {
+  margin-bottom: 1rem;
+}
+
+/* Ensure proper line breaks for each list item */
+.instruction-text ul li,
+.instruction-text ol li {
+  white-space: normal !important;
+  display: block !important;
 }
 
 /* Modern animations and transitions */
@@ -123,4 +143,23 @@ textarea:focus, input:focus {
 /* Pulsing effect for notifications or important elements */
 .pulse-effect {
   animation: pulse 2s infinite;
+}
+
+/* Improve formatting of instructions specifically for the instruction-text in instruction boxes */
+.instruction-text {
+  white-space: normal !important;
+}
+
+/* Ensure instruction text wraps properly */
+.prose .instruction-text ul li {
+  display: list-item !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+/* Fix for header text in the AI chat interface */
+.bg-gradient-to-r p.text-xs {
+  max-width: 95%;
+  line-height: 1.3;
+  margin-top: 0.25rem;
 }
