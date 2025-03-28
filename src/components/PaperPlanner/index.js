@@ -90,7 +90,7 @@ const PaperPlannerApp = () => {
     });
   };
 
-  // Mock AI response for now
+  // Send regular chat message
   const handleSendMessage = async () => {
     if (currentMessage.trim() === '') return;
     
@@ -108,11 +108,11 @@ const PaperPlannerApp = () => {
     setCurrentMessage('');
     setLoading(true);
     
-    // Simulate API delay
-    setTimeout(() => {
-      // Add mock AI response
-      const aiResponse = "I'll help you with that. What specific aspects would you like me to address?";
+    try {
+      // For a regular chat message, just pass the message as-is
+      const aiResponse = await callOpenAI(currentMessage, currentSection, userInputs, sections);
       
+      // Add AI response to chat
       const updatedMessages = [
         ...newMessages,
         { role: 'assistant', content: aiResponse }
@@ -122,11 +122,25 @@ const PaperPlannerApp = () => {
         ...chatMessages,
         [currentSection]: updatedMessages
       });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
       
+      // Add error message to chat
+      const errorMessage = { 
+        role: 'assistant', 
+        content: 'Sorry, there was an error processing your request. Please try again.' 
+      };
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: [...newMessages, errorMessage]
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
+  // Handle "First version finished" button with llmInstructions
   const handleFirstVersionFinished = async () => {
     // Don't do anything if there's no content yet
     if (!userInputs[currentSection] && currentSection !== 'philosophy') return;
@@ -134,34 +148,75 @@ const PaperPlannerApp = () => {
     
     setLoading(true);
     
-    // Add the initial message to chat
-    const newMessages = [
-      ...chatMessages[currentSection], 
-      { role: 'user', content: "I've finished my first version. Can you provide feedback?" }
-    ];
-    
-    setChatMessages({
-      ...chatMessages,
-      [currentSection]: newMessages
-    });
-    
-    // Simulate API delay
-    setTimeout(() => {
-      // Add mock AI response with feedback
-      const aiResponse = "Great work on your first version! Here's some feedback to consider:\n\n1. Your approach is well-structured and covers the main points.\n\n2. Consider exploring the implications of your ideas more deeply.\n\n3. Make sure your content directly addresses the section's focus.";
+    try {
+      // Create a simple message to show to the user in the chat UI
+      const displayMessage = "I've finished my first version. Can you provide feedback?";
       
-      const updatedMessages = [
-        ...newMessages,
-        { role: 'assistant', content: aiResponse }
+      // Get the detailed instructions for the AI from the JSON configuration
+      const currentSectionObj = sections.find(s => s.id === currentSection);
+      const aiInstructions = currentSectionObj.llmInstructions;
+      
+      // Add the simple message to the chat UI for the user to see
+      const newMessages = [
+        ...chatMessages[currentSection], 
+        { role: 'user', content: displayMessage }
       ];
       
       setChatMessages({
         ...chatMessages,
-        [currentSection]: updatedMessages
+        [currentSection]: newMessages
       });
       
+      // For now, simulate API call
+      // In production, replace with actual API call: await callOpenAI(aiInstructions, currentSection, userInputs, sections);
+      // Simulate API delay
+      setTimeout(() => {
+        // Add mock AI response
+        const aiResponse = "I've analyzed your first version based on the criteria for this section. Here's my feedback:\n\n1. Your content is well-structured and addresses the key points needed.\n\n2. Consider elaborating more on how your ideas connect to established research.\n\n3. Make sure your points directly support your main argument.\n\n4. The approach you've taken shows good understanding of the scientific method.";
+        
+        const updatedMessages = [
+          ...newMessages,
+          { role: 'assistant', content: aiResponse }
+        ];
+        
+        setChatMessages({
+          ...chatMessages,
+          [currentSection]: updatedMessages
+        });
+        
+        setLoading(false);
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      // Add error message to chat
+      const errorMessage = { 
+        role: 'assistant', 
+        content: 'Sorry, there was an error processing your request. Please try again.' 
+      };
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: [...chatMessages[currentSection], { role: 'user', content: "I've finished my first version. Can you provide feedback?" }, errorMessage]
+      });
       setLoading(false);
-    }, 1500);
+    }
+  };
+
+  // Function to call the OpenAI API
+  const callOpenAI = async (message, sectionId, inputs, sections) => {
+    // In a real implementation, this would call your API
+    // For now, we're simulating responses
+    console.log(`Calling API with message: ${message}`);
+    console.log(`Section: ${sectionId}`);
+    console.log(`User input for this section: ${inputs[sectionId]}`);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Return a generic response for testing
+    return "This is a simulated AI response. In the actual implementation, this would be a real response from the API based on the prompt and user inputs.";
   };
 
   const resetProject = () => {
