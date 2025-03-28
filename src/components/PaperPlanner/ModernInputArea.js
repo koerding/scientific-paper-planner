@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { countWords, formatInstructions } from '../../utils/formatUtils';
 
 /**
- * Modern input area component with card-based design and animations
- * with improved placeholder handling
+ * Modern input area component with structured template guidance
  */
 const ModernInputArea = ({ 
   section, 
@@ -27,21 +26,146 @@ const ModernInputArea = ({
     </div>
   );
   
-  // For handling pre-filled content in textareas
-  const initializeTextarea = (sectionId, placeholder) => {
-    // If there's no user content yet and there's a placeholder, use placeholder as initial value
-    if (!userInputs[sectionId] && placeholder) {
-      // Only set initial content once
-      handleInputChange(sectionId, placeholder);
+  // Create a structured template UI for each section
+  const renderStructuredInput = () => {
+    // Get stored user input
+    const userInput = userInputs[section.id] || '';
+    
+    if (section.id === 'question') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Research Question:</label>
+            <textarea 
+              value={userInput.includes('Research Question:') ? userInput.split('Research Question:')[1].split('Why this question matters')[0].trim() : ''}
+              onChange={(e) => {
+                const newValue = `Research Question:\n${e.target.value}\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. `;
+                handleInputChange(section.id, newValue);
+              }}
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              rows={3}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Why this question matters (objectives):</label>
+            <textarea 
+              value={userInput.includes('Why this question matters') ? userInput.split('Why this question matters')[1].split('Scientists who would care')[0].replace(/\(objectives\):\n-/g, '').trim() : ''}
+              onChange={(e) => {
+                // Split the input by new lines and prepend each with "- "
+                const bulletPoints = e.target.value.split('\n').map(line => {
+                  if (line.trim() === '') return '';
+                  if (line.trim().startsWith('- ')) return line.trim();
+                  return `- ${line.trim()}`;
+                }).join('\n');
+                
+                // Reconstruct the entire content with the new objectives
+                const questionPart = userInput.includes('Research Question:') ? 
+                  userInput.split('Research Question:')[1].split('Why this question matters')[0].trim() : '';
+                
+                const scientistsPart = userInput.includes('Scientists who would care') ?
+                  userInput.split('Scientists who would care')[1].trim() : 'about this question:\n1. \n2. \n3. \n4. \n5. ';
+                
+                const newValue = `Research Question:\n${questionPart}\n\nWhy this question matters (objectives):\n${bulletPoints}\n\nScientists who would care ${scientistsPart}`;
+                handleInputChange(section.id, newValue);
+              }}
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              rows={4}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Scientists who would care about this question:</label>
+            <textarea 
+              value={userInput.includes('Scientists who would care') ? userInput.split('Scientists who would care about this question:')[1].trim() : ''}
+              onChange={(e) => {
+                // Format numbered list
+                const scientistsList = e.target.value.split('\n').map((line, index) => {
+                  if (line.trim() === '') return '';
+                  if (line.trim().match(/^\d+\.\s/)) return line.trim();
+                  return `${index + 1}. ${line.trim()}`;
+                }).join('\n');
+                
+                // Reconstruct the entire content
+                const beforeScientists = userInput.split('Scientists who would care')[0];
+                const newValue = `${beforeScientists}Scientists who would care about this question:\n${scientistsList}`;
+                handleInputChange(section.id, newValue);
+              }}
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              rows={5}
+            />
+          </div>
+        </div>
+      );
     }
+    
+    if (section.id === 'hypothesis') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Hypothesis 1:</label>
+            <textarea 
+              value={userInput.includes('Hypothesis 1:') ? userInput.split('Hypothesis 1:')[1].split('Hypothesis 2:')[0].trim() : ''}
+              onChange={(e) => {
+                // Extract other parts
+                const hyp2Part = userInput.includes('Hypothesis 2:') ? 
+                  userInput.split('Hypothesis 2:')[1].split('Why distinguishing')[0].trim() : '';
+                
+                const whyPart = userInput.includes('Why distinguishing') ?
+                  userInput.split('Why distinguishing')[1].split('Most similar papers')[0].replace(/these hypotheses matters:\n-/g, '').trim() : '';
+                
+                const papersPart = userInput.includes('Most similar papers') ?
+                  userInput.split('Most similar papers')[1].trim() : 'that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ';
+                
+                // Reconstruct
+                const newValue = `Hypothesis 1:\n${e.target.value}\n\nHypothesis 2:\n${hyp2Part}\n\nWhy distinguishing these hypotheses matters:\n- ${whyPart}\n\nMost similar papers ${papersPart}`;
+                handleInputChange(section.id, newValue);
+              }}
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              rows={3}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Hypothesis 2:</label>
+            <textarea 
+              value={userInput.includes('Hypothesis 2:') ? userInput.split('Hypothesis 2:')[1].split('Why distinguishing')[0].trim() : ''}
+              onChange={(e) => {
+                // Extract other parts
+                const hyp1Part = userInput.includes('Hypothesis 1:') ? 
+                  userInput.split('Hypothesis 1:')[1].split('Hypothesis 2:')[0].trim() : '';
+                
+                const whyPart = userInput.includes('Why distinguishing') ?
+                  userInput.split('Why distinguishing')[1].split('Most similar papers')[0].replace(/these hypotheses matters:\n-/g, '').trim() : '';
+                
+                const papersPart = userInput.includes('Most similar papers') ?
+                  userInput.split('Most similar papers')[1].trim() : 'that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ';
+                
+                // Reconstruct
+                const newValue = `Hypothesis 1:\n${hyp1Part}\n\nHypothesis 2:\n${e.target.value}\n\nWhy distinguishing these hypotheses matters:\n- ${whyPart}\n\nMost similar papers ${papersPart}`;
+                handleInputChange(section.id, newValue);
+              }}
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              rows={3}
+            />
+          </div>
+          
+          {/* Similar pattern for other fields */}
+        </div>
+      );
+    }
+    
+    // For other sections, use a default template
+    return (
+      <textarea
+        value={userInputs[section.id] || section.placeholder || ''}
+        onChange={(e) => handleInputChange(section.id, e.target.value)}
+        className="w-full p-4 border border-gray-200 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+        rows={12}
+        maxLength={1200}
+      />
+    );
   };
-
-  // Initialize textarea with placeholder content if needed
-  useEffect(() => {
-    if (section.type !== 'checklist' && section.placeholder) {
-      initializeTextarea(section.id, section.placeholder);
-    }
-  }, [section.id]);
   
   // Render input form with modern styling
   let inputElement;
@@ -85,16 +209,13 @@ const ModernInputArea = ({
       </div>
     );
   } else {
+    // Show structured input for each section
     inputElement = (
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Your {section.title}</h3>
-        <textarea
-          value={userInputs[section.id] || ''}
-          onChange={(e) => handleInputChange(section.id, e.target.value)}
-          className="w-full p-4 border border-gray-200 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-          rows={12}
-          maxLength={1200}
-        />
+        
+        {renderStructuredInput()}
+        
         <div className="flex justify-between mt-2 text-sm text-gray-500">
           <div>
             {userInputs[section.id] ? countWords(userInputs[section.id]) : 0} / 200 words
