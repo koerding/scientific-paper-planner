@@ -38,7 +38,7 @@ const ModernChatInterface = ({
           </div>
           <div>
             <h3 className="font-medium">AI Feedback</h3>
-            <p className="text-xs text-indigo-100">All of Konrad's prompts in one LLM</p>
+            <p className="text-xs text-indigo-100">There is no perfect project: this tool will always highlight strengths and weaknesses; it's up to you to decide what to do with these suggestions and when you are happy with your project</p>
           </div>
         </div>
       </div>
