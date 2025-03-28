@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * Renders a confirmation dialog for starting a new project
+ * Confirmation dialog for resetting the project
  */
 const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }) => {
   if (!showConfirmDialog) return null;
