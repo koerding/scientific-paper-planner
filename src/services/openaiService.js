@@ -4,8 +4,15 @@
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
 
 // This is a helper function to call the OpenAI API
-export const callOpenAI = async (prompt, currentSection, userInputs, sections) => {
+export const callOpenAI = async (prompt, currentSection, userInputs, sections, sectionContent) => {
   try {
+    // Get the voice settings from sectionContent
+    const voiceSettings = sectionContent.voice || {
+      name: "Konrad Kording",
+      description: "I am Konrad Kording. I have a somewhat unconventional informal voice. I am a worldclass scientific writer.",
+      conversationStyle: "I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
+    };
+    
     // Find the current section object
     const currentSectionObj = sections.find(s => s.id === currentSection);
     
@@ -15,7 +22,7 @@ export const callOpenAI = async (prompt, currentSection, userInputs, sections) =
     };
     
     // Construct the system message based on current section
-    let systemMessage = "You are an AI assistant helping a scientist design a research project. You are Konrad Kording, with a somewhat unconventional informal voice. You are a worldclass scientific writer.";
+    let systemMessage = `You are an AI assistant helping a scientist design a research project. ${voiceSettings.description}`;
     
     // Add the section-specific instructions
     systemMessage += "\n\nHere are the instructions for this section:\n" + formatInstructions(currentSectionObj);
@@ -24,6 +31,9 @@ export const callOpenAI = async (prompt, currentSection, userInputs, sections) =
     if (currentSectionObj.llmInstructions) {
       systemMessage += "\n\nFollow these specific guidelines when responding:\n" + currentSectionObj.llmInstructions;
     }
+    
+    // Add the conversation style from voice settings
+    systemMessage += "\n\n" + voiceSettings.conversationStyle;
     
     // Build conversation history with context
     const contextMessages = [];
@@ -35,15 +45,10 @@ export const callOpenAI = async (prompt, currentSection, userInputs, sections) =
         sections.map(section => {
           if (section.id === 'philosophy') {
             // Import philosophyOptions from JSON file
-            const philosophyOptions = {
-              'descriptive': 'Descriptive questions/hypotheses aim to describe aspects of the world without assigning meaning to the finding.',
-              'mechanistic': 'Mechanistic questions ask how components of a system give rise to outcomes at a higher level.',
-              'normative': 'Normative questions ask how a given outcome at a high level can be seen as being useful in the niche of the animal.',
-              'evolution': 'Evalution questions ask how a given outcome evolved by requiring distinct species or fossil records.',
-              'representation': 'Representation questions ask how activities in brains relate to stimuli or behaviors.',
-              'developmental': 'Developmental questions ask how change during an organism\'s lifetime gives rise to outcomes.',
-              'combination': 'Combination questions ask how above questions relate, e.g. about the mechanism of development.'
-            };
+            const philosophyOptions = {};
+            sectionContent.philosophyOptions.forEach(option => {
+              philosophyOptions[option.id] = option.label;
+            });
             
             const selectedPhilosophies = userInputs.philosophy
               .map(id => `- ${philosophyOptions[id]}`)
@@ -59,15 +64,10 @@ export const callOpenAI = async (prompt, currentSection, userInputs, sections) =
     // Add the specific content of the current section for emphasis
     if (userInputs[currentSection]) {
       if (currentSection === 'philosophy') {
-        const philosophyOptions = {
-          'descriptive': 'Descriptive questions/hypotheses',
-          'mechanistic': 'Mechanistic questions',
-          'normative': 'Normative questions',
-          'evolution': 'Evolution questions',
-          'representation': 'Representation questions',
-          'developmental': 'Developmental questions',
-          'combination': 'Combination questions'
-        };
+        const philosophyOptions = {};
+        sectionContent.philosophyOptions.forEach(option => {
+          philosophyOptions[option.id] = option.label.split('.')[0]; // Get first sentence only
+        });
         
         const selectedPhilosophies = userInputs.philosophy
           .map(id => philosophyOptions[id])
