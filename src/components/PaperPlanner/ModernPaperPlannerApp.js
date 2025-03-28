@@ -4,7 +4,7 @@ import ModernNavigation from './ModernNavigation';
 import ModernChatInterface from './ModernChatInterface';
 import EnhancedInputArea from './EnhancedInputArea';
 import ConfirmDialog from './ConfirmDialog';
-import sectionContent from '../sectionContent.json';
+import sectionContent from '../../sectionContent.json';
 import './PaperPlanner.css';
 
 /**
