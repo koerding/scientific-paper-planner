@@ -264,3 +264,6 @@ const usePaperPlanner = (sections) => {
     goToNextSection,
     goToPreviousSection
   };
+};
+
+export default usePaperPlanner;
