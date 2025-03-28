@@ -34,10 +34,10 @@ const ModernChatInterface = ({
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3">
-            KK
+            AI
           </div>
           <div>
-            <h3 className="font-medium">Konrad Kording (AI Assistant)</h3>
+            <h3 className="font-medium">AI Feedback</h3>
             <p className="text-xs text-indigo-100">Research Design Specialist</p>
           </div>
         </div>
@@ -72,7 +72,7 @@ const ModernChatInterface = ({
                     {/* Avatar for assistant messages */}
                     {!isUser && (
                       <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1 mx-2">
-                        KK
+                        AI
                       </div>
                     )}
                     
