@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { countWords, formatInstructions } from '../../utils/formatUtils';
 
 /**
  * Modern input area component with card-based design and animations
+ * with improved placeholder handling
  */
 const ModernInputArea = ({ 
   section, 
@@ -25,6 +26,22 @@ const ModernInputArea = ({
       )}
     </div>
   );
+  
+  // For handling pre-filled content in textareas
+  const initializeTextarea = (sectionId, placeholder) => {
+    // If there's no user content yet and there's a placeholder, use placeholder as initial value
+    if (!userInputs[sectionId] && placeholder) {
+      // Only set initial content once
+      handleInputChange(sectionId, placeholder);
+    }
+  };
+
+  // Initialize textarea with placeholder content if needed
+  useEffect(() => {
+    if (section.type !== 'checklist' && section.placeholder) {
+      initializeTextarea(section.id, section.placeholder);
+    }
+  }, [section.id]);
   
   // Render input form with modern styling
   let inputElement;
@@ -68,9 +85,6 @@ const ModernInputArea = ({
       </div>
     );
   } else {
-    // Get placeholder from the section content
-    const placeholder = section.placeholder || `Enter your ${section.title.toLowerCase()} here (max 200 words)`;
-    
     inputElement = (
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Your {section.title}</h3>
@@ -78,7 +92,6 @@ const ModernInputArea = ({
           value={userInputs[section.id] || ''}
           onChange={(e) => handleInputChange(section.id, e.target.value)}
           className="w-full p-4 border border-gray-200 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-          placeholder={placeholder}
           rows={12}
           maxLength={1200}
         />
