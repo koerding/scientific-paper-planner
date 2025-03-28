@@ -81,7 +81,7 @@ const PaperPlannerApp = () => {
     setLoading(true);
     
     try {
-      // Call OpenAI API with the current message, context, and all sections
+      // Call OpenAI API with the current message, context, and all sections.
       const aiResponse = await callOpenAI(currentMessage, currentSection, userInputs, sections);
       
       // Add AI response to chat
