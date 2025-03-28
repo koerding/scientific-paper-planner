@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ModernPaperPlannerApp from './ModernPaperPlannerApp';
 import sectionContent from '../../sectionContent.json';
+import { callOpenAI } from '../../services/openaiService';
 import './PaperPlanner.css';
 
 /**
@@ -109,7 +110,7 @@ const PaperPlannerApp = () => {
     setLoading(true);
     
     try {
-      // For a regular chat message, just pass the message as-is
+      // Call OpenAI API with the current message
       const aiResponse = await callOpenAI(currentMessage, currentSection, userInputs, sections);
       
       // Add AI response to chat
@@ -149,14 +150,14 @@ const PaperPlannerApp = () => {
     setLoading(true);
     
     try {
-      // Create a simple message to show to the user in the chat UI
+      // Simple message for the UI
       const displayMessage = "I've finished my first version. Can you provide feedback?";
       
-      // Get the detailed instructions for the AI from the JSON configuration
+      // Get detailed instructions from JSON
       const currentSectionObj = sections.find(s => s.id === currentSection);
       const aiInstructions = currentSectionObj.llmInstructions;
       
-      // Add the simple message to the chat UI for the user to see
+      // Add the simple message to chat for the user to see
       const newMessages = [
         ...chatMessages[currentSection], 
         { role: 'user', content: displayMessage }
@@ -167,26 +168,19 @@ const PaperPlannerApp = () => {
         [currentSection]: newMessages
       });
       
-      // For now, simulate API call
-      // In production, replace with actual API call: await callOpenAI(aiInstructions, currentSection, userInputs, sections);
-      // Simulate API delay
-      setTimeout(() => {
-        // Add mock AI response
-        const aiResponse = "I've analyzed your first version based on the criteria for this section. Here's my feedback:\n\n1. Your content is well-structured and addresses the key points needed.\n\n2. Consider elaborating more on how your ideas connect to established research.\n\n3. Make sure your points directly support your main argument.\n\n4. The approach you've taken shows good understanding of the scientific method.";
-        
-        const updatedMessages = [
-          ...newMessages,
-          { role: 'assistant', content: aiResponse }
-        ];
-        
-        setChatMessages({
-          ...chatMessages,
-          [currentSection]: updatedMessages
-        });
-        
-        setLoading(false);
-      }, 1500);
+      // Call OpenAI API with the detailed instructions
+      const aiResponse = await callOpenAI(aiInstructions, currentSection, userInputs, sections);
       
+      // Add AI response to chat
+      const updatedMessages = [
+        ...newMessages,
+        { role: 'assistant', content: aiResponse }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: updatedMessages
+      });
     } catch (error) {
       console.error('Error getting AI response:', error);
       
@@ -200,23 +194,9 @@ const PaperPlannerApp = () => {
         ...chatMessages,
         [currentSection]: [...chatMessages[currentSection], { role: 'user', content: "I've finished my first version. Can you provide feedback?" }, errorMessage]
       });
+    } finally {
       setLoading(false);
     }
-  };
-
-  // Function to call the OpenAI API
-  const callOpenAI = async (message, sectionId, inputs, sections) => {
-    // In a real implementation, this would call your API
-    // For now, we're simulating responses
-    console.log(`Calling API with message: ${message}`);
-    console.log(`Section: ${sectionId}`);
-    console.log(`User input for this section: ${inputs[sectionId]}`);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Return a generic response for testing
-    return "This is a simulated AI response. In the actual implementation, this would be a real response from the API based on the prompt and user inputs.";
   };
 
   const resetProject = () => {
