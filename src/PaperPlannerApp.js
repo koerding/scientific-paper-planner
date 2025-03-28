@@ -290,15 +290,23 @@ ${userInputs.abstract || "Not completed yet"}
 
   // Helper to format instructions text
   const formatInstructions = (section) => {
-    return `${section.instructions.title}\n\n${section.instructions.description}\n\n${section.instructions.workStep.title}\n\n${section.instructions.workStep.content}`;
+    // Combine title and description into a cleaner format
+    return section.instructions.description;
   };
 
   // Render input based on section type
   const renderInput = (section) => {
-    // Render instructions
+    // Find the full section object
+    const sectionObj = sections.find(s => s.id === section.id);
+    
+    // Render instructions - now much more concise
     const instructionsElement = (
-      <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-gray-700 overflow-y-auto max-h-96">
-        <div className="whitespace-pre-line">{formatInstructions(section)}</div>
+      <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-gray-700">
+        <div className="font-semibold text-lg mb-2">{section.instructions.title}</div>
+        <div>{formatInstructions(section)}</div>
+        {section.instructions.workStep.content && (
+          <div className="mt-2 text-sm text-gray-600">{section.instructions.workStep.content}</div>
+        )}
       </div>
     );
     
@@ -322,12 +330,15 @@ ${userInputs.abstract || "Not completed yet"}
         </div>
       );
     } else {
+      // Get placeholder from the updated section content
+      const placeholder = sectionObj.placeholder || `Enter your ${section.title.toLowerCase()} here (max 200 words)`;
+      
       inputElement = (
         <textarea
-          value={userInputs[section.id]}
+          value={userInputs[section.id] || ''}
           onChange={(e) => handleInputChange(section.id, e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded h-32 mt-2"
-          placeholder={`Enter your ${section.title.toLowerCase()} here (max 200 words)`}
+          className="w-full p-2 border border-gray-300 rounded h-64 mt-2 font-mono text-sm"
+          placeholder={placeholder}
           maxLength={1200} // Approximately 200 words
         />
       );
@@ -338,7 +349,7 @@ ${userInputs.abstract || "Not completed yet"}
       ? userInputs.philosophy.length > 0 
       : userInputs[section.id]?.trim().length > 0;
     
-    // Return both instructions, input form, and the new button
+    // Return both instructions, input form, and the button
     return (
       <div>
         {instructionsElement}
@@ -347,7 +358,7 @@ ${userInputs.abstract || "Not completed yet"}
         {/* Word Counter */}
         {section.type !== 'checklist' && (
           <div className="text-right text-sm text-gray-600 mt-1">
-            {countWords(userInputs[section.id])} / 200 words
+            {countWords(userInputs[section.id] || '')} / 200 words
           </div>
         )}
         
@@ -400,7 +411,7 @@ ${userInputs.abstract || "Not completed yet"}
               <div 
                 key={index} 
                 className={`mb-4 p-3 rounded ${
-message.role === 'user' 
+                  message.role === 'user' 
                     ? 'bg-blue-100 ml-12' 
                     : 'bg-gray-100 mr-12'
                 }`}
