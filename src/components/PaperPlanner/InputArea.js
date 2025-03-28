@@ -13,13 +13,13 @@ const InputArea = ({
   handleFirstVersionFinished,
   loading
 }) => {
-  // Render instructions
+  // Render instructions with consistent font sizes
   const instructionsElement = (
     <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-gray-700">
       <div className="font-semibold text-lg mb-2">{section.instructions.title}</div>
-      <div className="whitespace-pre-line">{formatInstructions(section)}</div>
+      <div className="instruction-text text-base whitespace-pre-line">{formatInstructions(section)}</div>
       {section.instructions.workStep.content && (
-        <div className="mt-2 text-sm">{section.instructions.workStep.content}</div>
+        <div className="mt-2 instruction-text text-base">{section.instructions.workStep.content}</div>
       )}
     </div>
   );
@@ -38,7 +38,7 @@ const InputArea = ({
               onChange={() => handleCheckboxChange(option.id)}
               className="mt-1 mr-2"
             />
-            <label htmlFor={option.id} className="text-gray-700">{option.label}</label>
+            <label htmlFor={option.id} className="text-gray-700 text-base">{option.label}</label>
           </div>
         ))}
       </div>
