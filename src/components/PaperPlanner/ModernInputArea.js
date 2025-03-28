@@ -3,6 +3,7 @@ import { countWords } from '../../utils/formatUtils';
 
 /**
  * Modern input area component with pre-filled templates that are fully editable
+ * and improved content detection
  */
 const ModernInputArea = ({ 
   section, 
@@ -28,10 +29,60 @@ const ModernInputArea = ({
     return section.instructions.description;
   };
 
+  // Function to check if the user has actually added content beyond the placeholder
+  const hasUserContent = (section, userInput) => {
+    // If it's the checklist type, just check if there are selected items
+    if (section.type === 'checklist') {
+      return userInput.philosophy && userInput.philosophy.length > 0;
+    }
+    
+    // For text inputs, check if the content differs from the placeholder
+    const input = userInput[section.id] || '';
+    const placeholder = section.placeholder || '';
+    
+    // If input is exactly the placeholder, or completely empty, return false
+    if (!input.trim() || input === placeholder) {
+      return false;
+    }
+    
+    // More sophisticated check to detect if user has actually added content 
+    // beyond the template structure
+    
+    // Split both into lines and compare
+    const inputLines = input.split('\n');
+    const placeholderLines = placeholder.split('\n');
+    
+    // First check: If user added more lines than the placeholder has
+    if (inputLines.length > placeholderLines.length) {
+      return true;
+    }
+    
+    // Second check: Look for lines that differ from the placeholder
+    let hasChanges = false;
+    for (let i = 0; i < inputLines.length; i++) {
+      // If placeholder doesn't have this line, or line is different
+      // and not just an empty line or just placeholders like "- " or "1. "
+      const inputLine = inputLines[i].trim();
+      const placeholderLine = i < placeholderLines.length ? placeholderLines[i].trim() : '';
+      
+      if (inputLine && 
+          inputLine !== placeholderLine && 
+          !placeholderLine.includes(inputLine) &&
+          inputLine !== '-' && 
+          !inputLine.match(/^\d+\.$/) && 
+          inputLine !== '- ') {
+        hasChanges = true;
+        break;
+      }
+    }
+    
+    return hasChanges;
+  };
+
   // Render instructions with card design
   const instructionsElement = (
     <div className="mb-6 bg-white rounded-xl shadow-sm p-6 border border-gray-100 transition-all hover:shadow-md">
-      <h3 className="text-xl font-semibold text-gray-800 mb-3">{section.instructions.title}</h3>
+      <div className="font-semibold text-xl mb-2">{section.instructions.title}</div>
       <div className="instruction-text text-gray-600 mb-4 leading-relaxed">{formatInstructions(section)}</div>
       {section.instructions.workStep.content && (
         <div className="bg-indigo-50 rounded-lg p-4 border-l-4 border-indigo-400">
@@ -108,10 +159,8 @@ const ModernInputArea = ({
     );
   }
   
-  // Check if there's content to enable the button
-  const hasContent = section.type === 'checklist' 
-    ? userInputs.philosophy.length > 0 
-    : userInputs[section.id]?.trim().length > 0;
+  // Check if there's actual user content to enable the button
+  const hasContent = hasUserContent(section, userInputs);
   
   return (
     <div className="space-y-6">
