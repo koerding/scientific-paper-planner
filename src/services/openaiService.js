@@ -1,10 +1,11 @@
 // src/services/openaiService.js
+import sectionContent from '../sectionContent.json';
 
 // Replace this with your actual OpenAI API key (this will use the environment variable)
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
 
 // This is a helper function to call the OpenAI API
-export const callOpenAI = async (prompt, currentSection, userInputs, sections, sectionContent) => {
+export const callOpenAI = async (prompt, currentSection, userInputs, sections) => {
   try {
     // Get the voice settings from sectionContent
     const voiceSettings = sectionContent.voice || {
