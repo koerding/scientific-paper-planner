@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
+import sectionContent from '../sectionContent.json';
 
 /**
  * Custom hook for Paper Planner functionality
@@ -109,64 +110,8 @@ const usePaperPlanner = (sections) => {
     setLoading(true);
     
     try {
-      // Call OpenAI API with the current message, context, and all sections.
-      const aiResponse = await callOpenAI(currentMessage, currentSection, userInputs, sections);
-      
-      // Add AI response to chat
-      const updatedMessages = [
-        ...newMessages,
-        { role: 'assistant', content: aiResponse }
-      ];
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: updatedMessages
-      });
-    } catch (error) {
-      console.error('Error getting AI response:', error);
-      
-      // Add error message to chat
-      const errorMessage = { 
-        role: 'assistant', 
-        content: 'Sorry, there was an error processing your request. Please try again.' 
-      };
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: [...newMessages, errorMessage]
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Handle "First version finished" button click
-   */
-  const handleFirstVersionFinished = async () => {
-    // Don't do anything if there's no content yet
-    if (!userInputs[currentSection] && currentSection !== 'philosophy') return;
-    if (currentSection === 'philosophy' && userInputs.philosophy.length === 0) return;
-    
-    setLoading(true);
-    
-    try {
-      // Create an appropriate message based on the section
-      let initialMessage = "I've finished my first version. Can you provide feedback?";
-      
-      // Add the initial message to chat
-      const newMessages = [
-        ...chatMessages[currentSection], 
-        { role: 'user', content: initialMessage }
-      ];
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: newMessages
-      });
-      
-      // Call OpenAI API with the initial message
-      const aiResponse = await callOpenAI(initialMessage, currentSection, userInputs, sections);
+      // Call OpenAI API with the current message, context, all sections, and sectionContent
+      const aiResponse = await callOpenAI(currentMessage, currentSection, userInputs, sections, sectionContent);
       
       // Add AI response to chat
       const updatedMessages = [
@@ -267,3 +212,59 @@ const usePaperPlanner = (sections) => {
 };
 
 export default usePaperPlanner;
+        { role: 'assistant', content: aiResponse }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: updatedMessages
+      });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      // Add error message to chat
+      const errorMessage = { 
+        role: 'assistant', 
+        content: 'Sorry, there was an error processing your request. Please try again.' 
+      };
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: [...newMessages, errorMessage]
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handle "First version finished" button click
+   */
+  const handleFirstVersionFinished = async () => {
+    // Don't do anything if there's no content yet
+    if (!userInputs[currentSection] && currentSection !== 'philosophy') return;
+    if (currentSection === 'philosophy' && userInputs.philosophy.length === 0) return;
+    
+    setLoading(true);
+    
+    try {
+      // Create an appropriate message based on the section
+      let initialMessage = "I've finished my first version. Can you provide feedback?";
+      
+      // Add the initial message to chat
+      const newMessages = [
+        ...chatMessages[currentSection], 
+        { role: 'user', content: initialMessage }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: newMessages
+      });
+      
+      // Call OpenAI API with the initial message
+      const aiResponse = await callOpenAI(initialMessage, currentSection, userInputs, sections, sectionContent);
+      
+      // Add AI response to chat
+      const updatedMessages = [
+        ...newMessages,
