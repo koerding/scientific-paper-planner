@@ -1,7 +1,6 @@
 /**
  * Service for interacting with the OpenAI API
  */
-import axios from 'axios';
 
 /**
  * Call the OpenAI API to get AI feedback
@@ -13,11 +12,9 @@ import axios from 'axios';
  */
 export const callOpenAI = async (message, currentSectionId, userInputs, sections, philosophyOptions) => {
   try {
-    // Find the current section object
     const currentSection = sections.find(s => s.id === currentSectionId);
-    
-    // Create a comprehensive context for the AI
-    let context = {
+
+    const context = {
       currentSection: {
         id: currentSectionId,
         title: currentSection.title,
@@ -26,38 +23,36 @@ export const callOpenAI = async (message, currentSectionId, userInputs, sections
       },
       allSections: {}
     };
-    
-    // Add content from all sections to provide complete context
+
     sections.forEach(section => {
       context.allSections[section.id] = {
         title: section.title,
-        content: userInputs[section.id] || "",
-        completed: section.id === 'philosophy' 
-          ? (userInputs.philosophy && userInputs.philosophy.length > 0)
-          : (userInputs[section.id] && userInputs[section.id].trim() !== "")
+        content: userInputs[section.id] || ""
       };
     });
-    
-    // For the philosophy section, include selected philosophies
-    if (userInputs.philosophy && userInputs.philosophy.length > 0) {
-      // Get the full labels for the selected philosophy options
-      const selectedPhilosophies = philosophyOptions
-        .filter(option => userInputs.philosophy.includes(option.id))
-        .map(option => option.label);
-      
-      context.allSections.philosophy.selectedOptions = selectedPhilosophies;
-    }
-    
-    // Make the API call to OpenAI with the full context
-    const response = await axios.post('/api/openai', {
+
+    const payload = {
       message,
       context,
-      sectionId: currentSectionId
+      philosophyOptions
+    };
+
+    const response = await fetch('/api/openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
     });
-    
-    return response.data.message;
+
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.message;
   } catch (error) {
-    console.error('Error calling OpenAI API:', error);
-    throw error;
+    console.error("Error calling OpenAI:", error);
+    return "Sorry, something went wrong while contacting the AI.";
   }
 };
