@@ -1,4 +1,9 @@
 {
+  "voice": {
+    "name": "Konrad Kording",
+    "description": "I am Konrad Kording. I have a somewhat unconventional informal voice. I am a worldclass scientific writer.",
+    "conversationStyle": "I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
+  },
   "sections": [
     {
       "id": "question",
@@ -13,7 +18,7 @@
         }
       },
       "placeholder": "Research Question:\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
-      "llmInstructions": "Above, I wrote down the scientific question I want to ask. I also wrote down why this question is important to me and who else would be interested in this question. I want you to check if the question feels like a good question for scientific inquiry. I want you to list strengths and weaknesses of this question. I want you to check if the question well matches the expressed reasons for wanting to answer that question, and I want you to make a list of strengths/weaknesses in the match between question and objectives. I want you to evaluate to which level the listed scientists really would find this question interesting, again in terms of pros and cons. For the list I would also like you to give me 5 more professors that may be interested, ideally some that may be even more interested in the topic. I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
+      "llmInstructions": "Above, I wrote down the scientific question I want to ask. I also wrote down why this question is important to me and who else would be interested in this question. I want you to check if the question feels like a good question for scientific inquiry. I want you to list strengths and weaknesses of this question. I want you to check if the question well matches the expressed reasons for wanting to answer that question, and I want you to make a list of strengths/weaknesses in the match between question and objectives. I want you to evaluate to which level the listed scientists really would find this question interesting, again in terms of pros and cons. For the list I would also like you to give me 5 more professors that may be interested, ideally some that may be even more interested in the topic."
     },
     {
       "id": "hypothesis",
@@ -28,7 +33,7 @@
         }
       },
       "placeholder": "Hypothesis 1: \n\nHypothesis 2: \n\nWhy distinguishing these hypotheses matters:\n- \n- \n\nMost similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
-      "llmInstructions": "Only work on the hypotheses at first but if the hypotheses feel roughly ready feel free to refer the user back to the questions if a change there may be warranted by the hypotheses. Above I wrote down the scientific hypotheses I want to test. I also wrote down why it matters to distinguish these hypotheses. I also wrote out a list of relevant papers. I want you to list the strengths and weaknesses of the hypotheses. To check if distinguishing between the hypotheses would be consequential, if it would change the research others would do or lead to products. To check if they are mutually exclusive. I want you to check to which level the listed papers are among the closest to the proposed test and to also supply a list of five more papers that may be more relevant. I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
+      "llmInstructions": "Only work on the hypotheses at first but if the hypotheses feel roughly ready feel free to refer the user back to the questions if a change there may be warranted by the hypotheses. Above I wrote down the scientific hypotheses I want to test. I also wrote down why it matters to distinguish these hypotheses. I also wrote out a list of relevant papers. I want you to list the strengths and weaknesses of the hypotheses. To check if distinguishing between the hypotheses would be consequential, if it would change the research others would do or lead to products. To check if they are mutually exclusive. I want you to check to which level the listed papers are among the closest to the proposed test and to also supply a list of five more papers that may be more relevant."
     },
     {
       "id": "philosophy",
@@ -42,7 +47,7 @@
           "content": ""
         }
       },
-      "llmInstructions": "Only work on the neuroscience philosophy choices. Check the users choice of a question time and make sure it logically agrees with both their question and their hypotheses. If it does not, suggest changes in either this classification or the question/hypothesis pair. Give a few examples if possible. I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart.."
+      "llmInstructions": "Only work on the neuroscience philosophy choices. Check the users choice of a question time and make sure it logically agrees with both their question and their hypotheses. If it does not, suggest changes in either this classification or the question/hypothesis pair. Give a few examples if possible."
     },
     {
       "id": "experiment",
@@ -57,7 +62,7 @@
         }
       },
       "placeholder": "Experimental Design:\n\nStimulus Protocol: \n\nApparatus: \n\nSample Size & Recruitment: \n\nPredicted Results:\n- If Hypothesis 1 is correct: \n- If Hypothesis 2 is correct: \n\nPotential Confounds & Mitigations:\n1. \n2. \n\nEthical Considerations:",
-      "llmInstructions": "Only work on experimental design step. See the instructions above and guide the user interactively towards designing a good experiment given questions and hypotheses. Consider that question and hypotheses may also require revision. Use Socrates method where possible. I want you to guide the discussion to the following topics: I want you to check if the experiment tests the hypotheses set up above. I want you to check if it does so as directly as possible. Lastly, I want to go through the above mentioned potential rigor problems and help the user make sure they do not violate any of them. Focus on the ones that matter for their design. Feel free to interactively refine this with the user. I want you to be super constructive and make proposals to improve the experimental design. I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
+      "llmInstructions": "Only work on experimental design step. See the instructions above and guide the user interactively towards designing a good experiment given questions and hypotheses. Consider that question and hypotheses may also require revision. Use Socrates method where possible. I want you to guide the discussion to the following topics: I want you to check if the experiment tests the hypotheses set up above. I want you to check if it does so as directly as possible. Lastly, I want to go through the above mentioned potential rigor problems and help the user make sure they do not violate any of them. Focus on the ones that matter for their design. Feel free to interactively refine this with the user. I want you to be super constructive and make proposals to improve the experimental design."
     },
     {
       "id": "analysis",
@@ -72,7 +77,7 @@
         }
       },
       "placeholder": "Data Analysis Pipeline:\n\nData Preprocessing Steps:\n1. \n2. \n\nPrimary Analysis Methods:\n- \n\nHow Analysis Will Distinguish Hypotheses:\n- \n\nUncertainty Quantification:\n- \n\nHandling Parameters/Model Fitting:\n- \n\nPotential Analysis Pitfalls & Mitigations:\n1. \n2. ",
-      "llmInstructions": "I want you to check if the data analysis pipeline cleanly tests the hypotheses set up above based on the experiment described above. I want you to check if it does so as directly and cleanly as possible. Lastly, I want to go through the above mentioned potential rigor problems and help the user make sure they do not violate any of them. Focus on the ones that matter for their design. Feel free to interactively refine this with the user. I want you to be super constructive and make proposals to improve the data analysis design. I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
+      "llmInstructions": "I want you to check if the data analysis pipeline cleanly tests the hypotheses set up above based on the experiment described above. I want you to check if it does so as directly and cleanly as possible. Lastly, I want to go through the above mentioned potential rigor problems and help the user make sure they do not violate any of them. Focus on the ones that matter for their design. Feel free to interactively refine this with the user. I want you to be super constructive and make proposals to improve the data analysis design."
     },
     {
       "id": "process",
@@ -87,7 +92,7 @@
         }
       },
       "placeholder": "Skills Needed:\n1. \n2. \n3. \n\nSkills to Acquire or Learn:\n1. \n2. \n\nCollaborations Required:\n1. \n2. \n\nData/Code Sharing Plan:\n- \n\nTimeline:\n- Phase 1 (Preparation): \n- Phase 2 (Data Collection): \n- Phase 3 (Analysis): \n- Phase 4 (Writing): \n\nPotential Obstacles & Contingency Plans:\n1. \n2. ",
-      "llmInstructions": "I want you to check the resulting processes and skills statements. Do they go well after skill and potentially needed collaborations? Brainstorm anything that might be missing in an interactive way. Is the timeline realistic? Brainstorm potential timeline problems. I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
+      "llmInstructions": "I want you to check the resulting processes and skills statements. Do they go well after skill and potentially needed collaborations? Brainstorm anything that might be missing in an interactive way. Is the timeline realistic? Brainstorm potential timeline problems."
     },
     {
       "id": "abstract",
