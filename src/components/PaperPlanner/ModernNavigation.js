@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * A modern navigation component with visual stepper and animations
+ * A modern navigation component with visual stepper and improved content detection
  */
 const ModernNavigation = ({
   sections,
@@ -14,22 +14,65 @@ const ModernNavigation = ({
   goToNextSection,
   goToPreviousSection
 }) => {
+  // Function to check if the user has actually added content beyond the placeholder
+  const hasUserContent = (section, userInput) => {
+    // If it's the checklist type, just check if there are selected items
+    if (section.type === 'checklist') {
+      return userInput.philosophy && userInput.philosophy.length > 0;
+    }
+    
+    // For text inputs, check if the content differs from the placeholder
+    const input = userInput[section.id] || '';
+    const placeholder = section.placeholder || '';
+    
+    // If input is exactly the placeholder, or completely empty, return false
+    if (!input.trim() || input === placeholder) {
+      return false;
+    }
+    
+    // More sophisticated check to detect if user has actually added content 
+    // beyond the template structure
+    
+    // Split both into lines and compare
+    const inputLines = input.split('\n');
+    const placeholderLines = placeholder.split('\n');
+    
+    // First check: If user added more lines than the placeholder has
+    if (inputLines.length > placeholderLines.length) {
+      return true;
+    }
+    
+    // Second check: Look for lines that differ from the placeholder
+    let hasChanges = false;
+    for (let i = 0; i < inputLines.length; i++) {
+      // If placeholder doesn't have this line, or line is different
+      // and not just an empty line or just placeholders like "- " or "1. "
+      const inputLine = inputLines[i].trim();
+      const placeholderLine = i < placeholderLines.length ? placeholderLines[i].trim() : '';
+      
+      if (inputLine && 
+          inputLine !== placeholderLine && 
+          !placeholderLine.includes(inputLine) &&
+          inputLine !== '-' && 
+          !inputLine.match(/^\d+\.$/) && 
+          inputLine !== '- ') {
+        hasChanges = true;
+        break;
+      }
+    }
+    
+    return hasChanges;
+  };
+  
   // Calculate overall progress percentage
   const getCompletionPercentage = () => {
-    const completedSections = sections.filter(section => {
-      return section.type === 'checklist' 
-        ? userInputs.philosophy.length > 0 
-        : userInputs[section.id]?.trim().length > 0;
-    });
-    
+    const completedSections = sections.filter(section => hasUserContent(section, userInputs));
     return Math.round((completedSections.length / sections.length) * 100);
   };
   
   // Check if a section has content
   const hasContent = (section) => {
-    return section.type === 'checklist' 
-      ? userInputs.philosophy.length > 0 
-      : userInputs[section.id]?.trim().length > 0;
+    return hasUserContent(section, userInputs);
   };
 
   return (
