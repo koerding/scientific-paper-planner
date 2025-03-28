@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ModernPaperPlannerApp from './ModernPaperPlannerApp';
-import sectionContent from '../../sectionContent.json';
+import sectionContent from '../../sectionContent.json';  // Make sure this file is in your src directory
 import { callOpenAI } from '../../services/openaiService';
 import './PaperPlanner.css';
 
@@ -91,7 +91,7 @@ const PaperPlannerApp = () => {
     });
   };
 
-  // Send regular chat message
+  // Send regular chat message with full context
   const handleSendMessage = async () => {
     if (currentMessage.trim() === '') return;
     
@@ -110,8 +110,14 @@ const PaperPlannerApp = () => {
     setLoading(true);
     
     try {
-      // Call OpenAI API with the current message
-      const aiResponse = await callOpenAI(currentMessage, currentSection, userInputs, sections);
+      // Call OpenAI API with the current message and all context
+      const aiResponse = await callOpenAI(
+        currentMessage, 
+        currentSection, 
+        userInputs, 
+        sections, 
+        philosophyOptions
+      );
       
       // Add AI response to chat
       const updatedMessages = [
@@ -141,7 +147,7 @@ const PaperPlannerApp = () => {
     }
   };
 
-  // Handle "First version finished" button with llmInstructions
+  // Handle "First version finished" button with llmInstructions and all section context
   const handleFirstVersionFinished = async () => {
     // Don't do anything if there's no content yet
     if (!userInputs[currentSection] && currentSection !== 'philosophy') return;
@@ -168,8 +174,14 @@ const PaperPlannerApp = () => {
         [currentSection]: newMessages
       });
       
-      // Call OpenAI API with the detailed instructions
-      const aiResponse = await callOpenAI(aiInstructions, currentSection, userInputs, sections);
+      // Call OpenAI API with the detailed instructions and pass the philosophyOptions
+      const aiResponse = await callOpenAI(
+        aiInstructions, 
+        currentSection, 
+        userInputs, 
+        sections, 
+        philosophyOptions
+      );
       
       // Add AI response to chat
       const updatedMessages = [
