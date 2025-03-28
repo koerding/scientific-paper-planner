@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import sectionContent from '../../sectionContent.json';
-import usePaperPlanner from '../../hooks/usePaperPlanner';
+import React, { useState, useEffect } from 'react';
 import ModernInputArea from './ModernInputArea';
-import ModernChatInterface from './ModernChatInterface';
 import ModernNavigation from './ModernNavigation';
+import ModernChatInterface from './ModernChatInterface';
 import ConfirmDialog from './ConfirmDialog';
-import { exportProject } from '../../utils/exportUtils';
 import './PaperPlanner.css';
 
 /**
  * Modern Paper Planner Application Component with contemporary design
  */
-const ModernPaperPlannerApp = () => {
-  const { sections, philosophyOptions } = sectionContent;
+const ModernPaperPlannerApp = ({ 
+  sections, 
+  philosophyOptions,
+  usePaperPlannerHook
+}) => {
   const [darkMode, setDarkMode] = useState(false);
   
   const {
@@ -33,7 +33,7 @@ const ModernPaperPlannerApp = () => {
     resetProject,
     goToNextSection,
     goToPreviousSection
-  } = usePaperPlanner(sections);
+  } = usePaperPlannerHook;
 
   // Get current section object
   const currentSectionObj = sections.find(s => s.id === currentSection);
@@ -42,6 +42,48 @@ const ModernPaperPlannerApp = () => {
   const toggleTheme = () => {
     setDarkMode(!darkMode);
     // This would ideally update a CSS class on the body or a parent container
+  };
+  
+  // Function to export project
+  const exportProject = () => {
+    const exportContent = `# Scientific Paper Project Plan
+
+## 1. Research Question
+${userInputs.question || "Not completed yet"}
+
+## 2. Hypotheses
+${userInputs.hypothesis || "Not completed yet"}
+
+## 3. Research Philosophy
+${userInputs.philosophy.map(id => `- ${philosophyOptions.find(o => o.id === id).label}`).join('\n') || "Not selected yet"}
+
+## 4. Experimental Design
+${userInputs.experiment || "Not completed yet"}
+
+## 5. Data Analysis Plan
+${userInputs.analysis || "Not completed yet"}
+
+## 6. Process, Skills & Timeline
+${userInputs.process || "Not completed yet"}
+
+## 7. Abstract
+${userInputs.abstract || "Not completed yet"}
+`;
+
+    // Create a blob with the content
+    const blob = new Blob([exportContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create a link and trigger download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'scientific-paper-plan.md';
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -87,7 +129,7 @@ const ModernPaperPlannerApp = () => {
           userInputs={userInputs}
           handleSectionChange={handleSectionChange}
           setShowConfirmDialog={setShowConfirmDialog}
-          exportProject={() => exportProject(userInputs, philosophyOptions)}
+          exportProject={exportProject}
           goToNextSection={goToNextSection}
           goToPreviousSection={goToPreviousSection}
         />
