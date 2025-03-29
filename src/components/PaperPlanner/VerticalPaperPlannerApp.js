@@ -102,6 +102,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
+  // Get the current section object
+  const getCurrentSectionObj = () => {
+    return sectionContent.sections.find(s => s.id === activeSection) || sectionContent.sections[0];
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="max-w-7xl mx-auto px-4 pb-12">
@@ -242,7 +247,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   {/* Mark complete button */}
                   <div className="mt-4 flex justify-end">
                     <button
-                      onClick={() => section.id === currentSection && handleFirstVersionFinished()}
+                      onClick={() => section.id === activeSection && handleFirstVersionFinished()}
                       disabled={loading || !isActive}
                       className={`px-4 py-2 rounded-lg font-medium ${
                         !loading && isActive
@@ -269,21 +274,21 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 {activeSection ? (
                   <>
                     <h3 className="text-xl font-semibold text-blue-800 mb-4">
-                      {sectionContent.sections.find(s => s.id === activeSection)?.title || 'Instructions'}
+                      {getCurrentSectionObj().title}
                     </h3>
                     <div className="prose prose-blue max-w-none">
                       <div className="text-blue-700">
-                        {sectionContent.sections.find(s => s.id === activeSection)?.instructions.description.split('\n\n').map((paragraph, i) => (
+                        {getCurrentSectionObj().instructions.description.split('\n\n').map((paragraph, i) => (
                           <p key={i} className="mb-3">{paragraph}</p>
                         ))}
                       </div>
-                      {sectionContent.sections.find(s => s.id === activeSection)?.instructions.workStep.content && (
+                      {getCurrentSectionObj().instructions.workStep.content && (
                         <div className="bg-white rounded-lg p-4 border border-blue-200 mt-4">
                           <h4 className="font-medium text-blue-800 mb-2">
-                            {sectionContent.sections.find(s => s.id === activeSection)?.instructions.workStep.title}
+                            {getCurrentSectionObj().instructions.workStep.title}
                           </h4>
                           <div className="text-blue-600 text-sm">
-                            {sectionContent.sections.find(s => s.id === activeSection)?.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
+                            {getCurrentSectionObj().instructions.workStep.content.split('\n\n').map((paragraph, i) => (
                               <p key={i} className="mb-2">{paragraph}</p>
                             ))}
                           </div>
