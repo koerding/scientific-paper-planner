@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import sectionContent from '../../sectionContent.json';
+import ConfirmDialog from './ConfirmDialog'; // Added missing import
 import './PaperPlanner.css';
 
 /**
