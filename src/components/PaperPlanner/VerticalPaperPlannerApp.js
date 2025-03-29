@@ -12,6 +12,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // State tracking for active section and focus
   const [activeSection, setActiveSection] = useState('question'); // Default to question section
   const [focusedSection, setFocusedSection] = useState('question'); // Track where cursor is focused
+  const [hasFocusedOnce, setHasFocusedOnce] = useState({}); // Track if user has focused on a section
   const sectionRefs = useRef({});
   
   const {
@@ -44,6 +45,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSectionChange('question');
     setActiveSection('question');
     setFocusedSection('question');
+    
+    // Pre-fill content for each section from placeholder if empty
+    sectionContent.sections.forEach(section => {
+      if (section.type !== 'checklist' && section.placeholder && (!userInputs[section.id] || userInputs[section.id].trim() === '')) {
+        handleInputChange(section.id, section.placeholder);
+      }
+    });
   }, []);
 
   // Setup intersection observer to detect which section is in view
@@ -86,7 +94,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     if (sectionId === 'philosophy') {
       return userInputs.philosophy && userInputs.philosophy.length > 0;
     }
-    return userInputs[sectionId] && userInputs[sectionId].trim() !== '';
+    
+    // Consider content only if it differs from the placeholder
+    const content = userInputs[sectionId] || '';
+    const section = sectionContent.sections.find(s => s.id === sectionId);
+    const placeholder = section?.placeholder || '';
+    
+    return content && content.trim() !== '' && content !== placeholder;
   };
 
   // Format timestamp for chat messages
@@ -114,6 +128,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const handleSectionFocus = (sectionId) => {
     setFocusedSection(sectionId);
     handleSectionChange(sectionId);
+    
+    // Mark section as having been focused once
+    setHasFocusedOnce(prev => ({
+      ...prev,
+      [sectionId]: true
+    }));
+  };
+
+  // Custom input handler to preserve template text on first edit
+  const handleSectionInput = (sectionId, value) => {
+    handleInputChange(sectionId, value);
   };
 
   // Get the current section object for instructions display
@@ -263,7 +288,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   ) : (
                     <textarea
                       value={userInputs[section.id] || ''}
-                      onChange={(e) => handleInputChange(section.id, e.target.value)}
+                      onChange={(e) => handleSectionInput(section.id, e.target.value)}
                       onFocus={() => handleSectionFocus(section.id)}
                       className="w-full p-4 border border-gray-200 rounded-lg text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                       rows={10}
@@ -347,9 +372,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   </div>
                 </div>
                 
-                <div className="flex flex-col h-full p-4">
+                <div className="flex flex-col h-full" style={{ maxHeight: "calc(100% - 48px)" }}>
                   {/* Chat messages area */}
-                  <div className="flex-grow overflow-y-auto mb-4">
+                  <div className="flex-grow overflow-y-auto p-4">
                     {!focusedSection || !chatMessages[focusedSection] || chatMessages[focusedSection].length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mb-2">
@@ -412,12 +437,25 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                             </div>
                           );
                         })}
+                        
+                        {/* Loading indicator */}
+                        {loading && (
+                          <div className="flex justify-start">
+                            <div className="bg-white rounded-lg px-4 py-3 inline-block border border-gray-200 rounded-tl-none shadow-sm">
+                              <div className="flex space-x-2">
+                                <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                   
                   {/* Chat input */}
-                  <div className="flex items-center mt-auto">
+                  <div className="flex items-center mt-auto p-4 border-t border-gray-200 bg-gray-50">
                     <input
                       type="text"
                       value={currentMessage}
