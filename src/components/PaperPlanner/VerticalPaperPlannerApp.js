@@ -11,10 +11,8 @@ import './PaperPlanner.css';
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // State tracking for active section and focus
   const [activeSection, setActiveSection] = useState('question'); // Default to question section
-  const [focusedSection, setFocusedSection] = useState('question'); // Track where cursor is focused
   const [initialized, setInitialized] = useState(false);
   const sectionRefs = useRef({});
-  const sectionsWithConnectors = useRef({});
   
   const {
     currentSection,
@@ -38,17 +36,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   useEffect(() => {
     sectionContent.sections.forEach(section => {
       sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
-      sectionsWithConnectors.current[section.id] = sectionsWithConnectors.current[section.id] || React.createRef();
     });
   }, []);
 
-  // Pre-fill all sections with their placeholder content on first load
+  // Initialize with focus on question section and prefill content
   useEffect(() => {
     if (!initialized) {
-      // Initial section
+      // Set initial focus
       handleSectionChange('question');
       setActiveSection('question');
-      setFocusedSection('question');
       
       // Pre-fill text for every section that's not already filled
       sectionContent.sections.forEach(section => {
@@ -98,7 +94,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     };
   }, [currentSection, handleSectionChange]);
 
-  // Check if a section has content beyond the placeholder
+  // Check if a section has content beyond placeholder
   const hasSectionContent = (sectionId) => {
     if (sectionId === 'philosophy') {
       return userInputs.philosophy && userInputs.philosophy.length > 0;
@@ -125,11 +121,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Get approach-specific tips
-  const getApproachTips = () => {
-    return "Ask about hypothesis formulation, experimental design, or competing theories";
-  };
-
   // Scroll to a specific section
   const scrollToSection = (sectionId) => {
     if (sectionRefs.current[sectionId] && sectionRefs.current[sectionId].current) {
@@ -140,15 +131,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Function to handle textarea/input focus
-  const handleSectionFocus = (sectionId) => {
-    setFocusedSection(sectionId);
-    handleSectionChange(sectionId);
-  };
-
   // Get the current section object for instructions display
-  const getFocusedSectionObj = () => {
-    return sectionContent.sections.find(s => s.id === focusedSection) || sectionContent.sections[0];
+  const getCurrentSection = () => {
+    return sectionContent.sections.find(s => s.id === activeSection) || sectionContent.sections[0];
   };
 
   return (
@@ -200,10 +185,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 key={section.id}
                 onClick={() => {
                   scrollToSection(section.id);
-                  setFocusedSection(section.id);
+                  setActiveSection(section.id);
+                  handleSectionChange(section.id);
                 }}
                 className={`px-3 py-1 text-sm rounded-full whitespace-nowrap 
-                  ${focusedSection === section.id 
+                  ${activeSection === section.id 
                     ? 'bg-indigo-100 text-indigo-800 font-medium' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
                 `}
@@ -214,43 +200,47 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           </div>
         </div>
         
-        {/* Main content area - 1/3 for user content, 2/3 for instructions & AI */}
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Left column - User editable sections - 1/3 width */}
-          <div className="w-full md:w-1/3 space-y-6">
+        {/* Main content area - 1/3 for user content, 2/3 for instruction & AI (fixed) */}
+        <div style={{ display: 'flex' }}>
+          {/* Left column - User editable sections - scrollable (1/3 width) */}
+          <div style={{ 
+            width: '33.333%', 
+            paddingRight: '1rem', 
+            overflowY: 'auto',
+            paddingBottom: '50px' 
+          }}>
             {sectionContent.sections.map((section, index) => {
+              const isCurrentSection = activeSection === section.id;
               const isCompleted = hasSectionContent(section.id);
-              const isActive = activeSection === section.id;
-              const isFocused = focusedSection === section.id;
               
               return (
                 <div 
                   key={section.id}
                   id={section.id}
                   ref={sectionRefs.current[section.id]}
-                  className={`bg-white rounded-lg shadow-sm p-6 
-                    ${isCompleted ? 'border-2 border-green-500' : isFocused ? 'border-2 border-indigo-500' : 'border border-gray-200'}
-                    ${isFocused ? 'relative connector-active' : ''}
+                  className={`bg-white rounded-lg shadow-sm p-6 mb-6
+                    ${isCompleted ? 'border-2 border-green-500' : isCurrentSection ? 'border-2 border-indigo-500' : 'border border-gray-200'}
+                    ${isCurrentSection ? 'relative' : ''}
                   `}
-                  onClick={() => handleSectionFocus(section.id)}
+                  onClick={() => {
+                    setActiveSection(section.id);
+                    handleSectionChange(section.id);
+                  }}
                 >
-                  {/* Connection point for the connector line */}
-                  {isFocused && (
-                    <div 
-                      ref={sectionsWithConnectors.current[section.id]}
-                      className="absolute -right-6 top-1/2 h-4 w-4 bg-blue-500 rounded-full transform -translate-y-1/2 connector-dot"
-                    ></div>
+                  {/* Connection dot for active section */}
+                  {isCurrentSection && (
+                    <div className="absolute -right-3 top-1/2 w-6 h-6 bg-blue-500 rounded-full transform -translate-y-1/2 z-10"></div>
                   )}
                   
                   {/* Section Header */}
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">{section.title}</h2>
-                    {isFocused && (
+                    {isCurrentSection && (
                       <div className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded">
                         Current Focus
                       </div>
                     )}
-                    {isCompleted && !isFocused && (
+                    {isCompleted && !isCurrentSection && (
                       <div className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
                         Completed
                       </div>
@@ -271,7 +261,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                           onClick={(e) => {
                             e.stopPropagation(); // Prevent triggering parent onClick
                             handleCheckboxChange(option.id);
-                            handleSectionFocus(section.id);
                           }}
                         >
                           <div className="flex items-start">
@@ -280,10 +269,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                                 type="checkbox"
                                 id={option.id}
                                 checked={userInputs.philosophy && userInputs.philosophy.includes(option.id)}
-                                onChange={(e) => {
-                                  handleCheckboxChange(option.id);
-                                  handleSectionFocus(section.id);
-                                }}
+                                onChange={() => handleCheckboxChange(option.id)}
                                 className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                               />
                             </div>
@@ -303,7 +289,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                     <textarea
                       value={userInputs[section.id] || ''}
                       onChange={(e) => handleInputChange(section.id, e.target.value)}
-                      onFocus={() => handleSectionFocus(section.id)}
                       className="w-full p-4 border border-gray-200 rounded-lg text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                       rows={10}
                       placeholder={section.placeholder || "Enter your content here..."}
@@ -315,11 +300,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent triggering parent onClick
-                        if (section.id === focusedSection) handleFirstVersionFinished();
+                        if (section.id === activeSection) handleFirstVersionFinished();
                       }}
-                      disabled={loading || !isFocused}
+                      disabled={loading || section.id !== activeSection}
                       className={`px-4 py-2 rounded-lg font-medium ${
-                        !loading && isFocused
+                        !loading && section.id === activeSection
                           ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       }`}
@@ -333,38 +318,74 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           </div>
           
           {/* Right column - Fixed instructions and AI - 2/3 width */}
-          <div className="w-full md:w-2/3 relative">
-            <div className="fixed right-side-panel" style={{ width: 'calc(66.66% - 3rem)', maxWidth: '750px' }}>
-              {/* Instructions Panel - Based on focused section - Top 2/3 */}
-              <div 
-                className="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500 instruction-panel"
-              >
-                {/* Connection point for the connector line */}
-                {focusedSection && (
-                  <div className="absolute -left-6 top-1/2 h-4 w-4 bg-blue-500 rounded-full transform -translate-y-1/2 instruction-connector-dot">
-                    {/* Connector line to active section */}
-                    <div className="absolute top-1/2 right-full w-8 h-0.5 bg-blue-500 transform -translate-y-1/2"></div>
-                  </div>
-                )}
-                
-                {focusedSection ? (
+          <div style={{ 
+            width: '66.666%', 
+            paddingLeft: '1rem',
+            position: 'relative'
+          }}>
+            <div style={{
+              position: 'fixed',
+              width: 'calc(66.666% - 2rem - 80px)',
+              maxWidth: '800px', 
+              maxHeight: 'calc(100vh - 140px)',
+              display: 'flex',
+              flexDirection: 'column',
+              zIndex: 10
+            }}>
+              {/* Instructions Panel - Top 2/3 */}
+              <div style={{
+                backgroundColor: '#EBF5FF', /* bg-blue-50 */
+                borderRadius: '0.5rem',
+                padding: '1.5rem',
+                borderLeftWidth: '4px',
+                borderLeftColor: '#3B82F6', /* border-blue-500 */
+                overflowY: 'auto',
+                height: 'calc(66% - 1rem)',
+                marginBottom: '1rem',
+                position: 'relative'
+              }}>
+                {/* Connection to active section */}
+                <div style={{
+                  position: 'absolute',
+                  left: '-3px',
+                  top: '50%',
+                  transform: 'translateX(-50%) translateY(-50%)',
+                  width: '16px',
+                  height: '16px',
+                  backgroundColor: '#3B82F6', /* bg-blue-500 */
+                  borderRadius: '50%',
+                  zIndex: 10
+                }}>
+                  {/* Line connecting to active section */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '100%',
+                    width: '30px',
+                    height: '2px',
+                    backgroundColor: '#3B82F6', /* bg-blue-500 */
+                    transform: 'translateY(-50%)'
+                  }}></div>
+                </div>
+              
+                {getCurrentSection() ? (
                   <>
                     <h3 className="text-xl font-semibold text-blue-800 mb-4">
-                      {getFocusedSectionObj().title}
+                      {getCurrentSection().title}
                     </h3>
-                    <div className="prose prose-blue max-w-none" style={{ maxHeight: 'calc(100% - 40px)', overflowY: 'auto' }}>
+                    <div className="prose prose-blue max-w-none">
                       <div className="text-blue-700">
-                        {getFocusedSectionObj().instructions.description.split('\n\n').map((paragraph, i) => (
+                        {getCurrentSection().instructions.description.split('\n\n').map((paragraph, i) => (
                           <p key={i} className="mb-3">{paragraph}</p>
                         ))}
                       </div>
-                      {getFocusedSectionObj().instructions.workStep.content && (
+                      {getCurrentSection().instructions.workStep.content && (
                         <div className="bg-white rounded-lg p-4 border border-blue-200 mt-4">
                           <h4 className="font-medium text-blue-800 mb-2">
-                            {getFocusedSectionObj().instructions.workStep.title}
+                            {getCurrentSection().instructions.workStep.title}
                           </h4>
                           <div className="text-blue-600 text-sm">
-                            {getFocusedSectionObj().instructions.workStep.content.split('\n\n').map((paragraph, i) => (
+                            {getCurrentSection().instructions.workStep.content.split('\n\n').map((paragraph, i) => (
                               <p key={i} className="mb-2">{paragraph}</p>
                             ))}
                           </div>
@@ -379,10 +400,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 )}
               </div>
               
-              {/* AI Chat Panel */}
-              <div 
-                className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200 mt-6 chat-panel"
-              >
+              {/* AI Chat Panel - Bottom 1/3 */}
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '0.5rem',
+                border: '1px solid #E5E7EB', /* border-gray-200 */
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                overflow: 'hidden',
+                height: 'calc(34%)',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
                 <div className="bg-indigo-600 text-white px-4 py-3">
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3">
@@ -392,10 +420,18 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   </div>
                 </div>
                 
-                <div className="flex flex-col chat-container">
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: 'calc(100% - 56px)' /* Subtract header height */
+                }}>
                   {/* Chat messages area */}
-                  <div className="flex-grow overflow-y-auto p-4 chat-messages">
-                    {!focusedSection || !chatMessages[focusedSection] || chatMessages[focusedSection].length === 0 ? (
+                  <div style={{
+                    flexGrow: 1,
+                    overflowY: 'auto',
+                    padding: '1rem'
+                  }}>
+                    {!activeSection || !chatMessages[activeSection] || chatMessages[activeSection].length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mb-2">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -409,7 +445,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {focusedSection && chatMessages[focusedSection].map((message, index) => {
+                        {activeSection && chatMessages[activeSection].map((message, index) => {
                           const isUser = message.role === 'user';
                           
                           return (
@@ -475,36 +511,42 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   </div>
                   
                   {/* Chat input */}
-                  <div className="flex items-center p-4 border-t border-gray-200 bg-gray-50">
-                    <input
-                      type="text"
-                      value={currentMessage}
-                      onChange={(e) => setCurrentMessage(e.target.value)}
-                      className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder={`Ask a question about your research...`}
-                      onKeyPress={(e) => e.key === 'Enter' && !loading && currentMessage.trim() !== '' && handleSendMessage()}
-                      disabled={!focusedSection}
-                    />
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={loading || currentMessage.trim() === '' || !focusedSection}
-                      className={`px-3 py-2 rounded-r-lg ${
-                        loading || currentMessage.trim() === '' || !focusedSection
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700 transition-colors'
-                      }`}
-                    >
-                      {loading ? (
-                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                        </svg>
-                      )}
-                    </button>
+                  <div style={{
+                    marginTop: 'auto',
+                    padding: '1rem',
+                    borderTop: '1px solid #E5E7EB', /* border-gray-200 */
+                    backgroundColor: '#F9FAFB' /* bg-gray-50 */
+                  }}>
+                    <div className="flex">
+                      <input
+                        type="text"
+                        value={currentMessage}
+                        onChange={(e) => setCurrentMessage(e.target.value)}
+                        className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder={`Ask a question about your research...`}
+                        onKeyPress={(e) => e.key === 'Enter' && !loading && currentMessage.trim() !== '' && handleSendMessage()}
+                      />
+                      <button
+                        onClick={handleSendMessage}
+                        disabled={loading || currentMessage.trim() === ''}
+                        className={`px-3 py-2 rounded-r-lg ${
+                          loading || currentMessage.trim() === ''
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-indigo-600 text-white hover:bg-indigo-700 transition-colors'
+                        }`}
+                      >
+                        {loading ? (
+                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -524,75 +566,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           resetProject={resetProject}
         />
       </div>
-
-      {/* Additional CSS to add to PaperPlanner.css */}
-      <style jsx>{`
-        /* Fixed positioning for right panels */
-        .right-side-panel {
-          top: 120px; /* Adjust based on your header height */
-          right: calc((100% - 1280px) / 2 + 2rem); /* Centered in the right portion */
-          z-index: 10;
-        }
-        
-        /* Heights for panels */
-        .instruction-panel {
-          height: calc(66vh - 120px);
-          overflow-y: auto;
-          position: relative;
-        }
-        
-        .chat-panel {
-          height: calc(33vh);
-          display: flex;
-          flex-direction: column;
-        }
-        
-        .chat-container {
-          height: calc(100% - 48px); /* Header height */
-          display: flex;
-          flex-direction: column;
-        }
-        
-        .chat-messages {
-          flex-grow: 1;
-          overflow-y: auto;
-          min-height: 150px;
-        }
-        
-        /* Media query to handle smaller screens */
-        @media (max-width: 768px) {
-          .right-side-panel {
-            position: static;
-            width: 100%;
-          }
-          
-          .instruction-panel, .chat-panel {
-            height: auto;
-            max-height: 50vh;
-          }
-        }
-        
-        /* Connector styling */
-        .connector-active {
-          z-index: 15;
-        }
-        
-        .connector-dot, .instruction-connector-dot {
-          z-index: 20;
-        }
-        
-        @media (min-width: 768px) {
-          .md\:w-1\/3 {
-            width: 33.333333%;
-          }
-          .md\:w-2\/3 {
-            width: 66.666667%;
-          }
-          .md\:flex-row {
-            flex-direction: row;
-          }
-        }
-      `}</style>
     </div>
   );
 };
