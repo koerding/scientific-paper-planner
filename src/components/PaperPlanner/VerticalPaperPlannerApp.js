@@ -12,8 +12,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // State tracking for active section and focus
   const [activeSection, setActiveSection] = useState('question'); // Default to question section
   const [focusedSection, setFocusedSection] = useState('question'); // Track where cursor is focused
-  const [hasFocusedOnce, setHasFocusedOnce] = useState({}); // Track if user has focused on a section
+  const [initialized, setInitialized] = useState(false);
   const sectionRefs = useRef({});
+  const sectionsWithConnectors = useRef({});
   
   const {
     currentSection,
@@ -37,22 +38,30 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   useEffect(() => {
     sectionContent.sections.forEach(section => {
       sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
+      sectionsWithConnectors.current[section.id] = sectionsWithConnectors.current[section.id] || React.createRef();
     });
   }, []);
 
-  // Initialize with focus on question section
+  // Pre-fill all sections with their placeholder content on first load
   useEffect(() => {
-    handleSectionChange('question');
-    setActiveSection('question');
-    setFocusedSection('question');
-    
-    // Pre-fill content for each section from placeholder if empty
-    sectionContent.sections.forEach(section => {
-      if (section.type !== 'checklist' && section.placeholder && (!userInputs[section.id] || userInputs[section.id].trim() === '')) {
-        handleInputChange(section.id, section.placeholder);
-      }
-    });
-  }, []);
+    if (!initialized) {
+      // Initial section
+      handleSectionChange('question');
+      setActiveSection('question');
+      setFocusedSection('question');
+      
+      // Pre-fill text for every section that's not already filled
+      sectionContent.sections.forEach(section => {
+        if (section.type !== 'checklist' && section.placeholder) {
+          if (!userInputs[section.id] || userInputs[section.id].trim() === '') {
+            handleInputChange(section.id, section.placeholder);
+          }
+        }
+      });
+      
+      setInitialized(true);
+    }
+  }, [initialized, handleSectionChange, userInputs, handleInputChange]);
 
   // Setup intersection observer to detect which section is in view
   useEffect(() => {
@@ -89,18 +98,25 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     };
   }, [currentSection, handleSectionChange]);
 
-  // Check if a section has content
+  // Check if a section has content beyond the placeholder
   const hasSectionContent = (sectionId) => {
     if (sectionId === 'philosophy') {
       return userInputs.philosophy && userInputs.philosophy.length > 0;
     }
     
-    // Consider content only if it differs from the placeholder
+    // Get section content and placeholder
     const content = userInputs[sectionId] || '';
     const section = sectionContent.sections.find(s => s.id === sectionId);
     const placeholder = section?.placeholder || '';
     
-    return content && content.trim() !== '' && content !== placeholder;
+    // If content is completely empty, it's not completed
+    if (!content || content.trim() === '') return false;
+    
+    // If content is exactly the placeholder, it's not completed
+    if (content === placeholder) return false;
+    
+    // Otherwise, consider it completed (even if just slightly modified)
+    return true;
   };
 
   // Format timestamp for chat messages
@@ -128,17 +144,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const handleSectionFocus = (sectionId) => {
     setFocusedSection(sectionId);
     handleSectionChange(sectionId);
-    
-    // Mark section as having been focused once
-    setHasFocusedOnce(prev => ({
-      ...prev,
-      [sectionId]: true
-    }));
-  };
-
-  // Custom input handler to preserve template text on first edit
-  const handleSectionInput = (sectionId, value) => {
-    handleInputChange(sectionId, value);
   };
 
   // Get the current section object for instructions display
@@ -210,9 +215,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         </div>
         
         {/* Main content area - 1/3 for user content, 2/3 for instructions & AI */}
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col md:flex-row gap-6">
           {/* Left column - User editable sections - 1/3 width */}
-          <div className="w-full lg:w-1/3 space-y-6">
+          <div className="w-full md:w-1/3 space-y-6">
             {sectionContent.sections.map((section, index) => {
               const isCompleted = hasSectionContent(section.id);
               const isActive = activeSection === section.id;
@@ -225,9 +230,18 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   ref={sectionRefs.current[section.id]}
                   className={`bg-white rounded-lg shadow-sm p-6 
                     ${isCompleted ? 'border-2 border-green-500' : isFocused ? 'border-2 border-indigo-500' : 'border border-gray-200'}
+                    ${isFocused ? 'relative connector-active' : ''}
                   `}
                   onClick={() => handleSectionFocus(section.id)}
                 >
+                  {/* Connection point for the connector line */}
+                  {isFocused && (
+                    <div 
+                      ref={sectionsWithConnectors.current[section.id]}
+                      className="absolute -right-6 top-1/2 h-4 w-4 bg-blue-500 rounded-full transform -translate-y-1/2 connector-dot"
+                    ></div>
+                  )}
+                  
                   {/* Section Header */}
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">{section.title}</h2>
@@ -288,7 +302,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   ) : (
                     <textarea
                       value={userInputs[section.id] || ''}
-                      onChange={(e) => handleSectionInput(section.id, e.target.value)}
+                      onChange={(e) => handleInputChange(section.id, e.target.value)}
                       onFocus={() => handleSectionFocus(section.id)}
                       className="w-full p-4 border border-gray-200 rounded-lg text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                       rows={10}
@@ -319,19 +333,26 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           </div>
           
           {/* Right column - Fixed instructions and AI - 2/3 width */}
-          <div className="w-full lg:w-2/3">
-            <div className="sticky top-32 space-y-6" style={{ height: "calc(100vh - 160px)", zIndex: 10 }}>
+          <div className="w-full md:w-2/3 relative">
+            <div className="fixed right-side-panel" style={{ width: 'calc(66.66% - 3rem)', maxWidth: '750px' }}>
               {/* Instructions Panel - Based on focused section - Top 2/3 */}
               <div 
-                className="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500 overflow-y-auto"
-                style={{ height: "66%" }}
+                className="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500 instruction-panel"
               >
+                {/* Connection point for the connector line */}
+                {focusedSection && (
+                  <div className="absolute -left-6 top-1/2 h-4 w-4 bg-blue-500 rounded-full transform -translate-y-1/2 instruction-connector-dot">
+                    {/* Connector line to active section */}
+                    <div className="absolute top-1/2 right-full w-8 h-0.5 bg-blue-500 transform -translate-y-1/2"></div>
+                  </div>
+                )}
+                
                 {focusedSection ? (
                   <>
                     <h3 className="text-xl font-semibold text-blue-800 mb-4">
                       {getFocusedSectionObj().title}
                     </h3>
-                    <div className="prose prose-blue max-w-none">
+                    <div className="prose prose-blue max-w-none" style={{ maxHeight: 'calc(100% - 40px)', overflowY: 'auto' }}>
                       <div className="text-blue-700">
                         {getFocusedSectionObj().instructions.description.split('\n\n').map((paragraph, i) => (
                           <p key={i} className="mb-3">{paragraph}</p>
@@ -358,10 +379,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 )}
               </div>
               
-              {/* AI Chat Panel - Bottom 1/3 */}
+              {/* AI Chat Panel */}
               <div 
-                className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200"
-                style={{ height: "33%" }}
+                className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200 mt-6 chat-panel"
               >
                 <div className="bg-indigo-600 text-white px-4 py-3">
                   <div className="flex items-center">
@@ -372,9 +392,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   </div>
                 </div>
                 
-                <div className="flex flex-col h-full" style={{ maxHeight: "calc(100% - 48px)" }}>
+                <div className="flex flex-col chat-container">
                   {/* Chat messages area */}
-                  <div className="flex-grow overflow-y-auto p-4">
+                  <div className="flex-grow overflow-y-auto p-4 chat-messages">
                     {!focusedSection || !chatMessages[focusedSection] || chatMessages[focusedSection].length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mb-2">
@@ -455,7 +475,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   </div>
                   
                   {/* Chat input */}
-                  <div className="flex items-center mt-auto p-4 border-t border-gray-200 bg-gray-50">
+                  <div className="flex items-center p-4 border-t border-gray-200 bg-gray-50">
                     <input
                       type="text"
                       value={currentMessage}
@@ -504,6 +524,75 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           resetProject={resetProject}
         />
       </div>
+
+      {/* Additional CSS to add to PaperPlanner.css */}
+      <style jsx>{`
+        /* Fixed positioning for right panels */
+        .right-side-panel {
+          top: 120px; /* Adjust based on your header height */
+          right: calc((100% - 1280px) / 2 + 2rem); /* Centered in the right portion */
+          z-index: 10;
+        }
+        
+        /* Heights for panels */
+        .instruction-panel {
+          height: calc(66vh - 120px);
+          overflow-y: auto;
+          position: relative;
+        }
+        
+        .chat-panel {
+          height: calc(33vh);
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .chat-container {
+          height: calc(100% - 48px); /* Header height */
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .chat-messages {
+          flex-grow: 1;
+          overflow-y: auto;
+          min-height: 150px;
+        }
+        
+        /* Media query to handle smaller screens */
+        @media (max-width: 768px) {
+          .right-side-panel {
+            position: static;
+            width: 100%;
+          }
+          
+          .instruction-panel, .chat-panel {
+            height: auto;
+            max-height: 50vh;
+          }
+        }
+        
+        /* Connector styling */
+        .connector-active {
+          z-index: 15;
+        }
+        
+        .connector-dot, .instruction-connector-dot {
+          z-index: 20;
+        }
+        
+        @media (min-width: 768px) {
+          .md\:w-1\/3 {
+            width: 33.333333%;
+          }
+          .md\:w-2\/3 {
+            width: 66.666667%;
+          }
+          .md\:flex-row {
+            flex-direction: row;
+          }
+        }
+      `}</style>
     </div>
   );
 };
