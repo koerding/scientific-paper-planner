@@ -1,167 +1,54 @@
-/* Paper Planner modern styles */
-
-/* Fix for inconsistent font sizes in instructions */
-.instruction-text {
-  font-size: 1rem !important; /* Force consistent font size */
-  line-height: 1.6 !important; /* Improve readability with better line height */
+/* Fixed positioning for right panels */
+.right-side-panel {
+  position: fixed;
+  top: 120px; /* Adjust based on your header height */
+  right: calc((100% - 1280px) / 2 + 2rem); /* Centered in the right portion */
+  z-index: 10;
 }
 
-/* Improved bullet point formatting */
-.instruction-text ul {
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-  list-style-position: outside;
-  padding-left: 1.5rem;
-}
-
-.instruction-text li {
-  margin-bottom: 0.5rem;
-  display: list-item;
-  padding-left: 0.5rem;
-}
-
-/* Make sure bullet points display one per line with proper spacing */
-.instruction-text ul li {
-  padding-bottom: 0.5rem;
+/* Heights for panels */
+.instruction-panel {
+  height: calc(66vh - 120px);
+  overflow-y: auto;
   position: relative;
 }
 
-.instruction-text ul li::before {
-  content: "• ";
-  color: #4F46E5; /* indigo-600 in Tailwind */
-  position: absolute;
-  left: -1.2rem;
+.chat-panel {
+  height: calc(33vh);
+  display: flex;
+  flex-direction: column;
 }
 
-/* Ensure proper paragraph spacing */
-.instruction-text p {
-  margin-bottom: 1rem;
+.chat-container {
+  height: calc(100% - 48px); /* Header height */
+  display: flex;
+  flex-direction: column;
 }
 
-/* Ensure proper line breaks for each list item */
-.instruction-text ul li,
-.instruction-text ol li {
-  white-space: normal !important;
-  display: block !important;
+.chat-messages {
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 150px;
 }
 
-/* Modern animations and transitions */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* Media query to handle smaller screens */
+@media (max-width: 768px) {
+  .right-side-panel {
+    position: static;
+    width: 100%;
+  }
+  
+  .instruction-panel, .chat-panel {
+    height: auto;
+    max-height: 50vh;
+  }
 }
 
-@keyframes slideUp {
-  from { transform: translateY(10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+/* Connector styling */
+.connector-active {
+  z-index: 15;
 }
 
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-}
-
-/* Apply animations to components */
-.fade-in {
-  animation: fadeIn 0.5s ease-out;
-}
-
-.slide-up {
-  animation: slideUp 0.5s ease-out;
-}
-
-/* Micro-interactions */
-button:not(:disabled) {
-  transition: all 0.2s ease-in-out;
-}
-
-button:not(:disabled):hover {
-  transform: translateY(-2px);
-}
-
-button:not(:disabled):active {
-  transform: translateY(0);
-}
-
-/* Card hover effects */
-.card-hover {
-  transition: all 0.3s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-/* Input focus styles */
-textarea:focus, input:focus {
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
-}
-
-/* Custom scrollbar for better UX */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c5c5c5;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a0a0a0;
-}
-
-/* Glassmorphism elements */
-.glass {
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-/* Gradient text for emphasis */
-.gradient-text {
-  background: linear-gradient(90deg, #6366F1 0%, #A855F7 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Soft shadows for depth */
-.shadow-soft {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-}
-
-/* Pulsing effect for notifications or important elements */
-.pulse-effect {
-  animation: pulse 2s infinite;
-}
-
-/* Improve formatting of instructions specifically for the instruction-text in instruction boxes */
-.instruction-text {
-  white-space: normal !important;
-}
-
-/* Ensure instruction text wraps properly */
-.prose .instruction-text ul li {
-  display: list-item !important;
-  margin-top: 0.25rem !important;
-  margin-bottom: 0.25rem !important;
-}
-
-/* Fix for header text in the AI chat interface */
-.bg-gradient-to-r p.text-xs {
-  max-width: 90%;
-  line-height: 1.2;
-  margin-top: 0.25rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.connector-dot, .instruction-connector-dot {
+  z-index: 20;
 }
