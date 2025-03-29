@@ -134,7 +134,67 @@ const usePaperPlanner = (sections) => {
       
       setChatMessages({
         ...chatMessages,
-        [currentSection]: [...chatMessages[currentSection], { role: 'user', content: "I've finished my first version. Can you provide feedback?" }, errorMessage]
+        [currentSection]: [...newMessages, errorMessage]
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handle "First version finished" button click
+   */
+  const handleFirstVersionFinished = async () => {
+    // Don't do anything if there's no content yet
+    if (!userInputs[currentSection] && currentSection !== 'philosophy') return;
+    if (currentSection === 'philosophy' && userInputs.philosophy.length === 0) return;
+    
+    setLoading(true);
+    
+    try {
+      // Create an appropriate message based on the section
+      let initialMessage = "I've finished my first version. Can you provide feedback?";
+      
+      // Add the initial message to chat
+      const newMessages = [
+        ...chatMessages[currentSection], 
+        { role: 'user', content: initialMessage }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: newMessages
+      });
+      
+      // Get detailed instructions from JSON
+      const currentSectionObj = sections.find(s => s.id === currentSection);
+      const aiInstructions = currentSectionObj.llmInstructions;
+      
+      // Call OpenAI API with the detailed instructions
+      const aiResponse = await callOpenAI(aiInstructions, currentSection, userInputs, sections, sectionContent);
+      
+      // Add AI response to chat
+      const updatedMessages = [
+        ...newMessages,
+        { role: 'assistant', content: aiResponse }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: updatedMessages
+      });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      // Add error message to chat
+      const errorMessage = { 
+        role: 'assistant', 
+        content: 'Sorry, there was an error processing your request. Please try again.' 
+      };
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: [...newMessages, errorMessage]
       });
     } finally {
       setLoading(false);
@@ -212,59 +272,3 @@ const usePaperPlanner = (sections) => {
 };
 
 export default usePaperPlanner;
-        { role: 'assistant', content: aiResponse }
-      ];
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: updatedMessages
-      });
-    } catch (error) {
-      console.error('Error getting AI response:', error);
-      
-      // Add error message to chat
-      const errorMessage = { 
-        role: 'assistant', 
-        content: 'Sorry, there was an error processing your request. Please try again.' 
-      };
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: [...newMessages, errorMessage]
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Handle "First version finished" button click
-   */
-  const handleFirstVersionFinished = async () => {
-    // Don't do anything if there's no content yet
-    if (!userInputs[currentSection] && currentSection !== 'philosophy') return;
-    if (currentSection === 'philosophy' && userInputs.philosophy.length === 0) return;
-    
-    setLoading(true);
-    
-    try {
-      // Create an appropriate message based on the section
-      let initialMessage = "I've finished my first version. Can you provide feedback?";
-      
-      // Add the initial message to chat
-      const newMessages = [
-        ...chatMessages[currentSection], 
-        { role: 'user', content: initialMessage }
-      ];
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: newMessages
-      });
-      
-      // Call OpenAI API with the initial message
-      const aiResponse = await callOpenAI(initialMessage, currentSection, userInputs, sections, sectionContent);
-      
-      // Add AI response to chat
-      const updatedMessages = [
-        ...newMessages,
