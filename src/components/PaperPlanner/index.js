@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ModernPaperPlannerApp from './ModernPaperPlannerApp';
+import VerticalPaperPlannerApp from './VerticalPaperPlannerApp';
 import sectionContent from '../../sectionContent.json';  // Make sure this file is in your src directory
 import { callOpenAI } from '../../services/openaiService';
 import './PaperPlanner.css';
@@ -274,7 +274,7 @@ const PaperPlannerApp = () => {
   };
 
   return (
-    <ModernPaperPlannerApp 
+    <VerticalPaperPlannerApp 
       sections={sections}
       philosophyOptions={philosophyOptions}
       usePaperPlannerHook={usePaperPlannerHook}
