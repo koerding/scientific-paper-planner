@@ -9,8 +9,9 @@ import './PaperPlanner.css';
  * All sections visible at once with vertical scrolling
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
-  const [activeSection, setActiveSection] = useState(null);
-  const [researchApproach] = useState('hypothesis'); // Fixed to hypothesis-driven for now
+  // State tracking for active section and focus
+  const [activeSection, setActiveSection] = useState('question'); // Default to question section
+  const [focusedSection, setFocusedSection] = useState('question'); // Track where cursor is focused
   const sectionRefs = useRef({});
   
   const {
@@ -28,7 +29,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSendMessage,
     handleFirstVersionFinished,
     resetProject,
-    exportProject // Make sure this is exposed from the hook
+    exportProject
   } = usePaperPlannerHook;
 
   // Store refs for all sections
@@ -36,6 +37,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     sectionContent.sections.forEach(section => {
       sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
     });
+  }, []);
+
+  // Initialize with focus on question section
+  useEffect(() => {
+    handleSectionChange('question');
+    setActiveSection('question');
+    setFocusedSection('question');
   }, []);
 
   // Setup intersection observer to detect which section is in view
@@ -102,16 +110,22 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Get the current section object
-  const getCurrentSectionObj = () => {
-    return sectionContent.sections.find(s => s.id === activeSection) || sectionContent.sections[0];
+  // Function to handle textarea/input focus
+  const handleSectionFocus = (sectionId) => {
+    setFocusedSection(sectionId);
+    handleSectionChange(sectionId);
+  };
+
+  // Get the current section object for instructions display
+  const getFocusedSectionObj = () => {
+    return sectionContent.sections.find(s => s.id === focusedSection) || sectionContent.sections[0];
   };
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="max-w-7xl mx-auto px-4 pb-12">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white shadow py-4 mb-6">
+        <div className="sticky top-0 z-20 bg-white shadow py-4 mb-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
               <div className="bg-gradient-to-r from-indigo-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold mr-3">
@@ -154,9 +168,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             {sectionContent.sections.map((section, index) => (
               <button
                 key={section.id}
-                onClick={() => scrollToSection(section.id)}
+                onClick={() => {
+                  scrollToSection(section.id);
+                  setFocusedSection(section.id);
+                }}
                 className={`px-3 py-1 text-sm rounded-full whitespace-nowrap 
-                  ${activeSection === section.id 
+                  ${focusedSection === section.id 
                     ? 'bg-indigo-100 text-indigo-800 font-medium' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
                 `}
@@ -174,6 +191,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             {sectionContent.sections.map((section, index) => {
               const isCompleted = hasSectionContent(section.id);
               const isActive = activeSection === section.id;
+              const isFocused = focusedSection === section.id;
               
               return (
                 <div 
@@ -181,18 +199,19 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   id={section.id}
                   ref={sectionRefs.current[section.id]}
                   className={`bg-white rounded-lg shadow-sm p-6 
-                    ${isCompleted ? 'border-2 border-green-500' : isActive ? 'border-2 border-indigo-500' : 'border border-gray-200'}
+                    ${isCompleted ? 'border-2 border-green-500' : isFocused ? 'border-2 border-indigo-500' : 'border border-gray-200'}
                   `}
+                  onClick={() => handleSectionFocus(section.id)}
                 >
                   {/* Section Header */}
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">{section.title}</h2>
-                    {isActive && (
+                    {isFocused && (
                       <div className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded">
                         Current Focus
                       </div>
                     )}
-                    {isCompleted && !isActive && (
+                    {isCompleted && !isFocused && (
                       <div className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
                         Completed
                       </div>
@@ -210,7 +229,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                               ? 'bg-indigo-50 border-2 border-indigo-300' 
                               : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
                           }`}
-                          onClick={() => handleCheckboxChange(option.id)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent triggering parent onClick
+                            handleCheckboxChange(option.id);
+                            handleSectionFocus(section.id);
+                          }}
                         >
                           <div className="flex items-start">
                             <div className="flex-shrink-0">
@@ -218,7 +241,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                                 type="checkbox"
                                 id={option.id}
                                 checked={userInputs.philosophy && userInputs.philosophy.includes(option.id)}
-                                onChange={() => handleCheckboxChange(option.id)}
+                                onChange={(e) => {
+                                  handleCheckboxChange(option.id);
+                                  handleSectionFocus(section.id);
+                                }}
                                 className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                               />
                             </div>
@@ -238,6 +264,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                     <textarea
                       value={userInputs[section.id] || ''}
                       onChange={(e) => handleInputChange(section.id, e.target.value)}
+                      onFocus={() => handleSectionFocus(section.id)}
                       className="w-full p-4 border border-gray-200 rounded-lg text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                       rows={10}
                       placeholder={section.placeholder || "Enter your content here..."}
@@ -247,10 +274,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   {/* Mark complete button */}
                   <div className="mt-4 flex justify-end">
                     <button
-                      onClick={() => section.id === activeSection && handleFirstVersionFinished()}
-                      disabled={loading || !isActive}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering parent onClick
+                        if (section.id === focusedSection) handleFirstVersionFinished();
+                      }}
+                      disabled={loading || !isFocused}
                       className={`px-4 py-2 rounded-lg font-medium ${
-                        !loading && isActive
+                        !loading && isFocused
                           ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       }`}
@@ -264,31 +294,31 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           </div>
           
           {/* Right column - Fixed instructions and AI - 2/3 width */}
-          <div className="w-full lg:w-2/3 relative">
-            <div className="lg:sticky lg:top-20 space-y-6" style={{ height: "calc(100vh - 120px)" }}>
-              {/* Instructions Panel - Based on active section - Top 2/3 */}
+          <div className="w-full lg:w-2/3">
+            <div className="sticky top-32 space-y-6" style={{ height: "calc(100vh - 160px)", zIndex: 10 }}>
+              {/* Instructions Panel - Based on focused section - Top 2/3 */}
               <div 
                 className="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500 overflow-y-auto"
                 style={{ height: "66%" }}
               >
-                {activeSection ? (
+                {focusedSection ? (
                   <>
                     <h3 className="text-xl font-semibold text-blue-800 mb-4">
-                      {getCurrentSectionObj().title}
+                      {getFocusedSectionObj().title}
                     </h3>
                     <div className="prose prose-blue max-w-none">
                       <div className="text-blue-700">
-                        {getCurrentSectionObj().instructions.description.split('\n\n').map((paragraph, i) => (
+                        {getFocusedSectionObj().instructions.description.split('\n\n').map((paragraph, i) => (
                           <p key={i} className="mb-3">{paragraph}</p>
                         ))}
                       </div>
-                      {getCurrentSectionObj().instructions.workStep.content && (
+                      {getFocusedSectionObj().instructions.workStep.content && (
                         <div className="bg-white rounded-lg p-4 border border-blue-200 mt-4">
                           <h4 className="font-medium text-blue-800 mb-2">
-                            {getCurrentSectionObj().instructions.workStep.title}
+                            {getFocusedSectionObj().instructions.workStep.title}
                           </h4>
                           <div className="text-blue-600 text-sm">
-                            {getCurrentSectionObj().instructions.workStep.content.split('\n\n').map((paragraph, i) => (
+                            {getFocusedSectionObj().instructions.workStep.content.split('\n\n').map((paragraph, i) => (
                               <p key={i} className="mb-2">{paragraph}</p>
                             ))}
                           </div>
@@ -320,7 +350,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 <div className="flex flex-col h-full p-4">
                   {/* Chat messages area */}
                   <div className="flex-grow overflow-y-auto mb-4">
-                    {!activeSection || !chatMessages[activeSection] || chatMessages[activeSection].length === 0 ? (
+                    {!focusedSection || !chatMessages[focusedSection] || chatMessages[focusedSection].length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mb-2">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -334,7 +364,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {activeSection && chatMessages[activeSection].map((message, index) => {
+                        {focusedSection && chatMessages[focusedSection].map((message, index) => {
                           const isUser = message.role === 'user';
                           
                           return (
@@ -395,13 +425,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                       className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder={`Ask a question about your research...`}
                       onKeyPress={(e) => e.key === 'Enter' && !loading && currentMessage.trim() !== '' && handleSendMessage()}
-                      disabled={!activeSection}
+                      disabled={!focusedSection}
                     />
                     <button
                       onClick={handleSendMessage}
-                      disabled={loading || currentMessage.trim() === '' || !activeSection}
+                      disabled={loading || currentMessage.trim() === '' || !focusedSection}
                       className={`px-3 py-2 rounded-r-lg ${
-                        loading || currentMessage.trim() === '' || !activeSection
+                        loading || currentMessage.trim() === '' || !focusedSection
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-indigo-600 text-white hover:bg-indigo-700 transition-colors'
                       }`}
