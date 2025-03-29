@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import sectionContent from '../../sectionContent.json';
-import ConfirmDialog from './ConfirmDialog'; // Added missing import
+import ConfirmDialog from './ConfirmDialog';
 import './PaperPlanner.css';
 
 /**
@@ -9,11 +9,9 @@ import './PaperPlanner.css';
  * All sections visible at once with vertical scrolling
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
-  const [darkMode, setDarkMode] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
   const [researchApproach] = useState('hypothesis'); // Fixed to hypothesis-driven for now
   const sectionRefs = useRef({});
-  const rightPanelRef = useRef(null);
   
   const {
     currentSection,
@@ -29,7 +27,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleCheckboxChange,
     handleSendMessage,
     handleFirstVersionFinished,
-    resetProject
+    resetProject,
+    exportProject // Make sure this is exposed from the hook
   } = usePaperPlannerHook;
 
   // Store refs for all sections
@@ -82,11 +81,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     return userInputs[sectionId] && userInputs[sectionId].trim() !== '';
   };
 
-  // Toggle dark mode
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-  };
-
   // Format timestamp for chat messages
   const formatTime = () => {
     const now = new Date();
@@ -108,27 +102,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Handle position of right panel during scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      const rightPanel = rightPanelRef.current;
-      if (!rightPanel) return;
-      
-      const scrollTop = window.scrollY;
-      const headerHeight = 60; // Adjust based on your header height
-      
-      rightPanel.style.top = `${Math.max(0, scrollTop - headerHeight)}px`;
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'} transition-colors duration-300`}>
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="max-w-7xl mx-auto px-4 pb-12">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 shadow py-4 mb-6">
+        <div className="sticky top-0 z-10 bg-white shadow py-4 mb-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
               <div className="bg-gradient-to-r from-indigo-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold mr-3">
@@ -136,28 +114,34 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Scientific Paper Planner</h1>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p className="text-sm text-gray-600">
                   Hypothesis-Driven Research Project
                 </p>
               </div>
             </div>
             
-            {/* Dark mode toggle */}
-            <button 
-              onClick={toggleTheme}
-              className={`p-2 rounded-full ${darkMode ? 'bg-gray-800 text-yellow-400' : 'bg-gray-200 text-gray-700'}`}
-              aria-label="Toggle dark mode"
-            >
-              {darkMode ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+            {/* Save and Export buttons */}
+            <div className="flex space-x-2">
+              <button
+                onClick={() => resetProject()}
+                className="px-3 py-2 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition-colors flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                 </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                New
+              </button>
+              
+              <button
+                onClick={() => exportProject()}
+                className="px-3 py-2 bg-green-50 text-green-600 rounded-lg border border-green-200 hover:bg-green-100 transition-colors flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
-              )}
-            </button>
+                Export
+              </button>
+            </div>
           </div>
           
           {/* Section quick links */}
@@ -276,41 +260,49 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           
           {/* Right column - Fixed instructions and AI - 2/3 width */}
           <div className="w-full lg:w-2/3 relative">
-            <div 
-              ref={rightPanelRef}
-              className="lg:sticky lg:top-20 space-y-6"
-              style={{ maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}
-            >
-              {/* Instructions Panel - Based on active section */}
-              {activeSection && (
-                <div className="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500">
-                  <h3 className="text-xl font-semibold text-blue-800 mb-4">
-                    {sectionContent.sections.find(s => s.id === activeSection)?.title || 'Instructions'}
-                  </h3>
-                  <div className="prose prose-blue max-w-none">
-                    <div className="text-blue-700">
-                      {sectionContent.sections.find(s => s.id === activeSection)?.instructions.description.split('\n\n').map((paragraph, i) => (
-                        <p key={i} className="mb-3">{paragraph}</p>
-                      ))}
-                    </div>
-                    {sectionContent.sections.find(s => s.id === activeSection)?.instructions.workStep.content && (
-                      <div className="bg-white rounded-lg p-4 border border-blue-200 mt-4">
-                        <h4 className="font-medium text-blue-800 mb-2">
-                          {sectionContent.sections.find(s => s.id === activeSection)?.instructions.workStep.title}
-                        </h4>
-                        <div className="text-blue-600 text-sm">
-                          {sectionContent.sections.find(s => s.id === activeSection)?.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
-                            <p key={i} className="mb-2">{paragraph}</p>
-                          ))}
-                        </div>
+            <div className="lg:sticky lg:top-20 space-y-6" style={{ height: "calc(100vh - 120px)" }}>
+              {/* Instructions Panel - Based on active section - Top 2/3 */}
+              <div 
+                className="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500 overflow-y-auto"
+                style={{ height: "66%" }}
+              >
+                {activeSection ? (
+                  <>
+                    <h3 className="text-xl font-semibold text-blue-800 mb-4">
+                      {sectionContent.sections.find(s => s.id === activeSection)?.title || 'Instructions'}
+                    </h3>
+                    <div className="prose prose-blue max-w-none">
+                      <div className="text-blue-700">
+                        {sectionContent.sections.find(s => s.id === activeSection)?.instructions.description.split('\n\n').map((paragraph, i) => (
+                          <p key={i} className="mb-3">{paragraph}</p>
+                        ))}
                       </div>
-                    )}
+                      {sectionContent.sections.find(s => s.id === activeSection)?.instructions.workStep.content && (
+                        <div className="bg-white rounded-lg p-4 border border-blue-200 mt-4">
+                          <h4 className="font-medium text-blue-800 mb-2">
+                            {sectionContent.sections.find(s => s.id === activeSection)?.instructions.workStep.title}
+                          </h4>
+                          <div className="text-blue-600 text-sm">
+                            {sectionContent.sections.find(s => s.id === activeSection)?.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
+                              <p key={i} className="mb-2">{paragraph}</p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-blue-600">Select a section to view instructions</p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
               
-              {/* AI Chat Panel */}
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+              {/* AI Chat Panel - Bottom 1/3 */}
+              <div 
+                className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200"
+                style={{ height: "33%" }}
+              >
                 <div className="bg-indigo-600 text-white px-4 py-3">
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3">
@@ -320,23 +312,23 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   </div>
                 </div>
                 
-                <div className="p-6">
+                <div className="flex flex-col h-full p-4">
                   {/* Chat messages area */}
-                  <div className="h-96 overflow-y-auto mb-4">
+                  <div className="flex-grow overflow-y-auto mb-4">
                     {!activeSection || !chatMessages[activeSection] || chatMessages[activeSection].length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                        <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mb-4">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="flex flex-col items-center justify-center h-full text-center">
+                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mb-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                           </svg>
                         </div>
-                        <h4 className="text-lg font-medium text-gray-700 mb-2">Your AI Research Assistant</h4>
-                        <p className="text-gray-500 max-w-md">
-                          I'll help you develop your hypothesis-driven research project. Click "Mark Complete" when you're ready for initial feedback, or ask me a specific question below!
+                        <h4 className="text-base font-medium text-gray-700 mb-1">Your AI Research Assistant</h4>
+                        <p className="text-gray-500 text-sm">
+                          I'll help you develop your hypothesis-driven research project. Click "Mark Complete" when you're ready for feedback!
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {activeSection && chatMessages[activeSection].map((message, index) => {
                           const isUser = message.role === 'user';
                           
@@ -348,14 +340,14 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                               <div className={`max-w-3/4 ${isUser ? 'order-2' : 'order-1'}`}>
                                 {/* Avatar for assistant messages */}
                                 {!isUser && (
-                                  <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1 mx-2">
+                                  <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1 mx-1">
                                     AI
                                   </div>
                                 )}
                                 
                                 {/* Message bubble */}
                                 <div 
-                                  className={`rounded-2xl px-4 py-3 inline-block ${
+                                  className={`rounded-lg px-3 py-2 inline-block ${
                                     isUser 
                                       ? 'bg-indigo-600 text-white rounded-tr-none' 
                                       : 'bg-white border border-gray-200 rounded-tl-none shadow-sm'
@@ -385,61 +377,41 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                             </div>
                           );
                         })}
-                        
-                        {/* Loading indicator */}
-                        {loading && (
-                          <div className="flex justify-start">
-                            <div className="bg-white rounded-2xl px-4 py-3 inline-block border border-gray-200 rounded-tl-none">
-                              <div className="flex space-x-2">
-                                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
                   
                   {/* Chat input */}
-                  <div className="flex items-center">
+                  <div className="flex items-center mt-auto">
                     <input
                       type="text"
                       value={currentMessage}
                       onChange={(e) => setCurrentMessage(e.target.value)}
-                      className="flex-grow px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder={`Ask a question about your hypothesis-driven research...`}
+                      className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder={`Ask a question about your research...`}
                       onKeyPress={(e) => e.key === 'Enter' && !loading && currentMessage.trim() !== '' && handleSendMessage()}
                       disabled={!activeSection}
                     />
                     <button
                       onClick={handleSendMessage}
                       disabled={loading || currentMessage.trim() === '' || !activeSection}
-                      className={`px-4 py-3 rounded-r-lg ${
+                      className={`px-3 py-2 rounded-r-lg ${
                         loading || currentMessage.trim() === '' || !activeSection
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-indigo-600 text-white hover:bg-indigo-700 transition-colors'
                       }`}
                     >
                       {loading ? (
-                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                       ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
                         </svg>
                       )}
                     </button>
-                  </div>
-                  
-                  <div className="mt-2 text-xs text-gray-500 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                    <span>{getApproachTips()}</span>
                   </div>
                 </div>
               </div>
@@ -448,7 +420,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         </div>
         
         {/* Footer */}
-        <div className={`text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'} text-sm mt-12 border-t ${darkMode ? 'border-gray-800' : 'border-gray-200'} pt-6`}>
+        <div className="text-center text-gray-500 text-sm mt-12 border-t border-gray-200 pt-6">
           <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
         </div>
         
