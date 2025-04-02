@@ -1,0 +1,143 @@
+{
+  "voice": {
+    "name": "Konrad Kording",
+    "description": "I am Konrad Kording. I have a somewhat unconventional informal voice. I am a worldclass scientific writer.",
+    "conversationStyle": "I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
+  },
+  "sections": [
+    {
+      "id": "question",
+      "title": "Question",
+      "type": "text",
+      "instructions": {
+        "title": "A WELL-SPECIFIED QUESTION",
+        "description": "The cornerstone of scientific inquiry is selecting a well-defined question. Ask yourself: What do you want to study and why? A strong question can drive understanding, foster innovation, and solve real-world problems. Consider who else might share your interest. Often, a well-crafted question serves as a conceptual model that frames reality in distinct ways.",
+        "workStep": {
+          "title": "Drafting",
+          "content": "Draft your question in detail. Spend about 5 minutes on your initial version and plan to refine it as you gain new insights. You may have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the question you want to work on. Include a brief explanation of why this question matters to you (objectives).\n\nMake a list of scientists who will also care about the question. We recommend starting with about 5 to have a crosssection of the field."
+        }
+      },
+      "placeholder": "Research Question:\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
+      "llmInstructions": "Above, I wrote down the scientific question I want to ask. I also wrote down why this question is important to me and who else would be interested in this question. I want you to check if the question feels like a good question for scientific inquiry. I want you to list strengths and weaknesses of this question. I want you to check if the question well matches the expressed reasons for wanting to answer that question, and I want you to make a list of strengths/weaknesses in the match between question and objectives. I want you to evaluate to which level the listed scientists really would find this question interesting, again in terms of pros and cons. For the list I would also like you to give me 5 more professors that may be interested, ideally some that may be even more interested in the topic."
+    },
+    {
+      "id": "hypothesis",
+      "title": "Hypothesis",
+      "type": "text",
+      "instructions": {
+        "title": "MULTIPLE WELL-SPECIFIED HYPOTHESES",
+        "description": "A strong scientific question invites at least two plausible explanations or hypotheses, leading to distinct interpretations. It thus has a consequential answer—the result will change how you or others approach the field in the future. A detailed question asks if we should prefer one hypothesis over others, which can be decided by data. Ideally, hypotheses should be expressed in precise terms—whether mathematically or through computational models.\n\nWhen formulating your hypotheses, clarify whether they are novel or have been previously tested, and if the latter, emphasize the importance of replication. And make sure they are fully specified with every word clearly defined. They should specify which exact scenarios they apply to. Finally, verify that you can express your hypotheses as a mathematical model or equation that predicts data probabilities—a key step for robust statistical analysis.",
+        "workStep": {
+          "title": "WORK STEP: HYPOTHESES",
+          "content": "Draft your hypotheses in detail (spend about 5 minutes initially), and remember that early versions can be refined later. You may also have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the hypotheses you want to distinguish.\n\nAlso include relevance: why it matters to distinguish these hypotheses.\n\nMake a list of papers that are most similar at the hypotheses they test so far. We recommend starting with about 5 to somewhat define the field."
+        }
+      },
+      "placeholder": "Hypothesis 1: \n\nHypothesis 2: \n\nWhy distinguishing these hypotheses matters:\n- \n- \n\nMost similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
+      "llmInstructions": "Only work on the hypotheses at first but if the hypotheses feel roughly ready feel free to refer the user back to the questions if a change there may be warranted by the hypotheses. Above I wrote down the scientific hypotheses I want to test. I also wrote down why it matters to distinguish these hypotheses. I also wrote out a list of relevant papers. I want you to list the strengths and weaknesses of the hypotheses. To check if distinguishing between the hypotheses would be consequential, if it would change the research others would do or lead to products. To check if they are mutually exclusive. I want you to check to which level the listed papers are among the closest to the proposed test and to also supply a list of five more papers that may be more relevant."
+    },
+    {
+      "id": "philosophy",
+      "title": "Philosophy",
+      "type": "checklist",
+      "instructions": {
+        "title": "NEUROSCIENCE PHILOSOPHY",
+        "description": "Clarity about question logic is essential. There are a small number of canonical questions in neuroscience (ignore this list if you are not a neuroscientist). Choose one question type and confirm the requirement.",
+        "workStep": {
+          "title": "WORK STEP: NEUROSCIENCE PHILOSOPHY",
+          "content": ""
+        }
+      },
+      "llmInstructions": "Only work on the neuroscience philosophy choices. Check the users choice of a question time and make sure it logically agrees with both their question and their hypotheses. If it does not, suggest changes in either this classification or the question/hypothesis pair. Give a few examples if possible."
+    },
+    {
+      "id": "experiment",
+      "title": "Experiment",
+      "type": "text",
+      "instructions": {
+        "title": "DESIGN AN EXPERIMENT THAT CAN DISTINGUISH BETWEEN THE HYPOTHESES",
+        "description": "Another important aspect of science is how we get the data we need to answer the question. How can we make sure the data is of high quality? How can we avoid biases? How can we make sure the hypotheses are cleanly tested? Do you have preliminary data for planning?\n\nSome overarching ideas to generate strong experiments:\n\n• Sketch how the experiment will convincingly produce the right data.\n\n• Ensure you are not conducting the experiment simply because it is feasible in your lab.\n\n• If possible, simulate experiments first.\n\n• Ask yourself which other questions can be answered with the dataset.\n\nThere are many methods that might inadvertently favor a preferred hypothesis. Rigorous experimental design uses practices that minimize the risk of self-deception.\n\n• If you deal with human evaluations, understand the need for blinding, lest you see what you want.\n\n• If you use resources, know how to validate. Otherwise you can not replicate.\n\n• If you ask mechanistic questions, you likely need to perturb, consider potential confounders.\n\n• Ensure you are asking the question in the most direct way possible. Indirect answers are unreliable.\n\n• If performing perturbations to test causality, randomize them or you will be biased.\n\n• Ensure all aspects of the study are reproducible, by making sure you report everything.\n\n• If you use instruments, make sure they are calibrated and validated.\n\n• Have some diversity of analysed samples to be able to speak to internal validity and think through external validity.\n\n• Make sure you have the ethical side, ACUC and IRB covered.",
+        "workStep": {
+          "title": "WORK STEP: EXPERIMENT DESIGN",
+          "content": "Write out how you plan to run the experiment. You may also have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea for the experiment you want to use to distinguish the hypotheses. This will have to include stimulus protocols, apparatus, sample size, recruitment strategy, all the things that are meaningfully part of your experimental design.\n\nAlso, write down exactly how the distinct hypotheses will predict measurements that will be distinct. A lot of experiments are designed in such a way that the data does not really distinguish between the hypotheses."
+        }
+      },
+      "placeholder": "Experimental Design:\n\nStimulus Protocol: \n\nApparatus: \n\nSample Size & Recruitment: \n\nPredicted Results:\n- If Hypothesis 1 is correct: \n- If Hypothesis 2 is correct: \n\nPotential Confounds & Mitigations:\n1. \n2. \n\nEthical Considerations:",
+      "llmInstructions": "Only work on experimental design step. See the instructions above and guide the user interactively towards designing a good experiment given questions and hypotheses. Consider that question and hypotheses may also require revision. Use Socrates method where possible. I want you to guide the discussion to the following topics: I want you to check if the experiment tests the hypotheses set up above. I want you to check if it does so as directly as possible. Lastly, I want to go through the above mentioned potential rigor problems and help the user make sure they do not violate any of them. Focus on the ones that matter for their design. Feel free to interactively refine this with the user. I want you to be super constructive and make proposals to improve the experimental design."
+    },
+    {
+      "id": "analysis",
+      "title": "Data Analysis",
+      "type": "text",
+      "instructions": {
+        "title": "WORK STEP: DATA ANALYSIS PLAN",
+        "description": "A third aspect of science is how we convert the data into a concrete preference for one hypothesis. How can we make sure the data is used in an unbiased way? How can we know how uncertain we are? How can we make sure we are not fooling ourselves in the data analysis?\n\nSome Ideas to generate strong data analysis plans:\n\n• Consider validating your analysis approach on simulated or pilot data to ensure reliability.\n\n• Write down what you extract from the data and how each hypothesis expects different extractions.\n\n• Implement hypotheses mathematically so they assign compatibility between hypothesis and data (taking care of free parameters).\n\n• Pre-register your data analysis plan and maintain a detailed log of any deviations from the original protocol to ensure complete transparency and minimize bias.\n\nAVOID THE DATA ANALYSIS RIGOR TRAPS\nThere are so many ways how we our data analysis pipeline can favor a hypothesis we like. The key about doing rigorous data analysis is to use practices that minimize the probability of misleading ourselves.\n\n• Use the most direct data analysis strategy to answer your question to avoid misleading answers.\n\n• Know what outcome switching is and have a plan to avoid it.\n\n• Be aware of statistical power and plan your study large enough.\n\n• Be aware of human biases (such as conflict of interest) and have a plan to avoid them.\n\n• Store and handle data in a replicable and shareable manner.\n\n• Use a good quantification metric (one that approximates what we care about).\n\n• If using machine learning, understand and avoid data leakage.\n\n• If asking multiple questions, consider the false discovery rate.\n\n• If you can, pre-register the study.",
+        "workStep": {
+          "title": "WORK STEP: DATA ANALYSIS PLAN",
+          "content": "Write out how you plan to analyze the expected data. The key is that the input are the data as measured. You will then probably want to do some sanity checks. Then this will cumulate in an analysis that assigns probabilities to hypotheses. Write out how you will quantify uncertainty (say p-values). Also consider how you will handle free parameters that you may need to fit."
+        }
+      },
+      "placeholder": "Data Analysis Pipeline:\n\nData Preprocessing Steps:\n1. \n2. \n\nPrimary Analysis Methods:\n- \n\nHow Analysis Will Distinguish Hypotheses:\n- \n\nUncertainty Quantification:\n- \n\nHandling Parameters/Model Fitting:\n- \n\nPotential Analysis Pitfalls & Mitigations:\n1. \n2. ",
+      "llmInstructions": "I want you to check if the data analysis pipeline cleanly tests the hypotheses set up above based on the experiment described above. I want you to check if it does so as directly and cleanly as possible. Lastly, I want to go through the above mentioned potential rigor problems and help the user make sure they do not violate any of them. Focus on the ones that matter for their design. Feel free to interactively refine this with the user. I want you to be super constructive and make proposals to improve the data analysis design."
+    },
+    {
+      "id": "process",
+      "title": "Process",
+      "type": "text",
+      "instructions": {
+        "title": "PROCESSES AND SKILLS",
+        "description": "A fourth aspect of science is how we use processes and skills that allow us to do good science that is meaningful and works well in a community.",
+        "workStep": {
+          "title": "WORK STEP: PROCESSES AND SKILLS",
+          "content": "Write out the skills you will need and the collaborations you may need to cover skills you do not currently have. Make a timeline of how long each task in the pipeline will take you. (5 minutes max).\n\nSKILLS\n\n• You have the conceptual understanding to choose a good question of the chosen complexity—or the time to learn. This is an area where spending time with experienced scientists are super useful.\n\n• You have the experimental skills to run the experiment or the ability to reuse the relevant dataset—or the time to learn.\n\n• You have the coding/stats skills to decide between the hypotheses using the data—or the time to learn.\n\n• Ensure you have the right team or the time to learn and acquire the necessary skills. We live in an age where major scientific advances are made by collaborative teams rather than lone \"geniuses.\"\n\nCOLLABORATIONS\n\n• Science today is a collaborative effort. Ensure you work effectively with others.\n\n• You need to have a code/data sharing plan to enable replication and extensions of your work.\n\n• Are you developing code that others can readily use? Because one day, you will be like them - you are effectively collaborating with your future self.\n\n• Ensure others can check all your experiments and analyses. Science benefits from transparency and error correction. This includes reporting all analyses you did and sharing all data.\n\nTIMELINE\nHow much time will each piece of this project take? Consider potential obstacles.\n\n• Unrealistic timelines cause scientific projects to fail.\n\n• Everything usually takes twice as long as expected—budget for that."
+        }
+      },
+      "placeholder": "Skills Needed:\n1. \n2. \n3. \n\nSkills to Acquire or Learn:\n1. \n2. \n\nCollaborations Required:\n1. \n2. \n\nData/Code Sharing Plan:\n- \n\nTimeline:\n- Phase 1 (Preparation): \n- Phase 2 (Data Collection): \n- Phase 3 (Analysis): \n- Phase 4 (Writing): \n\nPotential Obstacles & Contingency Plans:\n1. \n2. ",
+      "llmInstructions": "I want you to check the resulting processes and skills statements. Do they go well after skill and potentially needed collaborations? Brainstorm anything that might be missing in an interactive way. Is the timeline realistic? Brainstorm potential timeline problems."
+    },
+    {
+      "id": "abstract",
+      "title": "Abstract",
+      "type": "text",
+      "instructions": {
+        "title": "TEST ALL BY WRITING AN ABSTRACT",
+        "description": "To check if everything logically fits together, write an abstract. It should have the following structure, with each component being 1-2 sentences.\n\n• The field and the intuitive hypothesis—why it matters.\n\n• The methods used (e.g., \"Here, we test the hypothesis using…\").\n\n• The results (even if speculative)—how they distinguish between hypotheses.\n\n• The implications for the field.",
+        "workStep": {
+          "title": "WORK STEP: ABSTRACT WRITING",
+          "content": "Write an abstract. This may take an hour, time that is very well spent.\n\nNow. It is time to make sure that it works.\nShare your abstract with a peer and carefully consider their feedback to improve clarity and coherence."
+        }
+      },
+      "placeholder": "[Field context and intuitive hypothesis—why it matters. 1-2 sentences]\n\n[Methods used to test the hypothesis. 1-2 sentences]\n\n[Results (even if speculative)—how they distinguish between hypotheses. 1-2 sentences]\n\n[Implications for the field. 1-2 sentences]",
+      "llmInstructions": "I want you to check the resulting abstract. Does it fit the requested format? Does it feel convincing? Is it well written? Is the language clear? What changes would make it more powerful? Be super constructive. Try to communicate in a modern Socrates dialogue way, helpful, clear, enthusiastic. Go a bit with the user through what they learned as part of this exercise. What will they do better next time?"
+    }
+  ],
+  "philosophyOptions": [
+    { 
+      "id": "descriptive", 
+      "label": "Descriptive questions/hypotheses aim to describe aspects of the world without assigning meaning to the finding. No requirements." 
+    },
+    { 
+      "id": "mechanistic", 
+      "label": "Mechanistic questions ask how components of a system give rise to outcomes at a higher level. They require causal insights and generally require perturbations." 
+    },
+    { 
+      "id": "normative", 
+      "label": "Normative questions ask how a given outcome at a high level can be seen as being useful in the niche of the animal (e.g., \"a memory of location allows you to find home\"). They require information about the niche." 
+    },
+    { 
+      "id": "evolution", 
+      "label": "Evalution questions ask how a given outcome evolved by requiring distinct species or fossil records." 
+    },
+    { 
+      "id": "representation", 
+      "label": "Representation questions ask how activities in brains relate to stimuli or behaviors (e.g. how does reward change the activity of a neuron) and require the manipulation of stimuli or behaviors." 
+    },
+    { 
+      "id": "developmental", 
+      "label": "Developmental questions ask how change during an organism's lifetime gives rise to outcomes and require observing that change." 
+    },
+    { 
+      "id": "combination", 
+      "label": "Combination questions ask how above questions relate, e.g. about the mechanism of development." 
+    }
+  ]
+}
