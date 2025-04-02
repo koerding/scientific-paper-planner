@@ -264,13 +264,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                           }}
                         >
                           <div className="flex items-start">
-                            <div className="bg-white rounded-lg px-4 py-3 inline-block border border-gray-200 rounded-tl-none shadow-sm">
-                              <div className="flex space-x-2">
-                                <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                              </div>
-                            </div>="flex-shrink-0">
+                            <div className="flex-shrink-0">
                               <input
                                 type="checkbox"
                                 id={option.id}
@@ -496,7 +490,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                           );
                         })}
                         
-{/* Loading indicator */}
+                        {/* Loading indicator */}
                         {loading && (
                           <div className="flex justify-start">
                             <div className="bg-white rounded-lg px-4 py-3 inline-block border border-gray-200 rounded-tl-none shadow-sm">
@@ -509,7 +503,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                           </div>
                         )}
                       </div>
-                    </div>
+                    )}
+                  </div>
                   
                   {/* Chat input */}
                   <div style={{
@@ -524,7 +519,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                         value={currentMessage}
                         onChange={(e) => setCurrentMessage(e.target.value)}
                         className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder={`Ask a question about your research...`}
+                        placeholder="Ask a question about your research..."
                         onKeyPress={(e) => e.key === 'Enter' && !loading && currentMessage.trim() !== '' && handleSendMessage()}
                       />
                       <button
@@ -572,4 +567,3 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 };
 
 export default VerticalPaperPlannerApp;
-
