@@ -2,29 +2,9 @@ import React from 'react';
 
 /**
  * InstructionsPanel displays instructions for the current section
- * Occupies 75% of the right panel
+ * Occupies 75% of the right panel with fixed height to prevent jumping
  */
 const InstructionsPanel = ({ currentSection }) => {
-  if (!currentSection) {
-    return (
-      <div style={{
-        backgroundColor: '#EBF5FF', /* bg-blue-50 */
-        borderRadius: '0.5rem',
-        padding: '1.5rem',
-        borderLeftWidth: '4px',
-        borderLeftColor: '#3B82F6', /* border-blue-500 */
-        overflowY: 'auto',
-        height: 'calc(75% - 1rem)',
-        marginBottom: '1rem',
-        position: 'relative'
-      }}>
-        <div className="flex items-center justify-center h-full">
-          <p className="text-blue-600">Select a section to view instructions</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={{
       backgroundColor: '#EBF5FF', /* bg-blue-50 */
@@ -33,9 +13,12 @@ const InstructionsPanel = ({ currentSection }) => {
       borderLeftWidth: '4px',
       borderLeftColor: '#3B82F6', /* border-blue-500 */
       overflowY: 'auto',
-      height: 'calc(75% - 1rem)',
-      marginBottom: '1rem',
-      position: 'relative'
+      height: '75%', /* Fixed percentage */
+      position: 'absolute', /* Position absolutely */
+      top: 0, /* Attach to top */
+      left: 0,
+      right: 0,
+      paddingBottom: '2rem' /* Add padding at bottom for visual space */
     }}>
       {/* Connection to active section */}
       <div style={{
@@ -61,28 +44,36 @@ const InstructionsPanel = ({ currentSection }) => {
         }}></div>
       </div>
     
-      <h3 className="text-xl font-semibold text-blue-800 mb-4">
-        {currentSection.title}
-      </h3>
-      <div className="prose prose-blue max-w-none">
-        <div className="text-blue-700">
-          {currentSection.instructions.description.split('\n\n').map((paragraph, i) => (
-            <p key={i} className="mb-3">{paragraph}</p>
-          ))}
+      {!currentSection ? (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-blue-600">Select a section to view instructions</p>
         </div>
-        {currentSection.instructions.workStep && currentSection.instructions.workStep.content && (
-          <div className="bg-white rounded-lg p-4 border border-blue-200 mt-4">
-            <h4 className="font-medium text-blue-800 mb-2">
-              {currentSection.instructions.workStep.title}
-            </h4>
-            <div className="text-blue-600 text-sm">
-              {currentSection.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
-                <p key={i} className="mb-2">{paragraph}</p>
+      ) : (
+        <>
+          <h3 className="text-xl font-semibold text-blue-800 mb-4">
+            {currentSection.title}
+          </h3>
+          <div className="prose prose-blue max-w-none">
+            <div className="text-blue-700">
+              {currentSection.instructions.description.split('\n\n').map((paragraph, i) => (
+                <p key={i} className="mb-3">{paragraph}</p>
               ))}
             </div>
+            {currentSection.instructions.workStep && currentSection.instructions.workStep.content && (
+              <div className="bg-white rounded-lg p-4 border border-blue-200 mt-4">
+                <h4 className="font-medium text-blue-800 mb-2">
+                  {currentSection.instructions.workStep.title}
+                </h4>
+                <div className="text-blue-600 text-sm">
+                  {currentSection.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
+                    <p key={i} className="mb-2">{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };
