@@ -1,4 +1,4 @@
-// Modifications for VerticalPaperPlannerApp.js to fix width and feedback issues
+// VerticalPaperPlannerApp.js with AI chat taking bottom 25% of right column
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -334,7 +334,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
               flexDirection: 'column',
               zIndex: 10
             }}>
-              {/* Instructions Panel - Top 2/3 */}
+              {/* Instructions Panel - Top 75% - CHANGED FROM 66% TO 75% */}
               <div style={{
                 backgroundColor: '#EBF5FF', /* bg-blue-50 */
                 borderRadius: '0.5rem',
@@ -342,7 +342,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 borderLeftWidth: '4px',
                 borderLeftColor: '#3B82F6', /* border-blue-500 */
                 overflowY: 'auto',
-                height: 'calc(66% - 1rem)',
+                height: 'calc(75% - 1rem)', /* CHANGED FROM 66% TO 75% */
                 marginBottom: '1rem',
                 position: 'relative'
               }}>
@@ -402,14 +402,14 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 )}
               </div>
               
-              {/* AI Chat Panel - Bottom 1/3 */}
+              {/* AI Chat Panel - Bottom 25% - CHANGED FROM 34% TO 25% */}
               <div style={{
                 backgroundColor: 'white',
                 borderRadius: '0.5rem',
                 border: '1px solid #E5E7EB', /* border-gray-200 */
                 boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
                 overflow: 'hidden',
-                height: 'calc(34%)',
+                height: 'calc(25%)', /* CHANGED FROM 34% TO 25% */
                 display: 'flex',
                 flexDirection: 'column'
               }}>
