@@ -21,10 +21,10 @@ const AIChatPanel = ({
       border: '1px solid #E5E7EB', /* border-gray-200 */
       boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
       overflow: 'hidden',
-      height: 'calc(25%)', /* Return to the original calculation */
+      flex: '0 0 250px', /* Fixed height that won't grow or shrink */
       display: 'flex',
       flexDirection: 'column',
-      marginTop: '1rem' /* Add margin to separate from instructions panel */
+      marginTop: '1rem' /* Space between panels */
     }}>
       <div className="bg-indigo-600 text-white px-4 py-3">
         <div className="flex items-center">
