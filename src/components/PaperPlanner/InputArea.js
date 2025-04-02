@@ -2,7 +2,7 @@ import React from 'react';
 import { countWords, formatInstructions } from '../../utils/formatUtils';
 
 /**
- * Renders the input area for a section
+ * Renders the input area for a section with persistent placeholder text
  */
 const InputArea = ({ 
   section, 
@@ -11,8 +11,21 @@ const InputArea = ({
   handleInputChange,
   handleCheckboxChange,
   handleFirstVersionFinished,
-  loading
+  loading,
+  setActiveSection,
+  handleSectionChange
 }) => {
+  // Persist placeholder as initial input if empty
+  if (section.type !== 'checklist' && !userInputs[section.id] && section.placeholder) {
+    handleInputChange(section.id, section.placeholder);
+  }
+
+  // Focus handler to update current section
+  const handleFocus = () => {
+    setActiveSection(section.id);
+    handleSectionChange(section.id);
+  };
+
   // Render input form
   let inputElement;
   if (section.type === 'checklist') {
@@ -35,53 +48,60 @@ const InputArea = ({
   } else {
     inputElement = (
       <textarea
-        rows={10}
-        className="w-full p-4 border border-gray-300 rounded-md text-base text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        placeholder="Write your answer here..."
+        rows={6} /* Limit to 6 rows maximum */
+        className="w-full p-3 border border-gray-300 rounded-md text-base text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         value={userInputs[section.id] || ''}
         onChange={(e) => handleInputChange(section.id, e.target.value)}
+        onFocus={handleFocus}
         disabled={loading}
       />
     );
   }
 
-  // Render instructions box right above the input field
-  const instructionsElement = (
-    <div className="mb-6 p-5 bg-blue-50 border-l-4 border-blue-500 rounded-md shadow-sm text-gray-700">
-      <div className="font-semibold text-lg mb-2">{section.instructions.title}</div>
-      <div className="instruction-text text-base whitespace-pre-line">{formatInstructions(section)}</div>
-      {section.instructions.workStep.content && (
-        <div className="mt-2 instruction-text text-base text-blue-800">{section.instructions.workStep.content}</div>
-      )}
-    </div>
-  );
+  // Check if content has been modified from placeholder
+  const hasUserModifiedContent = () => {
+    if (section.type === 'checklist') {
+      return userInputs.philosophy && userInputs.philosophy.length > 0;
+    }
+    
+    const content = userInputs[section.id] || '';
+    const placeholder = section.placeholder || '';
+    
+    // If content is empty, it's not completed
+    if (!content || content.trim() === '') return false;
+    
+    // If the length is different or content has been edited in some way
+    return content !== placeholder || content.trim() !== placeholder.trim();
+  };
 
   return (
-    <div className="mt-4">
-      {/* Section header */}
-      <h2 className="text-2xl font-bold text-gray-800 mb-1">{section.title}</h2>
-      <p className="text-gray-600 mb-4 text-base">{section.description}</p>
-
-      {/* Instructions right before the input */}
-      {instructionsElement}
+    <div className="mt-3">
+      {/* Compact header */}
+      <h2 className="text-lg font-bold text-gray-800 mb-1">{section.title}</h2>
+      <p className="text-gray-600 mb-3 text-sm">{section.description}</p>
 
       {/* Input area */}
       {inputElement}
 
       {/* Word count */}
       {section.wordLimit && (
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-xs text-gray-500 mt-1">
           Word count: {countWords(userInputs[section.id] || '')} / {section.wordLimit}
         </p>
       )}
 
-      {/* First version confirmation */}
+      {/* First version confirmation - Always enabled if any content modification */}
       {section.confirmFirstVersion && (
         <button
-          className="mt-6 px-5 py-2 bg-green-600 text-white font-medium rounded shadow hover:bg-green-700 transition"
+          className={`mt-4 px-4 py-2 font-medium rounded shadow transition ${
+            hasUserModifiedContent() 
+              ? 'bg-green-600 text-white hover:bg-green-700' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
           onClick={handleFirstVersionFinished}
+          disabled={!hasUserModifiedContent() || loading}
         >
-          I’m done with this version
+          {loading ? 'Processing...' : 'Mark Complete'}
         </button>
       )}
     </div>
