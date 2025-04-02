@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import VerticalPaperPlannerApp from './VerticalPaperPlannerApp';
-import sectionContent from '../../sectionContent.json';  // Make sure this file is in your src directory
+import sectionContent from '../../sectionContent.json';  
 import { callOpenAI } from '../../services/openaiService';
 import './PaperPlanner.css';
 
 /**
  * Main entry point for the Paper Planner
+ * Contains core state management and API calls
  */
 const PaperPlannerApp = () => {
-  const { sections, philosophyOptions } = sectionContent;
-  
   // State
   const [userInputs, setUserInputs] = useState({
     question: '',
@@ -30,7 +29,7 @@ const PaperPlannerApp = () => {
   // Initialize chat messages for each section
   useEffect(() => {
     const initialChatMessages = {};
-    sections.forEach(section => {
+    sectionContent.sections.forEach(section => {
       initialChatMessages[section.id] = [];
     });
     setChatMessages(initialChatMessages);
@@ -67,7 +66,7 @@ const PaperPlannerApp = () => {
   // Handler functions
   const handleSectionChange = (sectionId) => {
     setCurrentSection(sectionId);
-    setCurrentIndex(sections.findIndex(s => s.id === sectionId));
+    setCurrentIndex(sectionContent.sections.findIndex(s => s.id === sectionId));
   };
 
   const handleInputChange = (section, value) => {
@@ -115,8 +114,8 @@ const PaperPlannerApp = () => {
         currentMessage, 
         currentSection, 
         userInputs, 
-        sections, 
-        philosophyOptions
+        sectionContent.sections, 
+        sectionContent.philosophyOptions
       );
       
       // Add AI response to chat
@@ -160,7 +159,7 @@ const PaperPlannerApp = () => {
       const displayMessage = "I've finished my first version. Can you provide feedback?";
       
       // Get detailed instructions from JSON
-      const currentSectionObj = sections.find(s => s.id === currentSection);
+      const currentSectionObj = sectionContent.sections.find(s => s.id === currentSection);
       const aiInstructions = currentSectionObj.llmInstructions;
       
       // Add the simple message to chat for the user to see
@@ -179,8 +178,8 @@ const PaperPlannerApp = () => {
         aiInstructions, 
         currentSection, 
         userInputs, 
-        sections, 
-        philosophyOptions
+        sectionContent.sections, 
+        sectionContent.philosophyOptions
       );
       
       // Add AI response to chat
@@ -225,13 +224,13 @@ const PaperPlannerApp = () => {
     
     // Clear all chat messages
     const freshChatMessages = {};
-    sections.forEach(section => {
+    sectionContent.sections.forEach(section => {
       freshChatMessages[section.id] = [];
     });
     setChatMessages(freshChatMessages);
     
     // Reset to first section
-    handleSectionChange(sections[0].id);
+    handleSectionChange(sectionContent.sections[0].id);
     
     // Clear localStorage
     localStorage.removeItem('paperPlannerData');
@@ -240,19 +239,61 @@ const PaperPlannerApp = () => {
 
   const goToNextSection = () => {
     const newIndex = currentIndex + 1;
-    if (newIndex < sections.length) {
-      handleSectionChange(sections[newIndex].id);
+    if (newIndex < sectionContent.sections.length) {
+      handleSectionChange(sectionContent.sections[newIndex].id);
     }
   };
 
   const goToPreviousSection = () => {
     const newIndex = currentIndex - 1;
     if (newIndex >= 0) {
-      handleSectionChange(sections[newIndex].id);
+      handleSectionChange(sectionContent.sections[newIndex].id);
     }
   };
 
-  // Hook for the Modern Paper Planner
+  // Function to export project
+  const exportProject = () => {
+    const exportContent = `# Scientific Paper Project Plan
+
+## 1. Research Question
+${userInputs.question || "Not completed yet"}
+
+## 2. Hypotheses
+${userInputs.hypothesis || "Not completed yet"}
+
+## 3. Research Philosophy
+${userInputs.philosophy.map(id => `- ${sectionContent.philosophyOptions.find(o => o.id === id).label}`).join('\n') || "Not selected yet"}
+
+## 4. Experimental Design
+${userInputs.experiment || "Not completed yet"}
+
+## 5. Data Analysis Plan
+${userInputs.analysis || "Not completed yet"}
+
+## 6. Process, Skills & Timeline
+${userInputs.process || "Not completed yet"}
+
+## 7. Abstract
+${userInputs.abstract || "Not completed yet"}
+`;
+
+    // Create a blob with the content
+    const blob = new Blob([exportContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create a link and trigger download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'scientific-paper-plan.md';
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Hook for the Paper Planner
   const usePaperPlannerHook = {
     currentSection,
     currentIndex,
@@ -270,13 +311,12 @@ const PaperPlannerApp = () => {
     handleFirstVersionFinished,
     resetProject,
     goToNextSection,
-    goToPreviousSection
+    goToPreviousSection,
+    exportProject
   };
 
   return (
     <VerticalPaperPlannerApp 
-      sections={sections}
-      philosophyOptions={philosophyOptions}
       usePaperPlannerHook={usePaperPlannerHook}
     />
   );
