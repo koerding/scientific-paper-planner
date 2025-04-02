@@ -155,7 +155,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           exportProject={exportProject}
         />
         
-        {/* Main content area - 1/3 for user content, 2/3 for instruction & AI (fixed) */}
+        {/* Main content area - 50% for user content, 50% for instruction & AI (fixed) */}
         <div style={{ display: 'flex' }}>
           {/* Left column - User editable sections - scrollable (50% width) */}
           <div style={{ 
@@ -196,13 +196,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             paddingLeft: '1rem',
             position: 'relative'
           }}>
-            {/* Fixed container for right panels */}
             <div style={{
               position: 'fixed',
               width: 'calc(50% - 2rem)',
               height: 'calc(100vh - 140px)', /* Subtract header height and padding */
-              zIndex: 10,
-              display: 'block' /* Changed from flex to block for absolute positioning */
+              display: 'flex',
+              flexDirection: 'column',
+              zIndex: 10
             }}>
               {/* Instructions Panel Component - Top 75% */}
               <InstructionsPanel 
