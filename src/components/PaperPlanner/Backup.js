@@ -5,6 +5,7 @@ import ModernChatInterface from './ModernChatInterface';
 import ConfirmDialog from './ConfirmDialog';
 import './PaperPlanner.css';
 
+
 /**
  * Modern Paper Planner Application Component with contemporary design
  */
