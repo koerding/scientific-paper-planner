@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * InstructionsPanel displays instructions for the current section
- * Occupies 75% of the right panel with fixed height to prevent jumping
+ * Occupies remaining space in the flex container
  */
 const InstructionsPanel = ({ currentSection }) => {
   return (
@@ -13,12 +13,8 @@ const InstructionsPanel = ({ currentSection }) => {
       borderLeftWidth: '4px',
       borderLeftColor: '#3B82F6', /* border-blue-500 */
       overflowY: 'auto',
-      height: '75%', /* Fixed percentage */
-      position: 'absolute', /* Position absolutely */
-      top: 0, /* Attach to top */
-      left: 0,
-      right: 0,
-      paddingBottom: '2rem' /* Add padding at bottom for visual space */
+      flex: '1 1 auto', /* Allow this to grow and take available space */
+      position: 'relative'
     }}>
       {/* Connection to active section */}
       <div style={{
