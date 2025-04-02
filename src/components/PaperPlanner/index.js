@@ -19,7 +19,7 @@ const PaperPlannerApp = () => {
     process: '',
     abstract: ''
   });
-  const [currentSection, setCurrentSection] = useState(sections[0].id);
+  const [currentSection, setCurrentSection] = useState(sectionContent.sections[0].id);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [chatMessages, setChatMessages] = useState({});
   const [currentMessage, setCurrentMessage] = useState('');
