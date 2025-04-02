@@ -1,0 +1,14 @@
+{
+  "id": "philosophy",
+  "title": "Philosophy",
+  "type": "checklist",
+  "instructions": {
+    "title": "NEUROSCIENCE PHILOSOPHY",
+    "description": "Clarity about question logic is essential. There are a small number of canonical questions in neuroscience (ignore this list if you are not a neuroscientist). Choose one question type and confirm the requirement.",
+    "workStep": {
+      "title": "WORK STEP: NEUROSCIENCE PHILOSOPHY",
+      "content": ""
+    }
+  },
+  "llmInstructions": "Only work on the neuroscience philosophy choices. Check the users choice of a question time and make sure it logically agrees with both their question and their hypotheses. If it does not, suggest changes in either this classification or the question/hypothesis pair. Give a few examples if possible."
+}
