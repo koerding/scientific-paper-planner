@@ -21,9 +21,14 @@ const AIChatPanel = ({
       border: '1px solid #E5E7EB', /* border-gray-200 */
       boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
       overflow: 'hidden',
-      height: 'calc(25%)',
+      height: '25%', /* Fixed percentage height instead of calc */
+      minHeight: '250px', /* Ensure minimum height for usability */
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      position: 'absolute', /* Position absolutely */
+      bottom: 0, /* Attach to bottom */
+      left: 0,
+      right: 0
     }}>
       <div className="bg-indigo-600 text-white px-4 py-3">
         <div className="flex items-center">
@@ -37,6 +42,7 @@ const AIChatPanel = ({
       <div style={{
         display: 'flex',
         flexDirection: 'column',
+        flexGrow: 1,
         height: 'calc(100% - 56px)' /* Subtract header height */
       }}>
         {/* Chat messages area */}
@@ -122,7 +128,6 @@ const AIChatPanel = ({
         
         {/* Chat input */}
         <div style={{
-          marginTop: 'auto',
           padding: '1rem',
           borderTop: '1px solid #E5E7EB', /* border-gray-200 */
           backgroundColor: '#F9FAFB' /* bg-gray-50 */
