@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { sections as sectionContent, philosophyOptions } from '../../data/sectionConfig';
+import sectionContent from '../../sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
 import './PaperPlanner.css';
 
@@ -34,7 +34,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Store refs for all sections
   useEffect(() => {
-    sectionContent.forEach(section => {
+    sectionContent.sections.forEach(section => {
       sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
     });
   }, []);
@@ -47,7 +47,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       setActiveSection('question');
       
       // Pre-fill text for every section that's not already filled
-      sectionContent.forEach(section => {
+      sectionContent.sections.forEach(section => {
         if (section.type !== 'checklist' && section.placeholder) {
           if (!userInputs[section.id] || userInputs[section.id].trim() === '') {
             handleInputChange(section.id, section.placeholder);
@@ -102,7 +102,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     
     // Get section content and placeholder
     const content = userInputs[sectionId] || '';
-    const section = sectionContent.find(s => s.id === sectionId);
+    const section = sectionContent.sections.find(s => s.id === sectionId);
     const placeholder = section?.placeholder || '';
     
     // If content is completely empty, it's not completed
@@ -133,7 +133,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Get the current section object for instructions display
   const getCurrentSection = () => {
-    return sectionContent.find(s => s.id === activeSection) || sectionContent[0];
+    return sectionContent.sections.find(s => s.id === activeSection) || sectionContent.sections[0];
   };
 
   return (
@@ -180,7 +180,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           
           {/* Section quick links */}
           <div className="flex overflow-x-auto py-2 mt-2 space-x-2">
-            {sectionContent.map((section, index) => (
+            {sectionContent.sections.map((section, index) => (
               <button
                 key={section.id}
                 onClick={() => {
@@ -209,7 +209,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             overflowY: 'auto',
             paddingBottom: '50px' 
           }}>
-            {sectionContent.map((section, index) => {
+            {sectionContent.sections.map((section, index) => {
               const isCurrentSection = activeSection === section.id;
               const isCompleted = hasSectionContent(section.id);
               
@@ -250,7 +250,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   {/* Section content - Philosophy has checkboxes, others have textareas */}
                   {section.id === 'philosophy' ? (
                     <div className="space-y-3">
-                      {philosophyOptions.map(option => (
+                      {sectionContent.philosophyOptions.map(option => (
                         <div 
                           key={option.id} 
                           className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
