@@ -1,0 +1,42 @@
+// src/data/sections/question.json
+{
+  "id": "question",
+  "title": "Question",
+  "type": "text",
+  "maxLength": 2000,
+  "inputPlaceholder": "Start writing your research question here...",
+  "completeButtonText": "MARK COMPLETE",
+  "loadingButtonText": "Processing...",
+  "instructions": {
+    "title": "A WELL-SPECIFIED QUESTION",
+    "description": "The cornerstone of scientific inquiry is selecting a well-defined question. Ask yourself: What do you want to study and why? A strong question can drive understanding, foster innovation, and solve real-world problems. Consider who else might share your interest. Often, a well-crafted question serves as a conceptual model that frames reality in distinct ways.",
+    "workStep": {
+      "title": "Drafting",
+      "content": "Draft your question in detail. Spend about 5 minutes on your initial version and plan to refine it as you gain new insights. You may have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the question you want to work on. Include a brief explanation of why this question matters to you (objectives).\n\nMake a list of scientists who will also care about the question. We recommend starting with about 5 to have a crosssection of the field."
+    }
+  },
+  "completionChecklist": {
+    "title": "COMPLETION CHECKLIST:",
+    "items": [
+      {
+        "text": "Write a clear research question",
+        "checkPattern": "Research Question:"
+      },
+      {
+        "text": "Explain why this question matters",
+        "checkPattern": "Why this question matters"
+      },
+      {
+        "text": "List scientists who would care about this question",
+        "checkPattern": "Scientists who would care"
+      }
+    ]
+  },
+  "placeholder": "Research Question:\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
+  "placeholders": {
+    "hypothesis": "Research Question:\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
+    "exploratory": "Research Area for Exploration:\n\nWhy this exploration matters (objectives):\n- \n- \n- \n\nScientists who would care about this exploration:\n1. \n2. \n3. \n4. \n5. ",
+    "needs": "Problem Statement:\n\nWhy solving this problem matters (objectives):\n- \n- \n- \n\nStakeholders who would care about this solution:\n1. \n2. \n3. \n4. \n5. "
+  },
+  "llmInstructions": "Above, I wrote down the scientific question I want to ask. I also wrote down why this question is important to me and who else would be interested in this question. I want you to check if the question feels like a good question for scientific inquiry. I want you to list strengths and weaknesses of this question. I want you to check if the question well matches the expressed reasons for wanting to answer that question, and I want you to make a list of strengths/weaknesses in the match between question and objectives. I want you to evaluate to which level the listed scientists really would find this question interesting, again in terms of pros and cons. For the list I would also like you to give me 5 more professors that may be interested, ideally some that may be even more interested in the topic."
+}
