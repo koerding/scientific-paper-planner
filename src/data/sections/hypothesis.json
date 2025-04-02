@@ -1,7 +1,12 @@
+// src/data/sections/hypothesis.json
 {
   "id": "hypothesis",
   "title": "Hypothesis",
   "type": "text",
+  "maxLength": 2000,
+  "inputPlaceholder": "Start writing your hypotheses here...",
+  "completeButtonText": "MARK COMPLETE",
+  "loadingButtonText": "Analyzing hypotheses...",
   "instructions": {
     "title": "MULTIPLE WELL-SPECIFIED HYPOTHESES",
     "description": "A strong scientific question invites at least two plausible explanations or hypotheses, leading to distinct interpretations. It thus has a consequential answer—the result will change how you or others approach the field in the future. A detailed question asks if we should prefer one hypothesis over others, which can be decided by data. Ideally, hypotheses should be expressed in precise terms—whether mathematically or through computational models.\n\nWhen formulating your hypotheses, clarify whether they are novel or have been previously tested, and if the latter, emphasize the importance of replication. And make sure they are fully specified with every word clearly defined. They should specify which exact scenarios they apply to. Finally, verify that you can express your hypotheses as a mathematical model or equation that predicts data probabilities—a key step for robust statistical analysis.",
@@ -9,6 +14,27 @@
       "title": "WORK STEP: HYPOTHESES",
       "content": "Draft your hypotheses in detail (spend about 5 minutes initially), and remember that early versions can be refined later. You may also have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the hypotheses you want to distinguish.\n\nAlso include relevance: why it matters to distinguish these hypotheses.\n\nMake a list of papers that are most similar at the hypotheses they test so far. We recommend starting with about 5 to somewhat define the field."
     }
+  },
+  "completionChecklist": {
+    "title": "COMPLETION CHECKLIST:",
+    "items": [
+      {
+        "text": "Write first hypothesis",
+        "checkPattern": "Hypothesis 1:"
+      },
+      {
+        "text": "Write second hypothesis",
+        "checkPattern": "Hypothesis 2:"
+      },
+      {
+        "text": "Explain why distinguishing these hypotheses matters",
+        "checkPattern": "Why distinguishing these hypotheses matters"
+      },
+      {
+        "text": "List similar papers that test related hypotheses",
+        "checkPattern": "Most similar papers"
+      }
+    ]
   },
   "placeholder": "Hypothesis 1: \n\nHypothesis 2: \n\nWhy distinguishing these hypotheses matters:\n- \n- \n\nMost similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
   "placeholders": {
