@@ -1,3 +1,5 @@
+// Modifications for VerticalPaperPlannerApp.js to fix width and feedback issues
+
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import sectionContent from '../../sectionContent.json';
@@ -138,7 +140,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="max-w-7xl mx-auto px-4 pb-12">
+      {/* Use 100% width instead of max-w-7xl */}
+      <div className="w-full px-4 pb-12">
         {/* Header */}
         <div className="sticky top-0 z-20 bg-white shadow py-4 mb-6">
           <div className="flex justify-between items-center">
@@ -204,7 +207,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         <div style={{ display: 'flex' }}>
           {/* Left column - User editable sections - scrollable (1/3 width) */}
           <div style={{ 
-            width: '33.333%', 
+            width: '50%', // Increased from 33.333% to 50% for better use of space
             paddingRight: '1rem', 
             overflowY: 'auto',
             paddingBottom: '50px' 
@@ -319,14 +322,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           
           {/* Right column - Fixed instructions and AI - 2/3 width */}
           <div style={{ 
-            width: '66.666%', 
+            width: '50%', // Changed from 66.666% to 50%
             paddingLeft: '1rem',
             position: 'relative'
           }}>
             <div style={{
               position: 'fixed',
-              width: 'calc(66.666% - 2rem - 80px)',
-              maxWidth: '800px', 
+              width: 'calc(50% - 2rem)', // Changed to match new right column width
               maxHeight: 'calc(100vh - 140px)',
               display: 'flex',
               flexDirection: 'column',
@@ -425,13 +427,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   flexDirection: 'column',
                   height: 'calc(100% - 56px)' /* Subtract header height */
                 }}>
-                  {/* Chat messages area */}
+                  {/* Chat messages area - KEY CHANGE: Use currentSection instead of activeSection */}
                   <div style={{
                     flexGrow: 1,
                     overflowY: 'auto',
                     padding: '1rem'
                   }}>
-                    {!activeSection || !chatMessages[activeSection] || chatMessages[activeSection].length === 0 ? (
+                    {!currentSection || !chatMessages[currentSection] || chatMessages[currentSection].length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mb-2">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -445,7 +447,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {activeSection && chatMessages[activeSection].map((message, index) => {
+                        {currentSection && chatMessages[currentSection].map((message, index) => {
                           const isUser = message.role === 'user';
                           
                           return (
