@@ -196,13 +196,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             paddingLeft: '1rem',
             position: 'relative'
           }}>
+            {/* Fixed container for right panels */}
             <div style={{
               position: 'fixed',
               width: 'calc(50% - 2rem)',
-              maxHeight: 'calc(100vh - 140px)',
-              display: 'flex',
-              flexDirection: 'column',
-              zIndex: 10
+              height: 'calc(100vh - 140px)', /* Subtract header height and padding */
+              zIndex: 10,
+              display: 'block' /* Changed from flex to block for absolute positioning */
             }}>
               {/* Instructions Panel Component - Top 75% */}
               <InstructionsPanel 
