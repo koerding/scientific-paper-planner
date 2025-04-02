@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 
 /**
  * AIChatPanel provides the chat interface with AI assistant
- * Takes up 25% of the right panel
+ * Takes up 50% of the right panel
  */
 const AIChatPanel = ({
   currentSection,
@@ -21,8 +21,8 @@ const AIChatPanel = ({
       border: '1px solid #E5E7EB', /* border-gray-200 */
       boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
       overflow: 'hidden',
-      minHeight: '350px', /* Increased minimum height */
-      flex: '0 0 350px', /* Fixed height that won't grow or shrink */
+      minHeight: '50%', /* Take half the height */
+      flex: '0 0 50%', /* Fixed 50% that won't grow or shrink */
       display: 'flex',
       flexDirection: 'column',
       marginTop: '1rem' /* Space between panels */
@@ -123,11 +123,14 @@ const AIChatPanel = ({
           )}
         </div>
         
-        {/* Chat input */}
+        {/* Chat input - Always visible at bottom */}
         <div style={{
           padding: '1rem',
           borderTop: '1px solid #E5E7EB', /* border-gray-200 */
-          backgroundColor: '#F9FAFB' /* bg-gray-50 */
+          backgroundColor: '#F9FAFB', /* bg-gray-50 */
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 10
         }}>
           <div className="flex">
             <input
