@@ -21,7 +21,8 @@ const AIChatPanel = ({
       border: '1px solid #E5E7EB', /* border-gray-200 */
       boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
       overflow: 'hidden',
-      flex: '0 0 250px', /* Fixed height that won't grow or shrink */
+      minHeight: '350px', /* Increased minimum height */
+      flex: '0 0 350px', /* Fixed height that won't grow or shrink */
       display: 'flex',
       flexDirection: 'column',
       marginTop: '1rem' /* Space between panels */
@@ -38,7 +39,8 @@ const AIChatPanel = ({
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100% - 56px)' /* Subtract header height */
+        height: 'calc(100% - 56px)', /* Subtract header height */
+        flexGrow: 1
       }}>
         {/* Chat messages area */}
         <div style={{
