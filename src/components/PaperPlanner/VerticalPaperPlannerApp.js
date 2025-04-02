@@ -320,7 +320,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             })}
           </div>
           
-          {/* Right column - Fixed instructions and AI - 2/3 width */}
+{/* Right column - Fixed instructions and AI - 2/3 width */}
           <div style={{ 
             width: '50%', // Changed from 66.666% to 50%
             paddingLeft: '1rem',
@@ -329,7 +329,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             <div style={{
               position: 'fixed',
               width: 'calc(50% - 2rem)', // Changed to match new right column width
-              maxHeight: 'calc(100vh - 140px)',
+              top: '140px', // Fixed position from top
+              bottom: '1rem', // Fixed position from bottom
               display: 'flex',
               flexDirection: 'column',
               zIndex: 10
@@ -342,7 +343,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 borderLeftWidth: '4px',
                 borderLeftColor: '#3B82F6', /* border-blue-500 */
                 overflowY: 'auto',
-                height: 'calc(66% - 1rem)',
+                height: 'calc(66.666% - 1rem)', // Exact 2/3 minus margin
                 marginBottom: '1rem',
                 position: 'relative'
               }}>
@@ -409,7 +410,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 border: '1px solid #E5E7EB', /* border-gray-200 */
                 boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
                 overflow: 'hidden',
-                height: 'calc(34%)',
+                height: 'calc(33.333%)', // Exact 1/3 of available height
                 display: 'flex',
                 flexDirection: 'column'
               }}>
@@ -550,7 +551,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
               </div>
             </div>
           </div>
-        </div>
         
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm mt-12 border-t border-gray-200 pt-6">
