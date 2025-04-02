@@ -4,6 +4,7 @@ import React from 'react';
  * SectionCard component represents a single editable section in the paper planner
  * Handles displaying content, status indicators, and different input types
  * More compact design with less whitespace
+ * Improved focus handling
  */
 const SectionCard = ({
   section,
@@ -33,8 +34,20 @@ const SectionCard = ({
     return content.trim() !== '' && content !== placeholder;
   };
 
-  // Focus handler
-  const handleFocus = () => {
+  // Focus handler - explicitly set focus to this section
+  const handleInputFocus = (e) => {
+    // Stop event propagation to prevent conflicts
+    e.stopPropagation();
+    // Update active section
+    setActiveSection(section.id);
+    handleSectionChange(section.id);
+  };
+
+  // Click handler for the textarea
+  const handleTextareaClick = (e) => {
+    // Stop event propagation to prevent conflicts
+    e.stopPropagation();
+    // Update active section
     setActiveSection(section.id);
     handleSectionChange(section.id);
   };
@@ -78,6 +91,9 @@ const SectionCard = ({
               onClick={(e) => {
                 e.stopPropagation(); // Prevent triggering parent onClick
                 handleCheckboxChange(option.id);
+                // Also set this section as active when clicking a checkbox
+                setActiveSection(section.id);
+                handleSectionChange(section.id);
               }}
             >
               <div className="flex items-start">
@@ -86,7 +102,12 @@ const SectionCard = ({
                     type="checkbox"
                     id={option.id}
                     checked={userInputs.philosophy && userInputs.philosophy.includes(option.id)}
-                    onChange={() => handleCheckboxChange(option.id)}
+                    onChange={() => {
+                      handleCheckboxChange(option.id);
+                      // Also set this section as active when changing a checkbox
+                      setActiveSection(section.id);
+                      handleSectionChange(section.id);
+                    }}
                     className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
                 </div>
@@ -105,8 +126,14 @@ const SectionCard = ({
       ) : (
         <textarea
           value={userInputs[section.id] || ''}
-          onChange={(e) => handleInputChange(section.id, e.target.value)}
-          onFocus={handleFocus}
+          onChange={(e) => {
+            handleInputChange(section.id, e.target.value);
+            // Also set this section as active when changing text
+            setActiveSection(section.id);
+            handleSectionChange(section.id);
+          }}
+          onFocus={handleInputFocus}
+          onClick={handleTextareaClick}
           className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
           rows={6} /* Limit to 6 visible rows maximum */
           placeholder={section.placeholder || "Enter your content here..."}
