@@ -185,6 +185,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                     setActiveSection(section.id);
                     handleSectionChange(section.id);
                   }}
+                  setActiveSection={setActiveSection}
+                  handleSectionChange={handleSectionChange}
                 />
               );
             })}
@@ -204,12 +206,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
               flexDirection: 'column',
               zIndex: 10
             }}>
-              {/* Instructions Panel Component - Top 75% */}
+              {/* Instructions Panel Component - Top 50% */}
               <InstructionsPanel 
                 currentSection={getCurrentSection()} 
               />
               
-              {/* AI Chat Panel Component - Bottom 25% */}
+              {/* AI Chat Panel Component - Bottom 50% */}
               <AIChatPanel
                 currentSection={currentSection}
                 chatMessages={chatMessages}
