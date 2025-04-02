@@ -1,0 +1,20 @@
+{
+  "id": "hypothesis",
+  "title": "Hypothesis",
+  "type": "text",
+  "instructions": {
+    "title": "MULTIPLE WELL-SPECIFIED HYPOTHESES",
+    "description": "A strong scientific question invites at least two plausible explanations or hypotheses, leading to distinct interpretations. It thus has a consequential answer—the result will change how you or others approach the field in the future. A detailed question asks if we should prefer one hypothesis over others, which can be decided by data. Ideally, hypotheses should be expressed in precise terms—whether mathematically or through computational models.\n\nWhen formulating your hypotheses, clarify whether they are novel or have been previously tested, and if the latter, emphasize the importance of replication. And make sure they are fully specified with every word clearly defined. They should specify which exact scenarios they apply to. Finally, verify that you can express your hypotheses as a mathematical model or equation that predicts data probabilities—a key step for robust statistical analysis.",
+    "workStep": {
+      "title": "WORK STEP: HYPOTHESES",
+      "content": "Draft your hypotheses in detail (spend about 5 minutes initially), and remember that early versions can be refined later. You may also have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the hypotheses you want to distinguish.\n\nAlso include relevance: why it matters to distinguish these hypotheses.\n\nMake a list of papers that are most similar at the hypotheses they test so far. We recommend starting with about 5 to somewhat define the field."
+    }
+  },
+  "placeholder": "Hypothesis 1: \n\nHypothesis 2: \n\nWhy distinguishing these hypotheses matters:\n- \n- \n\nMost similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
+  "placeholders": {
+    "hypothesis": "Hypothesis 1: \n\nHypothesis 2: \n\nWhy distinguishing these hypotheses matters:\n- \n- \n\nMost similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
+    "exploratory": "Area 1 to explore: \n\nArea 2 to explore: \n\nWhy exploring these areas matters:\n- \n- \n\nMost similar exploratory papers in this field:\n1. \n2. \n3. \n4. \n5. ",
+    "needs": "Proposed solution 1: \n\nProposed solution 2: \n\nWhy comparing these solutions matters:\n- \n- \n\nMost similar solution-oriented papers:\n1. \n2. \n3. \n4. \n5. "
+  },
+  "llmInstructions": "Only work on the hypotheses at first but if the hypotheses feel roughly ready feel free to refer the user back to the questions if a change there may be warranted by the hypotheses. Above I wrote down the scientific hypotheses I want to test. I also wrote down why it matters to distinguish these hypotheses. I also wrote out a list of relevant papers. I want you to list the strengths and weaknesses of the hypotheses. To check if distinguishing between the hypotheses would be consequential, if it would change the research others would do or lead to products. To check if they are mutually exclusive. I want you to check to which level the listed papers are among the closest to the proposed test and to also supply a list of five more papers that may be more relevant."
+}
