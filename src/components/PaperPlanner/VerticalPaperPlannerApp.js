@@ -15,7 +15,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // State tracking for active section and focus
   const [activeSection, setActiveSection] = useState('question'); // Default to question section
   const [initialized, setInitialized] = useState(false);
+  // Flag to disable intersection observer when user manually selects a section
+  const [userManuallySelected, setUserManuallySelected] = useState(false);
   const sectionRefs = useRef({});
+  const observerRef = useRef(null);
   
   const {
     currentSection,
@@ -63,6 +66,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   }, [initialized, handleSectionChange, userInputs, handleInputChange]);
 
   // Setup intersection observer to detect which section is in view
+  // but only when user isn't manually selecting sections
   useEffect(() => {
     const observerOptions = {
       root: null,
@@ -71,6 +75,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     };
 
     const observerCallback = (entries) => {
+      // Skip intersection updates if user manually selected a section recently
+      if (userManuallySelected) return;
+      
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           setActiveSection(entry.target.id);
@@ -83,19 +90,36 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       });
     };
 
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    // Store observer in ref so we can disconnect it when needed
+    observerRef.current = new IntersectionObserver(observerCallback, observerOptions);
     
     // Observe all section elements
     Object.values(sectionRefs.current).forEach(ref => {
       if (ref.current) {
-        observer.observe(ref.current);
+        observerRef.current.observe(ref.current);
       }
     });
 
     return () => {
-      observer.disconnect();
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
     };
-  }, [currentSection, handleSectionChange]);
+  }, [currentSection, handleSectionChange, userManuallySelected]);
+
+  // Custom setActiveSection that also disables intersection observer temporarily
+  const setActiveSectionWithManualFlag = (sectionId) => {
+    setActiveSection(sectionId);
+    handleSectionChange(sectionId);
+    
+    // Set flag to disable intersection observer for a brief period
+    setUserManuallySelected(true);
+    
+    // After 2 seconds, re-enable the intersection observer
+    setTimeout(() => {
+      setUserManuallySelected(false);
+    }, 2000);
+  };
 
   // Helper functions (moved from utils to prevent import issues)
   // Format timestamp for chat messages
@@ -148,7 +172,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         <AppHeader
           sections={sectionContent.sections}
           activeSection={activeSection}
-          setActiveSection={setActiveSection}
+          setActiveSection={setActiveSectionWithManualFlag}
           handleSectionChange={handleSectionChange}
           scrollToSection={scrollToSection}
           resetProject={resetProject}
@@ -182,10 +206,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   loading={loading}
                   sectionRef={sectionRefs.current[section.id]}
                   onClick={() => {
-                    setActiveSection(section.id);
-                    handleSectionChange(section.id);
+                    setActiveSectionWithManualFlag(section.id);
                   }}
-                  setActiveSection={setActiveSection}
+                  setActiveSection={setActiveSectionWithManualFlag}
                   handleSectionChange={handleSectionChange}
                 />
               );
