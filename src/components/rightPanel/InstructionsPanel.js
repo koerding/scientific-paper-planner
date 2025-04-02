@@ -2,18 +2,18 @@ import React from 'react';
 
 /**
  * InstructionsPanel displays instructions for the current section
- * Occupies remaining space in the flex container
+ * Reduced to 50% to give room for the chat panel below
  */
 const InstructionsPanel = ({ currentSection }) => {
   return (
     <div style={{
       backgroundColor: '#EBF5FF', /* bg-blue-50 */
       borderRadius: '0.5rem',
-      padding: '1.5rem',
+      padding: '1.25rem',
       borderLeftWidth: '4px',
       borderLeftColor: '#3B82F6', /* border-blue-500 */
       overflowY: 'auto',
-      flex: '1 1 auto', /* Allow this to grow and take available space */
+      flex: '0 0 50%', /* Fixed 50% height */
       position: 'relative'
     }}>
       {/* Connection to active section */}
@@ -46,18 +46,18 @@ const InstructionsPanel = ({ currentSection }) => {
         </div>
       ) : (
         <>
-          <h3 className="text-xl font-semibold text-blue-800 mb-4">
+          <h3 className="text-xl font-semibold text-blue-800 mb-3">
             {currentSection.title}
           </h3>
           <div className="prose prose-blue max-w-none">
-            <div className="text-blue-700">
+            <div className="text-blue-700 text-sm">
               {currentSection.instructions.description.split('\n\n').map((paragraph, i) => (
-                <p key={i} className="mb-3">{paragraph}</p>
+                <p key={i} className="mb-2">{paragraph}</p>
               ))}
             </div>
             {currentSection.instructions.workStep && currentSection.instructions.workStep.content && (
-              <div className="bg-white rounded-lg p-4 border border-blue-200 mt-4">
-                <h4 className="font-medium text-blue-800 mb-2">
+              <div className="bg-white rounded-lg p-3 border border-blue-200 mt-3">
+                <h4 className="font-medium text-blue-800 mb-1 text-base">
                   {currentSection.instructions.workStep.title}
                 </h4>
                 <div className="text-blue-600 text-sm">
