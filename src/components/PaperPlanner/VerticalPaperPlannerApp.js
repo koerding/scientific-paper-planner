@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
-import AppHeader from '../components/layout/AppHeader';
-import SectionCard from '../components/sections/SectionCard';
-import InstructionsPanel from '../components/rightPanel/InstructionsPanel';
-import AIChatPanel from '../components/rightPanel/AIChatPanel';
-import { formatTime, hasSectionContent, getSectionById } from '../utils/sectionUtils';
+import AppHeader from '../layout/AppHeader';
+import SectionCard from '../sections/SectionCard';
+import InstructionsPanel from '../rightPanel/InstructionsPanel';
+import AIChatPanel from '../rightPanel/AIChatPanel';
 import './PaperPlanner.css';
 
 /**
@@ -98,6 +97,34 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     };
   }, [currentSection, handleSectionChange]);
 
+  // Helper functions (moved from utils to prevent import issues)
+  // Format timestamp for chat messages
+  const formatTime = () => {
+    const now = new Date();
+    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Check if a section has content beyond placeholder
+  const hasSectionContent = (sectionId) => {
+    if (sectionId === 'philosophy') {
+      return userInputs.philosophy && userInputs.philosophy.length > 0;
+    }
+    
+    // Get section content and placeholder
+    const content = userInputs[sectionId] || '';
+    const section = sectionContent.sections.find(s => s.id === sectionId);
+    const placeholder = section?.placeholder || '';
+    
+    // If content is completely empty, it's not completed
+    if (!content || content.trim() === '') return false;
+    
+    // If content is exactly the placeholder, it's not completed
+    if (content === placeholder) return false;
+    
+    // Otherwise, consider it completed (even if just slightly modified)
+    return true;
+  };
+
   // Scroll to a specific section
   const scrollToSection = (sectionId) => {
     if (sectionRefs.current[sectionId] && sectionRefs.current[sectionId].current) {
@@ -139,7 +166,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           }}>
             {sectionContent.sections.map((section) => {
               const isCurrentSection = activeSection === section.id;
-              const isCompleted = hasSectionContent(section.id, userInputs, section);
+              const isCompleted = hasSectionContent(section.id);
               
               return (
                 <SectionCard
