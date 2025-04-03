@@ -1,191 +1,92 @@
-import React, { useState, useEffect, useRef } from 'react';
-import sectionContent from '../../sectionContent.json';
-import ConfirmDialog from './ConfirmDialog';
-import AppHeader from '../layout/AppHeader';
-import SectionCard from '../sections/SectionCard';
-import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
-import ModernChatInterface from '../chat/ModernChatInterface';
-import '../../styles/PaperPlanner.css';
+import React, { useState } from 'react';
 
 /**
- * Redesigned Paper Planner with:
- * - Full width for user content
- * - Full-height instruction panel
- * - Minimizable chat interface
- * - Larger fonts
+ * Full-height instructions panel with Improve button
+ * that intelligently updates instructions based on user progress
  */
-const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
-  // State tracking for active section
-  const [activeSection, setActiveSection] = useState('question'); // Default to question section
-  const [initialized, setInitialized] = useState(false);
-  const sectionRefs = useRef({});
+const FullHeightInstructionsPanel = ({ 
+  currentSection, 
+  userInputs,
+  improveInstructions,
+  loading = false
+}) => {
+  const [improving, setImproving] = useState(false);
   
-  const {
-    currentSection,
-    userInputs,
-    chatMessages,
-    currentMessage,
-    loading,
-    showConfirmDialog,
-    setCurrentMessage,
-    setShowConfirmDialog,
-    handleSectionChange,
-    handleInputChange,
-    handleCheckboxChange,
-    handleSendMessage,
-    handleFirstVersionFinished,
-    resetProject,
-    exportProject
-  } = usePaperPlannerHook;
-
-  // Store refs for all sections
-  useEffect(() => {
-    sectionContent.sections.forEach(section => {
-      sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
-    });
-  }, []);
-
-  // Initialize with focus on question section and prefill content
-  useEffect(() => {
-    if (!initialized) {
-      // Set initial focus
-      handleSectionChange('question');
-      setActiveSection('question');
-      
-      // Pre-fill text for every section that's not already filled
-      sectionContent.sections.forEach(section => {
-        if (section.type !== 'checklist' && section.placeholder) {
-          if (!userInputs[section.id] || userInputs[section.id].trim() === '') {
-            handleInputChange(section.id, section.placeholder);
-          }
-        }
-      });
-      
-      setInitialized(true);
-    }
-  }, [initialized, handleSectionChange, userInputs, handleInputChange]);
-
-  // We're using explicit user interaction only for section changes
-  // so we don't need an intersection observer
-
-  // Custom setActiveSection that updates both the active section and current section
-  const setActiveSectionWithManualFlag = (sectionId) => {
-    setActiveSection(sectionId);
-    handleSectionChange(sectionId);
+  // Handle improve button click
+  const handleImprove = async () => {
+    setImproving(true);
+    await improveInstructions();
+    setImproving(false);
   };
-
-  // Check if a section has content beyond placeholder
-  const hasSectionContent = (sectionId) => {
-    if (sectionId === 'philosophy') {
-      return userInputs.philosophy && userInputs.philosophy.length > 0;
-    }
-    
-    // Get section content and placeholder
-    const content = userInputs[sectionId] || '';
-    const section = sectionContent.sections.find(s => s.id === sectionId);
-    const placeholder = section?.placeholder || '';
-    
-    // If content is completely empty, it's not completed
-    if (!content || content.trim() === '') return false;
-    
-    // If content is exactly the placeholder, it's not completed
-    if (content === placeholder) return false;
-    
-    // Otherwise, consider it completed (even if just slightly modified)
-    return true;
-  };
-
-  // Scroll to a specific section
-  const scrollToSection = (sectionId) => {
-    if (sectionRefs.current[sectionId] && sectionRefs.current[sectionId].current) {
-      sectionRefs.current[sectionId].current.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      });
-    }
-  };
-
-  // Get the current section object for instructions display
-  const getCurrentSection = () => {
-    return sectionContent.sections.find(s => s.id === activeSection) || null;
-  };
-
+  
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Full width content */}
-      <div className="w-full pb-12">
-        {/* Header Component */}
-        <AppHeader
-          activeSection={activeSection}
-          setActiveSection={setActiveSectionWithManualFlag}
-          handleSectionChange={handleSectionChange}
-          scrollToSection={scrollToSection}
-          resetProject={resetProject}
-          exportProject={exportProject}
-        />
-        
-        {/* Main content area with adjusted layout */}
-        <div className="flex">
-          {/* Left column - User editable sections - taking 2/3 width */}
-          <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
-            {sectionContent.sections.map((section) => {
-              const isCurrentSection = activeSection === section.id;
-              const isCompleted = hasSectionContent(section.id);
-              
-              return (
-                <SectionCard
-                  key={section.id}
-                  section={section}
-                  isCurrentSection={isCurrentSection}
-                  isCompleted={isCompleted}
-                  userInputs={userInputs}
-                  handleInputChange={handleInputChange}
-                  handleCheckboxChange={handleCheckboxChange}
-                  handleFirstVersionFinished={handleFirstVersionFinished}
-                  philosophyOptions={sectionContent.philosophyOptions}
-                  loading={loading}
-                  sectionRef={sectionRefs.current[section.id]}
-                  onClick={() => {
-                    setActiveSectionWithManualFlag(section.id);
-                  }}
-                  setActiveSection={setActiveSectionWithManualFlag}
-                  handleSectionChange={handleSectionChange}
-                  useLargerFonts={true} // Enable larger fonts
-                />
-              );
-            })}
+    <div 
+      className="bg-blue-50 border-l-4 border-blue-500 h-full overflow-y-auto"
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        width: '50%',
+        paddingTop: '120px', // Account for header
+        paddingBottom: '2rem', 
+        zIndex: 10
+      }}
+    >
+      <div className="px-6 py-4 relative">
+        {/* Improve button */}
+        <button 
+          onClick={handleImprove}
+          disabled={improving || loading}
+          className={`absolute top-4 right-4 px-4 py-2 rounded-lg text-base font-medium transition-all
+            ${improving || loading 
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+              : 'bg-blue-600 text-white hover:bg-blue-700 shadow hover:shadow-md'
+            }`}
+        >
+          {improving ? (
+            <span className="flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Improving...
+            </span>
+          ) : 'Improve'}
+        </button>
+
+        {!currentSection ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-blue-600 text-xl">Select a section to view instructions</p>
           </div>
-        </div>
-        
-        {/* Footer */}
-        <div className="text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6">
-          <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
-        </div>
-        
-        {/* Full-height instructions panel (fixed position) */}
-        <FullHeightInstructionsPanel 
-          currentSection={getCurrentSection()} 
-        />
-        
-        {/* Minimizable chat interface */}
-        <ModernChatInterface
-          currentSection={currentSection}
-          chatMessages={chatMessages}
-          currentMessage={currentMessage}
-          setCurrentMessage={setCurrentMessage}
-          handleSendMessage={handleSendMessage}
-          loading={loading}
-        />
-        
-        {/* Confirmation Dialog */}
-        <ConfirmDialog
-          showConfirmDialog={showConfirmDialog}
-          setShowConfirmDialog={setShowConfirmDialog}
-          resetProject={resetProject}
-        />
+        ) : (
+          <>
+            <h3 className="text-2xl font-semibold text-blue-800 mb-4 pr-24">
+              {currentSection.title}
+            </h3>
+            <div className="prose prose-blue max-w-none">
+              <div className="text-blue-700 text-lg">
+                {currentSection.instructions.description.split('\n\n').map((paragraph, i) => (
+                  <p key={i} className="mb-3">{paragraph}</p>
+                ))}
+              </div>
+              {currentSection.instructions.workStep && currentSection.instructions.workStep.content && (
+                <div className="bg-white rounded-lg p-4 border border-blue-200 mt-5">
+                  <h4 className="font-medium text-blue-800 mb-2 text-xl">
+                    {currentSection.instructions.workStep.title}
+                  </h4>
+                  <div className="text-blue-600 text-lg">
+                    {currentSection.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
+                      <p key={i} className="mb-3">{paragraph}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 };
 
-export default VerticalPaperPlannerApp;
+export default FullHeightInstructionsPanel;
