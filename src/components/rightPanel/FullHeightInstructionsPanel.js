@@ -30,13 +30,7 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
       ${currentSection.instructions.workStep ? '\n' + currentSection.instructions.workStep.title + '\n' + currentSection.instructions.workStep.content : ''}
 
       User's current content:
-      ${currentSection.id === 'philosophy' 
-        ? (userInputs.philosophy || []).map(id => {
-            const philosophy = philosophyOptions.find(p => p.id === id);
-            return philosophy ? philosophy.label : '';
-          }).join('\n')
-        : userInputs[currentSection.id] || ''
-      }
+      ${userInputs[currentSection.id] || ''}
 
       Instructions for editing:
       1. PRIMARILY REMOVE parts of the instructions that are redundant or already addressed by the user
