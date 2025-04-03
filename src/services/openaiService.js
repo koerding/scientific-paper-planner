@@ -1,33 +1,29 @@
 /**
  * Service for interacting with the OpenAI API.
- * UPDATED: Added stricter check inside forEach loop in buildMessages to prevent processing undefined elements.
- * Corrected syntax error (removed extra trailing brace).
+ * UPDATED: Reads single 'instructions.text' field in buildMessages.
  */
 // Reads API Key and Model from Environment Variables
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
-const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo"; // Use env variable or default
+const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
 
 // Function to build the message history with context
 const buildMessages = (prompt, contextType, userInputs, sections) => {
   const systemMessage = `You are a helpful assistant for planning scientific papers. Context type: ${contextType}.`;
   const messages = [{ role: 'system', content: systemMessage }];
 
-  // Add section context safely
+  // console.log(`[openaiService buildMessages] Received sections (${Array.isArray(sections) ? sections.length : 'Not an array'}):`, sections); // Keep for debugging if needed
+
+  // Add section context safely using the new 'instructions.text'
   if (Array.isArray(sections)) {
     sections.forEach((section, index) => {
-      // *** FIX: Add strict check for valid section object at the start of the loop iteration ***
-      if (!section || typeof section !== 'object' || !section.id || !section.title || !section.instructions) {
-          console.warn(`[openaiService buildMessages] Skipping invalid or incomplete section object at index ${index}:`, section);
+      // Check for valid section object and ensure instructions.text exists
+      if (!section || typeof section !== 'object' || !section.id || !section.title || !section.instructions || typeof section.instructions.text !== 'string') {
+          console.warn(`[openaiService buildMessages] Skipping invalid/incomplete section or missing instructions.text at index ${index}:`, section);
           return; // Skip this iteration entirely
       }
 
-      // Now we know 'section' and its core properties are valid
-      const instructionDesc = section.instructions.description || '';
-      const workStepTitle = section.instructions.workStep?.title || '';
-      const workStepContent = section.instructions.workStep?.content || '';
-      const instructionText = `${instructionDesc} ${workStepTitle} ${workStepContent}`.trim();
-
-      // Check userInputs exists before accessing section.id
+      // Use the single instructions text field
+      const instructionText = section.instructions.text;
       const userInput = userInputs && section.id ? (userInputs[section.id] || '') : '';
       const safeUserInput = (typeof userInput === 'string' ? userInput : JSON.stringify(userInput)) || 'N/A';
 
@@ -42,7 +38,6 @@ Current User Input: ${safeUserInput}`
        console.error("[openaiService buildMessages] Received 'sections' argument is not an array:", sections);
   }
 
-  // Add the main prompt message
   messages.push({ role: 'user', content: prompt });
   return messages;
 };
@@ -53,7 +48,7 @@ export const callOpenAI = async (
     prompt,
     contextType = "general",
     userInputs = {},
-    sections = [], // Default to empty array
+    sections = [],
     options = {}
  ) => {
 
@@ -65,8 +60,6 @@ export const callOpenAI = async (
   }
 
   console.log(`[openaiService callOpenAI] Calling API. Context: ${contextType}, Model: ${model}`);
-
-  // Build messages using the refined function
   const messages = buildMessages(prompt, contextType, userInputs, sections);
 
   const body = JSON.stringify({
@@ -97,7 +90,7 @@ export const callOpenAI = async (
     }
 
     const data = await response.json();
-    console.log("[openaiService callOpenAI] API Response OK"); // Simplified log on success
+    console.log("[openaiService callOpenAI] API Response OK");
 
     const responseContent = data.choices?.[0]?.message?.content?.trim();
     if (!responseContent) {
@@ -108,9 +101,6 @@ export const callOpenAI = async (
 
   } catch (error) {
     console.error("Error calling OpenAI API:", error);
-    // Re-throw error so the calling service (instructionImprovementService) can handle it
     throw error;
   }
 };
-
-// Removed extra closing brace from here
