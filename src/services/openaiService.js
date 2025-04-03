@@ -1,11 +1,13 @@
 /**
- * Service for interacting with the OpenAI API.
- * Uses environment variables. Reads single 'instructions.text'. Logs removed.
+ * Enhanced OpenAI service with better error reporting and fallback mode
  */
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
 
-// Function to build the message history with context
+// Fallback flag for development without API key
+const USE_FALLBACK = !apiKey || process.env.REACT_APP_USE_FALLBACK === 'true';
+
+// Add this to your openaiService.js file to enable debug mode and fallbacks
 const buildMessages = (prompt, contextType, userInputs, sections) => {
   const systemMessage = `You are a helpful assistant for planning scientific papers. Context type: ${contextType}.`;
   const messages = [{ role: 'system', content: systemMessage }];
@@ -13,10 +15,10 @@ const buildMessages = (prompt, contextType, userInputs, sections) => {
   // Add section context safely using the new 'instructions.text'
   if (Array.isArray(sections)) {
     sections.forEach((section, index) => {
-      // Strict check for valid section object at the start of the loop iteration
+      // Strict check for valid section object
       if (!section || typeof section !== 'object' || !section.id || !section.title || !section.instructions || typeof section.instructions.text !== 'string') {
-          // console.warn(`[openaiService buildMessages] Skipping invalid or incomplete section object at index ${index}:`, section); // Keep warn if needed
-          return; // Skip this iteration entirely
+          console.warn(`[openaiService buildMessages] Skipping invalid section at index ${index}`);
+          return;
       }
 
       const instructionText = section.instructions.text;
@@ -31,14 +33,42 @@ Current User Input: ${safeUserInput}`
       });
     });
   } else {
-       console.error("[openaiService buildMessages] Received 'sections' argument is not an array:", sections);
+       console.error("[openaiService buildMessages] 'sections' is not an array:", sections);
   }
 
   messages.push({ role: 'user', content: prompt });
   return messages;
 };
 
-// Main function to call the OpenAI API
+// Mock response function for when no API key is available
+const mockResponse = (contextType, prompt) => {
+  if (contextType === 'improve_instructions_batch') {
+    return `
+I've analyzed the content and improved the instructions.
+Here are the updated instruction texts:
+
+[
+  {
+    "id": "question",
+    "instructionsText": "Great job defining your research question! You're asking whether speed-dating events between scientists increase collaboration probability, which is clear and testable. Here are some additional points to consider: 1) Think about the scope - are you focusing on specific scientific disciplines? 2) Consider quantifying what 'increased collaboration' means (joint papers, grant applications, etc.)."
+  },
+  {
+    "id": "hypothesis",
+    "instructionsText": "I see you're interested in testing this hypothesis. Now you need to formulate specific, competing hypotheses. For example: H1: Scientists who meet in speed-dating events have significantly higher collaboration rates than those who meet in traditional conferences. H2: The format of initial meeting (speed-dating vs. traditional) has no effect on collaboration likelihood when controlling for research interests."
+  }
+]`;
+  }
+
+  // For regular chat messages
+  return `This is a mock response because no OpenAI API key is configured.
+Please set REACT_APP_OPENAI_API_KEY in your environment variables or .env file.
+
+For a real application, I would respond to your prompt about "${contextType}" with helpful information.
+
+For testing purposes, you can continue using the application with this mock mode.`;
+};
+
+// Main function to call the OpenAI API with improved error handling
 export const callOpenAI = async (
     prompt,
     contextType = "general",
@@ -46,15 +76,25 @@ export const callOpenAI = async (
     sections = [],
     options = {}
  ) => {
+   
+  console.log(`[openaiService] API Call Request - Context: ${contextType}`, {
+    apiKeyConfigured: !!apiKey,
+    modelUsed: model,
+    useFallback: USE_FALLBACK,
+    promptLength: prompt.length,
+    userInputsCount: Object.keys(userInputs).length,
+    sectionsCount: Array.isArray(sections) ? sections.length : 'Not an array'
+  });
 
-  const apiUrl = "https://api.openai.com/v1/chat/completions";
-
-  if (!apiKey) {
-    console.error("OpenAI API key is missing. Ensure REACT_APP_OPENAI_API_KEY is set.");
-    throw new Error("OpenAI API key not configured in environment variables.");
+  // If no API key is configured, use mock responses
+  if (USE_FALLBACK) {
+    console.warn("[openaiService] Using FALLBACK mode because API key is missing");
+    // Wait to simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return mockResponse(contextType, prompt);
   }
 
-  // console.log(`[openaiService callOpenAI] Calling API. Context: ${contextType}, Model: ${model}`); // Removed log
+  const apiUrl = "https://api.openai.com/v1/chat/completions";
   const messages = buildMessages(prompt, contextType, userInputs, sections);
 
   const body = JSON.stringify({
@@ -65,6 +105,8 @@ export const callOpenAI = async (
   });
 
   try {
+    console.log(`[openaiService] Sending request to OpenAI API...`);
+    
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -75,17 +117,20 @@ export const callOpenAI = async (
     });
 
     if (!response.ok) {
-      const errorBody = await response.json();
-      console.error("OpenAI API Error:", response.status, errorBody);
-      throw new Error(
-        `API request failed with status ${response.status}: ${
-          errorBody?.error?.message || response.statusText
-        }`
-      );
+      let errorMessage = `API request failed with status ${response.status}`;
+      try {
+        const errorBody = await response.json();
+        console.error("OpenAI API Error:", response.status, errorBody);
+        errorMessage += `: ${errorBody?.error?.message || response.statusText}`;
+      } catch (parseError) {
+        console.error("Error parsing error response:", parseError);
+        errorMessage += ` (could not parse error details)`;
+      }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
-    // console.log("[openaiService callOpenAI] API Response OK"); // Removed log
+    console.log("[openaiService] API Response received successfully");
 
     const responseContent = data.choices?.[0]?.message?.content?.trim();
     if (!responseContent) {
@@ -96,6 +141,13 @@ export const callOpenAI = async (
 
   } catch (error) {
     console.error("Error calling OpenAI API:", error);
-    throw error;
+    
+    // If the error is due to network connectivity, provide a clear message
+    if (error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
+      throw new Error("Network error: Unable to connect to OpenAI API. Please check your internet connection.");
+    }
+    
+    // Return a more user-friendly error
+    throw new Error(`OpenAI API Error: ${error.message || 'Unknown error'}`);
   }
 };
