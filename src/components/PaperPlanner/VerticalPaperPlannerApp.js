@@ -5,7 +5,7 @@ import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
-import './PaperPlanner.css';
+import '../../styles/PaperPlanner.css';
 
 /**
  * Redesigned Paper Planner with:
