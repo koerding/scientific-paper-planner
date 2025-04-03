@@ -1,68 +1,17 @@
-import React, { useState } from 'react';
-import { callOpenAI } from '../../services/openaiService';
+import React, { useState } from 'react'; // Removed useEffect as it's no longer needed here
+// Removed import for callOpenAI as it's handled by the parent now
 import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
 
 /**
  * Simplified full-height instructions panel with Improve button
  * Merges the white and blue boxes into a single blue panel
+ * UPDATED: Removed local state and handler for improvement, uses prop now.
  */
-const FullHeightInstructionsPanel = ({ currentSection }) => {
-  const [improving, setImproving] = useState(false);
-  const [improvedInstructions, setImprovedInstructions] = useState(''); // State to hold improved instructions
+const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => { // Added improveInstructions and loading props
+  // Removed local improving state, using the 'loading' prop from parent now
+  // Removed local improvedInstructions state
 
-  // Handle improve button click
-  const handleImprove = async () => {
-    if (!currentSection) return;
-
-    setImproving(true);
-
-    try {
-      // Get user inputs from localStorage or your app state
-      const userInputs = JSON.parse(localStorage.getItem('paperPlannerData')) || {};
-      const philosophyOptions = require('../../data/sectionContent.json').philosophyOptions;
-
-      // Create the prompt for improvement
-      const prompt = `
-      You are an editor tasked with streamlining scientific paper planning instructions based on what the user has already accomplished. Your job is primarily to REMOVE redundant or unnecessary guidance from the instructions.
-
-      Current section: ${currentSection.title}
-
-      Current instructions:
-      ${currentSection.instructions.description}
-      ${currentSection.instructions.workStep ? '\n' + currentSection.instructions.workStep.title + '\n' + currentSection.instructions.workStep.content : ''}
-
-      User's current content:
-      ${userInputs[currentSection.id] || ''}
-
-      Instructions for editing:
-      1. PRIMARILY REMOVE parts of the instructions that are redundant or already addressed by the user
-      2. Keep the instructions concise and to the point
-      3. You may add AT MOST 1-2 short sentences if absolutely necessary
-      4. Maintain the same style and tone as the original
-      5. Don't add lengthy new explanations
-
-      Response format: Provide ONLY the edited instructions text that should replace the current instructions.
-      Preserve the section title as a heading and maintain paragraph breaks.
-      `;
-
-      // Call the OpenAI API
-      const response = await callOpenAI(
-        prompt,
-        currentSection.id,
-        userInputs,
-        [currentSection],
-        philosophyOptions
-      );
-
-      setImprovedInstructions(response); // Set the state with the improved instructions
-
-      console.log("Instructions improved successfully");
-    } catch (error) {
-      console.error("Error improving instructions:", error);
-    } finally {
-      setImproving(false);
-    }
-  };
+  // REMOVED: handleImprove function is no longer needed here
 
   return (
     <div
@@ -71,14 +20,14 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
         position: 'fixed',
         top: 0,
         right: 0,
-        width: '50%',
+        width: '50%', // Adjusted width if needed, ensure it matches your layout
         paddingTop: '120px', // Account for header
         paddingBottom: '2rem',
-        zIndex: 10
+        zIndex: 10 // Ensure it's below the header buttons if they overlap
       }}
     >
       <div className="px-6 py-4 relative">
-        {/* Improve button - Moved to below the title */}
+        {/* Improve button - Now uses the passed 'improveInstructions' prop */}
         {!currentSection ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-blue-600 text-xl">Select a section to view instructions</p>
@@ -89,15 +38,15 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
               {currentSection.title}
             </h3>
             <button
-              onClick={handleImprove}
-              disabled={improving || !currentSection}
+              onClick={improveInstructions} // *** CHANGED: Use the prop function ***
+              disabled={loading || !currentSection} // Use the loading prop from parent
               className={`mb-4 px-4 py-2 rounded-lg text-base font-medium transition-all
-                ${improving || !currentSection
+                ${loading || !currentSection
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700 shadow hover:shadow-md'
                 }`}
             >
-              {improving ? (
+              {loading ? ( // Use the loading prop for the button state
                 <span className="flex items-center">
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -105,33 +54,24 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
                   </svg>
                   Improving...
                 </span>
-              ) : 'Improve'}
+              ) : 'Improve Instructions'} {/* Updated button text for clarity */}
             </button>
             <div className="prose prose-blue max-w-none instructions-content">
-              {/* Render improved instructions using ReactMarkdown */}
-              {improvedInstructions ? (
-                <ReactMarkdown className="text-blue-700 text-lg">
-                  {improvedInstructions}
-                </ReactMarkdown>
-              ) : (
-                <>
-                  {/* Original instructions if not improved yet */}
-                  {currentSection.instructions.description.split('\n\n').map((paragraph, i) => (
-                    <p key={i} className="mb-3 text-blue-700 text-lg">{paragraph}</p>
-                  ))}
+              {/* Always render instructions from the currentSection prop */}
+              {currentSection.instructions.description.split('\n\n').map((paragraph, i) => (
+                <p key={`desc-${i}`} className="mb-3 text-blue-700 text-lg">{paragraph}</p>
+              ))}
 
-                  {currentSection.instructions.workStep && currentSection.instructions.workStep.title && (
-                    <h4 className="font-medium text-blue-800 mt-5 mb-2 text-xl">
-                      {currentSection.instructions.workStep.title}
-                    </h4>
-                  )}
+              {currentSection.instructions.workStep && currentSection.instructions.workStep.title && (
+                <h4 className="font-medium text-blue-800 mt-5 mb-2 text-xl">
+                  {currentSection.instructions.workStep.title}
+                </h4>
+              )}
 
-                  {currentSection.instructions.workStep && currentSection.instructions.workStep.content && (
-                    currentSection.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
-                      <p key={i} className="mb-3 text-blue-700 text-lg">{paragraph}</p>
-                    ))
-                  )}
-                </>
+              {currentSection.instructions.workStep && currentSection.instructions.workStep.content && (
+                currentSection.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
+                  <p key={`step-${i}`} className="mb-3 text-blue-700 text-lg">{paragraph}</p>
+                ))
               )}
             </div>
           </>
