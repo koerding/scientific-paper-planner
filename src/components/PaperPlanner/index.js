@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import VerticalPaperPlannerApp from './VerticalPaperPlannerApp'; // Using your existing component
 import sectionContent from '../../data/sectionContent.json';  
 import { callOpenAI } from '../../services/openaiService';
+import { exportProject as exportProjectFunction } from '../../utils/exportUtils';
 import '../../styles/PaperPlanner.css';
 
 /**
@@ -79,4 +80,4 @@ const PaperPlannerApp = () => {
   // Handler functions
   const handleSectionChange = (sectionId) => {
     setCurrentSection(sectionId);
-    setCurrentIndex(sectionContent.sections.findIndex(s =>
+    setCurrentIndex(sectionContent.sections.findIndex(s => s.id === sectionId));
