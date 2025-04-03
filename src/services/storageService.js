@@ -1,6 +1,6 @@
 /**
  * Storage service for handling localStorage operations
- * loadFromStorage simply returns parsed data or nulls. Merging happens in the hook.
+ * loadFromStorage simply returns parsed data or nulls/empty object. Merging happens in the hook.
  */
 
 export const saveToStorage = (userInputs, chatMessages) => {
@@ -32,7 +32,6 @@ export const loadFromStorage = () => {
 
     if (savedChatString) {
       const parsedChat = JSON.parse(savedChatString);
-      // Ensure loadedChat is an object
       if (typeof parsedChat === 'object' && parsedChat !== null) {
           loadedChat = parsedChat;
       }
@@ -40,7 +39,7 @@ export const loadFromStorage = () => {
 
   } catch (error) {
     console.error('[storageService] Error loading progress from storage:', error);
-    loadedInputs = null; // Reset on error
+    loadedInputs = null;
     loadedChat = {};
   }
 
