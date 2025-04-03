@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import VerticalPaperPlannerApp from './VerticalPaperPlannerApp';
+import FullWidthPaperPlannerApp from './FullWidthPaperPlannerApp'; // Import the new full-width component
 import sectionContent from '../../data/sectionContent.json';  
 import { callOpenAI } from '../../services/openaiService';
 import '../../styles/PaperPlanner.css';
@@ -312,11 +312,12 @@ ${userInputs.abstract || "Not completed yet"}
     resetProject,
     goToNextSection,
     goToPreviousSection,
-    exportProject  // Make sure exportProject is included here
+    exportProject
   };
 
+  // Use the full-width paper planner app
   return (
-    <VerticalPaperPlannerApp 
+    <FullWidthPaperPlannerApp 
       usePaperPlannerHook={usePaperPlannerHook}
     />
   );
