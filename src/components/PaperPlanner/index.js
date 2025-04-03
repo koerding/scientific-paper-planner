@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import FullWidthPaperPlannerApp from './FullWidthPaperPlannerApp'; // Use your current main component
+import VerticalPaperPlannerApp from './VerticalPaperPlannerApp'; // Using your existing component
 import sectionContent from '../../data/sectionContent.json';  
 import { callOpenAI } from '../../services/openaiService';
 import '../../styles/PaperPlanner.css';
@@ -75,7 +75,7 @@ const PaperPlannerApp = () => {
     });
   };
 
-  // REMOVED: handleCheckboxChange function is no longer needed
+  // REMOVED: handleCheckboxChange function
 
   // Send regular chat message with full context
   const handleSendMessage = async () => {
@@ -295,9 +295,9 @@ ${userInputs.abstract || "Not completed yet"}
     exportProject
   };
 
-  // Use the appropriate paper planner app component
+  // Use your existing VerticalPaperPlannerApp
   return (
-    <FullWidthPaperPlannerApp 
+    <VerticalPaperPlannerApp 
       usePaperPlannerHook={usePaperPlannerHook}
     />
   );
