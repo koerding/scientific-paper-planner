@@ -1,10 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 /**
- * SectionCard component represents a single editable section in the paper planner
- * Handles displaying content, status indicators, and different input types
- * More compact design with less whitespace
- * Improved focus handling
+ * SectionCard component with improved focus handling
+ * This version completely disables intersection observer influence
  */
 const SectionCard = ({
   section,
@@ -21,6 +19,19 @@ const SectionCard = ({
   setActiveSection,
   handleSectionChange
 }) => {
+  // Reference to the textarea
+  const textareaRef = useRef(null);
+  
+  // When isCurrentSection changes, focus the textarea if this is the active section
+  useEffect(() => {
+    if (isCurrentSection && textareaRef.current && section.type !== 'checklist') {
+      // Only focus if not already focused to avoid stealing focus from another element
+      if (document.activeElement !== textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }
+  }, [isCurrentSection, section.type]);
+
   // Check if content has been modified from placeholder
   const hasUserModifiedContent = () => {
     if (section.id === 'philosophy') {
@@ -34,20 +45,8 @@ const SectionCard = ({
     return content.trim() !== '' && content !== placeholder;
   };
 
-  // Focus handler - explicitly set focus to this section
-  const handleInputFocus = (e) => {
-    // Stop event propagation to prevent conflicts
-    e.stopPropagation();
-    // Update active section
-    setActiveSection(section.id);
-    handleSectionChange(section.id);
-  };
-
-  // Click handler for the textarea
-  const handleTextareaClick = (e) => {
-    // Stop event propagation to prevent conflicts
-    e.stopPropagation();
-    // Update active section
+  // Force this section to be active when interacted with
+  const forceActiveSection = () => {
     setActiveSection(section.id);
     handleSectionChange(section.id);
   };
@@ -60,7 +59,12 @@ const SectionCard = ({
         ${isCompleted ? 'border-2 border-green-500' : isCurrentSection ? 'border-2 border-indigo-500' : 'border border-gray-200'}
         ${isCurrentSection ? 'relative' : ''}
       `}
-      onClick={onClick}
+      onClick={() => {
+        if (section.type !== 'checklist' && textareaRef.current) {
+          textareaRef.current.focus();
+        }
+        forceActiveSection();
+      }}
     >
       {/* Connection dot for active section */}
       {isCurrentSection && (
@@ -69,7 +73,15 @@ const SectionCard = ({
       
       {/* Section Header - More compact */}
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg font-bold">{section.title}</h2>
+        <h2 
+          className="text-lg font-bold"
+          onClick={(e) => {
+            e.stopPropagation();
+            forceActiveSection();
+          }}
+        >
+          {section.title}
+        </h2>
         {isCompleted && !isCurrentSection && (
           <div className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
             Completed
@@ -89,11 +101,9 @@ const SectionCard = ({
                   : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
               }`}
               onClick={(e) => {
-                e.stopPropagation(); // Prevent triggering parent onClick
+                e.stopPropagation();
                 handleCheckboxChange(option.id);
-                // Also set this section as active when clicking a checkbox
-                setActiveSection(section.id);
-                handleSectionChange(section.id);
+                forceActiveSection();
               }}
             >
               <div className="flex items-start">
@@ -104,9 +114,7 @@ const SectionCard = ({
                     checked={userInputs.philosophy && userInputs.philosophy.includes(option.id)}
                     onChange={() => {
                       handleCheckboxChange(option.id);
-                      // Also set this section as active when changing a checkbox
-                      setActiveSection(section.id);
-                      handleSectionChange(section.id);
+                      forceActiveSection();
                     }}
                     className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
@@ -125,15 +133,22 @@ const SectionCard = ({
         </div>
       ) : (
         <textarea
+          ref={textareaRef}
           value={userInputs[section.id] || ''}
           onChange={(e) => {
             handleInputChange(section.id, e.target.value);
-            // Also set this section as active when changing text
-            setActiveSection(section.id);
-            handleSectionChange(section.id);
+            forceActiveSection();
           }}
-          onFocus={handleInputFocus}
-          onClick={handleTextareaClick}
+          onFocus={() => {
+            forceActiveSection();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            forceActiveSection();
+          }}
+          onKeyDown={() => {
+            forceActiveSection();
+          }}
           className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
           rows={6} /* Limit to 6 visible rows maximum */
           placeholder={section.placeholder || "Enter your content here..."}
@@ -144,7 +159,7 @@ const SectionCard = ({
       <div className="mt-3 flex justify-end">
         <button
           onClick={(e) => {
-            e.stopPropagation(); // Prevent triggering parent onClick
+            e.stopPropagation();
             handleFirstVersionFinished();
           }}
           disabled={loading || (!hasUserModifiedContent() && !isCompleted)}
