@@ -1,5 +1,5 @@
 // src/services/openaiService.js
-import sectionContent from '../sectionContent.json';
+import sectionContent from '../data/sectionContent.json';
 
 // Replace this with your actual OpenAI API key (this will use the environment variable)
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
