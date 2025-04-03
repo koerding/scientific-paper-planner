@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
  */
 const FullHeightInstructionsPanel = ({ currentSection }) => {
   const [improving, setImproving] = useState(false);
+  const [improvedInstructions, setImprovedInstructions] = useState(''); // State to hold improved instructions
 
   // Handle improve button click
   const handleImprove = async () => {
@@ -53,12 +54,9 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
         philosophyOptions
       );
 
-      // Update the instructions in the DOM
-      const instructionsEl = document.querySelector('.instructions-content');
-      if (instructionsEl) {
-        instructionsEl.innerHTML = `<ReactMarkdown className="prose prose-blue max-w-none text-blue-700 text-lg">${response}</ReactMarkdown>`;
-        console.log("Instructions improved successfully");
-      }
+      setImprovedInstructions(response); // Set the state with the improved instructions
+
+      console.log("Instructions improved successfully");
     } catch (error) {
       console.error("Error improving instructions:", error);
     } finally {
@@ -110,22 +108,30 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
               ) : 'Improve'}
             </button>
             <div className="prose prose-blue max-w-none instructions-content">
-              {/* Main instruction content */}
-              {currentSection.instructions.description.split('\n\n').map((paragraph, i) => (
-                <p key={i} className="mb-3 text-blue-700 text-lg">{paragraph}</p>
-              ))}
+              {/* Render improved instructions using ReactMarkdown */}
+              {improvedInstructions ? (
+                <ReactMarkdown className="text-blue-700 text-lg">
+                  {improvedInstructions}
+                </ReactMarkdown>
+              ) : (
+                <>
+                  {/* Original instructions if not improved yet */}
+                  {currentSection.instructions.description.split('\n\n').map((paragraph, i) => (
+                    <p key={i} className="mb-3 text-blue-700 text-lg">{paragraph}</p>
+                  ))}
 
-              {/* Work step content - now merged into the main blue panel */}
-              {currentSection.instructions.workStep && currentSection.instructions.workStep.title && (
-                <h4 className="font-medium text-blue-800 mt-5 mb-2 text-xl">
-                  {currentSection.instructions.workStep.title}
-                </h4>
-              )}
+                  {currentSection.instructions.workStep && currentSection.instructions.workStep.title && (
+                    <h4 className="font-medium text-blue-800 mt-5 mb-2 text-xl">
+                      {currentSection.instructions.workStep.title}
+                    </h4>
+                  )}
 
-              {currentSection.instructions.workStep && currentSection.instructions.workStep.content && (
-                currentSection.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
-                  <p key={i} className="mb-3 text-blue-700 text-lg">{paragraph}</p>
-                ))
+                  {currentSection.instructions.workStep && currentSection.instructions.workStep.content && (
+                    currentSection.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
+                      <p key={i} className="mb-3 text-blue-700 text-lg">{paragraph}</p>
+                    ))
+                  )}
+                </>
               )}
             </div>
           </>
