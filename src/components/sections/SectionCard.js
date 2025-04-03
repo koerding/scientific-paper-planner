@@ -84,66 +84,24 @@ const SectionCard = ({
         )}
       </div>
       
-      {/* Section content - Philosophy has checkboxes, others have textareas */}
-      {section.id === 'philosophy' ? (
-        <div className="space-y-3">
-          {philosophyOptions.map(option => (
-            <div 
-              key={option.id} 
-              className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
-                userInputs.philosophy && userInputs.philosophy.includes(option.id) 
-                  ? 'bg-indigo-50 border border-indigo-300' 
-                  : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
-              }`}
-              onClick={(e) => {
-                handleDirectInteraction();
-                handleCheckboxChange(option.id);
-              }}
-            >
-              <div className="flex items-start">
-                <div className="flex-shrink-0 mt-1">
-                  <input
-                    type="checkbox"
-                    id={option.id}
-                    checked={userInputs.philosophy && userInputs.philosophy.includes(option.id)}
-                    onChange={() => {
-                      handleDirectInteraction();
-                      handleCheckboxChange(option.id);
-                    }}
-                    className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                </div>
-                <label 
-                  htmlFor={option.id} 
-                  className={`ml-3 ${fontSizes.label} text-gray-700 cursor-pointer ${
-                    userInputs.philosophy && userInputs.philosophy.includes(option.id) ? 'font-medium' : ''
-                  }`}
-                >
-                  {option.label}
-                </label>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <textarea
-          ref={textareaRef}
-          value={userInputs[section.id] || ''}
-          onChange={(e) => {
-            handleInputChange(section.id, e.target.value);
-          }}
-          onFocus={() => {
-            handleDirectInteraction();
-          }}
-          onClick={() => {
-            handleDirectInteraction();
-          }}
-          className={`w-full p-4 border border-gray-200 rounded-lg ${fontSizes.content} focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all`}
-          rows={6} /* Limit to 6 visible rows maximum */
-          placeholder={section.placeholder || "Enter your content here..."}
-          style={{ lineHeight: useLargerFonts ? '1.6' : '1.5' }}
-        />
-      )}
+      {/* Section content - we've removed the philosophy checkbox handling */}
+      <textarea
+        ref={textareaRef}
+        value={userInputs[section.id] || ''}
+        onChange={(e) => {
+          handleInputChange(section.id, e.target.value);
+        }}
+        onFocus={() => {
+          handleDirectInteraction();
+        }}
+        onClick={() => {
+          handleDirectInteraction();
+        }}
+        className={`w-full p-4 border border-gray-200 rounded-lg ${fontSizes.content} focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all`}
+        rows={6} /* Limit to 6 visible rows maximum */
+        placeholder={section.placeholder || "Enter your content here..."}
+        style={{ lineHeight: useLargerFonts ? '1.6' : '1.5' }}
+      />}
       
       {/* Mark complete button - Always enabled if content has been modified */}
       <div className="mt-4 flex justify-end">
