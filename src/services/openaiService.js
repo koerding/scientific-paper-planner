@@ -1,5 +1,5 @@
 // src/services/openaiService.js
-import sectionContent from '../data/sectionContent.json';
+// UPDATED: Removed philosophy special handling
 
 // Replace this with your actual OpenAI API key (this will use the environment variable)
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
@@ -8,7 +8,7 @@ const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
 export const callOpenAI = async (prompt, currentSection, userInputs, sections) => {
   try {
     // Get the voice settings from sectionContent
-    const voiceSettings = sectionContent.voice || {
+    const voiceSettings = {
       name: "Konrad Kording",
       description: "I am Konrad Kording. I have a somewhat unconventional informal voice. I am a worldclass scientific writer.",
       conversationStyle: "I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
@@ -44,46 +44,17 @@ export const callOpenAI = async (prompt, currentSection, userInputs, sections) =
       role: "system",
       content: "CONTEXT FROM ALL SECTIONS:\n\n" + 
         sections.map(section => {
-          if (section.id === 'philosophy') {
-            // Import philosophyOptions from JSON file
-            const philosophyOptions = {};
-            sectionContent.philosophyOptions.forEach(option => {
-              philosophyOptions[option.id] = option.label;
-            });
-            
-            const selectedPhilosophies = userInputs.philosophy
-              .map(id => `- ${philosophyOptions[id]}`)
-              .join('\n');
-            
-            return `SECTION: ${section.title}\n${selectedPhilosophies || "No selections made yet"}`;
-          } else {
-            return `SECTION: ${section.title}\n${userInputs[section.id] || "Not completed yet"}`;
-          }
+          // All sections are now treated as text
+          return `SECTION: ${section.title}\n${userInputs[section.id] || "Not completed yet"}`;
         }).join('\n\n')
     });
     
     // Add the specific content of the current section for emphasis
     if (userInputs[currentSection]) {
-      if (currentSection === 'philosophy') {
-        const philosophyOptions = {};
-        sectionContent.philosophyOptions.forEach(option => {
-          philosophyOptions[option.id] = option.label.split('.')[0]; // Get first sentence only
-        });
-        
-        const selectedPhilosophies = userInputs.philosophy
-          .map(id => philosophyOptions[id])
-          .join(', ');
-        
-        contextMessages.push({
-          role: "system",
-          content: `CURRENT FOCUS: The user has selected the following research philosophies: ${selectedPhilosophies}`
-        });
-      } else {
-        contextMessages.push({
-          role: "system",
-          content: `CURRENT FOCUS: The user is working on the "${sections.find(s => s.id === currentSection).title}" section with the following current content:\n\n${userInputs[currentSection]}`
-        });
-      }
+      contextMessages.push({
+        role: "system",
+        content: `CURRENT FOCUS: The user is working on the "${sections.find(s => s.id === currentSection).title}" section with the following current content:\n\n${userInputs[currentSection]}`
+      });
     }
     
     // Building the messages array for the API call
