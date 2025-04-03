@@ -5,30 +5,34 @@
 /**
  * Exports the project as a markdown file
  * @param {Object} userInputs - The user inputs
- * @param {Array} philosophyOptions - The philosophy options
+ * @param {Object} chatMessages - The chat messages
+ * @param {Object} sectionContent - The section content
  */
-export const exportProject = (userInputs, philosophyOptions) => {
+export const exportProject = (userInputs, chatMessages, sectionContent) => {
   const exportContent = `# Scientific Paper Project Plan
 
-## 1. Research Question
+## 1. Research Question & Philosophy
 ${userInputs.question || "Not completed yet"}
 
-## 2. Hypotheses
+## 2. Target Audience
+${userInputs.audience || "Not completed yet"}
+
+## 3. Hypotheses
 ${userInputs.hypothesis || "Not completed yet"}
 
-## 3. Research Philosophy
-${userInputs.philosophy.map(id => `- ${philosophyOptions.find(o => o.id === id).label}`).join('\n') || "Not selected yet"}
+## 4. Related Papers
+${userInputs.relatedpapers || "Not completed yet"}
 
-## 4. Experimental Design
+## 5. Experimental Design
 ${userInputs.experiment || "Not completed yet"}
 
-## 5. Data Analysis Plan
+## 6. Data Analysis Plan
 ${userInputs.analysis || "Not completed yet"}
 
-## 6. Process, Skills & Timeline
+## 7. Process, Skills & Timeline
 ${userInputs.process || "Not completed yet"}
 
-## 7. Abstract
+## 8. Abstract
 ${userInputs.abstract || "Not completed yet"}
 `;
 
