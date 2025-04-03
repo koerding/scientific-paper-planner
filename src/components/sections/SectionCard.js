@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 
 /**
  * SectionCard component with buttons that hover over the edit area
- * With proper validation for content types
+ * UPDATED: Removed checklist/philosophy special handling
  */
 const SectionCard = ({
   section,
@@ -10,9 +10,7 @@ const SectionCard = ({
   isCompleted,
   userInputs,
   handleInputChange,
-  handleCheckboxChange,
   handleFirstVersionFinished,
-  philosophyOptions,
   loading,
   sectionRef,
   setActiveSection,
@@ -43,13 +41,8 @@ const SectionCard = ({
     // Safety check - ensure the content is a string before calling trim()
     if (content === undefined || content === null) return false;
     
-    // Handle non-string content (e.g., arrays from old philosophy section)
+    // Handle non-string content
     if (typeof content !== 'string') {
-      // If it's an array (like old philosophy data), check if it has entries
-      if (Array.isArray(content)) {
-        return content.length > 0;
-      }
-      // For any other non-string type, just return false
       return false;
     }
     
@@ -93,7 +86,7 @@ const SectionCard = ({
       
       {/* Section content with positioned complete button */}
       <div className="relative">
-        {/* Text areas for all section types */}
+        {/* Text area for all sections - REMOVED checklist special case */}
         <textarea
           ref={textareaRef}
           value={typeof userInputs[section.id] === 'string' ? userInputs[section.id] : ''}
