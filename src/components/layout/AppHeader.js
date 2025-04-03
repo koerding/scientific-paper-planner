@@ -2,9 +2,10 @@ import React from 'react';
 
 /**
  * Application header with absolute positioning to ensure buttons are visible
+ * UPDATED: Increased font sizes using Tailwind classes.
  */
 const AppHeader = ({
-  activeSection,
+  activeSection, // Keep props even if unused by this component itself
   setActiveSection,
   handleSectionChange,
   scrollToSection,
@@ -13,104 +14,69 @@ const AppHeader = ({
 }) => {
   return (
     <header style={{
-      position: 'relative',
+      position: 'relative', // Changed from sticky if it caused issues
       width: '100%',
       padding: '1rem 0',
       marginBottom: '2rem',
       borderBottom: '1px solid #e5e7eb',
       backgroundColor: 'white',
-      zIndex: 1000 // Higher than any other elements
+      zIndex: 1000
     }}>
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        maxWidth: '1280px',
+        maxWidth: '1280px', // Or your preferred max-width
         margin: '0 auto',
-        padding: '0 1rem'
+        padding: '0 1rem' // Standard padding
       }}>
         {/* App title and logo */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          <div style={{
-            background: 'linear-gradient(to right, #4f46e5, #9333ea)',
-            width: '40px',
-            height: '40px',
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 'bold',
-            marginRight: '12px'
-          }}>
+        <div className="flex items-center"> {/* Use className for Tailwind */}
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold mr-3 text-lg"> {/* Added text-lg */}
             SP
           </div>
           <div>
-            <h1 style={{
-              fontSize: '1.5rem',
-              fontWeight: 'bold',
-              margin: 0
-            }}>Scientific Paper Planner</h1>
-            <p style={{
-              fontSize: '0.875rem',
-              color: '#6b7280',
-              margin: 0
-            }}>
+            {/* Apply larger text classes */}
+            <h1 className="text-3xl font-bold m-0 text-gray-900"> {/* Increased size */}
+              Scientific Paper Planner
+            </h1>
+            <p className="text-lg text-gray-600 m-0"> {/* Increased size */}
               Design a hypothesis-based neuroscience project step-by-step
             </p>
           </div>
         </div>
-        
-        {/* Floating action buttons - positioned absolutely to ensure visibility */}
+
+        {/* Floating action buttons */}
+        {/* Keep position absolute or adjust as needed */}
         <div style={{
-          position: 'absolute',
-          top: '15px',
-          right: '15px',
-          display: 'flex',
-          gap: '8px',
-          zIndex: 1001 // Even higher than header
+           position: 'absolute', // Keep absolute or use flex end for non-overlap
+           top: '50%', // Align vertically
+           right: '1rem', // Align to the right padding
+           transform: 'translateY(-50%)', // Center vertically
+           display: 'flex',
+           gap: '0.5rem', // Space between buttons
+           zIndex: 1001
         }}>
           <button
-            onClick={resetProject}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0.5rem 1rem',
-              border: '1px solid #ef4444',
-              color: '#dc2626',
-              borderRadius: '0.25rem',
-              cursor: 'pointer',
-              backgroundColor: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              zIndex: 1002
-            }}
+            onClick={() => { if(typeof resetProject === 'function') resetProject(); }} // Added check
+            className="flex items-center px-3 py-1.5 border border-red-500 text-red-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-red-50 transition-colors"
             title="Start a new project"
           >
-            <span style={{ marginRight: '4px', fontSize: '1.2rem' }}>+</span>
-            <span>New</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            New
           </button>
-          
+
           <button
-            onClick={exportProject}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0.5rem 1rem',
-              border: '1px solid #10b981',
-              color: '#059669',
-              borderRadius: '0.25rem',
-              cursor: 'pointer',
-              backgroundColor: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              zIndex: 1002
-            }}
+            onClick={() => { if(typeof exportProject === 'function') exportProject(); }} // Added check
+            className="flex items-center px-3 py-1.5 border border-green-500 text-green-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-green-50 transition-colors"
             title="Export your project as a markdown file"
           >
-            <span style={{ marginRight: '4px', fontSize: '1.2rem' }}>↓</span>
-            <span>Export</span>
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+             </svg>
+            Export
           </button>
         </div>
       </div>
