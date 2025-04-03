@@ -1,273 +1,168 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
-import sectionContent from '../data/sectionContent.json';
+import sectionContent from '../data/sectionContent.json'; // Import section data
 
-/**
- * Custom hook for Paper Planner functionality
- * @param {Array} sections - The sections from configuration
- * @returns {Object} - State and handler functions
- */
-const usePaperPlanner = (sections) => {
-  // State
-  const [currentSection, setCurrentSection] = useState(sections[0].id);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [userInputs, setUserInputs] = useState({
-    question: '',
-    hypothesis: '',
-    philosophy: [],
-    experiment: '',
-    analysis: '',
-    process: '',
-    abstract: ''
-  });
-  const [chatMessages, setChatMessages] = useState({});
+// Helper function to create initial state from placeholders
+const createInitialInputs = () => {
+  const initialInputs = {};
+  if (sectionContent && Array.isArray(sectionContent.sections)) {
+    sectionContent.sections.forEach(section => {
+      if (section && section.id) {
+        // Use the main placeholder by default
+        initialInputs[section.id] = section.placeholder || '';
+
+        // If specific placeholders exist for philosophy, use the 'hypothesis' one as default maybe?
+        // Or decide based on some initial logic if needed. Here we just use the main one.
+        // if (section.id === 'question' && section.placeholders?.hypothesis) {
+        //    initialInputs[section.id] = section.placeholders.hypothesis;
+        // }
+      }
+    });
+  } else {
+     console.error("Failed to load sectionContent or sections array is missing.");
+     // Define fallbacks if JSON loading fails
+     const fallbackSections = ['question', 'hypothesis', 'experiment', 'analysis', 'process', 'abstract'];
+     fallbackSections.forEach(id => { initialInputs[id] = ''; });
+  }
+  return initialInputs;
+};
+
+
+const usePaperPlanner = () => {
+  // Initialize state using the placeholders from sectionContent.json
+  const [userInputs, setUserInputs] = useState(createInitialInputs);
+
+  // Existing states
+  const [chatMessages, setChatMessages] = useState([]);
+  const [currentSection, setCurrentSection] = useState('question'); // Tracks context for chat/AI
   const [currentMessage, setCurrentMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  // Initialize chat messages for each section
+  // Load saved data on initial mount, potentially overwriting placeholders
   useEffect(() => {
-    const initialChatMessages = {};
-    sections.forEach(section => {
-      initialChatMessages[section.id] = [];
-    });
-    setChatMessages(initialChatMessages);
-  }, [sections]);
+    console.log("Attempting to load from storage...");
+    // Pass the initial state creator to loadFromStorage
+    // so it can merge saved data intelligently if needed (modification to loadFromStorage might be required)
+    loadFromStorage(setUserInputs, setChatMessages, createInitialInputs);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
-  // Auto-save on input change
+  // Save progress whenever userInputs or chatMessages change
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      saveToStorage(userInputs, chatMessages);
-    }, 1000);
-    
-    return () => clearTimeout(timeoutId);
+    saveToStorage(userInputs, chatMessages);
   }, [userInputs, chatMessages]);
 
-  // Load progress on initial mount
-  useEffect(() => {
-    loadFromStorage(setUserInputs, setChatMessages);
+  const handleInputChange = useCallback((sectionId, value) => {
+    setUserInputs(prevInputs => ({
+      ...prevInputs,
+      [sectionId]: value
+    }));
   }, []);
 
-  // Handler functions
-  /**
-   * Update current section and index
-   * @param {string} sectionId - The ID of the section to change to
-   */
-  const handleSectionChange = (sectionId) => {
+  const handleSectionChange = useCallback((sectionId) => {
     setCurrentSection(sectionId);
-    setCurrentIndex(sections.findIndex(s => s.id === sectionId));
-  };
+  }, []);
 
-  /**
-   * Update user input
-   * @param {string} section - The section ID to update
-   * @param {string} value - The new value
-   */
-  const handleInputChange = (section, value) => {
-    setUserInputs({
-      ...userInputs,
-      [section]: value
-    });
-  };
+  const handleSendMessage = useCallback(async () => {
+    if (!currentMessage.trim() || !currentSection) return;
 
-  /**
-   * Handle checkbox changes for philosophy section
-   * @param {string} id - The ID of the checkbox
-   */
-  const handleCheckboxChange = (id) => {
-    const newPhilosophy = [...userInputs.philosophy];
-    if (newPhilosophy.includes(id)) {
-      const index = newPhilosophy.indexOf(id);
-      newPhilosophy.splice(index, 1);
-    } else {
-      newPhilosophy.push(id);
-    }
-    setUserInputs({
-      ...userInputs,
-      philosophy: newPhilosophy
-    });
-  };
-
-  /**
-   * Send message to AI assistant
-   */
-  const handleSendMessage = async () => {
-    if (currentMessage.trim() === '') return;
-    
-    // Add user message to chat
-    const newMessages = [
-      ...chatMessages[currentSection], 
-      { role: 'user', content: currentMessage }
-    ];
-    
-    setChatMessages({
-      ...chatMessages,
-      [currentSection]: newMessages
-    });
-    
-    setCurrentMessage('');
+    const newUserMessage = { role: 'user', content: currentMessage };
+    setChatMessages(prevMessages => [...prevMessages, newUserMessage]);
     setLoading(true);
-    
+    setCurrentMessage(''); // Clear input field immediately
+
     try {
-      // Call OpenAI API with the current message, context, all sections, and sectionContent
-      const aiResponse = await callOpenAI(currentMessage, currentSection, userInputs, sections, sectionContent);
-      
-      // Add AI response to chat
-      const updatedMessages = [
-        ...newMessages,
-        { role: 'assistant', content: aiResponse }
-      ];
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: updatedMessages
-      });
+      // Call API - Ensure sectionContent.sections is available or passed if needed by callOpenAI context building
+      const sectionsForContext = sectionContent?.sections || [];
+      const response = await callOpenAI(
+          currentMessage,
+          currentSection, // Pass the current section context ID
+          userInputs,
+          sectionsForContext // Pass section definitions for context building
+      );
+      const newAssistantMessage = { role: 'assistant', content: response };
+      setChatMessages(prevMessages => [...prevMessages, newAssistantMessage]);
     } catch (error) {
-      console.error('Error getting AI response:', error);
-      
-      // Add error message to chat
-      const errorMessage = { 
-        role: 'assistant', 
-        content: 'Sorry, there was an error processing your request. Please try again.' 
-      };
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: [...newMessages, errorMessage]
-      });
+      console.error("Error sending message:", error);
+      const errorMessage = { role: 'assistant', content: 'Sorry, there was an error processing your message.' };
+      setChatMessages(prevMessages => [...prevMessages, errorMessage]);
     } finally {
       setLoading(false);
     }
+  }, [currentMessage, currentSection, userInputs]); // Dependencies for the chat send
+
+
+  // Function called when user marks a section as 'First version finished'
+  const handleFirstVersionFinished = useCallback(async (sectionId) => {
+     console.log(`First version finished for section: ${sectionId}`);
+     const contentToReview = userInputs[sectionId];
+     if (!contentToReview) return;
+
+     setLoading(true); // Use general loading or a specific one?
+
+     // Define a specific prompt for reviewing the section
+     const reviewPrompt = `Please review the content I've written for the "${sectionId}" section and provide constructive feedback based on the section's goals as outlined in the instructions. Content:\n\n${contentToReview}`;
+
+     const newUserMessage = { role: 'user', content: reviewPrompt };
+     setChatMessages(prevMessages => [...prevMessages, newUserMessage]);
+
+     try {
+        const sectionsForContext = sectionContent?.sections || [];
+        const response = await callOpenAI(
+            reviewPrompt,
+            sectionId, // Set context to the reviewed section
+            userInputs,
+            sectionsForContext
+        );
+        const newAssistantMessage = { role: 'assistant', content: response };
+        setChatMessages(prevMessages => [...prevMessages, newAssistantMessage]);
+     } catch (error) {
+        console.error(`Error getting review for ${sectionId}:`, error);
+        const errorMessage = { role: 'assistant', content: `Sorry, there was an error reviewing the ${sectionId} section.` };
+        setChatMessages(prevMessages => [...prevMessages, errorMessage]);
+     } finally {
+        setLoading(false);
+     }
+  }, [userInputs]); // Dependency on userInputs
+
+
+  // Reset project function
+  const resetProject = useCallback(() => {
+    clearStorage(); // Clear localStorage
+    setUserInputs(createInitialInputs()); // Reset state to initial placeholders
+    setChatMessages([]); // Clear chat messages
+    setCurrentSection('question'); // Reset active section
+    setShowConfirmDialog(false); // Close dialog
+    console.log("Project reset to initial state.");
+  }, []);
+
+  // Export functionality (assuming exportUtils handles the logic)
+  const exportProject = () => {
+    // Import dynamically or ensure exportUtils is imported
+    import('../utils/exportUtils').then(module => {
+        module.exportProject(userInputs, chatMessages, sectionContent);
+    }).catch(err => console.error("Failed to load or run export:", err));
   };
 
-  /**
-   * Handle "First version finished" button click
-   */
-  const handleFirstVersionFinished = async () => {
-    // Don't do anything if there's no content yet
-    if (!userInputs[currentSection] && currentSection !== 'philosophy') return;
-    if (currentSection === 'philosophy' && userInputs.philosophy.length === 0) return;
-    
-    setLoading(true);
-    
-    try {
-      // Create an appropriate message based on the section
-      let initialMessage = "I've finished my first version. Can you provide feedback?";
-      
-      // Add the initial message to chat
-      const newMessages = [
-        ...chatMessages[currentSection], 
-        { role: 'user', content: initialMessage }
-      ];
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: newMessages
-      });
-      
-      // Get detailed instructions from JSON
-      const currentSectionObj = sections.find(s => s.id === currentSection);
-      const aiInstructions = currentSectionObj.llmInstructions;
-      
-      // Call OpenAI API with the detailed instructions
-      const aiResponse = await callOpenAI(aiInstructions, currentSection, userInputs, sections, sectionContent);
-      
-      // Add AI response to chat
-      const updatedMessages = [
-        ...newMessages,
-        { role: 'assistant', content: aiResponse }
-      ];
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: updatedMessages
-      });
-    } catch (error) {
-      console.error('Error getting AI response:', error);
-      
-      // Add error message to chat
-      const errorMessage = { 
-        role: 'assistant', 
-        content: 'Sorry, there was an error processing your request. Please try again.' 
-      };
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: [...newMessages, errorMessage]
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  /**
-   * Reset project
-   */
-  const resetProject = () => {
-    // Clear all user inputs
-    setUserInputs({
-      question: '',
-      hypothesis: '',
-      philosophy: [],
-      experiment: '',
-      analysis: '',
-      process: '',
-      abstract: ''
-    });
-    
-    // Clear all chat messages
-    const freshChatMessages = {};
-    sections.forEach(section => {
-      freshChatMessages[section.id] = [];
-    });
-    setChatMessages(freshChatMessages);
-    
-    // Reset to first section
-    handleSectionChange(sections[0].id);
-    
-    // Clear localStorage
-    clearStorage();
-  };
-
-  /**
-   * Go to the next section
-   */
-  const goToNextSection = () => {
-    const newIndex = currentIndex + 1;
-    if (newIndex < sections.length) {
-      handleSectionChange(sections[newIndex].id);
-    }
-  };
-
-  /**
-   * Go to the previous section
-   */
-  const goToPreviousSection = () => {
-    const newIndex = currentIndex - 1;
-    if (newIndex >= 0) {
-      handleSectionChange(sections[newIndex].id);
-    }
-  };
-  
   return {
-    currentSection,
-    currentIndex,
     userInputs,
     chatMessages,
+    currentSection, // The ID of the section AI should focus on
     currentMessage,
     loading,
     showConfirmDialog,
+    setChatMessages, // Expose if needed externally (e.g., for loading)
+    setUserInputs, // Expose if needed externally (e.g., for loading)
     setCurrentMessage,
     setShowConfirmDialog,
     handleSectionChange,
     handleInputChange,
-    handleCheckboxChange,
     handleSendMessage,
     handleFirstVersionFinished,
     resetProject,
-    goToNextSection,
-    goToPreviousSection
+    exportProject,
   };
 };
 
