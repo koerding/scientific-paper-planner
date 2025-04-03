@@ -1,22 +1,81 @@
 import React, { useState } from 'react';
+import { callOpenAI } from '../../services/openaiService';
 
 /**
  * Full-height instructions panel with Improve button
- * that intelligently updates instructions based on user progress
  */
-const FullHeightInstructionsPanel = ({ 
-  currentSection, 
-  userInputs,
-  improveInstructions,
-  loading = false
-}) => {
+const FullHeightInstructionsPanel = ({ currentSection }) => {
   const [improving, setImproving] = useState(false);
   
   // Handle improve button click
   const handleImprove = async () => {
+    if (!currentSection) return;
+    
     setImproving(true);
-    await improveInstructions();
-    setImproving(false);
+    
+    try {
+      // Get user inputs from localStorage or your app state
+      const userInputs = JSON.parse(localStorage.getItem('paperPlannerData')) || {};
+      const philosophyOptions = require('../../sectionContent.json').philosophyOptions;
+      
+      // Create the prompt for improvement
+      const prompt = `
+      Review the user's progress on their scientific paper plan and provide more tailored instructions
+      for this section. Focus on what they still need to improve based on what they've already done.
+      
+      Current section: ${currentSection.title}
+      
+      Current instructions:
+      ${currentSection.instructions.description}
+      
+      User's current content:
+      ${currentSection.id === 'philosophy' 
+        ? (userInputs.philosophy || []).map(id => {
+            const philosophy = philosophyOptions.find(p => p.id === id);
+            return philosophy ? philosophy.label : '';
+          }).join('\n')
+        : userInputs[currentSection.id] || ''
+      }
+      
+      Please provide updated instructions that:
+      1. Remove redundant advice for things they've already done well
+      2. Focus on what still needs improvement
+      3. Keep the same helpful tone
+      
+      Response format: Just provide the new instructions text that should replace the current instructions.
+      `;
+      
+      // Call the OpenAI API
+      const response = await callOpenAI(
+        prompt, 
+        currentSection.id, 
+        userInputs, 
+        [currentSection], 
+        philosophyOptions
+      );
+      
+      // Update the instructions in the DOM (since we don't want to modify the JSON file)
+      const descriptionEl = document.querySelector('.text-blue-700.text-lg');
+      if (descriptionEl) {
+        // Create new paragraph elements with improved content
+        const newContent = response.split('\n\n').map((paragraph, i) => {
+          const p = document.createElement('p');
+          p.className = 'mb-3';
+          p.textContent = paragraph;
+          return p;
+        });
+        
+        // Clear existing content and add new paragraphs
+        descriptionEl.innerHTML = '';
+        newContent.forEach(p => descriptionEl.appendChild(p));
+        
+        console.log("Instructions improved successfully");
+      }
+    } catch (error) {
+      console.error("Error improving instructions:", error);
+    } finally {
+      setImproving(false);
+    }
   };
   
   return (
@@ -36,9 +95,9 @@ const FullHeightInstructionsPanel = ({
         {/* Improve button */}
         <button 
           onClick={handleImprove}
-          disabled={improving || loading}
+          disabled={improving || !currentSection}
           className={`absolute top-4 right-4 px-4 py-2 rounded-lg text-base font-medium transition-all
-            ${improving || loading 
+            ${improving || !currentSection
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
               : 'bg-blue-600 text-white hover:bg-blue-700 shadow hover:shadow-md'
             }`}
