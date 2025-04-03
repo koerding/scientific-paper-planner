@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { callOpenAI } from '../../services/openaiService';
 
 /**
- * Full-height instructions panel with Improve button
+ * Simplified full-height instructions panel with Improve button
+ * Merges the white and blue boxes into a single blue panel
  */
 const FullHeightInstructionsPanel = ({ currentSection }) => {
   const [improving, setImproving] = useState(false);
@@ -26,6 +27,7 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
 
       Current instructions:
       ${currentSection.instructions.description}
+      ${currentSection.instructions.workStep ? '\n' + currentSection.instructions.workStep.title + '\n' + currentSection.instructions.workStep.content : ''}
 
       User's current content:
       ${currentSection.id === 'philosophy' 
@@ -43,7 +45,8 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
       4. Maintain the same style and tone as the original
       5. Don't add lengthy new explanations
       
-      Response format: Provide ONLY the edited instructions text that should replace the current instructions.
+      Response format: Provide ONLY the edited instructions text that should replace the current instructions. 
+      Preserve the section title as a heading and maintain paragraph breaks.
       `;
       
       // Call the OpenAI API
@@ -55,10 +58,10 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
         philosophyOptions
       );
       
-      // Update the instructions in the DOM (since we don't want to modify the JSON file)
-      const descriptionEl = document.querySelector('.text-blue-700.text-lg');
-      if (descriptionEl) {
-        // Create new paragraph elements with improved content
+      // Update the instructions in the DOM
+      const instructionsEl = document.querySelector('.instructions-content');
+      if (instructionsEl) {
+        // Create new content with improved instructions
         const newContent = response.split('\n\n').map((paragraph, i) => {
           const p = document.createElement('p');
           p.className = 'mb-3';
@@ -67,8 +70,8 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
         });
         
         // Clear existing content and add new paragraphs
-        descriptionEl.innerHTML = '';
-        newContent.forEach(p => descriptionEl.appendChild(p));
+        instructionsEl.innerHTML = '';
+        newContent.forEach(p => instructionsEl.appendChild(p));
         
         console.log("Instructions improved successfully");
       }
@@ -123,23 +126,23 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
             <h3 className="text-2xl font-semibold text-blue-800 mb-4 pr-24">
               {currentSection.title}
             </h3>
-            <div className="prose prose-blue max-w-none">
-              <div className="text-blue-700 text-lg">
-                {currentSection.instructions.description.split('\n\n').map((paragraph, i) => (
-                  <p key={i} className="mb-3">{paragraph}</p>
-                ))}
-              </div>
+            <div className="prose prose-blue max-w-none instructions-content">
+              {/* Main instruction content */}
+              {currentSection.instructions.description.split('\n\n').map((paragraph, i) => (
+                <p key={i} className="mb-3 text-blue-700 text-lg">{paragraph}</p>
+              ))}
+              
+              {/* Work step content - now merged into the main blue panel */}
+              {currentSection.instructions.workStep && currentSection.instructions.workStep.title && (
+                <h4 className="font-medium text-blue-800 mt-5 mb-2 text-xl">
+                  {currentSection.instructions.workStep.title}
+                </h4>
+              )}
+              
               {currentSection.instructions.workStep && currentSection.instructions.workStep.content && (
-                <div className="bg-white rounded-lg p-4 border border-blue-200 mt-5">
-                  <h4 className="font-medium text-blue-800 mb-2 text-xl">
-                    {currentSection.instructions.workStep.title}
-                  </h4>
-                  <div className="text-blue-600 text-lg">
-                    {currentSection.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
-                      <p key={i} className="mb-3">{paragraph}</p>
-                    ))}
-                  </div>
-                </div>
+                currentSection.instructions.workStep.content.split('\n\n').map((paragraph, i) => (
+                  <p key={i} className="mb-3 text-blue-700 text-lg">{paragraph}</p>
+                ))
               )}
             </div>
           </>
