@@ -13,12 +13,14 @@ const SectionCard = ({
   useLargerFonts = false
 }) => {
   const textareaRef = useRef(null);
+  
+  // Get the actual value stored in userInputs - this should be pre-filled with template content
   const textValue = userInputs[section.id] || '';
-  const placeholderText = section.placeholder || '';
 
-  // Determine if user has actually added content beyond the initial placeholder
-  const hasMeaningfulContent = () => {
-    return textValue !== placeholderText && String(textValue).trim() !== '';
+  // Determine if user has actually modified the pre-filled content
+  const hasUserModifiedContent = () => {
+    // At minimum, there should be some content
+    return textValue.trim() !== '';
   };
 
   // Auto-resize textarea height
@@ -29,9 +31,9 @@ const SectionCard = ({
     }
   }, [textValue]);
 
-  // Button state - enable if not loading AND has meaningful content
+  // Button state - enable if not loading AND has content
   const buttonText = loading ? section.loadingButtonText : section.completeButtonText;
-  const isButtonDisabled = loading || !hasMeaningfulContent();
+  const isButtonDisabled = loading || !hasUserModifiedContent();
 
   return (
     <div
@@ -78,7 +80,6 @@ const SectionCard = ({
           className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-400 outline-none resize-none overflow-hidden ${useLargerFonts ? 'text-xl leading-relaxed' : 'text-base'} ${isCurrentSection ? 'bg-blue-50' : 'bg-white'}`}
           value={textValue}
           onChange={(e) => handleInputChange(section.id, e.target.value)}
-          placeholder={placeholderText}
           rows="1" // Start with 1 row, auto-expand will handle height
           maxLength={section.maxLength}
         />
