@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import './PaperPlanner.css';
+import '../../styles/PaperPlanner.css';
 
 /**
  * Modernized chat interface that can be minimized to a floating button
