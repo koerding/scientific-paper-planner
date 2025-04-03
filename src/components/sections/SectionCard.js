@@ -1,59 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
-import CheckboxItem from './CheckboxItem'; // Assuming CheckboxItem component exists
+// Removed: import CheckboxItem from './CheckboxItem'; // Component file is missing
 
 const SectionCard = ({
   section,
   isCurrentSection,
-  isCompleted, // Use this prop to determine if it's marked complete
+  isCompleted, // Prop indicating if marked complete (might not be used now)
   userInputs,
   handleInputChange,
-  handleFirstVersionFinished, // Receive the handler prop
-  loading, // Receive loading prop specific to this section's completion/review
-  sectionRef, // Receive the ref
-  onClick, // Receive the onClick handler
-  setActiveSection, // Pass this down if needed by internal elements
-  handleSectionChange, // Pass this down if needed by internal elements
-  useLargerFonts = false // Prop for larger fonts
+  handleFirstVersionFinished,
+  loading,
+  sectionRef,
+  onClick,
+  setActiveSection, // Keep props even if unused by this component directly
+  handleSectionChange, // Keep props even if unused by this component directly
+  useLargerFonts = false
 }) => {
-  const [checklistComplete, setChecklistComplete] = useState(false);
-  const textareaRef = useRef(null); // Ref for the textarea
+  // Removed: const [checklistComplete, setChecklistComplete] = useState(false);
+  const textareaRef = useRef(null);
 
-  // Extract the text value for the current section
-  const textValue = userInputs[section.id] || ''; // Default to empty string if undefined
+  const textValue = userInputs[section.id] || '';
 
-  // Check completion status based on checklist items
-  useEffect(() => {
-    if (section.completionChecklist && Array.isArray(section.completionChecklist.items)) {
-      const allChecked = section.completionChecklist.items.every(item => {
-        if (!item.checkPattern) return true; // Assume optional items are met if no pattern
-        try {
-          // Ensure textValue is a string before testing
-          const pattern = new RegExp(item.checkPattern, 'i'); // Case-insensitive check
-          return pattern.test(String(textValue)); // Convert textValue to string
-        } catch (e) {
-          console.error(`Invalid regex pattern for ${section.id} - ${item.text}: ${item.checkPattern}`, e);
-          return false; // Treat invalid regex as not checked
-        }
-      });
-      setChecklistComplete(allChecked);
-    } else {
-      setChecklistComplete(true); // If no checklist, consider it complete for button enabling
-    }
-  }, [textValue, section.completionChecklist]);
+  // Removed: useEffect hook that calculated checklistComplete
 
   // Auto-resize textarea height
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'; // Reset height
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Set to scroll height
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [textValue]); // Adjust height when textValue changes
+  }, [textValue]);
 
-
-  // Determine button text and disabled state
-  const isEffectivelyCompleted = isCompleted || checklistComplete;
+  // Determine button text and disabled state (simplified as checklist is removed)
+  // You might want to re-evaluate the completion logic here.
+  // For now, let's just disable based on loading.
+  // Consider if 'isCompleted' prop should play a role or if button should always be enabled when not loading.
   const buttonText = loading ? section.loadingButtonText : section.completeButtonText;
-  const isButtonDisabled = loading || !checklistComplete; // Disable if loading or checklist not met
+  const isButtonDisabled = loading; // Simplified disabling logic
 
 
   return (
@@ -65,10 +47,9 @@ const SectionCard = ({
         <textarea
           ref={textareaRef}
           className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-400 outline-none resize-none overflow-hidden ${useLargerFonts ? 'text-xl leading-relaxed' : 'text-base'} ${isCurrentSection ? 'bg-blue-50' : 'bg-white'}`}
-          value={textValue} // Bind value to state
+          value={textValue}
           onChange={(e) => handleInputChange(section.id, e.target.value)}
-          // *** REMOVED placeholder prop ***
-          rows="5" // Initial rows, will auto-expand
+          rows="5"
           maxLength={section.maxLength}
         />
         {section.maxLength && (
@@ -78,22 +59,13 @@ const SectionCard = ({
         )}
       </div>
 
-      {/* Checklist */}
-      {section.completionChecklist && (
-        <div className="mb-4 p-4 border border-gray-200 rounded-md bg-gray-50">
-          <h3 className={`font-medium mb-2 ${useLargerFonts ? 'text-lg' : 'text-base'} text-gray-700`}>{section.completionChecklist.title}</h3>
-          <ul className="space-y-1">
-            {section.completionChecklist.items.map((item, index) => (
-              <CheckboxItem key={index} item={item} textValue={String(textValue)} useLargerFonts={useLargerFonts}/>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Removed Checklist Section */}
+      {/* {section.completionChecklist && ( ... )} */}
 
       {/* Completion Button */}
       <button
-         onClick={() => handleFirstVersionFinished(section.id)} // Call the passed handler
-         disabled={isButtonDisabled} // Disable based on loading or checklist
+         onClick={() => handleFirstVersionFinished(section.id)}
+         disabled={isButtonDisabled}
          className={`w-full py-2 px-4 rounded-md text-white font-medium transition-colors ${
            isButtonDisabled
              ? 'bg-gray-400 cursor-not-allowed'
