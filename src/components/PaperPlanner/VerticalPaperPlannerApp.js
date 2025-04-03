@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
-import AppHeader from '../layout/AppHeader';
+import AppHeader from '../layout/AppHeader';  // Make sure this import is present
 import SectionCard from '../sections/SectionCard';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
@@ -14,7 +14,6 @@ import '../../styles/PaperPlanner.css';
  * - Full width user content
  * - Full-height instruction panel with "Improve" button
  * - Minimizable chat interface
- * - Larger fonts
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // State tracking for active section
@@ -41,7 +40,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSendMessage,
     handleFirstVersionFinished,
     resetProject,
-    exportProject
+    goToNextSection,
+    goToPreviousSection,
+    exportProject  // Make sure this is extracted from the hook
   } = usePaperPlannerHook;
 
   // Store refs for all sections
@@ -70,8 +71,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       setInitialized(true);
     }
   }, [initialized, handleSectionChange, userInputs, handleInputChange, localSectionContent.sections]);
-
-  // We're using explicit user interaction only for section changes
   
   // Custom setActiveSection that updates both the active section and current section
   const setActiveSectionWithManualFlag = (sectionId) => {
@@ -79,27 +78,26 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSectionChange(sectionId);
   };
 
-const hasSectionContent = (sectionId) => {
-  // Get section content and placeholder
-  const content = userInputs[sectionId] || '';
-  const section = localSectionContent.sections.find(s => s.id === sectionId);
-  const placeholder = section?.placeholder || '';
-  
-  // Check if content is a string before using trim
-  if (typeof content !== 'string') {
-    return false;
-  }
-  
-  // If content is completely empty, it's not completed
-  if (!content || content.trim() === '') return false;
-  
-  // If content is exactly the placeholder, it's not completed
-  if (content === placeholder) return false;
-  
-  // Otherwise, consider it completed (even if just slightly modified)
-  return true;
-};
-
+  const hasSectionContent = (sectionId) => {
+    // Get section content and placeholder
+    const content = userInputs[sectionId] || '';
+    const section = localSectionContent.sections.find(s => s.id === sectionId);
+    const placeholder = section?.placeholder || '';
+    
+    // Check if content is a string before using trim
+    if (typeof content !== 'string') {
+      return false;
+    }
+    
+    // If content is completely empty, it's not completed
+    if (!content || content.trim() === '') return false;
+    
+    // If content is exactly the placeholder, it's not completed
+    if (content === placeholder) return false;
+    
+    // Otherwise, consider it completed (even if just slightly modified)
+    return true;
+  };
   
   // Scroll to a specific section
   const scrollToSection = (sectionId) => {
@@ -152,14 +150,14 @@ const hasSectionContent = (sectionId) => {
     <div className="min-h-screen bg-gray-50 text-gray-900">
       {/* Full width content */}
       <div className="w-full pb-12">
-        {/* Header Component */}
+        {/* Header Component with proper props */}
         <AppHeader
           activeSection={activeSection}
           setActiveSection={setActiveSectionWithManualFlag}
           handleSectionChange={handleSectionChange}
           scrollToSection={scrollToSection}
-          resetProject={resetProject}
-          exportProject={exportProject}
+          resetProject={() => setShowConfirmDialog(true)} // Show dialog instead of direct reset
+          exportProject={exportProject} // Pass the exportProject function
         />
         
         {/* Main content area with adjusted layout */}
