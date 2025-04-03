@@ -65,17 +65,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   }, [initialized, handleSectionChange, userInputs, handleInputChange]);
 
-  // Setup intersection observer to detect which section is in view
-  // but disable it completely - we'll rely only on explicit user interaction
-  useEffect(() => {
-    // No intersection observer setup - we only want explicit user interactions
-    // to change the active section
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, []);
+  // We're using explicit user interaction only for section changes
+  // so we don't need an intersection observer
 
   // Custom setActiveSection that updates both the active section and current section
   const setActiveSectionWithManualFlag = (sectionId) => {
