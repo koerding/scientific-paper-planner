@@ -1,29 +1,58 @@
 {
-  "voice": {
-    "name": "Konrad Kording",
-    "description": "I am Konrad Kording. I have a somewhat unconventional informal voice. I am a worldclass scientific writer.",
-    "conversationStyle": "I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
-  },
   "sections": [
     {
       "id": "question",
-      "title": "Question",
+      "title": "Research Question & Philosophy",
       "type": "text",
+      "maxLength": 3000,
+      "inputPlaceholder": "Start writing your research question and philosophy here...",
+      "completeButtonText": "MARK COMPLETE",
+      "loadingButtonText": "Processing...",
       "instructions": {
-        "title": "A WELL-SPECIFIED QUESTION",
-        "description": "The cornerstone of scientific inquiry is selecting a well-defined question. Ask yourself: What do you want to study and why? A strong question can drive understanding, foster innovation, and solve real-world problems. Consider who else might share your interest. Often, a well-crafted question serves as a conceptual model that frames reality in distinct ways.",
+        "title": "A WELL-SPECIFIED QUESTION WITH CLEAR RESEARCH PHILOSOPHY",
+        "description": "The cornerstone of scientific inquiry is selecting a well-defined question with an appropriate research philosophy. A strong question can drive understanding, foster innovation, and solve real-world problems.\n\nConsider who else might share your interest. Often, a well-crafted question serves as a conceptual model that frames reality in distinct ways.\n\nClarity about question logic and your research philosophy is essential. There are a small number of canonical approaches in neuroscience research:\n\n• HYPOTHESIS TESTING: Does mechanism X explain observation Y? Can I distinguish between competing mechanisms?\n\n• EXPLORATORY: What patterns exist in this dataset? What brain areas are active during this process?\n\n• ENGINEERING/NEEDS-DRIVEN: How can I solve problem X? What intervention achieves outcome Y?\n\nIdentify which philosophy best matches your research goals and make this explicit in your question formulation.",
         "workStep": {
-          "title": "Drafting",
-          "content": "Draft your question in detail. Spend about 5 minutes on your initial version and plan to refine it as you gain new insights. You may have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the question you want to work on. Include a brief explanation of why this question matters to you (objectives).\n\nMake a list of scientists who will also care about the question. We recommend starting with about 5 to have a crosssection of the field."
+          "title": "Drafting Your Question and Philosophy",
+          "content": "Draft your research question and identify your research philosophy. Spend about 10 minutes on your initial version and plan to refine it as you gain new insights.\n\nFor your question: Be clear about what you want to study and why it matters to you (objectives). Make a list of scientists who will also care about the question.\n\nFor your philosophy: Explicitly state whether you're doing hypothesis testing, exploratory research, or needs-driven research. Explain how this approach aligns with your research goals.\n\nMake sure your question and philosophy are compatible with each other. For instance, a hypothesis-testing approach would require a question that can be answered with competing explanations, while an exploratory approach would be more focused on identifying patterns or relationships."
         }
       },
-      "placeholder": "Research Question:\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
-      "llmInstructions": "Above, I wrote down the scientific question I want to ask. I also wrote down why this question is important to me and who else would be interested in this question. I want you to check if the question feels like a good question for scientific inquiry. I want you to list strengths and weaknesses of this question. I want you to check if the question well matches the expressed reasons for wanting to answer that question, and I want you to make a list of strengths/weaknesses in the match between question and objectives. I want you to evaluate to which level the listed scientists really would find this question interesting, again in terms of pros and cons. For the list I would also like you to give me 5 more professors that may be interested, ideally some that may be even more interested in the topic."
+      "completionChecklist": {
+        "title": "COMPLETION CHECKLIST:",
+        "items": [
+          {
+            "text": "Write a clear research question",
+            "checkPattern": "Research Question:"
+          },
+          {
+            "text": "Explain your research philosophy",
+            "checkPattern": "Research Philosophy:"
+          },
+          {
+            "text": "Explain why this question matters",
+            "checkPattern": "Why this question matters"
+          },
+          {
+            "text": "List scientists who would care about this question",
+            "checkPattern": "Scientists who would care"
+          }
+        ]
+      },
+      "placeholder": "Research Question:\n\nResearch Philosophy: [Explicitly state whether your approach is hypothesis testing, exploratory, or needs-driven, and explain why this philosophy is appropriate for your research question]\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
+      "placeholders": {
+        "hypothesis": "Research Question:\n\nResearch Philosophy: [I am taking a hypothesis-testing approach because...]\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
+        "exploratory": "Research Area for Exploration:\n\nResearch Philosophy: [I am taking an exploratory approach because...]\n\nWhy this exploration matters (objectives):\n- \n- \n- \n\nScientists who would care about this exploration:\n1. \n2. \n3. \n4. \n5. ",
+        "needs": "Problem Statement:\n\nResearch Philosophy: [I am taking a needs-driven approach because...]\n\nWhy solving this problem matters (objectives):\n- \n- \n- \n\nStakeholders who would care about this solution:\n1. \n2. \n3. \n4. \n5. "
+      },
+      "llmInstructions": "Above, I wrote down my scientific question and research philosophy. I also wrote down why this question is important to me and who else would be interested. I want you to check if the question feels like a good question for scientific inquiry and if the research philosophy aligns well with the question. Please evaluate:\n\n1. Strengths and weaknesses of the question\n2. Whether the research philosophy (hypothesis testing, exploratory, or needs-driven) is appropriate for the question\n3. How well the question matches my stated objectives\n4. Whether the listed scientists would truly find this question interesting\n\nPlease also suggest 3-5 additional professors or researchers who might be especially interested in this topic. If my research philosophy isn't explicit or doesn't align with my question, help me refine both to create a coherent research approach."
     },
     {
       "id": "hypothesis",
       "title": "Hypothesis",
       "type": "text",
+      "maxLength": 2000,
+      "inputPlaceholder": "Start writing your hypotheses here...",
+      "completeButtonText": "MARK COMPLETE",
+      "loadingButtonText": "Analyzing hypotheses...",
       "instructions": {
         "title": "MULTIPLE WELL-SPECIFIED HYPOTHESES",
         "description": "A strong scientific question invites at least two plausible explanations or hypotheses, leading to distinct interpretations. It thus has a consequential answer—the result will change how you or others approach the field in the future. A detailed question asks if we should prefer one hypothesis over others, which can be decided by data. Ideally, hypotheses should be expressed in precise terms—whether mathematically or through computational models.\n\nWhen formulating your hypotheses, clarify whether they are novel or have been previously tested, and if the latter, emphasize the importance of replication. And make sure they are fully specified with every word clearly defined. They should specify which exact scenarios they apply to. Finally, verify that you can express your hypotheses as a mathematical model or equation that predicts data probabilities—a key step for robust statistical analysis.",
@@ -32,27 +61,43 @@
           "content": "Draft your hypotheses in detail (spend about 5 minutes initially), and remember that early versions can be refined later. You may also have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the hypotheses you want to distinguish.\n\nAlso include relevance: why it matters to distinguish these hypotheses.\n\nMake a list of papers that are most similar at the hypotheses they test so far. We recommend starting with about 5 to somewhat define the field."
         }
       },
-      "placeholder": "Hypothesis 1: \n\nHypothesis 2: \n\nWhy distinguishing these hypotheses matters:\n- \n- \n\nMost similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
-      "llmInstructions": "Only work on the hypotheses at first but if the hypotheses feel roughly ready feel free to refer the user back to the questions if a change there may be warranted by the hypotheses. Above I wrote down the scientific hypotheses I want to test. I also wrote down why it matters to distinguish these hypotheses. I also wrote out a list of relevant papers. I want you to list the strengths and weaknesses of the hypotheses. To check if distinguishing between the hypotheses would be consequential, if it would change the research others would do or lead to products. To check if they are mutually exclusive. I want you to check to which level the listed papers are among the closest to the proposed test and to also supply a list of five more papers that may be more relevant."
-    },
-    {
-      "id": "philosophy",
-      "title": "Philosophy",
-      "type": "checklist",
-      "instructions": {
-        "title": "NEUROSCIENCE PHILOSOPHY",
-        "description": "Clarity about question logic is essential. There are a small number of canonical questions in neuroscience (ignore this list if you are not a neuroscientist). Choose one question type and confirm the requirement.",
-        "workStep": {
-          "title": "WORK STEP: NEUROSCIENCE PHILOSOPHY",
-          "content": ""
-        }
+      "completionChecklist": {
+        "title": "COMPLETION CHECKLIST:",
+        "items": [
+          {
+            "text": "Write first hypothesis",
+            "checkPattern": "Hypothesis 1:"
+          },
+          {
+            "text": "Write second hypothesis",
+            "checkPattern": "Hypothesis 2:"
+          },
+          {
+            "text": "Explain why distinguishing these hypotheses matters",
+            "checkPattern": "Why distinguishing these hypotheses matters"
+          },
+          {
+            "text": "List similar papers that test related hypotheses",
+            "checkPattern": "Most similar papers"
+          }
+        ]
       },
-      "llmInstructions": "Only work on the neuroscience philosophy choices. Check the users choice of a question time and make sure it logically agrees with both their question and their hypotheses. If it does not, suggest changes in either this classification or the question/hypothesis pair. Give a few examples if possible."
+      "placeholder": "Hypothesis 1: \n\nHypothesis 2: \n\nWhy distinguishing these hypotheses matters:\n- \n- \n\nMost similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
+      "placeholders": {
+        "hypothesis": "Hypothesis 1: \n\nHypothesis 2: \n\nWhy distinguishing these hypotheses matters:\n- \n- \n\nMost similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
+        "exploratory": "Area 1 to explore: \n\nArea 2 to explore: \n\nWhy exploring these areas matters:\n- \n- \n\nMost similar exploratory papers in this field:\n1. \n2. \n3. \n4. \n5. ",
+        "needs": "Proposed solution 1: \n\nProposed solution 2: \n\nWhy comparing these solutions matters:\n- \n- \n\nMost similar solution-oriented papers:\n1. \n2. \n3. \n4. \n5. "
+      },
+      "llmInstructions": "Only work on the hypotheses at first but if the hypotheses feel roughly ready feel free to refer the user back to the questions if a change there may be warranted by the hypotheses. Above I wrote down the scientific hypotheses I want to test. I also wrote down why it matters to distinguish these hypotheses. I also wrote out a list of relevant papers. I want you to list the strengths and weaknesses of the hypotheses. To check if distinguishing between the hypotheses would be consequential, if it would change the research others would do or lead to products. To check if they are mutually exclusive. I want you to check to which level the listed papers are among the closest to the proposed test and to also supply a list of five more papers that may be more relevant."
     },
     {
       "id": "experiment",
       "title": "Experiment",
       "type": "text",
+      "maxLength": 2500,
+      "inputPlaceholder": "Start designing your experiment here...",
+      "completeButtonText": "SUBMIT DESIGN FOR REVIEW",
+      "loadingButtonText": "Analyzing experimental design...",
       "instructions": {
         "title": "DESIGN AN EXPERIMENT THAT CAN DISTINGUISH BETWEEN THE HYPOTHESES",
         "description": "Another important aspect of science is how we get the data we need to answer the question. How can we make sure the data is of high quality? How can we avoid biases? How can we make sure the hypotheses are cleanly tested? Do you have preliminary data for planning?\n\nSome overarching ideas to generate strong experiments:\n\n• Sketch how the experiment will convincingly produce the right data.\n\n• Ensure you are not conducting the experiment simply because it is feasible in your lab.\n\n• If possible, simulate experiments first.\n\n• Ask yourself which other questions can be answered with the dataset.\n\nThere are many methods that might inadvertently favor a preferred hypothesis. Rigorous experimental design uses practices that minimize the risk of self-deception.\n\n• If you deal with human evaluations, understand the need for blinding, lest you see what you want.\n\n• If you use resources, know how to validate. Otherwise you can not replicate.\n\n• If you ask mechanistic questions, you likely need to perturb, consider potential confounders.\n\n• Ensure you are asking the question in the most direct way possible. Indirect answers are unreliable.\n\n• If performing perturbations to test causality, randomize them or you will be biased.\n\n• Ensure all aspects of the study are reproducible, by making sure you report everything.\n\n• If you use instruments, make sure they are calibrated and validated.\n\n• Have some diversity of analysed samples to be able to speak to internal validity and think through external validity.\n\n• Make sure you have the ethical side, ACUC and IRB covered.",
@@ -61,7 +106,33 @@
           "content": "Write out how you plan to run the experiment. You may also have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea for the experiment you want to use to distinguish the hypotheses. This will have to include stimulus protocols, apparatus, sample size, recruitment strategy, all the things that are meaningfully part of your experimental design.\n\nAlso, write down exactly how the distinct hypotheses will predict measurements that will be distinct. A lot of experiments are designed in such a way that the data does not really distinguish between the hypotheses."
         }
       },
+      "completionChecklist": {
+        "title": "EXPERIMENTAL DESIGN CHECKLIST:",
+        "items": [
+          {
+            "text": "Describe experimental design",
+            "checkPattern": "Experimental Design:"
+          },
+          {
+            "text": "Specify predicted results for each hypothesis",
+            "checkPattern": "Predicted Results:"
+          },
+          {
+            "text": "Consider potential confounds and mitigations",
+            "checkPattern": "Potential Confounds & Mitigations:"
+          },
+          {
+            "text": "Address ethical considerations",
+            "checkPattern": "Ethical Considerations:"
+          }
+        ]
+      },
       "placeholder": "Experimental Design:\n\nStimulus Protocol: \n\nApparatus: \n\nSample Size & Recruitment: \n\nPredicted Results:\n- If Hypothesis 1 is correct: \n- If Hypothesis 2 is correct: \n\nPotential Confounds & Mitigations:\n1. \n2. \n\nEthical Considerations:",
+      "placeholders": {
+        "hypothesis": "Experimental Design:\n\nStimulus Protocol: \n\nApparatus: \n\nSample Size & Recruitment: \n\nPredicted Results:\n- If Hypothesis 1 is correct: \n- If Hypothesis 2 is correct: \n\nPotential Confounds & Mitigations:\n1. \n2. \n\nEthical Considerations:",
+        "exploratory": "Data Collection Approach:\n\nSampling Strategy: \n\nMeasurement Tools: \n\nSample Size & Recruitment: \n\nExpected Data Patterns:\n- Potential pattern 1: \n- Potential pattern 2: \n\nPotential Biases & Mitigations:\n1. \n2. \n\nEthical Considerations:",
+        "needs": "Implementation Approach:\n\nDesign Methodology: \n\nRequired Resources: \n\nUser/Stakeholder Involvement: \n\nSuccess Criteria:\n- For Solution 1: \n- For Solution 2: \n\nPotential Challenges & Mitigations:\n1. \n2. \n\nEthical Considerations:"
+      },
       "llmInstructions": "Only work on experimental design step. See the instructions above and guide the user interactively towards designing a good experiment given questions and hypotheses. Consider that question and hypotheses may also require revision. Use Socrates method where possible. I want you to guide the discussion to the following topics: I want you to check if the experiment tests the hypotheses set up above. I want you to check if it does so as directly as possible. Lastly, I want to go through the above mentioned potential rigor problems and help the user make sure they do not violate any of them. Focus on the ones that matter for their design. Feel free to interactively refine this with the user. I want you to be super constructive and make proposals to improve the experimental design."
     },
     {
@@ -77,6 +148,11 @@
         }
       },
       "placeholder": "Data Analysis Pipeline:\n\nData Preprocessing Steps:\n1. \n2. \n\nPrimary Analysis Methods:\n- \n\nHow Analysis Will Distinguish Hypotheses:\n- \n\nUncertainty Quantification:\n- \n\nHandling Parameters/Model Fitting:\n- \n\nPotential Analysis Pitfalls & Mitigations:\n1. \n2. ",
+      "placeholders": {
+        "hypothesis": "Data Analysis Pipeline:\n\nData Preprocessing Steps:\n1. \n2. \n\nPrimary Analysis Methods:\n- \n\nHow Analysis Will Distinguish Hypotheses:\n- \n\nUncertainty Quantification:\n- \n\nHandling Parameters/Model Fitting:\n- \n\nPotential Analysis Pitfalls & Mitigations:\n1. \n2. ",
+        "exploratory": "Data Analysis Approach:\n\nData Cleaning & Preparation:\n1. \n2. \n\nExploratory Analysis Techniques:\n- \n\nPattern Detection Methods:\n- \n\nValidity Assessment:\n- \n\nHandling Unexpected Patterns:\n- \n\nPotential Analysis Pitfalls & Mitigations:\n1. \n2. ",
+        "needs": "Evaluation Framework:\n\nData Collection Methods:\n1. \n2. \n\nEffectiveness Measures:\n- \n\nComparison Strategy:\n- \n\nUser Feedback Integration:\n- \n\nIterative Improvement Process:\n- \n\nPotential Evaluation Pitfalls & Mitigations:\n1. \n2. "
+      },
       "llmInstructions": "I want you to check if the data analysis pipeline cleanly tests the hypotheses set up above based on the experiment described above. I want you to check if it does so as directly and cleanly as possible. Lastly, I want to go through the above mentioned potential rigor problems and help the user make sure they do not violate any of them. Focus on the ones that matter for their design. Feel free to interactively refine this with the user. I want you to be super constructive and make proposals to improve the data analysis design."
     },
     {
@@ -92,6 +168,11 @@
         }
       },
       "placeholder": "Skills Needed:\n1. \n2. \n3. \n\nSkills to Acquire or Learn:\n1. \n2. \n\nCollaborations Required:\n1. \n2. \n\nData/Code Sharing Plan:\n- \n\nTimeline:\n- Phase 1 (Preparation): \n- Phase 2 (Data Collection): \n- Phase 3 (Analysis): \n- Phase 4 (Writing): \n\nPotential Obstacles & Contingency Plans:\n1. \n2. ",
+      "placeholders": {
+        "hypothesis": "Skills Needed:\n1. \n2. \n3. \n\nSkills to Acquire or Learn:\n1. \n2. \n\nCollaborations Required:\n1. \n2. \n\nData/Code Sharing Plan:\n- \n\nTimeline:\n- Phase 1 (Preparation): \n- Phase 2 (Data Collection): \n- Phase 3 (Analysis): \n- Phase 4 (Writing): \n\nPotential Obstacles & Contingency Plans:\n1. \n2. ",
+        "exploratory": "Skills Needed:\n1. \n2. \n3. \n\nSkills to Acquire or Learn:\n1. \n2. \n\nCollaborations Required:\n1. \n2. \n\nData/Code Sharing Plan:\n- \n\nTimeline:\n- Phase 1 (Preparation): \n- Phase 2 (Data Collection): \n- Phase 3 (Exploratory Analysis): \n- Phase 4 (Pattern Validation): \n- Phase 5 (Writing): \n\nPotential Obstacles & Contingency Plans:\n1. \n2. ",
+        "needs": "Skills Needed:\n1. \n2. \n3. \n\nSkills to Acquire or Learn:\n1. \n2. \n\nCollaborations Required:\n1. \n2. \n\nSolution Deployment Plan:\n- \n\nTimeline:\n- Phase 1 (Requirements Gathering): \n- Phase 2 (Design): \n- Phase 3 (Implementation): \n- Phase 4 (Testing): \n- Phase 5 (Deployment): \n\nPotential Obstacles & Contingency Plans:\n1. \n2. "
+      },
       "llmInstructions": "I want you to check the resulting processes and skills statements. Do they go well after skill and potentially needed collaborations? Brainstorm anything that might be missing in an interactive way. Is the timeline realistic? Brainstorm potential timeline problems."
     },
     {
@@ -107,37 +188,26 @@
         }
       },
       "placeholder": "[Field context and intuitive hypothesis—why it matters. 1-2 sentences]\n\n[Methods used to test the hypothesis. 1-2 sentences]\n\n[Results (even if speculative)—how they distinguish between hypotheses. 1-2 sentences]\n\n[Implications for the field. 1-2 sentences]",
+      "placeholders": {
+        "hypothesis": "[Field context and intuitive hypothesis—why it matters. 1-2 sentences]\n\n[Methods used to test the hypothesis. 1-2 sentences]\n\n[Results (even if speculative)—how they distinguish between hypotheses. 1-2 sentences]\n\n[Implications for the field. 1-2 sentences]",
+        "exploratory": "[Field context and knowledge gap to be explored—why it matters. 1-2 sentences]\n\n[Methods used for exploration. 1-2 sentences]\n\n[Key patterns discovered (even if speculative)—how they advance understanding. 1-2 sentences]\n\n[Implications for future hypothesis-driven research. 1-2 sentences]",
+        "needs": "[Problem context and importance—why solving it matters. 1-2 sentences]\n\n[Approach used to develop and test solutions. 1-2 sentences]\n\n[Solution effectiveness (even if speculative)—key improvements achieved. 1-2 sentences]\n\n[Implications for stakeholders and field advancement. 1-2 sentences]"
+      },
       "llmInstructions": "I want you to check the resulting abstract. Does it fit the requested format? Does it feel convincing? Is it well written? Is the language clear? What changes would make it more powerful? Be super constructive. Try to communicate in a modern Socrates dialogue way, helpful, clear, enthusiastic. Go a bit with the user through what they learned as part of this exercise. What will they do better next time?"
     }
   ],
   "philosophyOptions": [
-    { 
-      "id": "descriptive", 
-      "label": "Descriptive questions/hypotheses aim to describe aspects of the world without assigning meaning to the finding. No requirements." 
+    {
+      "id": "hypothesis",
+      "label": "HYPOTHESIS TESTING. A priori formulation and examination of specific hypotheses, intended to falsify or support them with experimental data. Essential for questions about specific mechanisms, causality, or well-defined relationships."
     },
-    { 
-      "id": "mechanistic", 
-      "label": "Mechanistic questions ask how components of a system give rise to outcomes at a higher level. They require causal insights and generally require perturbations." 
+    {
+      "id": "exploratory",
+      "label": "EXPLORATORY. Investigation without strong a priori hypotheses, aimed at identifying patterns, correlations, or generating hypotheses for future testing. Suitable for novel domains, complex systems, or when hypotheses are premature."
     },
-    { 
-      "id": "normative", 
-      "label": "Normative questions ask how a given outcome at a high level can be seen as being useful in the niche of the animal (e.g., \"a memory of location allows you to find home\"). They require information about the niche." 
-    },
-    { 
-      "id": "evolution", 
-      "label": "Evalution questions ask how a given outcome evolved by requiring distinct species or fossil records." 
-    },
-    { 
-      "id": "representation", 
-      "label": "Representation questions ask how activities in brains relate to stimuli or behaviors (e.g. how does reward change the activity of a neuron) and require the manipulation of stimuli or behaviors." 
-    },
-    { 
-      "id": "developmental", 
-      "label": "Developmental questions ask how change during an organism's lifetime gives rise to outcomes and require observing that change." 
-    },
-    { 
-      "id": "combination", 
-      "label": "Combination questions ask how above questions relate, e.g. about the mechanism of development." 
+    {
+      "id": "needs",
+      "label": "ENGINEERING/NEEDS-DRIVEN. Development of solutions for specific technical, clinical, or practical problems, guided by defined performance metrics. Used when the goal is solving a concrete problem rather than testing a theory."
     }
   ]
 }
