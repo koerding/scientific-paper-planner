@@ -37,30 +37,34 @@ const ModernChatInterface = ({
   return (
     <>
       {/* Minimized chat icon */}
-      <div 
-        className={`fixed bottom-6 right-6 z-50 ${isMinimized ? 'visible' : 'hidden'}`}
-        onClick={toggleChat}
-      >
-        <div className="w-16 h-16 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-          </svg>
+      {isMinimized && (
+        <div 
+          className="fixed bottom-6 right-6 z-50 cursor-pointer"
+          onClick={toggleChat}
+        >
+          <div className="w-16 h-16 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+            </svg>
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Expanded chat interface */}
       <div 
-        className={`fixed bottom-6 right-6 w-full sm:w-96 md:w-2/5 z-40 transition-transform duration-300 shadow-lg ${
-          isMinimized ? 'translate-y-full' : 'translate-y-0'
+        className={`fixed right-6 z-40 shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
+          isMinimized ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
         style={{ 
-          height: '50vh', 
-          maxWidth: 'calc(100% - 3rem)',
-          maxHeight: 'calc(100vh - 7rem)' // Prevent going off-screen
+          bottom: isMinimized ? '-100%' : '1.5rem',
+          width: 'calc(100% - 3rem)',
+          height: '400px',
+          maxWidth: '450px',
+          maxHeight: 'calc(70vh - 7rem)'
         }}
       >
         {/* Chat header */}
-        <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center rounded-t-lg">
+        <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3">
               AI
@@ -78,8 +82,8 @@ const ModernChatInterface = ({
         </div>
         
         {/* Chat messages */}
-        <div className="bg-gray-50 flex flex-col h-full" style={{ minHeight: '200px' }}>
-          <div className="flex-grow overflow-y-auto p-4">
+        <div className="flex flex-col h-full" style={{ height: 'calc(100% - 56px)' }}>
+          <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
             {!currentSection || !chatMessages[currentSection] || chatMessages[currentSection].length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mb-2">
@@ -195,5 +199,4 @@ const ModernChatInterface = ({
   );
 };
 
-// Make sure to export the component as default
 export default ModernChatInterface;
