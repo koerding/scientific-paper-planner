@@ -1,91 +1,17 @@
 /**
  * Service for improving instructions based on user progress
- * UPDATED: Added type check before calling trim() in improveBatchInstructions.
+ * UPDATED: Added logging before the apiCallFunction call.
  */
 import { callOpenAI } from './openaiService';
 
-/**
- * Improves instructions for a specific section based on user progress
- * @param {Object} currentSection - The current section object
- * @param {Object} userInputs - User inputs for all sections
- * @param {Object} [options] - Optional parameters
- * @returns {Promise<Object>} - Result with success flag and improved content
- */
-// Note: This single-section improvement function is likely no longer used by VerticalPaperPlannerApp
-// but kept here for potential other uses or backward compatibility if needed elsewhere.
+// ... (keep the existing single improveInstructions function here) ...
 export const improveInstructions = async (
   currentSection,
   userInputs,
   options = {}
 ) => {
-  // ... (existing single improveInstructions function - likely unused but can remain)
-  try {
-    if (!currentSection) {
-      return { success: false, message: "No section provided" };
-    }
-
-    const sectionId = currentSection.id;
-    const sectionContent = userInputs[sectionId] || '';
-
-    // Check if sectionContent is a string before trimming
-    if (typeof sectionContent !== 'string' || sectionContent.trim() === '') {
-      return { success: false, message: "No meaningful content to analyze" };
-    }
-
-    // Build the prompt for instruction improvement
-    const prompt = `
-      You are an editor tasked with streamlining scientific paper planning instructions based on what the user has already accomplished. Your job is primarily to REMOVE redundant or unnecessary guidance from the instructions.
-
-      Current section: ${currentSection.title}
-
-      Current instructions:
-      ${currentSection.instructions.description}
-      ${currentSection.instructions.workStep ? '\n' + currentSection.instructions.workStep.title + '\n' + currentSection.instructions.workStep.content : ''}
-
-      User's current content:
-      ${sectionContent}
-
-      Instructions for editing:
-      1. PRIMARILY REMOVE parts of the instructions that are redundant or already addressed by the user
-      2. Keep the instructions concise and to the point
-      3. You may add AT MOST 1-2 short sentences if absolutely necessary
-      4. Maintain the same style and tone as the original
-      5. Don't add lengthy new explanations
-
-      Response format: Provide ONLY the edited instructions text that should replace the current instructions.
-      Preserve the section title as a heading and maintain paragraph breaks.
-    `;
-
-    // Call the OpenAI API
-    console.log("[Instruction Improvement - Single] Sending request to OpenAI");
-    const response = await callOpenAI(
-      prompt,
-      "improve_instructions_single", // Differentiate context if needed
-      userInputs,
-      [currentSection] // Pass only current section for context if intended logic
-    );
-
-    // Format the improved content for display
-    const improvedContent = response.split('\n\n').map(paragraph => {
-      // Basic formatting example, adjust as needed
-      return `<p class="mb-3 text-blue-700 text-lg">${paragraph}</p>`;
-    }).join('');
-
-    return {
-      success: true,
-      message: "Instructions improved successfully",
-      improvedContent,
-      rawResponse: response
-    };
-  } catch (error) {
-    console.error("Error improving single instruction:", error);
-    return {
-      success: false,
-      message: error.message || "An error occurred while improving instruction"
-    };
-  }
+  // ... (existing single improveInstructions function code) ...
 };
-
 
 /**
  * Improves instructions for multiple sections
@@ -105,17 +31,15 @@ export const improveBatchInstructions = async (
     // Identify which sections have meaningful user content
     const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
       const content = userInputs[sectionId]; // Get the raw content
-      const section = sectionContent.sections.find(s => s.id === sectionId);
+      // Ensure sectionContent exists and has a sections array before finding
+      const section = sectionContent?.sections?.find(s => s.id === sectionId);
       const placeholder = section?.placeholder || '';
 
-      // *** FIX: Check if content is a string before calling trim() ***
+      // Check if content is a string before calling trim()
       if (typeof content !== 'string') {
-          // If it's not a string (like the old 'philosophy' array), it can't have user progress in the text sense.
-          // You might add specific checks here if other non-string types should indicate progress.
           return false;
       }
-
-      // Now we know content is a string, proceed with the check
+      // Proceed with the check
       return content.trim() !== '' && content !== placeholder;
     });
 
@@ -127,7 +51,13 @@ export const improveBatchInstructions = async (
 
     // Prepare data for each section that has progress
     const sectionsData = sectionsWithProgress.map(sectionId => {
-      const section = sectionContent.sections.find(s => s.id === sectionId);
+       // Ensure sectionContent exists and has a sections array before finding
+      const section = sectionContent?.sections?.find(s => s.id === sectionId);
+      // If section not found (e.g., old 'philosophy' key), skip or handle appropriately
+      if (!section) {
+          console.warn(`Section with ID ${sectionId} not found in sectionContent. Skipping.`);
+          return null; // Return null to filter out later
+      }
       const userContent = userInputs[sectionId] || ''; // Should be string here based on filter
 
       return {
@@ -139,7 +69,13 @@ export const improveBatchInstructions = async (
         },
         userContent
       };
-    });
+    }).filter(data => data !== null); // Filter out any null entries from missing sections
+
+    // Re-check if we still have sections after filtering potential mismatches
+    if (sectionsData.length === 0) {
+      console.log("[Instruction Improvement] No valid sections found with user progress after filtering.");
+      return { success: false, message: "No valid sections with progress to improve" };
+    }
 
     // Build the prompt for the API
     const prompt = `
@@ -175,7 +111,23 @@ Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'.
 
     // Call the OpenAI API - Pass ALL sections for broader context if needed by AI, but prompt focuses on sectionsData
     console.log("[Instruction Improvement] Sending batch request to OpenAI for sections:", sectionsWithProgress.join(', '));
-    const response = await apiCallFunction(prompt, "improve_instructions_batch", userInputs, sectionContent.sections);
+
+    // *** DEBUG LOG: Log the sections array being passed to the API call function ***
+    console.log("[Instruction Improvement] Passing this sections array to apiCallFunction:", sectionContent?.sections);
+
+    // Ensure sectionContent.sections is actually an array before passing
+    const sectionsToPass = Array.isArray(sectionContent?.sections) ? sectionContent.sections : [];
+    if (sectionsToPass.length === 0 && sectionContent?.sections) {
+        console.error("[Instruction Improvement] sectionContent.sections is not an array!", sectionContent.sections);
+    }
+
+    const response = await apiCallFunction(
+        prompt,
+        "improve_instructions_batch",
+        userInputs,
+        sectionsToPass // Pass the validated array
+    );
+
 
     // Parse the response
     let improvedInstructions;
@@ -229,11 +181,23 @@ export const updateSectionWithImprovedInstructions = (sectionContent, improvedIn
   // Create a deep copy to avoid mutating the original
   let updatedSectionsData;
   try {
+      // Ensure sectionContent is an object before stringifying
+      if (typeof sectionContent !== 'object' || sectionContent === null) {
+          throw new Error("sectionContent is not a valid object for deep copy.");
+      }
       updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
   } catch(e) {
       console.error("Error deep copying section content", e);
-      return sectionContent; // Return original if copy fails
+      // Return a default structure or handle error appropriately
+      return { sections: [] };
   }
+
+  // Ensure sections array exists after copy
+  if (!Array.isArray(updatedSectionsData?.sections)) {
+      console.error("updatedSectionsData does not have a valid sections array after copy.");
+      updatedSectionsData.sections = []; // Initialize if missing
+  }
+
 
   if (!Array.isArray(improvedInstructions)) {
       console.error("Invalid improvedInstructions format: Expected an array.");
@@ -247,9 +211,20 @@ export const updateSectionWithImprovedInstructions = (sectionContent, improvedIn
         return; // Skip this malformed improvement object
     }
 
-    const sectionIndex = updatedSectionsData.sections.findIndex(s => s.id === improvement.id);
+    const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id); // Check if s exists
 
     if (sectionIndex !== -1) {
+      // Ensure the target section and its instructions object exist
+       if (!updatedSectionsData.sections[sectionIndex]) {
+          console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
+          return;
+      }
+       if (!updatedSectionsData.sections[sectionIndex].instructions) {
+          updatedSectionsData.sections[sectionIndex].instructions = {}; // Initialize if missing
+           console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
+      }
+
+
       // Update the instructions safely, checking for existence
       if (typeof improvement.instructions.description === 'string') {
           updatedSectionsData.sections[sectionIndex].instructions.description =
@@ -271,11 +246,9 @@ export const updateSectionWithImprovedInstructions = (sectionContent, improvedIn
                 improvement.instructions.workStep.content;
           }
       } else {
-          // Handle case where AI might omit workStep if it thinks it's fully addressed
-          // Option 1: Clear it if AI omits it
-          // updatedSectionsData.sections[sectionIndex].instructions.workStep = undefined;
-          // Option 2: Keep original if AI omits it (safer?) - uncomment below
-           console.warn(`AI omitted workStep for section ${improvement.id}, keeping original.`);
+           console.warn(`AI omitted workStep for section ${improvement.id}. Check if this is intended.`);
+           // Decide if you want to clear the workStep or keep the original
+           // To clear: updatedSectionsData.sections[sectionIndex].instructions.workStep = undefined;
       }
     } else {
         console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
