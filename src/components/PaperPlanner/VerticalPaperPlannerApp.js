@@ -5,7 +5,7 @@ import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
-import '../../styles/PaperPlanner.css';
+import './PaperPlanner.css';
 
 /**
  * Redesigned Paper Planner with:
@@ -177,7 +177,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         {/* Main content area with adjusted layout */}
         <div className="flex">
           {/* Left column - User editable sections - taking 2/3 width */}
-          <div className="w-2/3 px-8 py-6" style={{ marginRight: '33.333%' }}>
+          <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
             {sectionContent.sections.map((section) => {
               const isCurrentSection = activeSection === section.id;
               const isCompleted = hasSectionContent(section.id);
