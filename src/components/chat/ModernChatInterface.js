@@ -51,18 +51,18 @@ const ModernChatInterface = ({
       )}
       
       {/* Expanded chat interface */}
-    <div 
-      className={`fixed right-6 z-40 shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
-        isMinimized ? 'opacity-0 pointer-events-none' : 'opacity-100'
-      }`}
-      style={{ 
-        bottom: isMinimized ? '-100%' : '1.5rem',
-        width: 'calc(100% - 3rem)',
-        height: '550px', // Increased from 400px
-        maxWidth: '600px', // Increased from 450px
-        maxHeight: 'calc(80vh - 7rem)' // Increased from 70vh
-      }}
-    >
+      <div 
+        className={`fixed z-40 shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
+          isMinimized ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+        style={{ 
+          bottom: '0',
+          right: '0',
+          width: '50%', 
+          height: '80vh',
+          maxHeight: '800px'
+        }}
+      >
         {/* Chat header */}
         <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center">
           <div className="flex items-center">
