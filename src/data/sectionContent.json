@@ -1,191 +1,101 @@
-{
-  "title": "Scientific Paper Planner Sections",
-  "sections": [
-    {
-      "id": "question",
-      "title": "Research Question & Philosophy",
-      "type": "text",
-      "maxLength": 3000,
-      "inputPlaceholder": "Start writing your research question and philosophy here...",
-      "completeButtonText": "MARK COMPLETE",
-      "loadingButtonText": "Processing...",
-      "instructions": {
-        "title": "A WELL-SPECIFIED QUESTION WITH CLEAR RESEARCH PHILOSOPHY",
-        "text": "The cornerstone of scientific inquiry is selecting a well-defined question with an appropriate research philosophy. A strong question can drive understanding, foster innovation, and solve real-world problems.\n\nConsider who else might share your interest. A well-crafted question often implies a specific way of conceptualizing the problem or system you are studying. Consider the scope of your question: Is it broad or narrow? Ensure it's specific enough to be answerable with the resources and time you anticipate having.\n\nClarity about question logic and your research philosophy is essential. There are a small number of canonical approaches in neuroscience research:\n\n• HYPOTHESIS TESTING: Does mechanism X explain observation Y? Can I distinguish between competing mechanisms?\n\n• EXPLORATORY: What patterns exist in this dataset? What brain areas are active during this process?\n\n• ENGINEERING/NEEDS-DRIVEN: How can I solve problem X? What intervention achieves outcome Y?\n\nIdentify which philosophy best matches your research goals and make this explicit in your question formulation.\n\n### Drafting Your Question and Philosophy\n\nDraft your research question and identify your research philosophy. Spend about 10 minutes on your initial version and plan to refine it as you gain new insights.\n\nFor your question: Be clear about what you want to study and why it matters *to the field* (significance and objectives). Briefly define any key terms or concepts within your question to ensure clarity. Make a list of the target audience or community who will also care about the question.\n\nFor your philosophy: Explicitly state whether you're doing hypothesis testing, exploratory research, or needs-driven research. Explain how this approach aligns with your research goals.\n\nMake sure your question and philosophy are compatible with each other. For instance, a hypothesis-testing approach would require a question that can be answered with competing explanations, while an exploratory approach would be more focused on identifying patterns or relationships."
-      },
-      "completionChecklist": {
-        "title": "COMPLETION CHECKLIST:",
-        "items": [
-          {"text": "Write a clear research question", "checkPattern": "Research Question:"},
-          {"text": "Explain your research philosophy", "checkPattern": "Research Philosophy:"},
-          {"text": "Articulate the significance/impact of the question", "checkPattern": "Significance:|Why this question matters"},
-          {"text": "Identify the target audience/community", "checkPattern": "Audience:|Scientists who would care|Stakeholders who would care"},
-          {"text": "Key terms in the question are defined", "checkPattern": "Key Terms Defined:|Definitions:"}
-        ]
-      },
-      "placeholder": "Research Question:\n\nResearch Philosophy: [Explicitly state whether your approach is hypothesis testing, exploratory, or needs-driven, and explain why this philosophy is appropriate for your research question]\n\nSignificance/Impact:\n- \n- \n- \n\nKey Terms Defined:\n- Term 1: Definition\n- Term 2: Definition\n\nTarget Audience/Community:\n1. \n2. \n3. \n4. \n5. ",
-      "placeholders": {
-        "hypothesis": "Research Question:\n\nResearch Philosophy: [I am taking a hypothesis-testing approach because...]\n\nSignificance/Impact:\n- \n- \n- \n\nKey Terms Defined:\n- Term 1: Definition\n- Term 2: Definition\n\nTarget Audience/Community:\n1. \n2. \n3. \n4. \n5. ",
-        "exploratory": "Research Area for Exploration:\n\nResearch Philosophy: [I am taking an exploratory approach because...]\n\nSignificance/Impact:\n- \n- \n- \n\nKey Terms Defined:\n- Term 1: Definition\n- Term 2: Definition\n\nTarget Audience/Community:\n1. \n2. \n3. \n4. \n5. ",
-        "needs": "Problem Statement:\n\nResearch Philosophy: [I am taking a needs-driven approach because...]\n\nSignificance/Impact:\n- \n- \n- \n\nKey Terms Defined:\n- Term 1: Definition\n- Term 2: Definition\n\nTarget Audience/Stakeholders:\n1. \n2. \n3. \n4. \n5. "
-      },
-      "llmInstructions": "Above, I wrote down my scientific question and research philosophy. I also wrote down why this question is important to me and who else would be interested. I want you to check if the question feels like a good question for scientific inquiry and if the research philosophy aligns well with the question. Please evaluate:\n\n1. Strengths and weaknesses of the question (including clarity of terms and scope)\n2. Whether the research philosophy (hypothesis testing, exploratory, or needs-driven) is appropriate for the question\n3. How well the question matches my stated significance/objectives\n4. Whether the listed audience/community would truly find this question interesting\n\nPlease also suggest 3-5 additional professors, researchers, or specific communities who might be especially interested in this topic. If my research philosophy isn't explicit or doesn't align with my question, help me refine both to create a coherent research approach."
-    },
-    {
-      "id": "hypothesis",
-      "title": "Hypothesis",
-      "type": "text",
-      "maxLength": 2000,
-      "inputPlaceholder": "Start writing your hypotheses here...",
-      "completeButtonText": "MARK COMPLETE",
-      "loadingButtonText": "Analyzing hypotheses...",
-      "instructions": {
-        "title": "MULTIPLE WELL-SPECIFIED, TESTABLE HYPOTHESES",
-        "text": "A strong scientific question invites at least two plausible explanations or hypotheses, leading to distinct interpretations. It thus has a consequential answer—the result will change how you or others approach the field in the future. A detailed question asks if we should prefer one hypothesis over others, which can be decided by data. Crucially, each hypothesis must be formulated in a way that allows it to be potentially proven wrong (falsifiable) through your planned experiment. Ideally, hypotheses should be expressed in precise terms—whether mathematically or through computational models.\n\nWhen formulating your hypotheses, clarify whether they are novel or have been previously tested, and if the latter, emphasize the importance of replication. Make sure they are fully specified with every word clearly defined. Define the scope and boundary conditions under which each hypothesis is expected to hold. Finally, verify that you can express your hypotheses as a mathematical model or equation that predicts data probabilities—a key step for robust statistical analysis.\n\n### WORK STEP: HYPOTHESES\n\nDraft your hypotheses in detail (spend at least 15-20 minutes initially), and remember that early versions can be refined later. Define key terms within each hypothesis. You may also have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the hypotheses you want to distinguish.\n\nAlso include relevance: why it matters to distinguish these hypotheses.\n\nMake a list of papers that are most similar at the hypotheses they test so far. We recommend starting with about 5 to somewhat define the field."
-      },
-      "completionChecklist": {
-        "title": "COMPLETION CHECKLIST:",
-        "items": [
-          {"text": "Formulate specific, testable Hypothesis 1", "checkPattern": "Hypothesis 1:"},
-          {"text": "Formulate specific, testable Hypothesis 2", "checkPattern": "Hypothesis 2:"},
-          {"text": "Hypotheses are clearly distinct/mutually exclusive (if appropriate)", "checkPattern": "Distinct Hypotheses:|Mutually Exclusive:"},
-          {"text": "Key terms within hypotheses are defined", "checkPattern": "Hypothesis Definitions:|Terms Defined:"},
-          {"text": "Explain why distinguishing these hypotheses matters", "checkPattern": "Why distinguishing these hypotheses matters"},
-          {"text": "List similar papers that test related hypotheses", "checkPattern": "Most similar papers"}
-        ]
-      },
-      "placeholder": "Hypothesis 1: [State the first specific, testable hypothesis. Define key terms within it.]\n\nHypothesis 2: [State the second specific, testable hypothesis, distinct from H1. Define key terms within it.]\n\nTerms Defined:\n- Term H1.1: Definition\n- Term H2.1: Definition\n\nWhy distinguishing these hypotheses matters:\n- \n- \n\nMost similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
-      "placeholders": {
-         "hypothesis": "Hypothesis 1: [State the first specific, testable hypothesis. Define key terms within it.]\n\nHypothesis 2: [State the second specific, testable hypothesis, distinct from H1. Define key terms within it.]\n\nTerms Defined:\n- Term H1.1: Definition\n- Term H2.1: Definition\n\nWhy distinguishing these hypotheses matters:\n- \n- \n\nMost similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
-         "exploratory": "Area 1 to explore: [Define the first area/pattern/relationship to investigate. Define key terms.]\n\nArea 2 to explore: [Define the second area/pattern/relationship to investigate. Define key terms.]\n\nTerms Defined:\n- Term A1.1: Definition\n- Term A2.1: Definition\n\nWhy exploring these areas matters:\n- \n- \n\nMost similar exploratory papers in this field:\n1. \n2. \n3. \n4. \n5. ",
-         "needs": "Proposed solution 1: [Describe the first proposed solution/approach. Define key metrics/terms.]\n\nProposed solution 2: [Describe the second proposed solution/approach to compare. Define key metrics/terms.]\n\nTerms Defined:\n- Term S1.1: Definition\n- Term S2.1: Definition\n\nWhy comparing these solutions matters:\n- \n- \n\nMost similar solution-oriented papers:\n1. \n2. \n3. \n4. \n5. "
-      },
-       "llmInstructions": "Only work on the hypotheses at first but if the hypotheses feel roughly ready feel free to refer the user back to the questions if a change there may be warranted by the hypotheses. Above I wrote down the scientific hypotheses I want to test (or areas/solutions). I also wrote down why it matters to distinguish these. I also wrote out a list of relevant papers. I want you to list the strengths and weaknesses of the hypotheses/areas/solutions, particularly regarding specificity and testability/feasibility. Check if distinguishing between them would be consequential, if it would change the research others would do or lead to products. Check if they are mutually exclusive (if applicable). Check if key terms are well-defined. I want you to check to which level the listed papers are among the closest to the proposed work and to also supply a list of five more papers that may be more relevant."
-    },
-    {
-      "id": "experiment",
-      "title": "Experiment",
-      "type": "text",
-      "maxLength": 2500,
-      "inputPlaceholder": "Start designing your experiment here...",
-      "completeButtonText": "SUBMIT DESIGN FOR REVIEW",
-      "loadingButtonText": "Analyzing experimental design...",
-      "instructions": {
-        "title": "DESIGN AN EXPERIMENT THAT CAN DISTINGUISH BETWEEN THE HYPOTHESES",
-        "text": "Another important aspect of science is how we get the data we need to answer the question. How can we make sure the data is of high quality? How can we avoid biases? How can we make sure the hypotheses are cleanly tested? Do you have preliminary data for planning?\n\nSome overarching ideas to generate strong experiments:\n\n• Sketch how the experiment will convincingly produce the data needed to distinguish the hypotheses.\n• Ensure you are not conducting the experiment simply because it is feasible in your lab; prioritize directness in testing the hypotheses.\n• Define appropriate control groups or conditions necessary to isolate the effect of interest and rule out alternative explanations.\n• If possible, simulate experiments first to refine the design and analysis plan.\n• Ask yourself which other questions can be answered with the dataset.\n• Consider the expected effect size and variability to plan for adequate statistical power – will your sample size be sufficient to detect a meaningful difference if one exists?\n\n**Key Rigor Considerations:**\nThere are many methods that might inadvertently favor a preferred hypothesis. Rigorous experimental design uses practices that minimize the risk of self-deception.\n\n• *Blinding:* If you deal with human evaluations or subjective measures, understand the need for blinding (single or double) to prevent observer bias.\n• *Validation:* If you use resources (e.g., datasets, software, reagents), know how to validate them. Document sources and validation steps for replicability.\n• *Perturbations & Confounders:* If you ask mechanistic questions, you likely need to perturb the system. Identify and plan to measure or control potential confounders.\n• *Directness:* Ensure you are asking the question in the most direct way possible. Indirect measurements can be less reliable.\n• *Randomization:* If performing perturbations or assigning subjects to groups, use appropriate randomization techniques to minimize allocation bias.\n• *Reproducibility & Reporting:* Ensure all aspects of the study protocol are documented in sufficient detail for others (and your future self) to reproduce it.\n• *Calibration & Validation:* If you use instruments, ensure they are properly calibrated and validated for your specific measurements.\n• *Sample Diversity & Validity:* Include diverse samples where appropriate to strengthen internal validity (confidence in your findings for the sample studied) and consider factors affecting external validity (generalizability).\n• *Ethics:* Ensure you have obtained or planned for necessary ethical approvals (e.g., ACUC, IRB) and conduct the study ethically.\n\n### WORK STEP: EXPERIMENT DESIGN\n\nWrite out how you plan to run the experiment. You may also have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea for the experiment you want to use to distinguish the hypotheses.\n\nThis must include:\n- Key variables (independent, dependent, controlled).\n- Detailed stimulus protocols and/or intervention descriptions.\n- Apparatus and materials used.\n- Control groups/conditions.\n- Sample characteristics, recruitment strategy, and sample size justification (including power considerations if applicable).\n- Specific data collection procedures.\n\nAlso, write down exactly how the distinct hypotheses will predict *measurable differences* in the data collected. A lot of experiments are designed in such a way that the data does not really distinguish between the hypotheses."
-      },
-      "completionChecklist": {
-        "title": "EXPERIMENTAL DESIGN CHECKLIST:",
-        "items": [
-          {"text": "Describe overall experimental design approach", "checkPattern": "Experimental Design:"},
-          {"text": "Detail procedures (stimuli, apparatus, data collection)", "checkPattern": "Stimulus Protocol:|Apparatus:|Data Collection Procedure:|Procedure:"},
-          {"text": "Describe control groups/conditions", "checkPattern": "Control Group:|Control Condition:"},
-          {"text": "Specify sample characteristics & recruitment", "checkPattern": "Sample Size & Recruitment:|Sample:"},
-          {"text": "Justify sample size / Power consideration mentioned", "checkPattern": "Sample Size Justification:|Power Analysis:|Statistical Power:"},
-          {"text": "Specify distinct, measurable predicted outcomes for each hypothesis", "checkPattern": "Predicted Results:|Predicted Outcomes:"},
-          {"text": "Consider potential confounds and mitigations", "checkPattern": "Potential Confounds & Mitigations:|Confounds:"},
-          {"text": "Address ethical considerations", "checkPattern": "Ethical Considerations:"}
-        ]
-      },
-      "placeholder": "Experimental Design:\n[Overall approach, e.g., between-subjects, within-subjects, mixed design]\n\nKey Variables:\n- Independent: \n- Dependent: \n- Controlled: \n\nStimulus Protocol/Intervention: \n\nApparatus/Materials: \n\nControl Group/Condition: \n\nSample Characteristics & Recruitment: \n\nSample Size Justification (Power Considerations): \n\nData Collection Procedure: \n\nPredicted Results:\n- If Hypothesis 1 is correct: [Describe specific, measurable outcome]\n- If Hypothesis 2 is correct: [Describe specific, measurable outcome, distinct from H1's prediction]\n\nPotential Confounds & Mitigations:\n1. [Confound] -> [Mitigation strategy]\n2. \n\nEthical Considerations:\n[IRB/ACUC status or plan, consent process, data anonymization, etc.]",
-      "placeholders": {
-        "hypothesis": "Experimental Design:\n[Overall approach, e.g., between-subjects, within-subjects, mixed design]\n\nKey Variables:\n- Independent: \n- Dependent: \n- Controlled: \n\nStimulus Protocol/Intervention: \n\nApparatus/Materials: \n\nControl Group/Condition: \n\nSample Characteristics & Recruitment: \n\nSample Size Justification (Power Considerations): \n\nData Collection Procedure: \n\nPredicted Results:\n- If Hypothesis 1 is correct: [Describe specific, measurable outcome]\n- If Hypothesis 2 is correct: [Describe specific, measurable outcome, distinct from H1's prediction]\n\nPotential Confounds & Mitigations:\n1. [Confound] -> [Mitigation strategy]\n2. \n\nEthical Considerations:\n[IRB/ACUC status or plan, consent process, data anonymization, etc.]",
-        "exploratory": "Data Collection Approach:\n[Methodology, e.g., survey, observational study, physiological recording]\n\nSampling Strategy: [How participants/data points will be selected]\n\nMeasurement Tools: [Instruments, software, questionnaires used]\n\nSample Characteristics & Recruitment: \n\nSample Size Justification (if applicable, e.g., for detecting patterns of a certain magnitude): \n\nData Collection Procedure: \n\nExpected Data Patterns:\n- Potential pattern 1: [Description of possible outcome/relationship]\n- Potential pattern 2: [Description of alternative outcome/relationship]\n\nPotential Biases & Mitigations:\n1. [Bias, e.g., selection bias, measurement bias] -> [Mitigation strategy]\n2. \n\nEthical Considerations:\n[IRB/ACUC status or plan, consent process, data anonymization, etc.]",
-        "needs": "Implementation & Evaluation Approach:\n[Overall methodology, e.g., Agile development, A/B testing, user-centered design]\n\nDesign Methodology: [Specific techniques used for creating the solution]\n\nRequired Resources: [Personnel, equipment, software, funding]\n\nUser/Stakeholder Involvement Plan: [How users will participate in testing/feedback]\n\nData Collection for Evaluation: [Metrics, surveys, logs]\n\nSuccess Criteria (Measurable):\n- For Solution 1 (or baseline): [Specific metric and target value]\n- For Solution 2 (or proposed): [Specific metric and target value]\n\nPotential Challenges & Mitigations:\n1. [Challenge, e.g., technical hurdle, user adoption] -> [Mitigation strategy]\n2. \n\nEthical Considerations:\n[Data privacy, informed consent for user studies, potential impacts of the solution]"
-      },
-       "llmInstructions": "Only work on experimental design step. See the instructions above and guide the user interactively towards designing a good experiment given questions and hypotheses (or exploration goals/problem statement). Consider that question and hypotheses may also require revision. Use Socrates method where possible. I want you to guide the discussion to the following topics: Check if the experiment *directly* tests the hypotheses/addresses the goals. Check if the predicted outcomes for each hypothesis are truly distinct and measurable. Go through the 'Key Rigor Considerations' (blinding, controls, randomization, power, etc.) mentioned in the instructions and help the user ensure their design appropriately addresses the relevant ones. Focus on the ones that matter most for their specific design. Interactively refine the design with the user, being constructive and making proposals to improve clarity, directness, and rigor."
-    },
-    {
-      "id": "analysis",
-      "title": "Data Analysis",
-      "type": "text",
-      "maxLength": 3000,
-      "inputPlaceholder": "Start planning your data analysis here...",
-      "completeButtonText": "MARK COMPLETE",
-      "loadingButtonText": "Processing...",
-      "instructions": {
-        "title": "PRE-SPECIFY YOUR DATA ANALYSIS PLAN",
-        "text": "A third aspect of science is how we convert the data into a concrete preference for one hypothesis (or into characterized patterns/evaluated solutions). How can we make sure the data is used in an unbiased way? How can we quantify our uncertainty? How can we avoid fooling ourselves during data analysis?\n\nSome Ideas to generate strong data analysis plans:\n\n• **Pre-specify:** Define your primary analysis pipeline *before* analyzing the actual experimental data. Strongly consider pre-registering your analysis plan (e.g., on OSF, AsPredicted) to enhance transparency and credibility.\n• **Direct Link:** Ensure your analysis directly addresses the research question and can distinguish between the hypotheses based on the experimental design and predicted outcomes.\n• **Simulate/Pilot:** Consider validating your analysis approach on simulated or pilot data to ensure it works as expected and can recover known ground truths.\n• **Quantify:** Write down exactly what metrics you will extract from the data and how different hypotheses predict different values or patterns in these metrics.\n• **Model (if applicable):** Implement hypotheses mathematically/computationally so they assign compatibility between hypothesis and data (likelihood), taking care to plan how free parameters will be handled or estimated.\n• **Transparency Log:** Maintain a detailed log of any deviations from the pre-specified analysis plan, along with justifications.\n\n**AVOID THE DATA ANALYSIS RIGOR TRAPS**\nThere are many ways our data analysis pipeline can favor a hypothesis we like. Rigorous data analysis uses practices that minimize the probability of misleading ourselves.\n\n• *Directness:* Use the most direct data analysis strategy to answer your question. Avoid overly complex or indirect methods unless necessary and well-justified.\n• *Outcome Switching:* Define your primary outcome variable(s) and analysis methods in advance. Avoid switching outcomes or analyses based on what yields significant results (p-hacking).\n• *Statistical Power:* Be aware of statistical power based on your experimental design. If the study is underpowered, acknowledge this limitation in interpretation.\n• *Human Biases:* Be aware of confirmation bias. Stick to your pre-specified plan. If analyses suggest exploring further, clearly label these as exploratory.\n• *Reproducible Workflow:* Store and handle data systematically. Script your analysis pipeline for reproducibility and share code/data where possible.\n• *Appropriate Metrics:* Use quantification metrics that accurately reflect the phenomenon of interest and are appropriate for the data type.\n• *Data Leakage (ML):* If using machine learning, ensure that test data is strictly held out and not used in any way during model training or feature selection.\n• *Multiple Comparisons:* If conducting multiple statistical tests, plan for how you will adjust for the increased risk of false positives (e.g., Bonferroni correction, FDR control).\n• *Outlier Strategy:* Plan how you will identify and handle potential outliers or unexpected data points *before* analysis.\n\n### WORK STEP: DATA ANALYSIS PLAN\n\nWrite out how you plan to analyze the expected data *before* you run the main analysis. The input is the raw data as measured in your experiment.\n\nOutline the key steps:\n1.  **Data Preprocessing:** Cleaning, formatting, exclusion criteria (and justification), handling missing data.\n2.  **Outlier Handling:** Strategy for identifying and dealing with outliers.\n3.  **Primary Analysis:** The main statistical method(s) used to test your hypotheses or address your primary question (e.g., t-test, ANOVA, regression, specific ML model).\n4.  **Hypothesis Distinction:** How the results of the primary analysis will specifically allow you to distinguish between Hypothesis 1 and Hypothesis 2 (or characterize patterns/evaluate solutions).\n5.  **Uncertainty Quantification:** How you will report uncertainty (e.g., p-values with alpha level, confidence intervals, Bayesian credible intervals).\n6.  **Parameter Handling (if applicable):** How any free parameters in models will be estimated or set.\n7.  **Multiple Comparisons:** If multiple tests are planned, specify the correction method.\n8.  **Secondary/Exploratory Analyses (Optional):** Briefly mention any planned secondary or exploratory analyses, clearly labeling them as such."
-      },
-      "completionChecklist": {
-        "title": "DATA ANALYSIS CHECKLIST:",
-        "items": [
-          {"text": "Outline data preprocessing steps", "checkPattern": "Preprocessing:|Data Cleaning:"},
-          {"text": "Specify primary analysis method(s)", "checkPattern": "Primary Analysis:|Analysis Method:"},
-          {"text": "Explain how analysis distinguishes hypotheses/goals", "checkPattern": "distinguish between Hypotheses|address the primary goal|characterize the patterns|evaluate the solution"},
-          {"text": "Describe uncertainty quantification method", "checkPattern": "Uncertainty Quantification:|Confidence Interval:|p-value:|Credible Interval:|Bayesian Factor:"},
-          {"text": "Mention multiple comparison correction (if applicable)", "checkPattern": "Multiple Comparisons:|Correction:|FDR|Bonferroni"}
-        ]
-      },
-      "placeholder": "Data Preprocessing:\n- Cleaning steps:\n- Exclusion criteria:\n- Missing data handling:\n\nOutlier Handling Strategy:\n\nPrimary Analysis Method(s):\n[Specify the statistical test(s) or model(s)]\n\nHypothesis Distinction / Goal Addressment:\n[Explain how the analysis output relates back to the hypotheses/goals]\n\nUncertainty Quantification:\n[e.g., Significance level alpha=0.05, Report 95% CIs, Use Bayesian credible intervals]\n\nParameter Handling (if applicable):\n\nMultiple Comparisons Correction (if applicable):\n\nSecondary/Exploratory Analyses (Optional):\n",
-      "placeholders": {
-        "hypothesis": "Data Preprocessing:\n- Cleaning steps:\n- Exclusion criteria:\n- Missing data handling:\n\nOutlier Handling Strategy:\n\nPrimary Analysis Method(s):\n[Specify the statistical test(s) or model(s)]\n\nHypothesis Distinction:\n[Explain how the analysis output (e.g., p-value, effect size, model comparison) distinguishes between H1 and H2]\n\nUncertainty Quantification:\n[e.g., Significance level alpha=0.05, Report 95% CIs, Use Bayesian credible intervals/BFs]\n\nParameter Handling (if applicable):\n\nMultiple Comparisons Correction (if applicable):\n\nSecondary/Exploratory Analyses (Optional):\n",
-        "exploratory": "Data Preprocessing:\n- Cleaning steps:\n- Data transformation (if any):\n- Exclusion criteria:\n\nOutlier Handling Strategy:\n\nPrimary Analysis Method(s):\n[Specify exploratory techniques, e.g., PCA, clustering, visualization methods]\n\nPattern Characterization:\n[Explain how the analysis output will identify and describe patterns/relationships]\n\nUncertainty Quantification (if applicable):\n[e.g., Bootstrapping for stability, cross-validation]\n\nParameter Handling (if applicable):\n\nMultiple Comparisons Correction (if applicable):\n\nSecondary Analyses (Optional):\n",
-        "needs": "Data Preprocessing:\n- Cleaning steps:\n- Feature engineering (if any):\n- Handling user feedback data:\n\nOutlier Handling Strategy:\n\nPrimary Evaluation Method(s):\n[Specify metrics and comparison method, e.g., compare Metric X between Solution 1 and 2 using a paired t-test]\n\nSolution Assessment:\n[Explain how the evaluation results determine if success criteria are met and which solution is preferred]\n\nUncertainty Quantification:\n[e.g., Significance level alpha=0.05 for comparisons, CIs on metrics]\n\nParameter Handling (if applicable):\n\nMultiple Comparisons Correction (if applicable):\n\nSecondary Analyses (Optional):\n[e.g., Subgroup analysis, qualitative feedback analysis]"
-      },
-      "llmInstructions": "Check the analysis plan. Does it logically follow from experiment and hypotheses? Does it seem sound? Does it quantify results in a meaningful way? Use a constructive dialogue to refine the plan, asking about specific choices (e.g., 'Why this statistical test?', 'How will you handle missing data?'). Discuss potential pitfalls like p-hacking or lack of power. If the user plans exploratory analyses, ensure they are clearly labeled as such."
-    },
-    {
-      "id": "process",
-      "title": "Process",
-      "type": "text",
-      "maxLength": 3000,
-      "inputPlaceholder": "Outline your process, skills, and timeline...",
-      "completeButtonText": "MARK COMPLETE",
-      "loadingButtonText": "Processing...",
-      "instructions": {
-        "title": "PLANNING THE PROCESS, SKILLS, AND COLLABORATIONS",
-        "text": "A fourth aspect of science is planning the practical execution. How do we ensure we have the necessary skills and resources? How do we work effectively, potentially with others? How do we manage the project realistically?\n\n### WORK STEP: PROCESSES AND SKILLS\n\nOutline the practical aspects of carrying out your research plan. Spend about 10-15 minutes on this.\n\n**SKILLS ASSESSMENT**\n\n•   List the key conceptual, experimental, and analytical/coding skills required for this project.\n•   Honestly assess which skills you possess and which you need to acquire (and how) or secure through collaboration.\n•   *Key Consideration:* Major scientific advances often require teamwork. Identify if building a team is necessary.\n\n**COLLABORATIONS**\n\n•   If collaboration is needed, identify potential collaborators or labs.\n•   Outline how communication and responsibilities will be managed within the team.\n\n**REPRODUCIBILITY & SHARING PLAN**\n\n•   Plan *how* you will document your methods and analyses sufficiently for others to understand and potentially replicate them (e.g., detailed lab notebook, commenting code).\n•   Outline your strategy for data and code sharing to ensure transparency and enable reuse (e.g., repository choice like OSF, GitHub, Zenodo; data format; documentation standards).\n•   *Key Consideration:* You are collaborating with your future self! Good documentation and sharing practices save time later.\n\n**TIMELINE**\n\n•   Draft a realistic timeline with major phases (e.g., Preparation/Setup, Data Collection, Analysis, Writing).\n•   Estimate the time required for each phase.\n•   Identify potential obstacles or bottlenecks for each phase and consider contingency plans.\n•   *Key Consideration:* Everything usually takes longer than expected—budget for potential delays."
-      },
-      "completionChecklist": {
-        "title": "PROCESS CHECKLIST:",
-        "items": [
-          {"text": "List required skills (conceptual, experimental, analytical)", "checkPattern": "Skills Needed:|Required Skills"},
-          {"text": "Identify skills gaps and plan for acquiring/collaborating", "checkPattern": "Skills to Acquire:|Collaborations Required:|Collaboration Plan"},
-          {"text": "Outline data/code sharing plan for reproducibility", "checkPattern": "Data/Code Sharing Plan:|Sharing Plan:|Reproducibility Plan"},
-          {"text": "Draft a project timeline with key phases", "checkPattern": "Timeline:|Project Timeline"},
-          {"text": "Identify potential obstacles and contingency plans", "checkPattern": "Potential Obstacles:|Contingency Plans:|Bottlenecks"}
-        ]
-      },
-      "placeholder": "Skills Assessment:\n- Skills Needed: \n  1. [Conceptual Skill, e.g., Understanding theory X]\n  2. [Experimental Skill, e.g., Performing technique Y]\n  3. [Analytical Skill, e.g., Statistical modeling in R]\n- Skills I Have: \n- Skills to Acquire/Learn: [Skill + Plan, e.g., Take online course on Z]\n\nCollaboration Plan:\n- Collaborations Required: [e.g., Need collaborator with expertise in A]\n- Potential Collaborators: \n- Communication Plan: \n\nData/Code Sharing Plan:\n- Documentation: [e.g., Use electronic lab notebook, comment code extensively]\n- Repository: [e.g., Data on OSF, Code on GitHub]\n- Data Format: [e.g., BIDS for neuroimaging data, CSV for tables]\n- Licensing: [e.g., CC-BY for data, MIT for code]\n\nProject Timeline:\n- Phase 1 (Preparation/Setup): [Tasks + Estimated Time, e.g., Ethics approval, Order materials - 2 months]\n- Phase 2 (Data Collection): [Tasks + Estimated Time, e.g., Recruit & run 30 participants - 4 months]\n- Phase 3 (Analysis): [Tasks + Estimated Time, e.g., Preprocessing, Primary analysis - 3 months]\n- Phase 4 (Writing): [Tasks + Estimated Time, e.g., Draft manuscript, Revisions - 3 months]\n- TOTAL ESTIMATED TIME: [Sum of phases]\n\nPotential Obstacles & Contingency Plans:\n1. Obstacle: [e.g., Slow participant recruitment] -> Contingency: [e.g., Expand recruitment sites, Offer slightly higher compensation]\n2. Obstacle: [e.g., Key equipment failure] -> Contingency: [e.g., Identify backup equipment access]\n3. Obstacle: [e.g., Analysis code bug] -> Contingency: [Allocate extra debugging time, seek expert help]",
-       "placeholders": {
-        "hypothesis": "Skills Assessment:\n- Skills Needed: \n  1. \n  2. \n  3. \n- Skills I Have: \n- Skills to Acquire/Learn: \n\nCollaboration Plan:\n- Collaborations Required: \n- Potential Collaborators: \n- Communication Plan: \n\nData/Code Sharing Plan:\n- Documentation: \n- Repository: \n- Data Format: \n- Licensing: \n\nProject Timeline:\n- Phase 1 (Preparation): \n- Phase 2 (Data Collection): \n- Phase 3 (Analysis): \n- Phase 4 (Writing): \n- TOTAL ESTIMATED TIME: \n\nPotential Obstacles & Contingency Plans:\n1. Obstacle:  -> Contingency: \n2. ",
-        "exploratory": "Skills Assessment:\n- Skills Needed: \n  1. \n  2. \n  3. \n- Skills I Have: \n- Skills to Acquire/Learn: \n\nCollaboration Plan:\n- Collaborations Required: \n- Potential Collaborators: \n- Communication Plan: \n\nData/Code Sharing Plan:\n- Documentation: \n- Repository: \n- Data Format: \n- Licensing: \n\nProject Timeline:\n- Phase 1 (Preparation): \n- Phase 2 (Data Collection): \n- Phase 3 (Exploratory Analysis): \n- Phase 4 (Pattern Validation/Follow-up): \n- Phase 5 (Writing): \n- TOTAL ESTIMATED TIME: \n\nPotential Obstacles & Contingency Plans:\n1. Obstacle:  -> Contingency: \n2. ",
-        "needs": "Skills Assessment:\n- Skills Needed: \n  1. \n  2. \n  3. \n- Skills I Have: \n- Skills to Acquire/Learn: \n\nCollaboration Plan:\n- Collaborations Required: \n- Potential Collaborators/Stakeholders: \n- Communication Plan: \n\nSolution Deployment & Sharing Plan:\n- Documentation: [User guides, technical docs]\n- Repository/Distribution: [e.g., GitHub, App Store, internal server]\n- Licensing: \n\nProject Timeline:\n- Phase 1 (Requirements Gathering): \n- Phase 2 (Design): \n- Phase 3 (Implementation): \n- Phase 4 (Testing/Evaluation): \n- Phase 5 (Deployment/Rollout): \n- TOTAL ESTIMATED TIME: \n\nPotential Obstacles & Contingency Plans:\n1. Obstacle:  -> Contingency: \n2. "
-      },
-       "llmInstructions": "I want you to check the resulting processes and skills statements. Does the skills assessment seem realistic? Are the identified collaborations appropriate? Is the data/code sharing plan sufficiently detailed for reproducibility? Brainstorm anything that might be missing in an interactive way (e.g., specific training needs, data management details). Critically evaluate the timeline – does it seem realistic given the tasks? Are the obstacles plausible and contingencies adequate? Brainstorm potential timeline problems or overlooked dependencies."
-    },
-    {
-      "id": "abstract",
-      "title": "Abstract",
-      "type": "text",
-      "maxLength": 1500,
-      "inputPlaceholder": "Draft your abstract here...",
-      "completeButtonText": "MARK COMPLETE",
-      "loadingButtonText": "Processing...",
-      "instructions": {
-        "title": "TEST THE COHERENCE BY DRAFTING AN ABSTRACT",
-        "text": "To check if all components of your research plan logically fit together, draft a concise abstract. It should summarize the entire project, ideally following this structure (1-2 sentences per component):\n\n• **Background:** Briefly introduce the field, the knowledge gap or problem, and the significance (Why it matters).\n• **Objective/Question:** State the main question, hypothesis being tested, exploration goal, or problem being solved.\n• **Methods:** Briefly summarize the key aspects of your experimental/analytical approach (e.g., design, participants, key techniques).\n• **(Expected) Results:** Summarize the main anticipated findings and how they would distinguish between hypotheses or address the objective.\n• **Conclusion/Implications:** State the main conclusion (even if speculative) and its broader implications for the field or application.\n\n### WORK STEP: ABSTRACT WRITING\n\nDraft an abstract following the structure outlined above. This might take 30-60 minutes, but it's time well spent identifying potential weaknesses or inconsistencies in your plan.\n\nAfter drafting, review your previous sections (Question, Hypothesis, Experiment, Analysis). Does the abstract accurately capture the core elements? Did writing the abstract reveal any inconsistencies or areas needing refinement in your plan?\n\nConsider sharing your abstract draft with a peer for feedback on clarity and coherence."
-      },
-      "completionChecklist": {
-        "title": "ABSTRACT CHECKLIST:",
-        "items": [
-          {"text": "Draft abstract following suggested structure", "checkPattern": "Background:|Objective:|Methods:|Results:|Conclusion:|Implications:"},
-          {"text": "Include background context and significance", "checkPattern": "Background:|Significance:|Why it matters"},
-          {"text": "State objective/question/hypothesis", "checkPattern": "Objective:|Question:|Hypothesis:|Goal:"},
-          {"text": "Summarize key methods", "checkPattern": "Methods:|Approach:|Design:|Participants:"},
-          {"text": "State expected results & link to objective", "checkPattern": "Results:|Findings:|distinguish between hypotheses|address the objective"},
-          {"text": "State conclusion/implications", "checkPattern": "Conclusion:|Implications:"},
-          {"text": "Adheres roughly to 1-2 sentences per component", "checkPattern": "."}
-        ]
-      },
-      "placeholder": "Background: [Introduce field, gap, significance. 1-2 sentences]\n\nObjective/Question: [State primary aim/question/hypothesis. 1 sentence]\n\nMethods: [Briefly describe design, participants, key procedures. 1-2 sentences]\n\n(Expected) Results: [Summarize anticipated main finding and how it addresses the objective. 1-2 sentences]\n\nConclusion/Implications: [State main conclusion and broader impact. 1-2 sentences]",
-      "placeholders": {
-        "hypothesis": "Background: [Field context, knowledge gap, intuitive hypothesis, significance. 1-2 sentences]\n\nObjective/Question: [State the specific hypothesis being tested. 1 sentence]\n\nMethods: [Briefly describe design, participants, key methods used to test hypothesis. 1-2 sentences]\n\n(Expected) Results: [Summarize anticipated finding and how it distinguishes between hypotheses. 1-2 sentences]\n\nConclusion/Implications: [State conclusion regarding hypothesis and implications for the field. 1-2 sentences]",
-        "exploratory": "Background: [Field context, area lacking exploration, significance of exploring it. 1-2 sentences]\n\nObjective/Question: [State the main goal of the exploration (e.g., identify patterns in X). 1 sentence]\n\nMethods: [Briefly describe data source, sample, key exploratory techniques used. 1-2 sentences]\n\n(Expected) Results: [Summarize anticipated key patterns or discoveries. 1-2 sentences]\n\nConclusion/Implications: [State potential impact of findings and implications for future hypothesis-driven research. 1-2 sentences]",
-        "needs": "Background: [Problem context, affected stakeholders, importance of solving it. 1-2 sentences]\n\nObjective/Question: [State the goal (e.g., develop/evaluate solution X for problem Y). 1 sentence]\n\nMethods: [Briefly describe solution development approach and evaluation method. 1-2 sentences]\n\n(Expected) Results: [Summarize anticipated effectiveness or key outcome of the solution based on evaluation metrics. 1-2 sentences]\n\nConclusion/Implications: [State conclusion about solution's potential and implications for stakeholders/field. 1-2 sentences]"
-      },
-      "llmInstructions": "I want you to check the resulting abstract. Does it logically follow from the previous sections (Question, Hypothesis, Experiment, Analysis)? Does it adhere to the requested structure (Background, Objective, Methods, Results, Conclusion)? Is it convincing and clearly written? Is the language precise? What specific changes (e.g., word choice, sentence structure) would make it more powerful or clear? Use a constructive, Socratic dialogue style. Help the user reflect on what they learned by going through this planning process. Ask what they might do differently next time they plan a study."
+import React, { useState, useEffect, useRef } from 'react';
+// Removed CheckboxItem import
+
+const SectionCard = ({
+  section,
+  isCurrentSection,
+  isCompleted, // Keep receiving this prop, might be useful later
+  userInputs,
+  handleInputChange,
+  handleFirstVersionFinished,
+  loading,
+  sectionRef,
+  onClick,
+  // Removed unused setActiveSection, handleSectionChange props from signature if not needed
+  useLargerFonts = false
+}) => {
+  const textareaRef = useRef(null);
+  const textValue = userInputs[section.id] || '';
+
+  // Determine if user has actually added content beyond the initial placeholder
+  const hasMeaningfulContent = () => {
+    const placeholder = section.placeholder || '';
+    return textValue !== placeholder && String(textValue).trim() !== '';
+  };
+
+  // Auto-resize textarea height
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  ]
-}
+  }, [textValue]);
+
+  // Button state - enable if not loading AND has meaningful content
+  const buttonText = loading ? section.loadingButtonText : section.completeButtonText;
+  const isButtonDisabled = loading || !hasMeaningfulContent();
+
+  return (
+    <div
+      ref={sectionRef}
+      className={`bg-white rounded-lg shadow-sm p-5 mb-6 transition-all duration-300 ease-in-out
+        ${isCurrentSection ? 'border-2 border-blue-500 shadow-xl' : 'border border-gray-200 hover:shadow-lg'}
+        ${isCompleted ? 'border-green-500' : ''} // Add green border if completed
+      `}
+      onClick={onClick} // Keep onClick on the main div to set active section
+    >
+      {/* Header with Title and Button */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className={`font-semibold ${useLargerFonts ? 'text-3xl' : 'text-2xl'} text-gray-800 mr-4`}>
+          {section.title}
+        </h2>
+        {/* Moved Button Here */}
+        <button
+           onClick={(e) => {
+                e.stopPropagation(); // Prevent card's onClick from firing
+                handleFirstVersionFinished(section.id);
+            }}
+           disabled={isButtonDisabled}
+           className={`py-1 px-3 rounded-md text-white font-medium transition-colors whitespace-nowrap ${ // Reduced padding, added whitespace-nowrap
+             isButtonDisabled
+               ? 'bg-gray-400 cursor-not-allowed'
+               : 'bg-green-600 hover:bg-green-700'
+           } ${useLargerFonts ? 'text-base' : 'text-sm'}`} // Adjusted font size
+         >
+           {loading ? (
+              <span className="flex items-center justify-center">
+                {/* Simple loading text or smaller spinner */}
+                ...
+              </span>
+            ) : (
+             buttonText
+            )}
+         </button>
+      </div>
+
+      {/* Input Area */}
+      <div className="mb-4"> {/* Reduced bottom margin */}
+        <textarea
+          ref={textareaRef}
+          className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-400 outline-none resize-none overflow-hidden ${useLargerFonts ? 'text-xl leading-relaxed' : 'text-base'} ${isCurrentSection ? 'bg-blue-50' : 'bg-white'}`}
+          value={textValue}
+          onChange={(e) => handleInputChange(section.id, e.target.value)}
+          rows="1" // Start with 1 row, auto-expand will handle height
+          maxLength={section.maxLength}
+        />
+        {section.maxLength && (
+          <p className="text-right text-xs text-gray-500 mt-1 pr-1">
+            {textValue.length} / {section.maxLength}
+          </p>
+        )}
+      </div>
+
+      {/* Removed Checklist Section */}
+
+      {/* Removed Full Width Button Section */}
+
+    </div>
+  );
+};
+
+export default SectionCard;
