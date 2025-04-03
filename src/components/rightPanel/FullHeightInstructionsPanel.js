@@ -12,7 +12,7 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
         position: 'fixed',
         top: 0,
         right: 0,
-        width: '33.333%',
+        width: '50%',
         paddingTop: '120px', // Account for header
         paddingBottom: '2rem', 
         zIndex: 10
