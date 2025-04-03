@@ -1,14 +1,51 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown'; // Keep ReactMarkdown for rendering the merged text
+// Add this function to FullHeightInstructionsPanel.js to log when the button is clicked
+import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 /**
  * Simplified full-height instructions panel with Improve button
- * UPDATED: Renders single 'instructions.text' field using ReactMarkdown.
+ * UPDATED: Added debug logging and feedback for button clicks
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
+  const [lastClickTime, setLastClickTime] = useState(0);
+  const [showDebugMessage, setShowDebugMessage] = useState(false);
+  const [debugMessage, setDebugMessage] = useState('');
 
-  // Log the received currentSection prop (optional, can remove if debugging is done)
-  // console.log("[PANEL log] FullHeightInstructionsPanel received currentSection:", JSON.stringify(currentSection?.instructions, null, 2));
+  // Enhanced improve handler with debug logging
+  const handleImproveClick = () => {
+    console.log("Improve button clicked!", new Date().toISOString());
+    
+    // Prevent double-clicks
+    const now = Date.now();
+    if (now - lastClickTime < 1000) {
+      console.log("Prevented double-click");
+      return;
+    }
+    setLastClickTime(now);
+    
+    // Show visual feedback
+    setDebugMessage("Processing instruction improvement...");
+    setShowDebugMessage(true);
+    
+    // Call the actual improve function
+    if (typeof improveInstructions === 'function') {
+      try {
+        improveInstructions();
+        // The loading state should be managed by the parent
+      } catch (error) {
+        console.error("Error during improvement:", error);
+        setDebugMessage(`Error: ${error.message}`);
+      }
+    } else {
+      console.error("improveInstructions is not a function");
+      setDebugMessage("Error: Improve function not available");
+    }
+    
+    // Hide debug message after some time
+    setTimeout(() => {
+      setShowDebugMessage(false);
+    }, 5000);
+  };
 
   return (
     <div
@@ -34,8 +71,16 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
             <h3 className="text-2xl font-semibold text-blue-800 mb-4 pr-24">
               {currentSection.instructions?.title || currentSection.title || 'Instructions'}
             </h3>
+            
+            {/* Debug message */}
+            {showDebugMessage && (
+              <div className="p-2 mb-4 bg-yellow-100 border border-yellow-300 rounded text-yellow-800">
+                {debugMessage}
+              </div>
+            )}
+            
             <button
-              onClick={improveInstructions}
+              onClick={handleImproveClick}
               disabled={loading || !currentSection}
               className={`mb-4 px-4 py-2 rounded-lg text-base font-medium transition-all
                 ${loading || !currentSection
