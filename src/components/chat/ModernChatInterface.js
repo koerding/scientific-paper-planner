@@ -50,7 +50,7 @@ const ModernChatInterface = ({
       
       {/* Expanded chat interface */}
       <div 
-        className={`fixed bottom-0 right-6 w-full sm:w-96 md:w-1/3 z-40 transition-transform duration-300 shadow-lg ${
+        className={`fixed bottom-0 right-6 w-full sm:w-96 md:w-2/5 z-40 transition-transform duration-300 shadow-lg ${
           isMinimized ? 'translate-y-full' : 'translate-y-0'
         }`}
         style={{ height: '50vh', maxWidth: 'calc(100% - 3rem)' }}
