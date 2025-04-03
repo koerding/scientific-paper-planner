@@ -5,12 +5,14 @@ import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
+import { improveInstructions, updateSectionWithImprovedInstructions } from '../../services/instructionImprovementService';
+import { callOpenAI } from '../../services/openaiService';
 import '../../styles/PaperPlanner.css';
 
 /**
- * Redesigned Paper Planner with:
- * - Full width for user content
- * - Full-height instruction panel
+ * Enhanced Paper Planner with:
+ * - Full width user content
+ * - Full-height instruction panel with "Improve" button
  * - Minimizable chat interface
  * - Larger fonts
  */
@@ -19,6 +21,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [activeSection, setActiveSection] = useState('question'); // Default to question section
   const [initialized, setInitialized] = useState(false);
   const sectionRefs = useRef({});
+  
+  // State for improved instructions
+  const [localSectionContent, setLocalSectionContent] = useState(sectionContent);
+  const [improvingInstructions, setImprovingInstructions] = useState(false);
   
   const {
     currentSection,
@@ -40,10 +46,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Store refs for all sections
   useEffect(() => {
-    sectionContent.sections.forEach(section => {
+    localSectionContent.sections.forEach(section => {
       sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
     });
-  }, []);
+  }, [localSectionContent.sections]);
 
   // Initialize with focus on question section and prefill content
   useEffect(() => {
@@ -53,7 +59,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       setActiveSection('question');
       
       // Pre-fill text for every section that's not already filled
-      sectionContent.sections.forEach(section => {
+      localSectionContent.sections.forEach(section => {
         if (section.type !== 'checklist' && section.placeholder) {
           if (!userInputs[section.id] || userInputs[section.id].trim() === '') {
             handleInputChange(section.id, section.placeholder);
@@ -63,11 +69,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       
       setInitialized(true);
     }
-  }, [initialized, handleSectionChange, userInputs, handleInputChange]);
+  }, [initialized, handleSectionChange, userInputs, handleInputChange, localSectionContent.sections]);
 
   // We're using explicit user interaction only for section changes
-  // so we don't need an intersection observer
-
+  
   // Custom setActiveSection that updates both the active section and current section
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
@@ -82,7 +87,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     
     // Get section content and placeholder
     const content = userInputs[sectionId] || '';
-    const section = sectionContent.sections.find(s => s.id === sectionId);
+    const section = localSectionContent.sections.find(s => s.id === sectionId);
     const placeholder = section?.placeholder || '';
     
     // If content is completely empty, it's not completed
@@ -107,7 +112,39 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Get the current section object for instructions display
   const getCurrentSection = () => {
-    return sectionContent.sections.find(s => s.id === activeSection) || null;
+    return localSectionContent.sections.find(s => s.id === activeSection) || null;
+  };
+  
+  // Handle improving instructions with AI
+  const handleImproveInstructions = async () => {
+    setImprovingInstructions(true);
+    
+    try {
+      // Use our instruction improvement service
+      const result = await improveInstructions(
+        localSectionContent.sections,
+        userInputs,
+        localSectionContent,
+        callOpenAI // Pass the existing OpenAI API function
+      );
+      
+      if (result.success && result.improvedInstructions) {
+        // Update our local section content
+        const updatedSections = updateSectionWithImprovedInstructions(
+          localSectionContent,
+          result.improvedInstructions
+        );
+        
+        setLocalSectionContent(updatedSections);
+        console.log("Instructions improved successfully");
+      } else {
+        console.error("Failed to improve instructions:", result.message);
+      }
+    } catch (error) {
+      console.error("Error in improvement process:", error);
+    } finally {
+      setImprovingInstructions(false);
+    }
   };
 
   return (
@@ -126,9 +163,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         
         {/* Main content area with adjusted layout */}
         <div className="flex">
-          {/* Left column - User editable sections - taking 2/3 width */}
+          {/* Left column - User editable sections - taking 1/2 width */}
           <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
-            {sectionContent.sections.map((section) => {
+            {localSectionContent.sections.map((section) => {
               const isCurrentSection = activeSection === section.id;
               const isCompleted = hasSectionContent(section.id);
               
@@ -142,7 +179,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   handleInputChange={handleInputChange}
                   handleCheckboxChange={handleCheckboxChange}
                   handleFirstVersionFinished={handleFirstVersionFinished}
-                  philosophyOptions={sectionContent.philosophyOptions}
+                  philosophyOptions={localSectionContent.philosophyOptions}
                   loading={loading}
                   sectionRef={sectionRefs.current[section.id]}
                   onClick={() => {
@@ -162,9 +199,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
         </div>
         
-        {/* Full-height instructions panel (fixed position) */}
+        {/* Full-height instructions panel (fixed position) with improve button */}
         <FullHeightInstructionsPanel 
           currentSection={getCurrentSection()} 
+          userInputs={userInputs}
+          improveInstructions={handleImproveInstructions}
+          loading={loading || improvingInstructions}
         />
         
         {/* Minimizable chat interface */}
