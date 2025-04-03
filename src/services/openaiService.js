@@ -12,9 +12,6 @@ const buildMessages = (prompt, contextType, userInputs, sections) => {
   const systemMessage = `You are a helpful assistant for planning scientific papers. Context type: ${contextType}.`;
   const messages = [{ role: 'system', content: systemMessage }];
 
-  // Log the received sections array once
-  console.log(`[openaiService buildMessages] Received sections (${Array.isArray(sections) ? sections.length : 'Not an array'}):`, sections);
-
   // Add section context safely
   if (Array.isArray(sections)) {
     sections.forEach((section, index) => {
@@ -47,7 +44,6 @@ Current User Input: ${safeUserInput}`
 
   // Add the main prompt message
   messages.push({ role: 'user', content: prompt });
-  // console.log("[openaiService buildMessages] Final messages array:", messages); // Optional: keep if you want to see final structure
   return messages;
 };
 
