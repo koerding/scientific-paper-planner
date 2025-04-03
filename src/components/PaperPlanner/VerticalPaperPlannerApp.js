@@ -69,59 +69,21 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   }, [initialized, handleSectionChange, userInputs, handleInputChange]);
 
   // Setup intersection observer to detect which section is in view
-  // but only when user isn't manually selecting sections
+  // but disable it completely - we'll rely only on explicit user interaction
   useEffect(() => {
-    const observerOptions = {
-      root: null,
-      rootMargin: '0px',
-      threshold: 0.5 // Element is considered "visible" when 50% is in view
-    };
-
-    const observerCallback = (entries) => {
-      // Skip intersection updates if user manually selected a section recently
-      if (userManuallySelected) return;
-      
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-          
-          // If it's different from current section in state, change it
-          if (entry.target.id !== currentSection) {
-            handleSectionChange(entry.target.id);
-          }
-        }
-      });
-    };
-
-    // Store observer in ref so we can disconnect it when needed
-    observerRef.current = new IntersectionObserver(observerCallback, observerOptions);
-    
-    // Observe all section elements
-    Object.values(sectionRefs.current).forEach(ref => {
-      if (ref.current) {
-        observerRef.current.observe(ref.current);
-      }
-    });
-
+    // No intersection observer setup - we only want explicit user interactions
+    // to change the active section
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
     };
-  }, [currentSection, handleSectionChange, userManuallySelected]);
+  }, []);
 
-  // Custom setActiveSection that also disables intersection observer temporarily
+  // Custom setActiveSection that updates both the active section and current section
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
     handleSectionChange(sectionId);
-    
-    // Set flag to disable intersection observer for a brief period
-    setUserManuallySelected(true);
-    
-    // After 2 seconds, re-enable the intersection observer
-    setTimeout(() => {
-      setUserManuallySelected(false);
-    }, 2000);
   };
 
   // Check if a section has content beyond placeholder
