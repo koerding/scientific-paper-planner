@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import sectionContent from '../../sectionContent.json';
+import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
 import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
