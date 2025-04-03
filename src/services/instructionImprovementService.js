@@ -1,10 +1,47 @@
 /**
  * Service for improving instructions based on user progress
- * UPDATED: Modified prompt for AI to include positive preamble and completion message.
+ * UPDATED: Added safeLLMJsonParse function to handle JSON parsing errors
  */
 import { callOpenAI } from './openaiService';
 
-// (Keep the single improveInstructions function here if it exists, unchanged)
+/**
+ * Special JSON parser that handles common JSON errors from LLM responses
+ * @param {string} text - The JSON string to parse
+ * @returns {any} - The parsed JSON object
+ */
+function safeLLMJsonParse(text) {
+  // First clean up the input - remove markdown code block markers if present
+  let cleanText = text.replace(/```json\s*/, '').replace(/```\s*$/, '');
+  
+  // Try to parse directly first
+  try {
+    return JSON.parse(cleanText);
+  } catch (e) {
+    console.log("First parse attempt failed, trying to fix common issues...", e);
+    
+    // Fix trailing commas in objects (common LLM error)
+    cleanText = cleanText.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
+    
+    try {
+      return JSON.parse(cleanText);
+    } catch (e) {
+      console.log("Second parse attempt failed, trying more aggressive fixes...", e);
+      
+      // Try even more aggressive cleaning - try to extract just the array part
+      const arrayMatch = cleanText.match(/\[\s*{[\s\S]*}\s*\]/);
+      if (arrayMatch) {
+        try {
+          return JSON.parse(arrayMatch[0]);
+        } catch (e) {
+          console.log("Array extraction parse failed", e);
+        }
+      }
+      
+      // If we get here, we couldn't parse it - throw the original error
+      throw new Error("Could not parse JSON even after cleaning: " + e.message);
+    }
+  }
+}
 
 /**
  * Improves instructions for multiple sections
@@ -73,15 +110,19 @@ Your task is, FOR EACH SECTION PROVIDED:
 6. Maintain a helpful and encouraging tone throughout. Preserve necessary markdown formatting (like ### headings) in the edited text.
 7. Return the **complete, updated instruction text** (which might be just the positive preamble, the preamble plus remaining instructions, or the congratulatory message) inside the 'instructionsText' field for that section.
 
+IMPORTANT: When providing your JSON response, DO NOT use trailing commas in JSON objects as they are not valid JSON. For example, use {"id": "value", "key": "value"} NOT {"id": "value", "key": "value",}
+
 Here are the sections to improve:
 ${JSON.stringify(sectionsData, null, 2)}
 
 Respond ONLY with a valid JSON array containing objects for EACH section ID listed above. Use the following format exactly for each object in the array:
-{
-  "id": "section_id",
-  "instructionsText": "Positive preamble + edited instructions text OR congratulatory message here..."
-}
-Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'.
+[
+  {
+    "id": "section_id",
+    "instructionsText": "Positive preamble + edited instructions text OR congratulatory message here..."
+  }
+]
+Ensure the output is ONLY the JSON array, starting with '[' and ending with ']', and DO NOT include trailing commas.
 `;
 
     console.log("[Instruction Improvement] Sending batch request to OpenAI for sections:", sectionsWithProgress.join(', '));
@@ -101,7 +142,10 @@ Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'.
       const jsonMatch = response.match(jsonRegex);
       if (jsonMatch && jsonMatch[0]) {
         const extractedJson = jsonMatch[0];
-        improvedInstructions = JSON.parse(extractedJson);
+        
+        // Use our safe parser instead of standard JSON.parse
+        improvedInstructions = safeLLMJsonParse(extractedJson);
+        
         if (!Array.isArray(improvedInstructions)) {
             throw new Error("Parsed response is not an array.");
         }
@@ -139,7 +183,7 @@ Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'.
 };
 
 
-// (Keep the updateSectionWithImprovedInstructions function here, unchanged from the previous version)
+// Keep the updateSectionWithImprovedInstructions function unchanged
 export const updateSectionWithImprovedInstructions = (sectionContent, improvedInstructions) => {
  // ... (function code remains the same as last version) ...
  let updatedSectionsData;
