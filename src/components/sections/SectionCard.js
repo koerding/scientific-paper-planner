@@ -41,10 +41,6 @@ const SectionCard = ({
   
   // Check if content has been modified from placeholder
   const hasUserModifiedContent = () => {
-    if (section.id === 'philosophy') {
-      return userInputs.philosophy && userInputs.philosophy.length > 0;
-    }
-    
     const content = userInputs[section.id] || '';
     const placeholder = section.placeholder || '';
     
