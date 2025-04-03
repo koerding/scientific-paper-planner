@@ -8,7 +8,7 @@ import '../../styles/PaperPlanner.css';
 /**
  * Main entry point for the Paper Planner
  * Contains core state management and API calls
- * UPDATED: Now ensures templates are pre-loaded
+ * UPDATED: Now includes new audience and related papers sections
  */
 const PaperPlannerApp = () => {
   // State - Pre-fill with templates from sectionContent
@@ -81,3 +81,204 @@ const PaperPlannerApp = () => {
   const handleSectionChange = (sectionId) => {
     setCurrentSection(sectionId);
     setCurrentIndex(sectionContent.sections.findIndex(s => s.id === sectionId));
+  };
+
+  const handleInputChange = (section, value) => {
+    setUserInputs({
+      ...userInputs,
+      [section]: value
+    });
+  };
+
+  // Send regular chat message with full context
+  const handleSendMessage = async () => {
+    if (currentMessage.trim() === '') return;
+    
+    // Add user message to chat
+    const newMessages = [
+      ...chatMessages[currentSection], 
+      { role: 'user', content: currentMessage }
+    ];
+    
+    setChatMessages({
+      ...chatMessages,
+      [currentSection]: newMessages
+    });
+    
+    setCurrentMessage('');
+    setLoading(true);
+    
+    try {
+      // Call OpenAI API with the current message and all context
+      const aiResponse = await callOpenAI(
+        currentMessage, 
+        currentSection, 
+        userInputs, 
+        sectionContent.sections
+      );
+      
+      // Add AI response to chat
+      const updatedMessages = [
+        ...newMessages,
+        { role: 'assistant', content: aiResponse }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: updatedMessages
+      });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      // Add error message to chat
+      const errorMessage = { 
+        role: 'assistant', 
+        content: 'Sorry, there was an error processing your request. Please try again.' 
+      };
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: [...newMessages, errorMessage]
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle "First version finished" button with llmInstructions and all section context
+  const handleFirstVersionFinished = async () => {
+    // Don't do anything if there's no content yet
+    if (!userInputs[currentSection]) return;
+    
+    setLoading(true);
+    
+    try {
+      // Simple message for the UI
+      const displayMessage = "I've finished my first version. Can you provide feedback?";
+      
+      // Get detailed instructions from JSON
+      const currentSectionObj = sectionContent.sections.find(s => s.id === currentSection);
+      const aiInstructions = currentSectionObj.llmInstructions;
+      
+      // Add the simple message to chat for the user to see
+      const newMessages = [
+        ...chatMessages[currentSection], 
+        { role: 'user', content: displayMessage }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: newMessages
+      });
+      
+      // Call OpenAI API with the detailed instructions
+      const aiResponse = await callOpenAI(
+        aiInstructions, 
+        currentSection, 
+        userInputs, 
+        sectionContent.sections
+      );
+      
+      // Add AI response to chat
+      const updatedMessages = [
+        ...newMessages,
+        { role: 'assistant', content: aiResponse }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: updatedMessages
+      });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      // Add error message to chat
+      const errorMessage = { 
+        role: 'assistant', 
+        content: 'Sorry, there was an error processing your request. Please try again.' 
+      };
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: [...chatMessages[currentSection], { role: 'user', content: "I've finished my first version. Can you provide feedback?" }, errorMessage]
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetProject = () => {
+    // Reset to template values
+    const freshInputs = {};
+    sectionContent.sections.forEach(section => {
+      if (section && section.id) {
+        freshInputs[section.id] = section.placeholder || '';
+      }
+    });
+    setUserInputs(freshInputs);
+    
+    // Clear all chat messages
+    const freshChatMessages = {};
+    sectionContent.sections.forEach(section => {
+      if (section && section.id) {
+        freshChatMessages[section.id] = [];
+      }
+    });
+    
+    setChatMessages(freshChatMessages);
+    setCurrentSection(sectionContent.sections[0].id);
+    
+    // Clear localStorage
+    localStorage.removeItem('paperPlannerData');
+    localStorage.removeItem('paperPlannerChat');
+  };
+
+  const goToNextSection = () => {
+    const newIndex = currentIndex + 1;
+    if (newIndex < sectionContent.sections.length) {
+      handleSectionChange(sectionContent.sections[newIndex].id);
+    }
+  };
+
+  const goToPreviousSection = () => {
+    const newIndex = currentIndex - 1;
+    if (newIndex >= 0) {
+      handleSectionChange(sectionContent.sections[newIndex].id);
+    }
+  };
+
+  // Function to export project
+  const exportProject = () => {
+    exportProjectFunction(userInputs, chatMessages, sectionContent);
+  };
+
+  // Hook for the Paper Planner
+  const usePaperPlannerHook = {
+    currentSection,
+    currentIndex,
+    userInputs,
+    chatMessages,
+    currentMessage,
+    loading,
+    showConfirmDialog,
+    setCurrentMessage,
+    setShowConfirmDialog,
+    handleSectionChange,
+    handleInputChange,
+    handleSendMessage,
+    handleFirstVersionFinished,
+    resetProject,
+    goToNextSection,
+    goToPreviousSection,
+    exportProject
+  };
+
+  // Use your existing VerticalPaperPlannerApp
+  return (
+    <VerticalPaperPlannerApp 
+      usePaperPlannerHook={usePaperPlannerHook}
+    />
+  );
+};
+
+export default PaperPlannerApp;
