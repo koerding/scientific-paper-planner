@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import VerticalPaperPlannerApp from './VerticalPaperPlannerApp';
 import sectionContent from '../../sectionContent.json';  
 import { callOpenAI } from '../../services/openaiService';
-import './PaperPlanner.css';
+import '../../styles/PaperPlanner.css';
 
 /**
  * Main entry point for the Paper Planner
