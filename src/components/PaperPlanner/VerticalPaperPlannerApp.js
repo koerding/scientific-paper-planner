@@ -15,13 +15,10 @@ import '../../styles/PaperPlanner.css';
  * - Larger fonts
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
-  // State tracking for active section and focus
+  // State tracking for active section
   const [activeSection, setActiveSection] = useState('question'); // Default to question section
   const [initialized, setInitialized] = useState(false);
-  // Flag to disable intersection observer when user manually selects a section
-  const [userManuallySelected, setUserManuallySelected] = useState(false);
   const sectionRefs = useRef({});
-  const observerRef = useRef(null);
   
   const {
     currentSection,
