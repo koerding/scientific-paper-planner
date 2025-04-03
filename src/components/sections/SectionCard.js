@@ -1,26 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-// Removed CheckboxItem import
 
 const SectionCard = ({
   section,
   isCurrentSection,
-  isCompleted, // Keep receiving this prop, might be useful later
+  isCompleted,
   userInputs,
   handleInputChange,
   handleFirstVersionFinished,
   loading,
   sectionRef,
   onClick,
-  // Removed unused setActiveSection, handleSectionChange props from signature if not needed
   useLargerFonts = false
 }) => {
   const textareaRef = useRef(null);
   const textValue = userInputs[section.id] || '';
+  const placeholderText = section.placeholder || '';
 
   // Determine if user has actually added content beyond the initial placeholder
   const hasMeaningfulContent = () => {
-    const placeholder = section.placeholder || '';
-    return textValue !== placeholder && String(textValue).trim() !== '';
+    return textValue !== placeholderText && String(textValue).trim() !== '';
   };
 
   // Auto-resize textarea height
@@ -80,6 +78,7 @@ const SectionCard = ({
           className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-400 outline-none resize-none overflow-hidden ${useLargerFonts ? 'text-xl leading-relaxed' : 'text-base'} ${isCurrentSection ? 'bg-blue-50' : 'bg-white'}`}
           value={textValue}
           onChange={(e) => handleInputChange(section.id, e.target.value)}
+          placeholder={placeholderText}
           rows="1" // Start with 1 row, auto-expand will handle height
           maxLength={section.maxLength}
         />
@@ -89,11 +88,6 @@ const SectionCard = ({
           </p>
         )}
       </div>
-
-      {/* Removed Checklist Section */}
-
-      {/* Removed Full Width Button Section */}
-
     </div>
   );
 };
