@@ -1,231 +1,161 @@
-import React, { useState, useEffect, useRef } from 'react';
-import sectionContent from '../../sectionContent.json';
-import ConfirmDialog from './ConfirmDialog';
-import AppHeader from '../layout/AppHeader';
-import SectionCard from '../sections/SectionCard';
-import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
-import ModernChatInterface from '../chat/ModernChatInterface';
-import { improveInstructions, updateSectionWithImprovedInstructions } from '../../services/instructionImprovementService';
-import { callOpenAI } from '../../services/openaiService';
-import '../../styles/PaperPlanner.css';
+// src/services/instructionImprovementService.js
 
 /**
- * Enhanced Paper Planner with:
- * - Full width user content
- * - Full-height instruction panel with "Improve" button
- * - Minimizable chat interface
- * - Larger fonts
+ * Service for improving instructions based on user progress
  */
-const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
-  // State tracking for active section
-  const [activeSection, setActiveSection] = useState('question'); // Default to question section
-  const [initialized, setInitialized] = useState(false);
-  const sectionRefs = useRef({});
-  
-  // State for improved instructions
-  const [localSectionContent, setLocalSectionContent] = useState(sectionContent);
-  const [improvingInstructions, setImprovingInstructions] = useState(false);
-  
-  const {
-    currentSection,
-    userInputs,
-    chatMessages,
-    currentMessage,
-    loading,
-    showConfirmDialog,
-    setCurrentMessage,
-    setShowConfirmDialog,
-    handleSectionChange,
-    handleInputChange,
-    handleCheckboxChange,
-    handleSendMessage,
-    handleFirstVersionFinished,
-    resetProject,
-    exportProject
-  } = usePaperPlannerHook;
 
-  // Store refs for all sections
-  useEffect(() => {
-    localSectionContent.sections.forEach(section => {
-      sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
-    });
-  }, [localSectionContent.sections]);
-
-  // Initialize with focus on question section and prefill content
-  useEffect(() => {
-    if (!initialized) {
-      // Set initial focus
-      handleSectionChange('question');
-      setActiveSection('question');
-      
-      // Pre-fill text for every section that's not already filled
-      localSectionContent.sections.forEach(section => {
-        if (section.type !== 'checklist' && section.placeholder) {
-          if (!userInputs[section.id] || userInputs[section.id].trim() === '') {
-            handleInputChange(section.id, section.placeholder);
-          }
-        }
-      });
-      
-      setInitialized(true);
-    }
-  }, [initialized, handleSectionChange, userInputs, handleInputChange, localSectionContent.sections]);
-
-  // We're using explicit user interaction only for section changes
-  
-  // Custom setActiveSection that updates both the active section and current section
-  const setActiveSectionWithManualFlag = (sectionId) => {
-    setActiveSection(sectionId);
-    handleSectionChange(sectionId);
-  };
-
-  // Check if a section has content beyond placeholder
-  const hasSectionContent = (sectionId) => {
-    if (sectionId === 'philosophy') {
-      return userInputs.philosophy && userInputs.philosophy.length > 0;
-    }
-    
-    // Get section content and placeholder
-    const content = userInputs[sectionId] || '';
-    const section = localSectionContent.sections.find(s => s.id === sectionId);
-    const placeholder = section?.placeholder || '';
-    
-    // If content is completely empty, it's not completed
-    if (!content || content.trim() === '') return false;
-    
-    // If content is exactly the placeholder, it's not completed
-    if (content === placeholder) return false;
-    
-    // Otherwise, consider it completed (even if just slightly modified)
-    return true;
-  };
-
-  // Scroll to a specific section
-  const scrollToSection = (sectionId) => {
-    if (sectionRefs.current[sectionId] && sectionRefs.current[sectionId].current) {
-      sectionRefs.current[sectionId].current.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      });
-    }
-  };
-
-  // Get the current section object for instructions display
-  const getCurrentSection = () => {
-    return localSectionContent.sections.find(s => s.id === activeSection) || null;
-  };
-  
-  // Handle improving instructions with AI
-  const handleImproveInstructions = async () => {
-    setImprovingInstructions(true);
-    
-    try {
-      // Use our instruction improvement service
-      const result = await improveInstructions(
-        localSectionContent.sections,
-        userInputs,
-        localSectionContent,
-        callOpenAI // Pass the existing OpenAI API function
-      );
-      
-      if (result.success && result.improvedInstructions) {
-        // Update our local section content
-        const updatedSections = updateSectionWithImprovedInstructions(
-          localSectionContent,
-          result.improvedInstructions
-        );
-        
-        setLocalSectionContent(updatedSections);
-        console.log("Instructions improved successfully");
+// This function analyzes user progress and generates improved instructions
+export const improveInstructions = async (
+  currentSections,
+  userInputs,
+  sectionContent,
+  callOpenAI  // We'll use the existing OpenAI call mechanism
+) => {
+  try {
+    // Identify which sections have meaningful user content
+    const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
+      if (sectionId === 'philosophy') {
+        return userInputs.philosophy && userInputs.philosophy.length > 0;
       } else {
-        console.error("Failed to improve instructions:", result.message);
+        const content = userInputs[sectionId] || '';
+        const section = sectionContent.sections.find(s => s.id === sectionId);
+        const placeholder = section?.placeholder || '';
+        
+        // Check if content has been modified from placeholder
+        return content.trim() !== '' && content !== placeholder;
+      }
+    });
+    
+    // Skip if no sections have progress
+    if (sectionsWithProgress.length === 0) {
+      return { success: false, message: "No sections with progress to improve" };
+    }
+    
+    // Prepare data for each section
+    const sectionsData = sectionsWithProgress.map(sectionId => {
+      const section = sectionContent.sections.find(s => s.id === sectionId);
+      let userContent;
+      
+      if (sectionId === 'philosophy') {
+        const philosophyLabels = userInputs.philosophy.map(id => {
+          const philosophy = sectionContent.philosophyOptions.find(p => p.id === id);
+          return philosophy ? philosophy.label : '';
+        });
+        userContent = philosophyLabels.join('\n');
+      } else {
+        userContent = userInputs[sectionId] || '';
+      }
+      
+      return {
+        id: sectionId,
+        title: section.title,
+        instructions: {
+          description: section.instructions.description,
+          workStep: section.instructions.workStep
+        },
+        userContent
+      };
+    });
+    
+    // Build the prompt for the API
+    const prompt = `
+I need you to improve the instruction content for a scientific paper planning tool. The user has made progress on some sections, and I want to update the instructions to be more relevant based on what they've already done.
+
+For each section, I'll provide:
+1. The current instructions
+2. The user's current content
+
+Your task is to:
+1. Analyze the user's content to understand their progress
+2. Edit the instruction text to remove redundant advice (things they've already done well)
+3. Focus the instruction on what still needs improvement
+4. Keep the tone helpful and encouraging
+5. Return the complete updated instructions, maintaining the structure but improving the content
+
+Here are the sections to improve:
+${JSON.stringify(sectionsData, null, 2)}
+
+For each section, provide your improved instructions in this format:
+{
+  "id": "section_id",
+  "instructions": {
+    "description": "Improved description text here...",
+    "workStep": {
+      "title": "Original or slightly improved title",
+      "content": "Improved work step content here..."
+    }
+  }
+}
+`;
+
+    // Call the OpenAI API
+    console.log("[Instruction Improvement] Sending request to OpenAI");
+    const response = await callOpenAI(prompt, "improve_instructions", userInputs, sectionContent.sections, sectionContent.philosophyOptions);
+    
+    // Parse the response
+    let improvedInstructions;
+    try {
+      // Try to parse the JSON response
+      // The AI might return text outside the JSON, so we need to extract it
+      const jsonRegex = /\[\s*\{[\s\S]*\}\s*\]|\{[\s\S]*\}/;
+      const jsonMatch = response.match(jsonRegex);
+      
+      if (jsonMatch) {
+        const extractedJson = jsonMatch[0];
+        // Check if it's an array or single object
+        if (extractedJson.trim().startsWith('[')) {
+          improvedInstructions = JSON.parse(extractedJson);
+        } else {
+          // If it's a single object, wrap it in an array
+          improvedInstructions = [JSON.parse(extractedJson)];
+        }
+      } else {
+        throw new Error("Could not extract JSON from response");
       }
     } catch (error) {
-      console.error("Error in improvement process:", error);
-    } finally {
-      setImprovingInstructions(false);
+      console.error("Error parsing instruction improvement response:", error);
+      console.log("Raw response:", response);
+      return { 
+        success: false, 
+        message: "Failed to parse improved instructions"
+      };
     }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Full width content */}
-      <div className="w-full pb-12">
-        {/* Header Component */}
-        <AppHeader
-          activeSection={activeSection}
-          setActiveSection={setActiveSectionWithManualFlag}
-          handleSectionChange={handleSectionChange}
-          scrollToSection={scrollToSection}
-          resetProject={resetProject}
-          exportProject={exportProject}
-        />
-        
-        {/* Main content area with adjusted layout */}
-        <div className="flex">
-          {/* Left column - User editable sections - taking 1/2 width */}
-          <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
-            {localSectionContent.sections.map((section) => {
-              const isCurrentSection = activeSection === section.id;
-              const isCompleted = hasSectionContent(section.id);
-              
-              return (
-                <SectionCard
-                  key={section.id}
-                  section={section}
-                  isCurrentSection={isCurrentSection}
-                  isCompleted={isCompleted}
-                  userInputs={userInputs}
-                  handleInputChange={handleInputChange}
-                  handleCheckboxChange={handleCheckboxChange}
-                  handleFirstVersionFinished={handleFirstVersionFinished}
-                  philosophyOptions={localSectionContent.philosophyOptions}
-                  loading={loading}
-                  sectionRef={sectionRefs.current[section.id]}
-                  onClick={() => {
-                    setActiveSectionWithManualFlag(section.id);
-                  }}
-                  setActiveSection={setActiveSectionWithManualFlag}
-                  handleSectionChange={handleSectionChange}
-                  useLargerFonts={true} // Enable larger fonts
-                />
-              );
-            })}
-          </div>
-        </div>
-        
-        {/* Footer */}
-        <div className="text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6">
-          <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
-        </div>
-        
-        {/* Full-height instructions panel (fixed position) with improve button */}
-        <FullHeightInstructionsPanel 
-          currentSection={getCurrentSection()} 
-          userInputs={userInputs}
-          improveInstructions={handleImproveInstructions}
-          loading={loading || improvingInstructions}
-        />
-        
-        {/* Minimizable chat interface */}
-        <ModernChatInterface
-          currentSection={currentSection}
-          chatMessages={chatMessages}
-          currentMessage={currentMessage}
-          setCurrentMessage={setCurrentMessage}
-          handleSendMessage={handleSendMessage}
-          loading={loading}
-        />
-        
-        {/* Confirmation Dialog */}
-        <ConfirmDialog
-          showConfirmDialog={showConfirmDialog}
-          setShowConfirmDialog={setShowConfirmDialog}
-          resetProject={resetProject}
-        />
-      </div>
-    </div>
-  );
+    
+    return {
+      success: true,
+      improvedInstructions
+    };
+  } catch (error) {
+    console.error("Error improving instructions:", error);
+    return {
+      success: false,
+      message: error.message || "An error occurred while improving instructions"
+    };
+  }
 };
 
-export default VerticalPaperPlannerApp;
+// Function to update section content with improved instructions
+export const updateSectionWithImprovedInstructions = (sectionContent, improvedInstructions) => {
+  // Create a deep copy to avoid mutating the original
+  const updatedSections = JSON.parse(JSON.stringify(sectionContent));
+  
+  // Apply updates to each section
+  improvedInstructions.forEach(improvement => {
+    const sectionIndex = updatedSections.sections.findIndex(s => s.id === improvement.id);
+    
+    if (sectionIndex !== -1) {
+      // Update the instructions
+      updatedSections.sections[sectionIndex].instructions.description = 
+        improvement.instructions.description;
+      
+      if (improvement.instructions.workStep) {
+        updatedSections.sections[sectionIndex].instructions.workStep.title = 
+          improvement.instructions.workStep.title;
+        updatedSections.sections[sectionIndex].instructions.workStep.content = 
+          improvement.instructions.workStep.content;
+      }
+    }
+  });
+  
+  return updatedSections;
+};
