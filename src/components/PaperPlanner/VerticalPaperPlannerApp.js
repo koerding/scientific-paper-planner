@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../sectionContent.json';
-import ConfirmDialog from './ConfirmDialog';
+import ConfirmDialog from '../ConfirmDialog';
 import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
