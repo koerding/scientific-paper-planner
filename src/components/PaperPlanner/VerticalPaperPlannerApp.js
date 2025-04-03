@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import sectionContent from '../../data/sectionContent.json';
+import sectionContent from '../../sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
 import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
@@ -81,10 +81,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Check if a section has content beyond placeholder
   const hasSectionContent = (sectionId) => {
-    if (sectionId === 'philosophy') {
-      return userInputs.philosophy && userInputs.philosophy.length > 0;
-    }
-    
     // Get section content and placeholder
     const content = userInputs[sectionId] || '';
     const section = localSectionContent.sections.find(s => s.id === sectionId);
