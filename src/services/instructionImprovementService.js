@@ -1,8 +1,10 @@
 /**
  * Service for improving instructions based on user progress
- * UPDATED: Works with single 'instructions.text' field.
+ * UPDATED: Strengthened prompt to encourage AI text removal/editing.
  */
 import { callOpenAI } from './openaiService';
+
+// (Keep the single improveInstructions function here if it exists, unchanged)
 
 /**
  * Improves instructions for multiple sections
@@ -13,9 +15,9 @@ import { callOpenAI } from './openaiService';
  * @returns {Promise<Object>} - Result with success flag and improved instructions
  */
 export const improveBatchInstructions = async (
-  currentSections, // Keep passing full array for context if needed by AI
+  currentSections,
   userInputs,
-  sectionContent, // Keep passing for accessing original section data
+  sectionContent,
   apiCallFunction = callOpenAI
 ) => {
   try {
@@ -33,19 +35,17 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No sections with progress to improve" };
     }
 
-    // Prepare data for sections with progress, using the new structure
+    // Prepare data for sections with progress
     const sectionsData = sectionsWithProgress.map(sectionId => {
       const section = sectionContent?.sections?.find(s => s.id === sectionId);
-      if (!section || !section.instructions?.text) { // Check for instructions.text
+      if (!section || !section.instructions?.text) {
           console.warn(`Section or instructions text missing for ID ${sectionId}. Skipping.`);
           return null;
       }
       const userContent = userInputs[sectionId] || '';
-
       return {
         id: sectionId,
         title: section.title,
-        // Pass the single merged instruction text
         instructionsText: section.instructions.text,
         userContent
       };
@@ -56,20 +56,21 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No valid sections with progress to improve" };
     }
 
-    // Build the prompt for the API, referencing 'instructionsText'
+    // *** Build the STRONGER prompt for the API ***
     const prompt = `
-I need you to improve the instruction content for a scientific paper planning tool. The user has made progress on some sections, and I want to update the instructions to be more relevant based on what they've already done.
+I need you to act as a strict editor improving instruction content for a scientific paper planning tool. The user has made progress, and the instructions MUST be updated based on their input.
 
 For each section PROVIDED BELOW, I'll provide:
 1. The current full instruction text (field name: 'instructionsText')
 2. The user's current content for that section (field name: 'userContent')
 
 Your task is, FOR EACH SECTION PROVIDED:
-1. Analyze the user's content for that specific section to understand their progress ON THAT SECTION.
-2. Edit the provided 'instructionsText' FOR THAT SECTION to remove redundant advice (things they've already done well in that section).
-3. Focus the instruction text FOR THAT SECTION on what still needs improvement within that section's goals.
-4. Keep the tone helpful and encouraging. Maintain any markdown formatting (like ### headings) if appropriate.
-5. Return the complete, updated instruction text FOR EACH SECTION PROVIDED.
+1. **Analyze** the 'userContent' to understand what the user has already addressed or accomplished for that section.
+2. **Aggressively EDIT** the provided 'instructionsText' for that section. Your **PRIMARY GOAL** is to **REMOVE** sentences or paragraphs that are now redundant because the user's content already covers that point or demonstrates understanding.
+3. **DO NOT** simply return the original 'instructionsText'. You MUST make edits, focusing on removal. It is expected that the resulting text will be shorter.
+4. **Focus** the remaining instruction text on what the user still needs to do or improve for that specific section, based *only* on what's missing or weak according to the original instructions' goals and the provided user content.
+5. Maintain a helpful and encouraging tone. Preserve markdown formatting (like ### headings) in the edited text.
+6. Return the **complete, edited, and likely shorter** instruction text for that section.
 
 Here are the sections to improve:
 ${JSON.stringify(sectionsData, null, 2)}
@@ -77,23 +78,21 @@ ${JSON.stringify(sectionsData, null, 2)}
 Respond ONLY with a valid JSON array containing objects for EACH section ID listed above. Use the following format exactly for each object in the array:
 {
   "id": "section_id",
-  "instructionsText": "Complete improved instruction text here..."
+  "instructionsText": "Complete EDITED and potentially SHORTER instruction text here..."
 }
-Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'.
+Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'. If a section's instructions become entirely redundant based on user content, return an empty string for "instructionsText".
 `;
 
     console.log("[Instruction Improvement] Sending batch request to OpenAI for sections:", sectionsWithProgress.join(', '));
-    // Pass the original full sections array for context building in openaiService if needed
     const sectionsToPassToOpenAI = Array.isArray(sectionContent?.sections) ? sectionContent.sections : [];
-
     const response = await apiCallFunction(
         prompt,
         "improve_instructions_batch",
         userInputs,
-        sectionsToPassToOpenAI // Pass full original structure for context building
+        sectionsToPassToOpenAI
     );
 
-    // Parse the response expecting 'instructionsText'
+    // Parse the response
     let improvedInstructions;
     try {
       const jsonRegex = /(\[[\s\S]*\])/;
@@ -104,11 +103,9 @@ Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'.
         if (!Array.isArray(improvedInstructions)) {
             throw new Error("Parsed response is not an array.");
         }
-         // Validate parsed structure minimally
         const isValid = improvedInstructions.every(item => item && typeof item.id === 'string' && typeof item.instructionsText === 'string');
         if (!isValid) {
             console.warn("Parsed response contains items with missing id or instructionsText.", improvedInstructions);
-            // Decide how to handle - filter out invalid items or throw error
             improvedInstructions = improvedInstructions.filter(item => item && typeof item.id === 'string' && typeof item.instructionsText === 'string');
             if(improvedInstructions.length === 0) throw new Error("No valid items found after filtering parsed response.");
         }
@@ -128,7 +125,7 @@ Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'.
 
     return {
       success: true,
-      improvedInstructions // This array now contains objects like { id: "...", instructionsText: "..." }
+      improvedInstructions
     };
   } catch (error) {
     console.error("Error improving batch instructions:", error);
@@ -139,14 +136,9 @@ Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'.
   }
 };
 
-
-/**
- * Updates section content with improved instructions (using instructions.text)
- * @param {Object} sectionContent - The section content object
- * @param {Array} improvedInstructions - Array of improved instruction objects ({id: ..., instructionsText: ...})
- * @returns {Object} - Updated section content
- */
+// (Keep the updateSectionWithImprovedInstructions function here, unchanged from the previous version)
 export const updateSectionWithImprovedInstructions = (sectionContent, improvedInstructions) => {
+  // ... (function code remains the same as last version) ...
   let updatedSectionsData;
   try {
       if (typeof sectionContent !== 'object' || sectionContent === null) {
@@ -168,38 +160,27 @@ export const updateSectionWithImprovedInstructions = (sectionContent, improvedIn
       return updatedSectionsData;
   }
 
-  // Apply updates using the new 'instructionsText' field
   improvedInstructions.forEach(improvement => {
-    // Validate the improvement object structure
     if (!improvement || typeof improvement.id !== 'string' || typeof improvement.instructionsText !== 'string') {
         console.warn("Skipping invalid improvement object (missing id or instructionsText):", improvement);
         return;
     }
-
     const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
-
     if (sectionIndex !== -1) {
        if (!updatedSectionsData.sections[sectionIndex]) {
           console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
           return;
       }
-       // Ensure instructions object exists
        if (!updatedSectionsData.sections[sectionIndex].instructions) {
           updatedSectionsData.sections[sectionIndex].instructions = {};
            console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
       }
-
-      // Update the single 'text' field
       updatedSectionsData.sections[sectionIndex].instructions.text = improvement.instructionsText;
-
-      // Remove old fields if they somehow still exist after JSON update
       delete updatedSectionsData.sections[sectionIndex].instructions.description;
       delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
-
     } else {
         console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
     }
   });
-
   return updatedSectionsData;
 };
