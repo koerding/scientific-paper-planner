@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
-import sectionContent from '../sectionContent.json';
+import sectionContent from '../data/sectionContent.json';
 
 /**
  * Custom hook for Paper Planner functionality
