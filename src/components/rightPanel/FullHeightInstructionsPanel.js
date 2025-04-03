@@ -16,7 +16,7 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
     try {
       // Get user inputs from localStorage or your app state
       const userInputs = JSON.parse(localStorage.getItem('paperPlannerData')) || {};
-      const philosophyOptions = require('../../sectionContent.json').philosophyOptions;
+      const philosophyOptions = require('../../data/sectionContent.json').philosophyOptions;
       
       // Create the prompt for improvement
       const prompt = `
