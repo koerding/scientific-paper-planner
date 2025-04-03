@@ -35,11 +35,12 @@ const getInitialState = () => {
     for (const sectionId in initialPlaceholders) {
       if (loadedInputs.hasOwnProperty(sectionId)) {
         const loadedValue = loadedInputs[sectionId];
-        const placeholderValue = initialPlaceholders[sectionId];
-        // Use saved value only if it exists, isn't just whitespace, and differs from placeholder
-        if (loadedValue !== undefined && loadedValue !== null && String(loadedValue).trim() !== '' && loadedValue !== placeholderValue) {
+        // Use saved value only if it exists and isn't just whitespace
+        // The key fix is removing the condition: loadedValue !== placeholderValue
+        if (loadedValue !== undefined && loadedValue !== null && String(loadedValue).trim() !== '') {
           finalInputs[sectionId] = loadedValue;
         }
+        // Otherwise, keep the placeholder that's already in finalInputs
       }
     }
   }
