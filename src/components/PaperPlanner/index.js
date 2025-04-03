@@ -312,7 +312,7 @@ ${userInputs.abstract || "Not completed yet"}
     resetProject,
     goToNextSection,
     goToPreviousSection,
-    exportProject
+    exportProject  // Make sure exportProject is included here
   };
 
   return (
