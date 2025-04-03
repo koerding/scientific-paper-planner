@@ -195,19 +195,5 @@
       },
       "llmInstructions": "I want you to check the resulting abstract. Does it fit the requested format? Does it feel convincing? Is it well written? Is the language clear? What changes would make it more powerful? Be super constructive. Try to communicate in a modern Socrates dialogue way, helpful, clear, enthusiastic. Go a bit with the user through what they learned as part of this exercise. What will they do better next time?"
     }
-  ],
-  "philosophyOptions": [
-    {
-      "id": "hypothesis",
-      "label": "HYPOTHESIS TESTING. A priori formulation and examination of specific hypotheses, intended to falsify or support them with experimental data. Essential for questions about specific mechanisms, causality, or well-defined relationships."
-    },
-    {
-      "id": "exploratory",
-      "label": "EXPLORATORY. Investigation without strong a priori hypotheses, aimed at identifying patterns, correlations, or generating hypotheses for future testing. Suitable for novel domains, complex systems, or when hypotheses are premature."
-    },
-    {
-      "id": "needs",
-      "label": "ENGINEERING/NEEDS-DRIVEN. Development of solutions for specific technical, clinical, or practical problems, guided by defined performance metrics. Used when the goal is solving a concrete problem rather than testing a theory."
-    }
   ]
 }
