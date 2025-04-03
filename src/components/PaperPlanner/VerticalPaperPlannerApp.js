@@ -3,18 +3,19 @@ import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
 import SectionCard from '../sections/SectionCard';
 import ModernChatInterface from '../chat/ModernChatInterface';
+import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import '../../styles/PaperPlanner.css';
 
 /**
- * Complete Paper Planner App Replacement
- * This component replaces the entire app structure with a simplified version
- * that ensures the header buttons are visible.
+ * Full-Width Paper Planner App
+ * Maintains the fixed header with buttons and full-width layout
  */
-const CompletePaperPlannerApp = ({ usePaperPlannerHook }) => {
+const FullWidthPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // State tracking for active section
   const [activeSection, setActiveSection] = useState('question'); 
   const [initialized, setInitialized] = useState(false);
   const sectionRefs = useRef({});
+  const [improvingInstructions, setImprovingInstructions] = useState(false);
   
   const {
     currentSection,
@@ -103,153 +104,100 @@ const CompletePaperPlannerApp = ({ usePaperPlannerHook }) => {
     return sectionContent.sections.find(s => s.id === activeSection) || null;
   };
 
-  // CSS for fixed elements
-  const headerStyle = {
-    padding: '1rem',
-    margin: '0 0 2rem 0',
-    borderBottom: '1px solid #e5e7eb'
+  // Handle improving instructions with AI
+  const handleImproveInstructions = async () => {
+    // Placeholder for improve function
+    console.log("Improve instructions");
   };
-  
-  const headerContentStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    maxWidth: '1200px',
-    margin: '0 auto'
-  };
-  
-  const logoContainerStyle = {
-    display: 'flex',
-    alignItems: 'center'
-  };
-  
-  const logoStyle = {
-    background: 'linear-gradient(to right, #4f46e5, #9333ea)',
-    width: '40px',
-    height: '40px',
-    borderRadius: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-    fontWeight: 'bold',
-    marginRight: '12px'
-  };
-  
-  const titleContainerStyle = {
-    display: 'flex',
-    flexDirection: 'column'
-  };
-  
-  const appTitleStyle = {
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-    margin: 0
-  };
-  
-  const appSubtitleStyle = {
-    fontSize: '0.875rem',
-    color: '#6b7280',
-    margin: 0
-  };
-  
-  const buttonContainerStyle = {
-    display: 'flex',
-    gap: '8px'
-  };
-  
-  const resetButtonStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '8px 16px',
-    backgroundColor: 'white',
-    border: '1px solid #ef4444',
-    color: '#dc2626',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontWeight: '500'
-  };
-  
-  const exportButtonStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '8px 16px',
-    backgroundColor: 'white',
-    border: '1px solid #10b981',
-    color: '#059669',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontWeight: '500'
-  };
-  
-  const mainContentStyle = {
-    display: 'flex',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '0 1rem'
-  };
-  
-  const leftColumnStyle = {
-    width: '50%',
-    paddingRight: '1rem'
-  };
-  
-  const rightColumnStyle = {
-    width: '50%',
-    backgroundColor: '#EBF5FF',
-    borderLeft: '4px solid #3B82F6',
-    padding: '1rem',
-    borderRadius: '8px'
-  };
-  
-  const currentSection$ = getCurrentSection();
-  const instructionsTitle = currentSection$?.instructions?.title || '';
-  const instructionsDescription = currentSection$?.instructions?.description || '';
-  const workStepTitle = currentSection$?.instructions?.workStep?.title || '';
-  const workStepContent = currentSection$?.instructions?.workStep?.content || '';
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB' }}>
       {/* Custom Header with buttons */}
-      <header style={headerStyle}>
-        <div style={headerContentStyle}>
-          <div style={logoContainerStyle}>
-            <div style={logoStyle}>SP</div>
-            <div style={titleContainerStyle}>
-              <h1 style={appTitleStyle}>Scientific Paper Planner</h1>
-              <p style={appSubtitleStyle}>Design a hypothesis-based neuroscience project step-by-step</p>
+      <header style={{ 
+        padding: '1rem 0', 
+        borderBottom: '1px solid #e5e7eb',
+        backgroundColor: 'white',
+        marginBottom: '2rem'
+      }}>
+        <div style={{ 
+          maxWidth: '1400px', 
+          margin: '0 auto', 
+          padding: '0 1rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ 
+              background: 'linear-gradient(to right, #4f46e5, #9333ea)', 
+              width: '40px', 
+              height: '40px', 
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold',
+              marginRight: '12px'
+            }}>
+              SP
+            </div>
+            <div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>Scientific Paper Planner</h1>
+              <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>
+                Design a hypothesis-based neuroscience project step-by-step
+              </p>
             </div>
           </div>
           
-          {/* Action buttons */}
-          <div style={buttonContainerStyle}>
-            <button 
-              onClick={() => setShowConfirmDialog(true)} 
-              style={resetButtonStyle}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => setShowConfirmDialog(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.5rem 1rem',
+                border: '1px solid #ef4444',
+                color: '#dc2626',
+                borderRadius: '0.25rem',
+                cursor: 'pointer',
+                backgroundColor: 'white',
+                fontWeight: '500'
+              }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '20px', height: '20px', marginRight: '4px' }}>
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-              New
+              <span style={{ marginRight: '4px', fontSize: '1.2rem' }}>+</span>
+              <span>New</span>
             </button>
             
-            <button 
-              onClick={exportProject} 
-              style={exportButtonStyle}
+            <button
+              onClick={exportProject}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.5rem 1rem',
+                border: '1px solid #10b981',
+                color: '#059669',
+                borderRadius: '0.25rem',
+                cursor: 'pointer',
+                backgroundColor: 'white',
+                fontWeight: '500'
+              }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '20px', height: '20px', marginRight: '4px' }}>
-                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-              Export
+              <span style={{ marginRight: '4px', fontSize: '1.2rem' }}>↓</span>
+              <span>Export</span>
             </button>
           </div>
         </div>
       </header>
       
-      {/* Main content */}
-      <div style={mainContentStyle}>
-        {/* Left Column - User Inputs */}
-        <div style={leftColumnStyle}>
+      {/* Main content with 50/50 split */}
+      <div style={{ position: 'relative' }}>
+        {/* Left Column - User Input Sections */}
+        <div style={{ 
+          width: '50%', 
+          padding: '0 1rem 2rem 1rem',
+          marginLeft: '0'
+        }}>
           {sectionContent.sections.map((section) => {
             const isCurrentSection = activeSection === section.id;
             const isCompleted = hasSectionContent(section.id);
@@ -278,45 +226,28 @@ const CompletePaperPlannerApp = ({ usePaperPlannerHook }) => {
           })}
         </div>
         
-        {/* Right Column - Instructions */}
-        <div style={rightColumnStyle}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1E40AF', marginTop: 0 }}>
-            {instructionsTitle}
-          </h2>
-          <div style={{ color: '#1E40AF' }}>
-            {instructionsDescription.split('\n\n').map((paragraph, i) => (
-              <p key={i}>{paragraph}</p>
-            ))}
-          </div>
-          
-          {workStepTitle && (
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1E40AF', marginTop: '1.5rem' }}>
-              {workStepTitle}
-            </h3>
-          )}
-          
-          {workStepContent && (
-            <div style={{ color: '#1E40AF' }}>
-              {workStepContent.split('\n\n').map((paragraph, i) => (
-                <p key={i}>{paragraph}</p>
-              ))}
-            </div>
-          )}
-          
-          <button 
-            style={{
-              backgroundColor: '#3B82F6',
-              color: 'white',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              border: 'none',
-              fontWeight: '500',
-              marginTop: '1rem',
-              cursor: 'pointer'
-            }}
-          >
-            Improve
-          </button>
+        {/* Right Panel - Fixed position instructions */}
+        <div style={{ 
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          width: '50%',
+          height: '100vh',
+          overflowY: 'auto',
+          paddingTop: '120px',
+          paddingRight: '1rem',
+          paddingLeft: '1rem',
+          paddingBottom: '2rem',
+          backgroundColor: '#EBF5FF',
+          borderLeft: '4px solid #3B82F6',
+          zIndex: 10
+        }}>
+          <FullHeightInstructionsPanel 
+            currentSection={getCurrentSection()} 
+            userInputs={userInputs}
+            improveInstructions={handleImproveInstructions}
+            loading={loading || improvingInstructions}
+          />
         </div>
       </div>
       
@@ -340,4 +271,4 @@ const CompletePaperPlannerApp = ({ usePaperPlannerHook }) => {
   );
 };
 
-export default CompletePaperPlannerApp;
+export default FullWidthPaperPlannerApp;
