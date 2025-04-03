@@ -1,6 +1,6 @@
 /**
  * Service for improving instructions based on user progress
- * UPDATED: Strengthened prompt to encourage AI text removal/editing.
+ * UPDATED: Modified prompt for AI to include positive preamble and completion message.
  */
 import { callOpenAI } from './openaiService';
 
@@ -56,21 +56,22 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No valid sections with progress to improve" };
     }
 
-    // *** Build the STRONGER prompt for the API ***
+    // *** Build the REVISED prompt for the AI ***
     const prompt = `
-I need you to act as a strict editor improving instruction content for a scientific paper planning tool. The user has made progress, and the instructions MUST be updated based on their input.
+I need you to act as a helpful and encouraging editor improving instruction content for a scientific paper planning tool. The user has made progress on some sections, and the instructions MUST be updated based on their input.
 
 For each section PROVIDED BELOW, I'll provide:
 1. The current full instruction text (field name: 'instructionsText')
 2. The user's current content for that section (field name: 'userContent')
 
 Your task is, FOR EACH SECTION PROVIDED:
-1. **Analyze** the 'userContent' to understand what the user has already addressed or accomplished for that section.
-2. **Aggressively EDIT** the provided 'instructionsText' for that section. Your **PRIMARY GOAL** is to **REMOVE** sentences or paragraphs that are now redundant because the user's content already covers that point or demonstrates understanding.
-3. **DO NOT** simply return the original 'instructionsText'. You MUST make edits, focusing on removal. It is expected that the resulting text will be shorter.
-4. **Focus** the remaining instruction text on what the user still needs to do or improve for that specific section, based *only* on what's missing or weak according to the original instructions' goals and the provided user content.
-5. Maintain a helpful and encouraging tone. Preserve markdown formatting (like ### headings) in the edited text.
-6. Return the **complete, edited, and likely shorter** instruction text for that section.
+1. **Analyze** the 'userContent' to understand what the user has already addressed well regarding the goals in 'instructionsText'.
+2. **Start** your response for 'instructionsText' with a brief (1-2 sentence) positive acknowledgement of the specific points the user has successfully covered (e.g., "Great job clearly defining the research question!").
+3. **Then, critically EDIT** the *original* 'instructionsText'. Your **PRIMARY GOAL** is to **REMOVE** sentences or paragraphs that are now redundant because the user's content already covers that point or demonstrates understanding. Focus the remaining text *only* on what the user still needs to do or improve for that specific section.
+4. **If, after editing, you find the user has addressed *all* the key points from the original instructions**, DO NOT provide minimal remaining instructions. Instead, replace the *entire* instruction text with a clear, positive, congratulatory message acknowledging they've completed the main goals for this section (e.g., "Excellent work on this section! You've addressed all the key points regarding X and Y. Ready for the next step!").
+5. **Otherwise (if points remain),** append the edited, focused, and likely shorter remaining instructions after your positive preamble (from step 2).
+6. Maintain a helpful and encouraging tone throughout. Preserve necessary markdown formatting (like ### headings) in the edited text.
+7. Return the **complete, updated instruction text** (which might be just the positive preamble, the preamble plus remaining instructions, or the congratulatory message) inside the 'instructionsText' field for that section.
 
 Here are the sections to improve:
 ${JSON.stringify(sectionsData, null, 2)}
@@ -78,13 +79,14 @@ ${JSON.stringify(sectionsData, null, 2)}
 Respond ONLY with a valid JSON array containing objects for EACH section ID listed above. Use the following format exactly for each object in the array:
 {
   "id": "section_id",
-  "instructionsText": "Complete EDITED and potentially SHORTER instruction text here..."
+  "instructionsText": "Positive preamble + edited instructions text OR congratulatory message here..."
 }
-Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'. If a section's instructions become entirely redundant based on user content, return an empty string for "instructionsText".
+Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'.
 `;
 
     console.log("[Instruction Improvement] Sending batch request to OpenAI for sections:", sectionsWithProgress.join(', '));
     const sectionsToPassToOpenAI = Array.isArray(sectionContent?.sections) ? sectionContent.sections : [];
+
     const response = await apiCallFunction(
         prompt,
         "improve_instructions_batch",
@@ -136,51 +138,52 @@ Ensure the output is ONLY the JSON array, starting with '[' and ending with ']'.
   }
 };
 
+
 // (Keep the updateSectionWithImprovedInstructions function here, unchanged from the previous version)
 export const updateSectionWithImprovedInstructions = (sectionContent, improvedInstructions) => {
-  // ... (function code remains the same as last version) ...
-  let updatedSectionsData;
-  try {
-      if (typeof sectionContent !== 'object' || sectionContent === null) {
-          throw new Error("sectionContent is not a valid object for deep copy.");
-      }
-      updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
-  } catch(e) {
-      console.error("Error deep copying section content", e);
-      return { sections: [] }; // Return default structure
-  }
+ // ... (function code remains the same as last version) ...
+ let updatedSectionsData;
+ try {
+     if (typeof sectionContent !== 'object' || sectionContent === null) {
+         throw new Error("sectionContent is not a valid object for deep copy.");
+     }
+     updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
+ } catch(e) {
+     console.error("Error deep copying section content", e);
+     return { sections: [] }; // Return default structure
+ }
 
-  if (!Array.isArray(updatedSectionsData?.sections)) {
-      console.error("updatedSectionsData does not have a valid sections array after copy.");
-      updatedSectionsData.sections = [];
-  }
+ if (!Array.isArray(updatedSectionsData?.sections)) {
+     console.error("updatedSectionsData does not have a valid sections array after copy.");
+     updatedSectionsData.sections = [];
+ }
 
-  if (!Array.isArray(improvedInstructions)) {
-      console.error("Invalid improvedInstructions format: Expected an array.");
-      return updatedSectionsData;
-  }
+ if (!Array.isArray(improvedInstructions)) {
+     console.error("Invalid improvedInstructions format: Expected an array.");
+     return updatedSectionsData;
+ }
 
-  improvedInstructions.forEach(improvement => {
-    if (!improvement || typeof improvement.id !== 'string' || typeof improvement.instructionsText !== 'string') {
-        console.warn("Skipping invalid improvement object (missing id or instructionsText):", improvement);
-        return;
-    }
-    const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
-    if (sectionIndex !== -1) {
-       if (!updatedSectionsData.sections[sectionIndex]) {
-          console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
-          return;
-      }
-       if (!updatedSectionsData.sections[sectionIndex].instructions) {
-          updatedSectionsData.sections[sectionIndex].instructions = {};
-           console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
-      }
-      updatedSectionsData.sections[sectionIndex].instructions.text = improvement.instructionsText;
-      delete updatedSectionsData.sections[sectionIndex].instructions.description;
-      delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
-    } else {
-        console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
-    }
-  });
-  return updatedSectionsData;
+ improvedInstructions.forEach(improvement => {
+   if (!improvement || typeof improvement.id !== 'string' || typeof improvement.instructionsText !== 'string') {
+       console.warn("Skipping invalid improvement object (missing id or instructionsText):", improvement);
+       return;
+   }
+   const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
+   if (sectionIndex !== -1) {
+      if (!updatedSectionsData.sections[sectionIndex]) {
+         console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
+         return;
+     }
+      if (!updatedSectionsData.sections[sectionIndex].instructions) {
+         updatedSectionsData.sections[sectionIndex].instructions = {};
+          console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
+     }
+     updatedSectionsData.sections[sectionIndex].instructions.text = improvement.instructionsText;
+     delete updatedSectionsData.sections[sectionIndex].instructions.description;
+     delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
+   } else {
+       console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
+   }
+ });
+ return updatedSectionsData;
 };
