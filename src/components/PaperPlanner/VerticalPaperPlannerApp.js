@@ -79,23 +79,28 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSectionChange(sectionId);
   };
 
-  // Check if a section has content beyond placeholder
-  const hasSectionContent = (sectionId) => {
-    // Get section content and placeholder
-    const content = userInputs[sectionId] || '';
-    const section = localSectionContent.sections.find(s => s.id === sectionId);
-    const placeholder = section?.placeholder || '';
-    
-    // If content is completely empty, it's not completed
-    if (!content || content.trim() === '') return false;
-    
-    // If content is exactly the placeholder, it's not completed
-    if (content === placeholder) return false;
-    
-    // Otherwise, consider it completed (even if just slightly modified)
-    return true;
-  };
+const hasSectionContent = (sectionId) => {
+  // Get section content and placeholder
+  const content = userInputs[sectionId] || '';
+  const section = localSectionContent.sections.find(s => s.id === sectionId);
+  const placeholder = section?.placeholder || '';
+  
+  // Check if content is a string before using trim
+  if (typeof content !== 'string') {
+    return false;
+  }
+  
+  // If content is completely empty, it's not completed
+  if (!content || content.trim() === '') return false;
+  
+  // If content is exactly the placeholder, it's not completed
+  if (content === placeholder) return false;
+  
+  // Otherwise, consider it completed (even if just slightly modified)
+  return true;
+};
 
+  
   // Scroll to a specific section
   const scrollToSection = (sectionId) => {
     if (sectionRefs.current[sectionId] && sectionRefs.current[sectionId].current) {
