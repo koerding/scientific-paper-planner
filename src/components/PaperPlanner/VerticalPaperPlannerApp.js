@@ -12,14 +12,15 @@ import {
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Paper Planner with debugging logs for instruction improvement.
+ * Enhanced Paper Planner with more debugging logs for instruction improvement state update.
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [activeSection, setActiveSection] = useState('question');
   const [initialized, setInitialized] = useState(false);
   const sectionRefs = useRef({});
 
-  const [localSectionContent, setLocalSectionContent] = useState(sectionContent);
+  // Ensure initial state uses a deep copy to prevent accidental mutations
+  const [localSectionContent, setLocalSectionContent] = useState(() => JSON.parse(JSON.stringify(sectionContent)));
   const [improvingInstructions, setImprovingInstructions] = useState(false); // State for improvement loading
 
   const {
@@ -45,18 +46,16 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     });
   }, [localSectionContent.sections]);
 
+  // Simplified initialization effect
   useEffect(() => {
-    if (!initialized) {
-      handleSectionChange('question');
-      setActiveSection('question');
-      localSectionContent.sections.forEach(section => {
-        if (section.placeholder && (!userInputs[section.id] || userInputs[section.id].trim() === '')) {
-          handleInputChange(section.id, section.placeholder);
-        }
-      });
-      setInitialized(true);
-    }
-  }, [initialized, handleSectionChange, userInputs, handleInputChange, localSectionContent.sections]);
+      if (!initialized) {
+        setActiveSection('question');
+        handleSectionChange('question'); // Set chat context too
+        setInitialized(true);
+        // Removed placeholder setting from here, handle in SectionCard if needed
+      }
+  }, [initialized, handleSectionChange]);
+
 
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId); // Update the *active* section for UI focus/instructions
@@ -67,11 +66,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     const content = userInputs[sectionId] || '';
     const section = localSectionContent.sections.find(s => s.id === sectionId);
     const placeholder = section?.placeholder || '';
-    if (typeof content !== 'string') return false;
-    if (!content || content.trim() === '') return false;
-    if (content === placeholder) return false;
+    // Ensure content is treated as string for comparison
+    const stringContent = typeof content === 'string' ? content : JSON.stringify(content);
+    if (!stringContent || stringContent.trim() === '') return false;
+    if (stringContent === placeholder) return false; // Compare stringified content to placeholder
     return true;
   };
+
 
   const scrollToSection = (sectionId) => {
     if (sectionRefs.current[sectionId] && sectionRefs.current[sectionId].current) {
@@ -81,38 +82,61 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Get the current section object based on the *active* section for display
   const getCurrentSection = () => {
-    return localSectionContent.sections.find(s => s.id === activeSection) || null;
+     // Add checks to prevent errors if localSectionContent or sections are not ready
+    if (!localSectionContent || !Array.isArray(localSectionContent.sections)) {
+        return null;
+    }
+    return localSectionContent.sections.find(s => s && s.id === activeSection) || null;
   };
 
-  // Handle improving instructions - with added logging
+  // Handle improving instructions - with added logging for state update data
   const handleImproveInstructions = async () => {
-    console.log('[handleImproveInstructions] Clicked! Starting improvement process.'); // DEBUG LOG 1
+    console.log('[handleImproveInstructions] Clicked! Starting improvement process.');
     setImprovingInstructions(true);
 
     try {
-      console.log('[handleImproveInstructions] Calling improveBatchInstructions service...'); // DEBUG LOG 2
+      console.log('[handleImproveInstructions] Calling improveBatchInstructions service...');
+      // Pass the current state to the service
       const result = await improveBatchInstructions(
-        localSectionContent.sections,
+        localSectionContent.sections, // Pass sections array
         userInputs,
-        localSectionContent
+        localSectionContent // Pass the whole object for context if needed by service
       );
-      console.log('[handleImproveInstructions] Service returned:', result); // DEBUG LOG 3
+      console.log('[handleImproveInstructions] Service returned:', result);
 
       if (result.success && result.improvedInstructions) {
-        console.log('[handleImproveInstructions] Improvement successful. Updating section content state.'); // DEBUG LOG 4
+        console.log('[handleImproveInstructions] Improvement successful.');
+
+        // *** DEBUG LOG: Log the data received from the service ***
+        console.log('[handleImproveInstructions] Data from AI (result.improvedInstructions):', JSON.stringify(result.improvedInstructions, null, 2));
+
+        // Create the updated structure
         const updatedSections = updateSectionWithImprovedInstructions(
-          localSectionContent,
-          result.improvedInstructions
+          localSectionContent, // Pass current state
+          result.improvedInstructions // Pass improvements
         );
+
+        // *** DEBUG LOG: Log the structure *before* setting state ***
+        console.log('[handleImproveInstructions] Merged data BEFORE setLocalSectionContent (updatedSections):', JSON.stringify(updatedSections, null, 2));
+
+        // *** DEBUG LOG: Compare specific section before/after merge (e.g., 'question') ***
+        const originalSectionForLog = localSectionContent.sections.find(s => s.id === result.improvedInstructions[0]?.id);
+        const updatedSectionForLog = updatedSections.sections.find(s => s.id === result.improvedInstructions[0]?.id);
+        console.log(`[handleImproveInstructions] Comparing section '${result.improvedInstructions[0]?.id}' BEFORE merge:`, JSON.stringify(originalSectionForLog?.instructions, null, 2));
+        console.log(`[handleImproveInstructions] Comparing section '${result.improvedInstructions[0]?.id}' AFTER merge:`, JSON.stringify(updatedSectionForLog?.instructions, null, 2));
+
+
+        // Update the main state
         setLocalSectionContent(updatedSections);
-        console.log('[handleImproveInstructions] State update complete.'); // DEBUG LOG 5
+        console.log('[handleImproveInstructions] State update initiated.');
+
       } else {
-        console.error("[handleImproveInstructions] Failed to improve instructions:", result.message);
+        console.error("[handleImproveInstructions] Failed to improve instructions based on service response:", result.message);
       }
     } catch (error) {
       console.error("[handleImproveInstructions] Error during improvement process:", error);
     } finally {
-      console.log('[handleImproveInstructions] Setting improvingInstructions state back to false.'); // DEBUG LOG 6
+      console.log('[handleImproveInstructions] Setting improvingInstructions state back to false.');
       setImprovingInstructions(false);
     }
   };
@@ -124,7 +148,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         <AppHeader
           activeSection={activeSection}
           setActiveSection={setActiveSectionWithManualFlag}
-          handleSectionChange={handleSectionChange} // Pass the correct function if needed by header
           scrollToSection={scrollToSection}
           resetProject={() => setShowConfirmDialog(true)} // Show dialog on reset click
           exportProject={exportProject}
@@ -132,7 +155,14 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
         <div className="flex">
           <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
-            {localSectionContent.sections.map((section) => {
+             {/* Ensure localSectionContent.sections is an array before mapping */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.map((section) => {
+               // Add check for valid section object within map
+              if (!section || !section.id) {
+                  console.warn("Skipping rendering invalid section:", section);
+                  return null;
+              }
+
               const isCurrentActive = activeSection === section.id;
               const isCompleted = hasSectionContent(section.id);
 
@@ -140,18 +170,18 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 <SectionCard
                   key={section.id}
                   section={section}
-                  isCurrentSection={isCurrentActive} // Pass active state for styling
+                  isCurrentSection={isCurrentActive}
                   isCompleted={isCompleted}
                   userInputs={userInputs}
                   handleInputChange={handleInputChange}
-                  handleFirstVersionFinished={handleFirstVersionFinished} // Ensure this uses the correct context
-                  loading={loading && currentSection === section.id} // Loading state specific to the section for chat/completion
+                  handleFirstVersionFinished={handleFirstVersionFinished}
+                  loading={loading && currentSection === section.id}
                   sectionRef={sectionRefs.current[section.id]}
-                  onClick={() => { // Renamed for clarity, handles focus/activation
+                  onClick={() => {
                     setActiveSectionWithManualFlag(section.id);
                   }}
-                  setActiveSection={setActiveSectionWithManualFlag} // Pass setter if needed internally
-                  handleSectionChange={handleSectionChange} // Pass if needed internally
+                  setActiveSection={setActiveSectionWithManualFlag}
+                  handleSectionChange={handleSectionChange}
                   useLargerFonts={true}
                 />
               );
