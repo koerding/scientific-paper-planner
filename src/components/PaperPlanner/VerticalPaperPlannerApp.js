@@ -1,29 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
-import AppHeader from '../layout/AppHeader';  // Make sure this import is present
 import SectionCard from '../sections/SectionCard';
-import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
-import { improveInstructions, updateSectionWithImprovedInstructions } from '../../services/instructionImprovementService';
-import { callOpenAI } from '../../services/openaiService';
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Paper Planner with:
- * - Full width user content
- * - Full-height instruction panel with "Improve" button
- * - Minimizable chat interface
+ * Complete Paper Planner App Replacement
+ * This component replaces the entire app structure with a simplified version
+ * that ensures the header buttons are visible.
  */
-const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
+const CompletePaperPlannerApp = ({ usePaperPlannerHook }) => {
   // State tracking for active section
-  const [activeSection, setActiveSection] = useState('question'); // Default to question section
+  const [activeSection, setActiveSection] = useState('question'); 
   const [initialized, setInitialized] = useState(false);
   const sectionRefs = useRef({});
-  
-  // State for improved instructions
-  const [localSectionContent, setLocalSectionContent] = useState(sectionContent);
-  const [improvingInstructions, setImprovingInstructions] = useState(false);
   
   const {
     currentSection,
@@ -40,17 +31,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSendMessage,
     handleFirstVersionFinished,
     resetProject,
-    goToNextSection,
-    goToPreviousSection,
-    exportProject  // Make sure this is extracted from the hook
+    exportProject
   } = usePaperPlannerHook;
 
-  // Store refs for all sections
+  // Initialize refs for all sections
   useEffect(() => {
-    localSectionContent.sections.forEach(section => {
+    sectionContent.sections.forEach(section => {
       sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
     });
-  }, [localSectionContent.sections]);
+  }, []);
 
   // Initialize with focus on question section and prefill content
   useEffect(() => {
@@ -60,7 +49,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       setActiveSection('question');
       
       // Pre-fill text for every section that's not already filled
-      localSectionContent.sections.forEach(section => {
+      sectionContent.sections.forEach(section => {
         if (section.type !== 'checklist' && section.placeholder) {
           if (!userInputs[section.id] || userInputs[section.id].trim() === '') {
             handleInputChange(section.id, section.placeholder);
@@ -70,7 +59,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       
       setInitialized(true);
     }
-  }, [initialized, handleSectionChange, userInputs, handleInputChange, localSectionContent.sections]);
+  }, [initialized, handleSectionChange, userInputs, handleInputChange]);
   
   // Custom setActiveSection that updates both the active section and current section
   const setActiveSectionWithManualFlag = (sectionId) => {
@@ -81,7 +70,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const hasSectionContent = (sectionId) => {
     // Get section content and placeholder
     const content = userInputs[sectionId] || '';
-    const section = localSectionContent.sections.find(s => s.id === sectionId);
+    const section = sectionContent.sections.find(s => s.id === sectionId);
     const placeholder = section?.placeholder || '';
     
     // Check if content is a string before using trim
@@ -111,133 +100,244 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Get the current section object for instructions display
   const getCurrentSection = () => {
-    return localSectionContent.sections.find(s => s.id === activeSection) || null;
-  };
-  
-  // Handle improving instructions with AI
-  const handleImproveInstructions = async () => {
-    setImprovingInstructions(true);
-    
-    try {
-      // Use our instruction improvement service
-      const result = await improveInstructions(
-        localSectionContent.sections,
-        userInputs,
-        localSectionContent,
-        callOpenAI // Pass the existing OpenAI API function
-      );
-      
-      if (result.success && result.improvedInstructions) {
-        // Update our local section content
-        const updatedSections = updateSectionWithImprovedInstructions(
-          localSectionContent,
-          result.improvedInstructions
-        );
-        
-        setLocalSectionContent(updatedSections);
-        console.log("Instructions improved successfully");
-      } else {
-        console.error("Failed to improve instructions:", result.message);
-      }
-    } catch (error) {
-      console.error("Error in improvement process:", error);
-    } finally {
-      setImprovingInstructions(false);
-    }
+    return sectionContent.sections.find(s => s.id === activeSection) || null;
   };
 
-  // Create a simpler version of the export and reset functions
-  // These will be passed to the header component
-  const handleReset = () => {
-    setShowConfirmDialog(true);
+  // CSS for fixed elements
+  const headerStyle = {
+    padding: '1rem',
+    margin: '0 0 2rem 0',
+    borderBottom: '1px solid #e5e7eb'
   };
   
-  const handleExport = () => {
-    if (typeof exportProject === 'function') {
-      exportProject();
-    } else {
-      console.error("Export function is not available");
-    }
+  const headerContentStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    maxWidth: '1200px',
+    margin: '0 auto'
   };
+  
+  const logoContainerStyle = {
+    display: 'flex',
+    alignItems: 'center'
+  };
+  
+  const logoStyle = {
+    background: 'linear-gradient(to right, #4f46e5, #9333ea)',
+    width: '40px',
+    height: '40px',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'white',
+    fontWeight: 'bold',
+    marginRight: '12px'
+  };
+  
+  const titleContainerStyle = {
+    display: 'flex',
+    flexDirection: 'column'
+  };
+  
+  const appTitleStyle = {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    margin: 0
+  };
+  
+  const appSubtitleStyle = {
+    fontSize: '0.875rem',
+    color: '#6b7280',
+    margin: 0
+  };
+  
+  const buttonContainerStyle = {
+    display: 'flex',
+    gap: '8px'
+  };
+  
+  const resetButtonStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '8px 16px',
+    backgroundColor: 'white',
+    border: '1px solid #ef4444',
+    color: '#dc2626',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: '500'
+  };
+  
+  const exportButtonStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '8px 16px',
+    backgroundColor: 'white',
+    border: '1px solid #10b981',
+    color: '#059669',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: '500'
+  };
+  
+  const mainContentStyle = {
+    display: 'flex',
+    maxWidth: '1200px',
+    margin: '0 auto',
+    padding: '0 1rem'
+  };
+  
+  const leftColumnStyle = {
+    width: '50%',
+    paddingRight: '1rem'
+  };
+  
+  const rightColumnStyle = {
+    width: '50%',
+    backgroundColor: '#EBF5FF',
+    borderLeft: '4px solid #3B82F6',
+    padding: '1rem',
+    borderRadius: '8px'
+  };
+  
+  const currentSection$ = getCurrentSection();
+  const instructionsTitle = currentSection$?.instructions?.title || '';
+  const instructionsDescription = currentSection$?.instructions?.description || '';
+  const workStepTitle = currentSection$?.instructions?.workStep?.title || '';
+  const workStepContent = currentSection$?.instructions?.workStep?.content || '';
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="container mx-auto">
-        {/* Header Component with proper props */}
-        <AppHeader
-          activeSection={activeSection}
-          setActiveSection={setActiveSectionWithManualFlag}
-          handleSectionChange={handleSectionChange}
-          scrollToSection={scrollToSection}
-          resetProject={handleReset}  // Use the local handler
-          exportProject={handleExport} // Use the local handler
-        />
-        
-        {/* Main content area with adjusted layout */}
-        <div className="flex flex-col md:flex-row">
-          {/* Left column - User editable sections - taking proper width */}
-          <div className="w-full md:w-1/2 px-4 md:px-8 py-6" style={{ marginRight: '0', marginLeft: '0' }}>
-            {localSectionContent.sections.map((section) => {
-              const isCurrentSection = activeSection === section.id;
-              const isCompleted = hasSectionContent(section.id);
-              
-              return (
-                <SectionCard
-                  key={section.id}
-                  section={section}
-                  isCurrentSection={isCurrentSection}
-                  isCompleted={isCompleted}
-                  userInputs={userInputs}
-                  handleInputChange={handleInputChange}
-                  handleCheckboxChange={handleCheckboxChange}
-                  handleFirstVersionFinished={handleFirstVersionFinished}
-                  philosophyOptions={localSectionContent.philosophyOptions}
-                  loading={loading}
-                  sectionRef={sectionRefs.current[section.id]}
-                  onClick={() => {
-                    setActiveSectionWithManualFlag(section.id);
-                  }}
-                  setActiveSection={setActiveSectionWithManualFlag}
-                  handleSectionChange={handleSectionChange}
-                  useLargerFonts={true} // Enable larger fonts
-                />
-              );
-            })}
+    <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB' }}>
+      {/* Custom Header with buttons */}
+      <header style={headerStyle}>
+        <div style={headerContentStyle}>
+          <div style={logoContainerStyle}>
+            <div style={logoStyle}>SP</div>
+            <div style={titleContainerStyle}>
+              <h1 style={appTitleStyle}>Scientific Paper Planner</h1>
+              <p style={appSubtitleStyle}>Design a hypothesis-based neuroscience project step-by-step</p>
+            </div>
+          </div>
+          
+          {/* Action buttons */}
+          <div style={buttonContainerStyle}>
+            <button 
+              onClick={() => setShowConfirmDialog(true)} 
+              style={resetButtonStyle}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '20px', height: '20px', marginRight: '4px' }}>
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              New
+            </button>
+            
+            <button 
+              onClick={exportProject} 
+              style={exportButtonStyle}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '20px', height: '20px', marginRight: '4px' }}>
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+              Export
+            </button>
           </div>
         </div>
-        
-        {/* Footer */}
-        <div className="text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6">
-          <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
+      </header>
+      
+      {/* Main content */}
+      <div style={mainContentStyle}>
+        {/* Left Column - User Inputs */}
+        <div style={leftColumnStyle}>
+          {sectionContent.sections.map((section) => {
+            const isCurrentSection = activeSection === section.id;
+            const isCompleted = hasSectionContent(section.id);
+            
+            return (
+              <SectionCard
+                key={section.id}
+                section={section}
+                isCurrentSection={isCurrentSection}
+                isCompleted={isCompleted}
+                userInputs={userInputs}
+                handleInputChange={handleInputChange}
+                handleCheckboxChange={handleCheckboxChange}
+                handleFirstVersionFinished={handleFirstVersionFinished}
+                philosophyOptions={sectionContent.philosophyOptions}
+                loading={loading}
+                sectionRef={sectionRefs.current[section.id]}
+                onClick={() => {
+                  setActiveSectionWithManualFlag(section.id);
+                }}
+                setActiveSection={setActiveSectionWithManualFlag}
+                handleSectionChange={handleSectionChange}
+                useLargerFonts={true}
+              />
+            );
+          })}
         </div>
         
-        {/* Full-height instructions panel (fixed position) with improve button */}
-        <FullHeightInstructionsPanel 
-          currentSection={getCurrentSection()} 
-          userInputs={userInputs}
-          improveInstructions={handleImproveInstructions}
-          loading={loading || improvingInstructions}
-        />
-        
-        {/* Minimizable chat interface */}
-        <ModernChatInterface
-          currentSection={currentSection}
-          chatMessages={chatMessages}
-          currentMessage={currentMessage}
-          setCurrentMessage={setCurrentMessage}
-          handleSendMessage={handleSendMessage}
-          loading={loading}
-        />
-        
-        {/* Confirmation Dialog */}
-        <ConfirmDialog
-          showConfirmDialog={showConfirmDialog}
-          setShowConfirmDialog={setShowConfirmDialog}
-          resetProject={resetProject}
-        />
+        {/* Right Column - Instructions */}
+        <div style={rightColumnStyle}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1E40AF', marginTop: 0 }}>
+            {instructionsTitle}
+          </h2>
+          <div style={{ color: '#1E40AF' }}>
+            {instructionsDescription.split('\n\n').map((paragraph, i) => (
+              <p key={i}>{paragraph}</p>
+            ))}
+          </div>
+          
+          {workStepTitle && (
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1E40AF', marginTop: '1.5rem' }}>
+              {workStepTitle}
+            </h3>
+          )}
+          
+          {workStepContent && (
+            <div style={{ color: '#1E40AF' }}>
+              {workStepContent.split('\n\n').map((paragraph, i) => (
+                <p key={i}>{paragraph}</p>
+              ))}
+            </div>
+          )}
+          
+          <button 
+            style={{
+              backgroundColor: '#3B82F6',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: 'none',
+              fontWeight: '500',
+              marginTop: '1rem',
+              cursor: 'pointer'
+            }}
+          >
+            Improve
+          </button>
+        </div>
       </div>
+      
+      {/* Chat Interface */}
+      <ModernChatInterface
+        currentSection={currentSection}
+        chatMessages={chatMessages}
+        currentMessage={currentMessage}
+        setCurrentMessage={setCurrentMessage}
+        handleSendMessage={handleSendMessage}
+        loading={loading}
+      />
+      
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        showConfirmDialog={showConfirmDialog}
+        setShowConfirmDialog={setShowConfirmDialog}
+        resetProject={resetProject}
+      />
     </div>
   );
 };
 
-export default VerticalPaperPlannerApp;
+export default CompletePaperPlannerApp;
