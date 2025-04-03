@@ -7,17 +7,19 @@ import '../../styles/PaperPlanner.css';
 /**
  * Main entry point for the Paper Planner
  * Contains core state management and API calls
+ * UPDATED: Now ensures templates are pre-loaded
  */
 const PaperPlannerApp = () => {
-  // State - UPDATED: Removed philosophy array
-  const [userInputs, setUserInputs] = useState({
-    question: '',
-    hypothesis: '',
-    experiment: '',
-    analysis: '',
-    process: '',
-    abstract: ''
+  // State - Pre-fill with templates from sectionContent
+  const initialState = {};
+  sectionContent.sections.forEach(section => {
+    if (section && section.id) {
+      initialState[section.id] = section.placeholder || '';
+    }
   });
+
+  // Initialize states
+  const [userInputs, setUserInputs] = useState(initialState);
   const [currentSection, setCurrentSection] = useState(sectionContent.sections[0].id);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [chatMessages, setChatMessages] = useState({});
@@ -41,7 +43,18 @@ const PaperPlannerApp = () => {
       const savedChat = localStorage.getItem('paperPlannerChat');
       
       if (savedInputs) {
-        setUserInputs(JSON.parse(savedInputs));
+        const parsedInputs = JSON.parse(savedInputs);
+        // Make sure we're not overwriting templates with empty values
+        const mergedInputs = {...initialState};
+        
+        // Only use saved values if they exist and are different from templates
+        Object.keys(parsedInputs).forEach(sectionId => {
+          if (parsedInputs[sectionId] && parsedInputs[sectionId].trim() !== '') {
+            mergedInputs[sectionId] = parsedInputs[sectionId];
+          }
+        });
+        
+        setUserInputs(mergedInputs);
       }
       
       if (savedChat) {
@@ -74,8 +87,6 @@ const PaperPlannerApp = () => {
       [section]: value
     });
   };
-
-  // REMOVED: handleCheckboxChange function
 
   // Send regular chat message with full context
   const handleSendMessage = async () => {
@@ -136,7 +147,6 @@ const PaperPlannerApp = () => {
   const handleFirstVersionFinished = async () => {
     // Don't do anything if there's no content yet
     if (!userInputs[currentSection]) return;
-    // REMOVED: Special case for philosophy
     
     setLoading(true);
     
@@ -196,15 +206,14 @@ const PaperPlannerApp = () => {
   };
 
   const resetProject = () => {
-    // Clear all user inputs - UPDATED: Removed philosophy array
-    setUserInputs({
-      question: '',
-      hypothesis: '',
-      experiment: '',
-      analysis: '',
-      process: '',
-      abstract: ''
+    // Reset to template values
+    const freshInputs = {};
+    sectionContent.sections.forEach(section => {
+      if (section && section.id) {
+        freshInputs[section.id] = section.placeholder || '';
+      }
     });
+    setUserInputs(freshInputs);
     
     // Clear all chat messages
     const freshChatMessages = {};
@@ -235,7 +244,7 @@ const PaperPlannerApp = () => {
     }
   };
 
-  // Function to export project - UPDATED: Removed philosophy special handling
+  // Function to export project
   const exportProject = () => {
     const exportContent = `# Scientific Paper Project Plan
 
@@ -274,7 +283,7 @@ ${userInputs.abstract || "Not completed yet"}
     URL.revokeObjectURL(url);
   };
 
-  // Hook for the Paper Planner - UPDATED: Removed handleCheckboxChange
+  // Hook for the Paper Planner
   const usePaperPlannerHook = {
     currentSection,
     currentIndex,
