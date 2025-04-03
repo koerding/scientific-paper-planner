@@ -1,14 +1,100 @@
 /**
  * Service for improving instructions based on user progress
- * UPDATED: Removed philosophy special handling
+ * UPDATED: Moved all prompting logic from components to this service
  */
+import { callOpenAI } from './openaiService';
 
-// This function analyzes user progress and generates improved instructions
+/**
+ * Improves instructions for a specific section based on user progress
+ * @param {Object} currentSection - The current section object
+ * @param {Object} userInputs - User inputs for all sections
+ * @param {Object} [options] - Optional parameters
+ * @returns {Promise<Object>} - Result with success flag and improved content
+ */
 export const improveInstructions = async (
+  currentSection,
+  userInputs,
+  options = {}
+) => {
+  try {
+    if (!currentSection) {
+      return { success: false, message: "No section provided" };
+    }
+
+    const sectionId = currentSection.id;
+    const sectionContent = userInputs[sectionId] || '';
+    
+    // Skip if no meaningful content
+    if (!sectionContent || sectionContent.trim() === '') {
+      return { success: false, message: "No meaningful content to analyze" };
+    }
+
+    // Build the prompt for instruction improvement
+    const prompt = `
+      You are an editor tasked with streamlining scientific paper planning instructions based on what the user has already accomplished. Your job is primarily to REMOVE redundant or unnecessary guidance from the instructions.
+
+      Current section: ${currentSection.title}
+
+      Current instructions:
+      ${currentSection.instructions.description}
+      ${currentSection.instructions.workStep ? '\n' + currentSection.instructions.workStep.title + '\n' + currentSection.instructions.workStep.content : ''}
+
+      User's current content:
+      ${sectionContent}
+
+      Instructions for editing:
+      1. PRIMARILY REMOVE parts of the instructions that are redundant or already addressed by the user
+      2. Keep the instructions concise and to the point
+      3. You may add AT MOST 1-2 short sentences if absolutely necessary
+      4. Maintain the same style and tone as the original
+      5. Don't add lengthy new explanations
+      
+      Response format: Provide ONLY the edited instructions text that should replace the current instructions. 
+      Preserve the section title as a heading and maintain paragraph breaks.
+    `;
+
+    // Call the OpenAI API
+    console.log("[Instruction Improvement] Sending request to OpenAI");
+    const response = await callOpenAI(
+      prompt, 
+      "improve_instructions", 
+      userInputs, 
+      [currentSection]
+    );
+
+    // Format the improved content for display
+    const improvedContent = response.split('\n\n').map(paragraph => {
+      return `<p class="mb-3 text-blue-700 text-lg">${paragraph}</p>`;
+    }).join('');
+
+    return {
+      success: true,
+      message: "Instructions improved successfully",
+      improvedContent,
+      rawResponse: response
+    };
+  } catch (error) {
+    console.error("Error improving instructions:", error);
+    return {
+      success: false,
+      message: error.message || "An error occurred while improving instructions"
+    };
+  }
+};
+
+/**
+ * Improves instructions for multiple sections
+ * @param {Array} currentSections - Array of section objects
+ * @param {Object} userInputs - User inputs for all sections
+ * @param {Object} sectionContent - The full section content object
+ * @param {Function} apiCallFunction - Function to call the API
+ * @returns {Promise<Object>} - Result with success flag and improved instructions
+ */
+export const improveBatchInstructions = async (
   currentSections,
   userInputs,
   sectionContent,
-  callOpenAI  // We'll use the existing OpenAI call mechanism
+  apiCallFunction = callOpenAI
 ) => {
   try {
     // Identify which sections have meaningful user content
@@ -74,8 +160,8 @@ For each section, provide your improved instructions in this format:
 `;
 
     // Call the OpenAI API
-    console.log("[Instruction Improvement] Sending request to OpenAI");
-    const response = await callOpenAI(prompt, "improve_instructions", userInputs, sectionContent.sections);
+    console.log("[Instruction Improvement] Sending batch request to OpenAI");
+    const response = await apiCallFunction(prompt, "improve_instructions", userInputs, sectionContent.sections);
     
     // Parse the response
     let improvedInstructions;
@@ -119,7 +205,12 @@ For each section, provide your improved instructions in this format:
   }
 };
 
-// Function to update section content with improved instructions
+/**
+ * Updates section content with improved instructions
+ * @param {Object} sectionContent - The section content object
+ * @param {Array} improvedInstructions - Array of improved instruction objects
+ * @returns {Object} - Updated section content
+ */
 export const updateSectionWithImprovedInstructions = (sectionContent, improvedInstructions) => {
   // Create a deep copy to avoid mutating the original
   const updatedSections = JSON.parse(JSON.stringify(sectionContent));
