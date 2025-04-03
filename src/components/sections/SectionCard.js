@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 
 /**
- * SectionCard component with focus behavior that only changes instruction panel
- * when explicitly clicked on inputs
+ * SectionCard component with buttons that hover over the edit area
+ * With proper validation for content types
  */
 const SectionCard = ({
   section,
@@ -15,7 +15,6 @@ const SectionCard = ({
   philosophyOptions,
   loading,
   sectionRef,
-  onClick,
   setActiveSection,
   handleSectionChange,
   useLargerFonts = false
@@ -36,15 +35,27 @@ const SectionCard = ({
     button: 'text-sm'
   };
   
-  // Only focus the textarea when this section becomes active due to explicit user interaction
-  // We removed auto-focusing behavior to prevent unwanted focus changes
-  
   // Check if content has been modified from placeholder
   const hasUserModifiedContent = () => {
-    const content = userInputs[section.id] || '';
+    // Get the content for this section
+    const content = userInputs[section.id];
+    
+    // Safety check - ensure the content is a string before calling trim()
+    if (content === undefined || content === null) return false;
+    
+    // Handle non-string content (e.g., arrays from old philosophy section)
+    if (typeof content !== 'string') {
+      // If it's an array (like old philosophy data), check if it has entries
+      if (Array.isArray(content)) {
+        return content.length > 0;
+      }
+      // For any other non-string type, just return false
+      return false;
+    }
+    
     const placeholder = section.placeholder || '';
     
-    // Consider it modified if it's not empty and not exactly the placeholder
+    // Now we know content is a string and can safely call trim()
     return content.trim() !== '' && content !== placeholder;
   };
 
@@ -80,40 +91,41 @@ const SectionCard = ({
         )}
       </div>
       
-      {/* Section content - we've removed the philosophy checkbox handling */}
-      <textarea
-        ref={textareaRef}
-        value={userInputs[section.id] || ''}
-        onChange={(e) => {
-          handleInputChange(section.id, e.target.value);
-        }}
-        onFocus={() => {
-          handleDirectInteraction();
-        }}
-        onClick={() => {
-          handleDirectInteraction();
-        }}
-        className={`w-full p-4 border border-gray-200 rounded-lg ${fontSizes.content} focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all`}
-        rows={6} /* Limit to 6 visible rows maximum */
-        placeholder={section.placeholder || "Enter your content here..."}
-        style={{ lineHeight: useLargerFonts ? '1.6' : '1.5' }}
-      />}
-      
-      {/* Mark complete button - Always enabled if content has been modified */}
-      <div className="mt-4 flex justify-end">
-        <button
-          onClick={(e) => {
-            handleFirstVersionFinished();
+      {/* Section content with positioned complete button */}
+      <div className="relative">
+        {/* Text areas for all section types */}
+        <textarea
+          ref={textareaRef}
+          value={typeof userInputs[section.id] === 'string' ? userInputs[section.id] : ''}
+          onChange={(e) => {
+            handleInputChange(section.id, e.target.value);
           }}
-          disabled={loading || (!hasUserModifiedContent() && !isCompleted)}
-          className={`px-4 py-2 rounded-lg ${fontSizes.button} font-medium ${
-            !loading && (hasUserModifiedContent() || isCompleted)
-              ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          {loading ? 'Processing...' : 'Mark Complete'}
-        </button>
+          onFocus={() => {
+            handleDirectInteraction();
+          }}
+          onClick={() => {
+            handleDirectInteraction();
+          }}
+          className={`w-full p-4 border border-gray-200 rounded-lg ${fontSizes.content} focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all`}
+          rows={6} /* Limit to 6 visible rows maximum */
+          placeholder={section.placeholder || "Enter your content here..."}
+          style={{ lineHeight: useLargerFonts ? '1.6' : '1.5' }}
+        />
+        
+        {/* Mark complete button that hovers at the bottom right */}
+        <div className="absolute bottom-3 right-3">
+          <button
+            onClick={() => handleFirstVersionFinished()}
+            disabled={loading || (!hasUserModifiedContent() && !isCompleted)}
+            className={`px-4 py-2 rounded-lg ${fontSizes.button} font-medium shadow-md hover:shadow-lg transition-shadow ${
+              !loading && (hasUserModifiedContent() || isCompleted)
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            {loading ? 'Processing...' : 'Mark Complete'}
+          </button>
+        </div>
       </div>
     </div>
   );
