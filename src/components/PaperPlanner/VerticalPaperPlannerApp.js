@@ -146,24 +146,37 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
+  // Create a simpler version of the export and reset functions
+  // These will be passed to the header component
+  const handleReset = () => {
+    setShowConfirmDialog(true);
+  };
+  
+  const handleExport = () => {
+    if (typeof exportProject === 'function') {
+      exportProject();
+    } else {
+      console.error("Export function is not available");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Full width content */}
-      <div className="w-full pb-12">
+      <div className="container mx-auto">
         {/* Header Component with proper props */}
         <AppHeader
           activeSection={activeSection}
           setActiveSection={setActiveSectionWithManualFlag}
           handleSectionChange={handleSectionChange}
           scrollToSection={scrollToSection}
-          resetProject={() => setShowConfirmDialog(true)} // Show dialog instead of direct reset
-          exportProject={exportProject} // Pass the exportProject function
+          resetProject={handleReset}  // Use the local handler
+          exportProject={handleExport} // Use the local handler
         />
         
         {/* Main content area with adjusted layout */}
-        <div className="flex">
-          {/* Left column - User editable sections - taking 1/2 width */}
-          <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
+        <div className="flex flex-col md:flex-row">
+          {/* Left column - User editable sections - taking proper width */}
+          <div className="w-full md:w-1/2 px-4 md:px-8 py-6" style={{ marginRight: '0', marginLeft: '0' }}>
             {localSectionContent.sections.map((section) => {
               const isCurrentSection = activeSection === section.id;
               const isCompleted = hasSectionContent(section.id);
