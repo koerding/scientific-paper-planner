@@ -5,39 +5,33 @@ import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
-import { 
-  improveBatchInstructions, 
-  updateSectionWithImprovedInstructions 
+import {
+  improveBatchInstructions,
+  updateSectionWithImprovedInstructions
 } from '../../services/instructionImprovementService';
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Paper Planner with:
- * - Full width user content
- * - Full-height instruction panel with "Improve" button
- * - Minimizable chat interface
- * - UPDATED: Removed philosophy handling and moved prompting to services
+ * Enhanced Paper Planner with debugging logs for instruction improvement.
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
-  // State tracking for active section
-  const [activeSection, setActiveSection] = useState('question'); // Default to question section
+  const [activeSection, setActiveSection] = useState('question');
   const [initialized, setInitialized] = useState(false);
   const sectionRefs = useRef({});
-  
-  // State for improved instructions
+
   const [localSectionContent, setLocalSectionContent] = useState(sectionContent);
-  const [improvingInstructions, setImprovingInstructions] = useState(false);
-  
+  const [improvingInstructions, setImprovingInstructions] = useState(false); // State for improvement loading
+
   const {
-    currentSection,
+    currentSection, // This is the section ID used for chat/API context
     userInputs,
     chatMessages,
     currentMessage,
-    loading,
+    loading, // This seems tied to chat loading, not instruction improvement
     showConfirmDialog,
     setCurrentMessage,
     setShowConfirmDialog,
-    handleSectionChange,
+    handleSectionChange, // Function to update currentSection ID
     handleInputChange,
     handleSendMessage,
     handleFirstVersionFinished,
@@ -45,179 +39,149 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     exportProject
   } = usePaperPlannerHook;
 
-  // Store refs for all sections
   useEffect(() => {
     localSectionContent.sections.forEach(section => {
       sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
     });
   }, [localSectionContent.sections]);
 
-  // Initialize with focus on question section and prefill content
   useEffect(() => {
     if (!initialized) {
-      // Set initial focus
       handleSectionChange('question');
       setActiveSection('question');
-      
-      // Pre-fill text for every section that's not already filled
       localSectionContent.sections.forEach(section => {
-        if (section.placeholder) {
-          if (!userInputs[section.id] || userInputs[section.id].trim() === '') {
-            handleInputChange(section.id, section.placeholder);
-          }
+        if (section.placeholder && (!userInputs[section.id] || userInputs[section.id].trim() === '')) {
+          handleInputChange(section.id, section.placeholder);
         }
       });
-      
       setInitialized(true);
     }
   }, [initialized, handleSectionChange, userInputs, handleInputChange, localSectionContent.sections]);
 
-  // Custom setActiveSection that updates both the active section and current section
   const setActiveSectionWithManualFlag = (sectionId) => {
-    setActiveSection(sectionId);
-    handleSectionChange(sectionId);
+    setActiveSection(sectionId); // Update the *active* section for UI focus/instructions
+    handleSectionChange(sectionId); // Update the *current* section for chat context etc.
   };
 
   const hasSectionContent = (sectionId) => {
-    // Get section content and placeholder
     const content = userInputs[sectionId] || '';
     const section = localSectionContent.sections.find(s => s.id === sectionId);
     const placeholder = section?.placeholder || '';
-    
-    // Check if content is a string before using trim
-    if (typeof content !== 'string') {
-      return false;
-    }
-    
-    // If content is completely empty, it's not completed
+    if (typeof content !== 'string') return false;
     if (!content || content.trim() === '') return false;
-    
-    // If content is exactly the placeholder, it's not completed
     if (content === placeholder) return false;
-    
-    // Otherwise, consider it completed (even if just slightly modified)
     return true;
   };
-  
-  // Scroll to a specific section
+
   const scrollToSection = (sectionId) => {
     if (sectionRefs.current[sectionId] && sectionRefs.current[sectionId].current) {
-      sectionRefs.current[sectionId].current.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      });
+      sectionRefs.current[sectionId].current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
-  // Get the current section object for instructions display
+  // Get the current section object based on the *active* section for display
   const getCurrentSection = () => {
     return localSectionContent.sections.find(s => s.id === activeSection) || null;
   };
-  
-  // Handle improving instructions with AI - no prompting here, delegated to service
+
+  // Handle improving instructions - with added logging
   const handleImproveInstructions = async () => {
+    console.log('[handleImproveInstructions] Clicked! Starting improvement process.'); // DEBUG LOG 1
     setImprovingInstructions(true);
-    
+
     try {
-      // Use the service function which contains all prompting logic
+      console.log('[handleImproveInstructions] Calling improveBatchInstructions service...'); // DEBUG LOG 2
       const result = await improveBatchInstructions(
         localSectionContent.sections,
         userInputs,
         localSectionContent
       );
-      
+      console.log('[handleImproveInstructions] Service returned:', result); // DEBUG LOG 3
+
       if (result.success && result.improvedInstructions) {
-        // Update our local section content
+        console.log('[handleImproveInstructions] Improvement successful. Updating section content state.'); // DEBUG LOG 4
         const updatedSections = updateSectionWithImprovedInstructions(
           localSectionContent,
           result.improvedInstructions
         );
-        
         setLocalSectionContent(updatedSections);
-        console.log("Instructions improved successfully");
+        console.log('[handleImproveInstructions] State update complete.'); // DEBUG LOG 5
       } else {
-        console.error("Failed to improve instructions:", result.message);
+        console.error("[handleImproveInstructions] Failed to improve instructions:", result.message);
       }
     } catch (error) {
-      console.error("Error in improvement process:", error);
+      console.error("[handleImproveInstructions] Error during improvement process:", error);
     } finally {
+      console.log('[handleImproveInstructions] Setting improvingInstructions state back to false.'); // DEBUG LOG 6
       setImprovingInstructions(false);
     }
   };
 
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Full width content */}
       <div className="w-full pb-12">
-        {/* Header Component */}
         <AppHeader
           activeSection={activeSection}
           setActiveSection={setActiveSectionWithManualFlag}
-          handleSectionChange={handleSectionChange}
+          handleSectionChange={handleSectionChange} // Pass the correct function if needed by header
           scrollToSection={scrollToSection}
-          resetProject={resetProject}
+          resetProject={() => setShowConfirmDialog(true)} // Show dialog on reset click
           exportProject={exportProject}
         />
-        
-        {/* Main content area with adjusted layout */}
+
         <div className="flex">
-          {/* Left column - User editable sections - taking 1/2 width */}
           <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
             {localSectionContent.sections.map((section) => {
-              const isCurrentSection = activeSection === section.id;
+              const isCurrentActive = activeSection === section.id;
               const isCompleted = hasSectionContent(section.id);
-              
+
               return (
                 <SectionCard
                   key={section.id}
                   section={section}
-                  isCurrentSection={isCurrentSection}
+                  isCurrentSection={isCurrentActive} // Pass active state for styling
                   isCompleted={isCompleted}
                   userInputs={userInputs}
                   handleInputChange={handleInputChange}
-                  handleFirstVersionFinished={handleFirstVersionFinished}
-                  loading={loading}
+                  handleFirstVersionFinished={handleFirstVersionFinished} // Ensure this uses the correct context
+                  loading={loading && currentSection === section.id} // Loading state specific to the section for chat/completion
                   sectionRef={sectionRefs.current[section.id]}
-                  onClick={() => {
+                  onClick={() => { // Renamed for clarity, handles focus/activation
                     setActiveSectionWithManualFlag(section.id);
                   }}
-                  setActiveSection={setActiveSectionWithManualFlag}
-                  handleSectionChange={handleSectionChange}
-                  useLargerFonts={true} // Enable larger fonts
+                  setActiveSection={setActiveSectionWithManualFlag} // Pass setter if needed internally
+                  handleSectionChange={handleSectionChange} // Pass if needed internally
+                  useLargerFonts={true}
                 />
               );
             })}
           </div>
         </div>
-        
-        {/* Footer */}
+
         <div className="text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6">
           <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
         </div>
-        
-        {/* Full-height instructions panel with improve button - prompting moved to service */}
-        <FullHeightInstructionsPanel 
-          currentSection={getCurrentSection()} 
-          userInputs={userInputs}
-          improveInstructions={handleImproveInstructions}
-          loading={loading || improvingInstructions}
+
+        <FullHeightInstructionsPanel
+          currentSection={getCurrentSection()} // Pass the currently *active* section for display
+          improveInstructions={handleImproveInstructions} // Pass the correctly defined handler
+          loading={improvingInstructions} // Pass the specific loading state for this action
         />
-        
-        {/* Minimizable chat interface */}
+
         <ModernChatInterface
-          currentSection={currentSection}
+          currentSection={currentSection} // Keep using currentSection for chat context
           chatMessages={chatMessages}
           currentMessage={currentMessage}
           setCurrentMessage={setCurrentMessage}
           handleSendMessage={handleSendMessage}
-          loading={loading}
+          loading={loading} // Pass the chat-specific loading state
         />
-        
-        {/* Confirmation Dialog */}
+
         <ConfirmDialog
           showConfirmDialog={showConfirmDialog}
           setShowConfirmDialog={setShowConfirmDialog}
-          resetProject={resetProject}
+          resetProject={resetProject} // Pass the actual reset function
         />
       </div>
     </div>
