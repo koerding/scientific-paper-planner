@@ -1,6 +1,7 @@
 /**
  * Service for interacting with the OpenAI API.
  * UPDATED: Added stricter check inside forEach loop in buildMessages to prevent processing undefined elements.
+ * Corrected syntax error (removed extra trailing brace).
  */
 // Reads API Key and Model from Environment Variables
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
@@ -104,4 +105,16 @@ export const callOpenAI = async (
 
     const responseContent = data.choices?.[0]?.message?.content?.trim();
     if (!responseContent) {
-        console.error("No response content found in API data:", data
+        console.error("No response content found in API data:", data);
+        throw new Error("Received empty or invalid response content from API.");
+    }
+    return responseContent;
+
+  } catch (error) {
+    console.error("Error calling OpenAI API:", error);
+    // Re-throw error so the calling service (instructionImprovementService) can handle it
+    throw error;
+  }
+};
+
+// Removed extra closing brace from here
