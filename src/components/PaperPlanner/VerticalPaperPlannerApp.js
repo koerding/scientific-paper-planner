@@ -15,30 +15,36 @@ import '../../styles/PaperPlanner.css';
  * Enhanced Paper Planner - Cleaned logs.
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
-  const [activeSection, setActiveSection] = useState('question'); // Tracks UI focus
+  const [activeSection, setActiveSection] = useState('question');
   const sectionRefs = useRef({});
 
-  // State for potentially modified instructions
-  const [localSectionContent, setLocalSectionContent] = useState(() => JSON.parse(JSON.stringify(sectionContent)));
+  // Use local state for instructions potentially modified by AI
+  const [localSectionContent, setLocalSectionContent] = useState(() => {
+      // Use deep copy on initial load to prevent mutation issues if sectionContent is used elsewhere
+      try {
+          return JSON.parse(JSON.stringify(sectionContent));
+      } catch (e) {
+          console.error("Failed to parse initial sectionContent", e);
+          return { sections: [] }; // Fallback
+      }
+  });
   const [improvingInstructions, setImprovingInstructions] = useState(false);
 
   const {
-    currentSection: currentSectionIdForChat, // From hook, used for chat context
+    currentSection: currentSectionIdForChat,
     userInputs,
     chatMessages,
     currentMessage,
-    loading: chatLoading, // Rename hook loading to avoid clash
+    loading: chatLoading,
     showConfirmDialog,
     setCurrentMessage,
     setShowConfirmDialog,
-    handleSectionChange, // From hook, updates chat context
+    handleSectionChange,
     handleInputChange,
     handleSendMessage,
     handleFirstVersionFinished,
-    resetProject,
+    resetProject: hookResetProject, // Rename to avoid conflict
     exportProject,
-    setUserInputs, // Need this to apply loaded data potentially
-    setChatMessages // Need this for loading chat
   } = usePaperPlannerHook;
 
   // Effect to map refs
@@ -52,29 +58,23 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   }, [localSectionContent.sections]);
 
-  // Effect for initial active section setting (runs only once)
-  useEffect(() => {
-      setActiveSection('question'); // Set initial UI focus
-      // handleSectionChange('question'); // Let hook handle initial context if needed via its own default
-  }, []); // Ensure this runs only once
-
-
-  // This effect logs changes, can be removed if things work
-  // useEffect(() => {
-  //   console.log(`[EFFECT log] localSectionContent changed. Active section ID: ${activeSection}`);
-  //   const currentData = getCurrentSectionData();
-  //   console.log("[EFFECT log] Instructions for current active section from state:", JSON.stringify(currentData?.instructions, null, 2));
-  // }, [localSectionContent, activeSection]);
+   // Effect for initial active section setting
+   useEffect(() => {
+       setActiveSection('question');
+       // Let the hook manage the initial chat context section
+       // handleSectionChange('question');
+   }, []);
 
 
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
-    handleSectionChange(sectionId); // Update context for chat/API calls if needed
+    handleSectionChange(sectionId); // Update context for chat/API calls
   };
 
+  // Helper to check if section has meaningful content beyond placeholder
   const hasSectionContent = (sectionId) => {
-    const content = userInputs[sectionId] || '';
-    const section = localSectionContent.sections.find(s => s.id === sectionId);
+    const content = userInputs[sectionId];
+    const section = localSectionContent.sections.find(s => s?.id === sectionId);
     const placeholder = section?.placeholder || '';
     const stringContent = typeof content === 'string' ? content : JSON.stringify(content);
     if (!stringContent || stringContent.trim() === '') return false;
@@ -83,11 +83,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   };
 
   const scrollToSection = (sectionId) => {
-    if (sectionRefs.current[sectionId] && sectionRefs.current[sectionId].current) {
+    if (sectionRefs.current[sectionId]?.current) {
       sectionRefs.current[sectionId].current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
+  // Get the current section data *from local state* for instructions display
   const getCurrentSectionData = () => {
     if (!localSectionContent || !Array.isArray(localSectionContent.sections)) {
         return null;
@@ -100,28 +101,33 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setImprovingInstructions(true);
     try {
       const result = await improveBatchInstructions(
-        localSectionContent.sections,
+        localSectionContent.sections, // Pass current sections (potentially already improved)
         userInputs,
-        localSectionContent // Pass the original structure for context
+        sectionContent // Pass original structure for context if needed by AI prompt generation
       );
 
       if (result.success && result.improvedInstructions && result.improvedInstructions.length > 0) {
         const updatedSections = updateSectionWithImprovedInstructions(
-          localSectionContent,
+          localSectionContent, // Update based on current local state
           result.improvedInstructions
         );
-        setLocalSectionContent(updatedSections); // Update the state with new instructions
+        setLocalSectionContent(updatedSections); // Set the new state
       } else {
         console.error("[handleImproveInstructions] Failed to improve instructions:", result.message || "No improved instructions returned.");
-        // TODO: Optionally show error to user in UI
       }
     } catch (error) {
       console.error("[handleImproveInstructions] Error during improvement process:", error);
-       // TODO: Optionally show error to user in UI
     } finally {
       setImprovingInstructions(false);
     }
   };
+
+   // Combine local reset logic with hook's reset logic
+   const handleResetRequest = () => {
+       hookResetProject(); // Call the hook's reset (clears storage, resets hook state)
+       setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent))); // Reset local instructions state
+       setActiveSection('question'); // Reset active section locally
+   };
 
   const sectionDataForPanel = getCurrentSectionData();
 
@@ -132,7 +138,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           activeSection={activeSection}
           setActiveSection={setActiveSectionWithManualFlag}
           scrollToSection={scrollToSection}
-          resetProject={() => setShowConfirmDialog(true)}
+          resetProject={() => setShowConfirmDialog(true)} // Trigger dialog
           exportProject={exportProject}
         />
 
@@ -141,22 +147,20 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.map((section) => {
               if (!section || !section.id) return null;
               const isCurrentActive = activeSection === section.id;
-              const isCompleted = hasSectionContent(section.id); // Determine completion based on content
+               // isCompleted might need refinement depending on desired logic without checklist
+              const isCompleted = hasSectionContent(section.id);
               return (
                 <SectionCard
                   key={section.id}
                   section={section}
                   isCurrentSection={isCurrentActive}
-                  isCompleted={isCompleted} // Pass completion status
+                  isCompleted={isCompleted}
                   userInputs={userInputs}
                   handleInputChange={handleInputChange}
-                   // Pass section ID to handler
                   handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
-                  loading={chatLoading && currentSectionIdForChat === section.id} // Use chat loading for this button? Or separate?
+                  loading={chatLoading && currentSectionIdForChat === section.id}
                   sectionRef={sectionRefs.current[section.id]}
-                  onClick={() => {
-                    setActiveSectionWithManualFlag(section.id);
-                  }}
+                  onClick={() => setActiveSectionWithManualFlag(section.id)}
                   useLargerFonts={true}
                 />
               );
@@ -169,24 +173,24 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         </div>
 
         <FullHeightInstructionsPanel
-          currentSection={sectionDataForPanel}
+          currentSection={sectionDataForPanel} // Pass data from local state
           improveInstructions={handleImproveInstructions}
-          loading={improvingInstructions} // Use the specific loading state
+          loading={improvingInstructions}
         />
 
         <ModernChatInterface
-          currentSection={currentSectionIdForChat} // Chat uses its own context section ID
+          currentSection={currentSectionIdForChat}
           chatMessages={chatMessages}
           currentMessage={currentMessage}
           setCurrentMessage={setCurrentMessage}
           handleSendMessage={handleSendMessage}
-          loading={chatLoading} // Use the chat-specific loading state
+          loading={chatLoading}
         />
 
         <ConfirmDialog
           showConfirmDialog={showConfirmDialog}
           setShowConfirmDialog={setShowConfirmDialog}
-          resetProject={resetProject}
+          resetProject={handleResetRequest} // Use combined reset handler
         />
       </div>
     </div>
