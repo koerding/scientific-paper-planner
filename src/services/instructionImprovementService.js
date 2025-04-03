@@ -1,46 +1,106 @@
 /**
  * Service for improving instructions based on user progress
- * UPDATED: Added safeLLMJsonParse function to handle JSON parsing errors
+ * UPDATED: Added robust JSON parsing for truncated responses
  */
 import { callOpenAI } from './openaiService';
 
 /**
- * Special JSON parser that handles common JSON errors from LLM responses
- * @param {string} text - The JSON string to parse
+ * Advanced JSON parser that handles truncated API responses
+ * @param {string} text - The JSON string to parse, possibly truncated
  * @returns {any} - The parsed JSON object
  */
-function safeLLMJsonParse(text) {
-  // First clean up the input - remove markdown code block markers if present
+function repairTruncatedJson(text) {
+  // First, check if we have a clean valid JSON already
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.log("First parse attempt failed, trying to repair...", e);
+  }
+
+  // Clean up any markdown formatting
   let cleanText = text.replace(/```json\s*/, '').replace(/```\s*$/, '');
   
-  // Try to parse directly first
+  // Fix trailing commas
+  cleanText = cleanText.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
+  
+  // Try to parse again after basic cleanup
   try {
     return JSON.parse(cleanText);
   } catch (e) {
-    console.log("First parse attempt failed, trying to fix common issues...", e);
+    console.log("Basic cleanup parse failed, checking for truncation...", e);
+  }
+  
+  // Check if we have a truncated JSON array
+  if (cleanText.trim().startsWith('[') && !cleanText.trim().endsWith(']')) {
+    console.log("Detected truncated JSON array, attempting to repair");
     
-    // Fix trailing commas in objects (common LLM error)
-    cleanText = cleanText.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
+    // Extract just the complete objects
+    const arrayItems = [];
+    let depth = 0;
+    let currentItem = '';
+    let inString = false;
+    let escapeNext = false;
     
-    try {
-      return JSON.parse(cleanText);
-    } catch (e) {
-      console.log("Second parse attempt failed, trying more aggressive fixes...", e);
+    for (let i = 0; i < cleanText.length; i++) {
+      const char = cleanText[i];
       
-      // Try even more aggressive cleaning - try to extract just the array part
-      const arrayMatch = cleanText.match(/\[\s*{[\s\S]*}\s*\]/);
-      if (arrayMatch) {
-        try {
-          return JSON.parse(arrayMatch[0]);
-        } catch (e) {
-          console.log("Array extraction parse failed", e);
+      // Handle string detection with escape sequences
+      if (char === '\\' && !escapeNext) {
+        escapeNext = true;
+        currentItem += char;
+        continue;
+      }
+      
+      if (char === '"' && !escapeNext) {
+        inString = !inString;
+      }
+      
+      escapeNext = false;
+      
+      // Only count braces when not in a string
+      if (!inString) {
+        if (char === '{') depth++;
+        if (char === '}') depth--;
+        
+        // When we close an object at the top level, we've completed an item
+        if (depth === 0 && char === '}') {
+          currentItem += char;
+          // We've found a complete object
+          try {
+            // Verify it's a valid JSON object
+            const parsedItem = JSON.parse(currentItem);
+            arrayItems.push(parsedItem);
+            currentItem = '';
+            // Skip any commas or whitespace
+            while (i + 1 < cleanText.length && 
+                  (cleanText[i + 1] === ',' || 
+                   cleanText[i + 1] === ' ' || 
+                   cleanText[i + 1] === '\n' || 
+                   cleanText[i + 1] === '\r' || 
+                   cleanText[i + 1] === '\t')) {
+              i++;
+            }
+          } catch (e) {
+            console.log("Found invalid JSON object, skipping:", currentItem);
+            currentItem = '';
+          }
+          continue;
         }
       }
       
-      // If we get here, we couldn't parse it - throw the original error
-      throw new Error("Could not parse JSON even after cleaning: " + e.message);
+      // Add character to current item
+      currentItem += char;
+    }
+    
+    // If we extracted at least one complete object
+    if (arrayItems.length > 0) {
+      console.log(`Successfully extracted ${arrayItems.length} complete objects from truncated JSON`);
+      return arrayItems;
     }
   }
+  
+  // If we couldn't fix it with any method above, throw an error
+  throw new Error("Could not repair the JSON: it may be severely truncated or malformed");
 }
 
 /**
@@ -93,7 +153,7 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No valid sections with progress to improve" };
     }
 
-    // *** Build the REVISED prompt for the AI ***
+    // *** Build the user-improved prompt for the AI ***
     const prompt = `
 I need you to act as a helpful and encouraging editor improving instruction content for a scientific paper planning tool that is used by PhD students. The user has made progress on some sections, and the instructions MUST be updated based on their progress so far.
 
@@ -105,12 +165,17 @@ Your task is, FOR EACH SECTION PROVIDED:
 1. **Analyze** the 'userContent' to understand what the user has already addressed well regarding the goals in 'instructionsText'.
 2. **Start** your response for 'instructionsText' with a brief (1-2 sentence) positive acknowledgement of the specific points the user has successfully covered (e.g., "Great job clearly defining the research question!").
 3. **Then, critically EDIT** the *original* 'instructionsText'. Your **PRIMARY GOAL** is to **REMOVE** sentences or paragraphs that are now no longer helpful to them because the user's content already covers that point. Focus the remaining text *only* on what the user still needs to do or improve for that specific section.
-4. **If, after editing, you find the user has addressed *all* the key points from the original instructions**, DO NOT provide minimal remaining instructions. Instead, replace the *entire* instruction text with a clear, positive, congratulatory message acknowledging all the points they are doing right already. After all, they've completed the main goals for this section (e.g., "Excellent work on this section! You've addressed all the key points regarding X, Y,... and Z. Ready for the next step!").
+4. **If, after editing, you find the user has addressed *****all***** the key points from the original instructions**, DO NOT provide minimal remaining instructions. Instead, replace the *entire* instruction text with a clear, positive, congratulatory message acknowledging all the points they are doing right already. After all, they've completed the main goals for this section (e.g., "Excellent work on this section! You've addressed all the key points regarding X, Y,... and Z. Ready for the next step!").
 5. **Otherwise (if points remain),** append the edited, focused, and likely shorter remaining instructions after your positive preamble (from step 2).
 6. Maintain a helpful and encouraging tone throughout. Preserve necessary markdown formatting (like ### headings) in the edited text.
 7. Return the **complete, updated instruction text** (which might be just the positive preamble, the preamble plus remaining instructions, or the congratulatory message) inside the 'instructionsText' field for that section.
 
-IMPORTANT: When providing your JSON response, DO NOT use trailing commas in JSON objects as they are not valid JSON. For example, use {"id": "value", "key": "value"} NOT {"id": "value", "key": "value",}
+IMPORTANT FORMATTING RULES:
+1. JSON responses must be valid without trailing commas
+2. Avoid excessively long instructionsText values that might get truncated
+3. Keep the total response under 4000 characters if possible
+4. DO NOT use trailing commas in JSON objects as they are not valid JSON
+5. For example, use {"id": "value", "key": "value"} NOT {"id": "value", "key": "value",}
 
 Here are the sections to improve:
 ${JSON.stringify(sectionsData, null, 2)}
@@ -122,7 +187,7 @@ Respond ONLY with a valid JSON array containing objects for EACH section ID list
     "instructionsText": "Positive preamble + edited instructions text OR congratulatory message here..."
   }
 ]
-Ensure the output is ONLY the JSON array, starting with '[' and ending with ']', and DO NOT include trailing commas.
+Ensure the output is ONLY the JSON array, starting with '[' and ending with ']', and DO NOT include trailing commas or markdown formatting around the JSON.
 `;
 
     console.log("[Instruction Improvement] Sending batch request to OpenAI for sections:", sectionsWithProgress.join(', '));
@@ -132,34 +197,84 @@ Ensure the output is ONLY the JSON array, starting with '[' and ending with ']',
         prompt,
         "improve_instructions_batch",
         userInputs,
-        sectionsToPassToOpenAI
+        sectionsToPassToOpenAI,
+        { max_tokens: 2000 } // Limit token length to avoid truncation
     );
 
-    // Parse the response
+    // Parse the response with our robust parser
     let improvedInstructions;
     try {
-      const jsonRegex = /(\[[\s\S]*\])/;
-      const jsonMatch = response.match(jsonRegex);
-      if (jsonMatch && jsonMatch[0]) {
-        const extractedJson = jsonMatch[0];
+      // Log the raw response for debugging
+      console.log("Raw response from API:", response);
+      
+      // Use our robust parser
+      improvedInstructions = repairTruncatedJson(response);
+      
+      // Ensure we have an array
+      if (!Array.isArray(improvedInstructions)) {
+        // Try to extract array from the response using regex
+        const jsonRegex = /(\[[\s\S]*\])/;
+        const jsonMatch = response.match(jsonRegex);
+        if (jsonMatch && jsonMatch[0]) {
+          try {
+            improvedInstructions = repairTruncatedJson(jsonMatch[0]);
+          } catch (err) {
+            console.warn("Failed to extract with regex:", err);
+          }
+        }
         
-        // Use our safe parser instead of standard JSON.parse
-        improvedInstructions = safeLLMJsonParse(extractedJson);
-        
+        // If still not an array, look for the array brackets and try to extract
         if (!Array.isArray(improvedInstructions)) {
-            throw new Error("Parsed response is not an array.");
+          const startIdx = response.indexOf('[');
+          if (startIdx !== -1) {
+            // Extract everything from the opening bracket
+            const partial = response.substring(startIdx);
+            try {
+              improvedInstructions = repairTruncatedJson(partial);
+            } catch (err) {
+              console.warn("Failed to extract from bracket:", err);
+            }
+          }
         }
-        const isValid = improvedInstructions.every(item => item && typeof item.id === 'string' && typeof item.instructionsText === 'string');
-        if (!isValid) {
-            console.warn("Parsed response contains items with missing id or instructionsText.", improvedInstructions);
-            improvedInstructions = improvedInstructions.filter(item => item && typeof item.id === 'string' && typeof item.instructionsText === 'string');
-            if(improvedInstructions.length === 0) throw new Error("No valid items found after filtering parsed response.");
+        
+        // If still not an array, try one more approach - manually looking for objects
+        if (!Array.isArray(improvedInstructions)) {
+          // Look for objects with id and instructionsText
+          const idMatches = [...response.matchAll(/"id"\s*:\s*"([^"]+)"/g)];
+          const textMatches = [...response.matchAll(/"instructionsText"\s*:\s*"([^"]+)"/g)];
+          
+          if (idMatches.length > 0 && textMatches.length > 0) {
+            improvedInstructions = [];
+            for (let i = 0; i < Math.min(idMatches.length, textMatches.length); i++) {
+              improvedInstructions.push({
+                id: idMatches[i][1],
+                instructionsText: textMatches[i][1].replace(/\\n/g, '\n')
+              });
+            }
+          }
         }
-        console.log(`[Instruction Improvement] Parsed ${improvedInstructions.length} improved sections.`);
-      } else {
-        console.error("Raw response from AI:", response);
-        throw new Error("Could not extract valid JSON array from response.");
+        
+        // If all attempts failed, throw an error
+        if (!Array.isArray(improvedInstructions)) {
+          throw new Error("Parsed response is not an array and could not be converted to one.");
+        }
       }
+      
+      // Validate object structure
+      const isValid = improvedInstructions.every(item => 
+        item && typeof item.id === 'string' && typeof item.instructionsText === 'string');
+      
+      if (!isValid) {
+        console.warn("Parsed response contains items with missing id or instructionsText:", improvedInstructions);
+        improvedInstructions = improvedInstructions.filter(item => 
+          item && typeof item.id === 'string' && typeof item.instructionsText === 'string');
+        
+        if(improvedInstructions.length === 0) {
+          throw new Error("No valid items found after filtering parsed response.");
+        }
+      }
+      
+      console.log(`[Instruction Improvement] Successfully parsed ${improvedInstructions.length} improved sections.`);
     } catch (error) {
       console.error("Error parsing instruction improvement response:", error);
       console.log("Raw response received:", response);
@@ -182,10 +297,13 @@ Ensure the output is ONLY the JSON array, starting with '[' and ending with ']',
   }
 };
 
-
-// Keep the updateSectionWithImprovedInstructions function unchanged
+/**
+ * Updates section content with improved instructions
+ * @param {Object} sectionContent - The original section content object
+ * @param {Array} improvedInstructions - Array of improved instruction objects
+ * @returns {Object} - Updated section content object
+ */
 export const updateSectionWithImprovedInstructions = (sectionContent, improvedInstructions) => {
- // ... (function code remains the same as last version) ...
  let updatedSectionsData;
  try {
      if (typeof sectionContent !== 'object' || sectionContent === null) {
