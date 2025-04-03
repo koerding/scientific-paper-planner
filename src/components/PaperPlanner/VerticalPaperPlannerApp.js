@@ -1,10 +1,11 @@
+// Correct imports section for VerticalPaperPlannerApp.js
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
 import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
-import ModernChatInterface from '../chat/ModernChatInterface';
+import ModernChatInterface from '../chat/ModernChatInterface'; // Ensure this path is correct
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
