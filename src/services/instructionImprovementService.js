@@ -1,6 +1,6 @@
 /**
  * Service for improving instructions based on user progress
- * UPDATED: Added robust JSON parsing for truncated responses
+ * UPDATED: Added robust JSON parsing for truncated responses and fixed markdown formatting
  */
 import { callOpenAI } from './openaiService';
 
@@ -104,6 +104,35 @@ function repairTruncatedJson(text) {
 }
 
 /**
+ * Function to fix common markdown formatting issues in improved instructions
+ * @param {string} text - The instruction text to fix
+ * @returns {string} - The fixed instruction text
+ */
+function fixMarkdownFormatting(text) {
+  if (!text) return text;
+  
+  // Fix headings that don't have proper spacing
+  let fixed = text.replace(/([^\n])###/g, '$1\n\n###');
+  
+  // Ensure headings have a line break after them
+  fixed = fixed.replace(/###([^#\n]+)([^\n])/g, '### $1\n$2');
+  
+  // Ensure proper spacing between paragraphs
+  fixed = fixed.replace(/\*\*([^*]+)\*\*([^\n])/g, '**$1**\n$2');
+  
+  // Make sure bullet points have proper spacing
+  fixed = fixed.replace(/([^\n])\* /g, '$1\n\n* ');
+  
+  // Add space after congratulatory messages before starting instructions
+  fixed = fixed.replace(/(Excellent work|Great job|Well done)([^!]*)!([^\n])/g, '$1$2!\n\n$3');
+  
+  // Ensure double line breaks between sections
+  fixed = fixed.replace(/([.!?])([A-Z])/g, '$1\n\n$2');
+  
+  return fixed;
+}
+
+/**
  * Improves instructions for multiple sections
  * @param {Array} currentSections - Array of section objects (full list)
  * @param {Object} userInputs - User inputs for all sections
@@ -167,8 +196,15 @@ Your task is, FOR EACH SECTION PROVIDED:
 3. **Then, critically EDIT** the *original* 'instructionsText'. Your **PRIMARY GOAL** is to **REMOVE** sentences or paragraphs that are now no longer helpful to them because the user's content already covers that point. Focus the remaining text *only* on what the user still needs to do or improve for that specific section. Make sure you remove the points if a reasonable person can argue that the point is satisfied by the text.
 4. **If, after editing, you find the user has addressed *****all***** the key points from the original instructions**, DO NOT provide minimal remaining instructions. Instead, replace the *entire* instruction text with a clear, positive, congratulatory message acknowledging all the points they are doing right already. After all, they've completed the main goals for this section (e.g., "Excellent work on this section! You've addressed all the key points regarding X, Y,... and Z. Ready for the next step!").
 5. **Otherwise (if points remain),** append the edited, focused, and likely shorter remaining instructions after your positive preamble (from step 2).
-6. Maintain a helpful and encouraging tone throughout. Preserve necessary markdown formatting (like ### headings) in the edited text.
-7. Return the **complete, updated instruction text** (which might be just the positive preamble, the preamble plus remaining instructions, or the congratulatory message) inside the 'instructionsText' field for that section.
+6. Maintain a helpful and encouraging tone throughout.
+
+CRITICAL MARKDOWN FORMATTING REQUIREMENTS:
+1. Preserve ALL markdown formatting (like ### headings, **bold text**, lists) in the edited text
+2. Always leave a blank line after each heading (###)
+3. Always leave a blank line between paragraphs
+4. Always leave a blank line after your positive preamble and before starting the actual instructions
+5. Ensure proper spacing for bullet points and numbered lists
+6. Make sure headings and sections are clearly separated with blank lines
 
 IMPORTANT FORMATTING RULES:
 1. JSON responses must be valid without trailing commas
@@ -340,7 +376,11 @@ export const updateSectionWithImprovedInstructions = (sectionContent, improvedIn
          updatedSectionsData.sections[sectionIndex].instructions = {};
           console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
      }
-     updatedSectionsData.sections[sectionIndex].instructions.text = improvement.instructionsText;
+     
+     // Apply markdown formatting fixes before storing the updated instructions
+     const fixedText = fixMarkdownFormatting(improvement.instructionsText);
+     updatedSectionsData.sections[sectionIndex].instructions.text = fixedText;
+     
      delete updatedSectionsData.sections[sectionIndex].instructions.description;
      delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
    } else {
