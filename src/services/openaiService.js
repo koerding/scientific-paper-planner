@@ -1,107 +1,122 @@
-// src/services/openaiService.js
-// UPDATED: Removed philosophy special handling
+/**
+ * Service for interacting with the OpenAI API.
+ * UPDATED: Added detailed logging inside buildMessages.
+ */
+import { getStoredPreferences } from './storageService';
 
-// Replace this with your actual OpenAI API key (this will use the environment variable)
-const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
+// Function to build the message history with context
+const buildMessages = (prompt, contextType, userInputs, sections) => {
+  const systemMessage = `You are a helpful assistant for planning scientific papers. Context type: ${contextType}.`;
+  const messages = [{ role: 'system', content: systemMessage }];
 
-// This is a helper function to call the OpenAI API
-export const callOpenAI = async (prompt, currentSection, userInputs, sections) => {
-  try {
-    // Get the voice settings from sectionContent
-    const voiceSettings = {
-      name: "Konrad Kording",
-      description: "I am Konrad Kording. I have a somewhat unconventional informal voice. I am a worldclass scientific writer.",
-      conversationStyle: "I'd like you to have a Socratic conversation with me—ask me thoughtful, guiding questions to help me think more clearly about a topic. But please use natural, modern language—no old-timey 'thee' or 'thou,' and no dramatic philosopher speak. Just keep it conversational and smart."
-    };
-    
-    // Find the current section object
-    const currentSectionObj = sections.find(s => s.id === currentSection);
-    
-    // Helper to format instructions text
-    const formatInstructions = (section) => {
-      return `${section.instructions.title}\n\n${section.instructions.description}\n\n${section.instructions.workStep.title}\n\n${section.instructions.workStep.content}`;
-    };
-    
-    // Construct the system message based on current section
-    let systemMessage = `You are an AI assistant helping a scientist design a research project. ${voiceSettings.description}`;
-    
-    // Add the section-specific instructions
-    systemMessage += "\n\nHere are the instructions for this section:\n" + formatInstructions(currentSectionObj);
-    
-    // Add specific LLM instructions for this section
-    if (currentSectionObj.llmInstructions) {
-      systemMessage += "\n\nFollow these specific guidelines when responding:\n" + currentSectionObj.llmInstructions;
-    }
-    
-    // Add the conversation style from voice settings
-    systemMessage += "\n\n" + voiceSettings.conversationStyle;
-    
-    // Build conversation history with context
-    const contextMessages = [];
-    
-    // Add the complete context from ALL sections
-    contextMessages.push({
-      role: "system",
-      content: "CONTEXT FROM ALL SECTIONS:\n\n" + 
-        sections.map(section => {
-          // All sections are now treated as text
-          return `SECTION: ${section.title}\n${userInputs[section.id] || "Not completed yet"}`;
-        }).join('\n\n')
+  // *** DEBUG LOG: Log the entire received sections array ***
+  console.log(`[openaiService buildMessages] Received sections (${Array.isArray(sections) ? sections.length : 'Not an array'}):`, JSON.stringify(sections, null, 2)); // Pretty print JSON
+
+  // Add section context safely
+  if (Array.isArray(sections)) {
+    sections.forEach((section, index) => { // Add index for logging
+
+      // *** DEBUG LOG: Log each section being processed ***
+      console.log(`[openaiService buildMessages] Processing section index ${index}:`, JSON.stringify(section)); // Log the raw section object
+
+      // Check if section and its properties are valid before accessing
+      if (section && typeof section === 'object' && section.id && section.title && section.instructions) {
+          const instructionDesc = section.instructions.description || '';
+          const workStepTitle = section.instructions.workStep?.title || '';
+          const workStepContent = section.instructions.workStep?.content || '';
+
+          const instructionText = `${instructionDesc} ${workStepTitle} ${workStepContent}`.trim();
+          const userInput = userInputs && section.id ? (userInputs[section.id] || '') : ''; // Should be string or check type
+
+          // Ensure userInput is a string if userInputs exists
+          const safeUserInput = (typeof userInput === 'string' ? userInput : JSON.stringify(userInput)) || 'N/A';
+
+          messages.push({
+              role: 'user', // Or 'assistant'? Decide based on desired AI perspective
+              content: `Context for Section "${section.title}" (ID: ${section.id}):
+Instructions: ${instructionText || 'N/A'}
+Current User Input: ${safeUserInput}`
+          });
+      } else {
+          // Log if a section object is invalid/incomplete
+          console.error(`[openaiService buildMessages] Invalid or incomplete section object at index ${index}:`, section);
+      }
     });
-    
-    // Add the specific content of the current section for emphasis
-    if (userInputs[currentSection]) {
-      contextMessages.push({
-        role: "system",
-        content: `CURRENT FOCUS: The user is working on the "${sections.find(s => s.id === currentSection).title}" section with the following current content:\n\n${userInputs[currentSection]}`
-      });
-    }
-    
-    // Building the messages array for the API call
-    const messages = [
-      { role: "system", content: systemMessage },
-      ...contextMessages,
-      { role: "user", content: prompt }
-    ];
+  } else {
+       console.error("[openaiService buildMessages] Received 'sections' argument is not an array:", sections);
+  }
 
-    // Log the complete message payload being sent to OpenAI
-    console.log("\n=== SENDING TO CHATGPT ===");
-    console.log("Section:", currentSection);
-    console.log("User Query:", prompt);
-    console.log("Complete Message Payload:");
-    console.log(JSON.stringify(messages, null, 2));
-    console.log("===============================\n");
+  // Add the main prompt message
+  messages.push({ role: 'user', content: prompt });
+  console.log("[openaiService buildMessages] Final messages array:", messages); // Log final structure
+  return messages;
+};
 
-    // Make the API call
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+
+// Main function to call the OpenAI API
+export const callOpenAI = async (
+    prompt,
+    contextType = "general",
+    userInputs = {},
+    sections = [], // Default to empty array
+    options = {}
+ ) => {
+  const { apiKey, model } = getStoredPreferences();
+  const apiUrl = "https://api.openai.com/v1/chat/completions"; // Standard API endpoint
+
+  if (!apiKey) {
+    console.error("OpenAI API key is missing.");
+    return "Error: OpenAI API key not configured.";
+  }
+
+  console.log(`[openaiService callOpenAI] Calling API. Context: ${contextType}, Model: ${model}`);
+
+  const messages = buildMessages(prompt, contextType, userInputs, sections);
+
+  const body = JSON.stringify({
+    model: model || "gpt-3.5-turbo", // Default model if not set
+    messages: messages,
+    temperature: options.temperature ?? 0.7, // Use provided temp or default
+    max_tokens: options.max_tokens ?? 1024, // Use provided max_tokens or default
+    // Add other parameters like top_p, frequency_penalty, presence_penalty if needed
+  });
+
+  try {
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
+        Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: "gpt-4-turbo", // You can change this to a different model as needed
-        messages: messages,
-        temperature: 0.7
-      })
+      body: body,
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenAI API Error Response:", errorText);
-      throw new Error(`API call failed with status: ${response.status} - ${errorText}`);
+      const errorBody = await response.json();
+      console.error("OpenAI API Error:", response.status, errorBody);
+      throw new Error(
+        `API request failed with status ${response.status}: ${
+          errorBody?.error?.message || response.statusText
+        }`
+      );
     }
 
     const data = await response.json();
-    
-    // Log the response from OpenAI
-    console.log("\n=== RECEIVED FROM CHATGPT ===");
-    console.log("Response:", data.choices[0].message.content.substring(0, 100) + "...");
-    console.log("===============================\n");
-    
-    return data.choices[0].message.content;
+    console.log("[openaiService callOpenAI] API Response OK:", data);
+
+    // Extract the response content
+    const responseContent = data.choices?.[0]?.message?.content?.trim();
+    if (!responseContent) {
+        console.error("No response content found in API data:", data);
+        throw new Error("Received empty or invalid response content from API.");
+    }
+    return responseContent;
+
   } catch (error) {
-    console.error("Error calling OpenAI API:", error);
-    return "Sorry, there was an error communicating with the AI assistant. Please check the browser console for more details.";
+    console.error("Error calling OpenAI API:", error); // Log the specific error here
+    // Return a more informative error message if possible
+    return `Sorry, there was an error communicating with the AI assistant. Please check the browser console for more details. (Error: ${error.message})`;
   }
 };
+
+// You might have other helper functions or constants here
