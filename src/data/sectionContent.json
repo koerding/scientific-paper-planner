@@ -253,13 +253,13 @@
        "completionChecklist": {
          "title": "ABSTRACT CHECKLIST:",
          "items": [
-           { "text": "Draft abstract following suggested structure", "checkPattern": "Background:|Objective:|Methods:|Results:|Conclusion:|Implications:" }, // Check for keywords indicating structure
+           { "text": "Draft abstract following suggested structure", "checkPattern": "Background:|Objective:|Methods:|Results:|Conclusion:|Implications:" }, 
            { "text": "Include background context and significance", "checkPattern": "Background:|Significance:|Why it matters" },
            { "text": "State objective/question/hypothesis", "checkPattern": "Objective:|Question:|Hypothesis:|Goal:" },
            { "text": "Summarize key methods", "checkPattern": "Methods:|Approach:|Design:|Participants:" },
            { "text": "State expected results & link to objective", "checkPattern": "Results:|Findings:|distinguish between hypotheses|address the objective" },
            { "text": "State conclusion/implications", "checkPattern": "Conclusion:|Implications:" },
-           { "text": "Adheres roughly to 1-2 sentences per component", "checkPattern": "." } // Primarily for user self-check
+           { "text": "Adheres roughly to 1-2 sentences per component", "checkPattern": "." } 
           ]
         },
       "placeholder": "Background: [Introduce field, gap, significance. 1-2 sentences]\n\nObjective/Question: [State primary aim/question/hypothesis. 1 sentence]\n\nMethods: [Briefly describe design, participants, key procedures. 1-2 sentences]\n\n(Expected) Results: [Summarize anticipated main finding and how it addresses the objective. 1-2 sentences]\n\nConclusion/Implications: [State main conclusion and broader impact. 1-2 sentences]",
