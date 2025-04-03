@@ -1,10 +1,10 @@
 /**
  * Storage service for handling localStorage operations
- * UPDATED: loadFromStorage now merges saved data with initial state.
+ * UPDATED: loadFromStorage now correctly merges, prioritizing non-empty/non-placeholder saved data.
  */
 import sectionContent from '../data/sectionContent.json'; // Import section data for placeholders
 
-// Helper function to create initial state from placeholders (duplicate from hook for safety or import if possible)
+// Helper function to create initial state from placeholders
 const createInitialInputs = () => {
   const initialInputs = {};
   if (sectionContent && Array.isArray(sectionContent.sections)) {
@@ -14,7 +14,7 @@ const createInitialInputs = () => {
       }
     });
   } else {
-     // Define fallbacks if JSON loading fails
+     console.error("Failed to load sectionContent or sections array is missing.");
      const fallbackSections = ['question', 'hypothesis', 'experiment', 'analysis', 'process', 'abstract'];
      fallbackSections.forEach(id => { initialInputs[id] = ''; });
   }
@@ -24,9 +24,9 @@ const createInitialInputs = () => {
 
 export const saveToStorage = (userInputs, chatMessages) => {
   try {
-    // Only save non-placeholder values? Or save everything? Saving everything is simpler.
     localStorage.setItem('paperPlannerData', JSON.stringify(userInputs));
-    localStorage.setItem('paperPlannerChat', JSON.stringify(chatMessages));
+    // Ensure chatMessages being saved is an array or object, not undefined/null
+    localStorage.setItem('paperPlannerChat', JSON.stringify(chatMessages || {}));
     return true;
   } catch (error) {
     console.error('Error saving progress:', error);
@@ -42,7 +42,7 @@ export const saveToStorage = (userInputs, chatMessages) => {
 export const loadFromStorage = (setUserInputs, setChatMessages) => {
   const initialInputs = createInitialInputs(); // Get default state with placeholders
   let loadedInputs = {};
-  let loadedChat = [];
+  let loadedChat = {}; // Use object for chat messages keyed by section
   let dataWasLoaded = false;
 
   try {
@@ -53,29 +53,59 @@ export const loadFromStorage = (setUserInputs, setChatMessages) => {
       loadedInputs = JSON.parse(savedInputsString);
       dataWasLoaded = true;
        console.log("Loaded inputs from storage:", loadedInputs);
+    } else {
+        console.log("No saved inputs found in storage.");
     }
 
     if (savedChatString) {
       loadedChat = JSON.parse(savedChatString);
-      if(!Array.isArray(loadedChat)) loadedChat = []; // Ensure it's an array
-       console.log("Loaded chat from storage:", loadedChat);
+       // Ensure loadedChat is an object; if not (e.g., old array format), reset or migrate
+      if (typeof loadedChat !== 'object' || loadedChat === null || Array.isArray(loadedChat)) {
+          console.warn("Loaded chat messages were not in the expected object format. Resetting chat.");
+          loadedChat = {};
+      } else {
+          console.log("Loaded chat from storage:", loadedChat);
+      }
+    } else {
+        console.log("No saved chat found in storage.");
     }
 
-    // Merge loaded data with initial state (placeholders)
-    // This ensures any section *not* in saved data retains its placeholder
-    // And any section *in* saved data uses the saved value
-    const finalInputs = { ...initialInputs, ...loadedInputs };
+    // *** FIX: Smart merge logic ***
+    const finalInputs = {};
+    Object.keys(initialInputs).forEach(sectionId => {
+      const initialValue = initialInputs[sectionId];
+      const loadedValue = loadedInputs[sectionId];
 
-    setUserInputs(finalInputs); // Set the merged state
-    setChatMessages(loadedChat);
+      // Use loaded value ONLY if it exists and is different from the placeholder AND not just empty space
+      if (loadedValue !== undefined && loadedValue !== null && String(loadedValue).trim() !== '' && loadedValue !== initialValue) {
+        finalInputs[sectionId] = loadedValue;
+      } else {
+        finalInputs[sectionId] = initialValue; // Otherwise, use the placeholder
+      }
+    });
 
-    return dataWasLoaded; // Indicate if user data (not just placeholders) was found
+    console.log("Final merged inputs being set:", finalInputs);
+    setUserInputs(finalInputs); // Set the carefully merged state
+
+    // Initialize chat messages for all sections if they don't exist in loaded data
+    const finalChat = { ...loadedChat };
+     if (sectionContent && Array.isArray(sectionContent.sections)) {
+        sectionContent.sections.forEach(section => {
+            if (section && section.id && !finalChat[section.id]) {
+                finalChat[section.id] = []; // Ensure array exists for each section
+            }
+        });
+    }
+    setChatMessages(finalChat);
+
+
+    return dataWasLoaded;
 
   } catch (error) {
     console.error('Error loading progress:', error);
     // On error, set initial state
     setUserInputs(initialInputs);
-    setChatMessages([]);
+    setChatMessages(createInitialInputs()); // Use helper to create empty chat structure too maybe?
     return false;
   }
 };
