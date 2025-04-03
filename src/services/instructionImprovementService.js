@@ -1,5 +1,3 @@
-// src/services/instructionImprovementService.js
-
 /**
  * Service for improving instructions based on user progress
  */
