@@ -20,14 +20,13 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
       
       // Create the prompt for improvement
       const prompt = `
-      Review the user's progress on their scientific paper plan and provide more tailored instructions
-      for this section. Focus on what they still need to improve based on what they've already done.
-      
+      You are an editor tasked with streamlining scientific paper planning instructions based on what the user has already accomplished. Your job is primarily to REMOVE redundant or unnecessary guidance from the instructions.
+
       Current section: ${currentSection.title}
-      
+
       Current instructions:
       ${currentSection.instructions.description}
-      
+
       User's current content:
       ${currentSection.id === 'philosophy' 
         ? (userInputs.philosophy || []).map(id => {
@@ -36,13 +35,15 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
           }).join('\n')
         : userInputs[currentSection.id] || ''
       }
+
+      Instructions for editing:
+      1. PRIMARILY REMOVE parts of the instructions that are redundant or already addressed by the user
+      2. Keep the instructions concise and to the point
+      3. You may add AT MOST 1-2 short sentences if absolutely necessary
+      4. Maintain the same style and tone as the original
+      5. Don't add lengthy new explanations
       
-      Please provide updated instructions that:
-      1. Remove redundant advice for things they've already done well
-      2. Focus on what still needs improvement
-      3. Keep the same helpful tone
-      
-      Response format: Just provide the new instructions text that should replace the current instructions.
+      Response format: Provide ONLY the edited instructions text that should replace the current instructions.
       `;
       
       // Call the OpenAI API
