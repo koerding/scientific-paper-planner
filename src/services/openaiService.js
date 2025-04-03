@@ -1,8 +1,9 @@
 /**
  * Service for interacting with the OpenAI API.
- * UPDATED: Added detailed logging inside buildMessages.
+ * UPDATED: Reads API Key and Model from environment variables instead of storageService.
+ * Includes previous debugging logs inside buildMessages.
  */
-import { getStoredPreferences } from './storageService';
+// Removed: import { getStoredPreferences } from './storageService';
 
 // Function to build the message history with context
 const buildMessages = (prompt, contextType, userInputs, sections) => {
@@ -61,12 +62,16 @@ export const callOpenAI = async (
     sections = [], // Default to empty array
     options = {}
  ) => {
-  const { apiKey, model } = getStoredPreferences();
+  // *** FIX: Read API Key and Model from Environment Variables ***
+  const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+  const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo"; // Use env variable or default
+
   const apiUrl = "https://api.openai.com/v1/chat/completions"; // Standard API endpoint
 
   if (!apiKey) {
-    console.error("OpenAI API key is missing.");
-    return "Error: OpenAI API key not configured.";
+    console.error("OpenAI API key is missing. Ensure REACT_APP_OPENAI_API_KEY is set.");
+    // Return an error message that will be caught by the calling service
+    throw new Error("OpenAI API key not configured in environment variables.");
   }
 
   console.log(`[openaiService callOpenAI] Calling API. Context: ${contextType}, Model: ${model}`);
@@ -74,11 +79,10 @@ export const callOpenAI = async (
   const messages = buildMessages(prompt, contextType, userInputs, sections);
 
   const body = JSON.stringify({
-    model: model || "gpt-3.5-turbo", // Default model if not set
+    model: model, // Use the model from env var or default
     messages: messages,
     temperature: options.temperature ?? 0.7, // Use provided temp or default
     max_tokens: options.max_tokens ?? 1024, // Use provided max_tokens or default
-    // Add other parameters like top_p, frequency_penalty, presence_penalty if needed
   });
 
   try {
@@ -114,9 +118,7 @@ export const callOpenAI = async (
 
   } catch (error) {
     console.error("Error calling OpenAI API:", error); // Log the specific error here
-    // Return a more informative error message if possible
-    return `Sorry, there was an error communicating with the AI assistant. Please check the browser console for more details. (Error: ${error.message})`;
+    // Re-throw the error so the calling service can handle it appropriately
+    throw error; // Make sure the calling function (in instructionImprovementService) catches this
   }
 };
-
-// You might have other helper functions or constants here
