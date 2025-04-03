@@ -1,11 +1,7 @@
 /**
  * Storage service for handling localStorage operations
- * UPDATED: loadFromStorage now simply returns parsed data or nulls.
+ * UPDATED: loadFromStorage now simply returns parsed data or nulls. Merging happens in the hook.
  */
-import sectionContent from '../data/sectionContent.json';
-
-// Keep createInitialInputs helper if it's defined here, or ensure it's accessible where needed.
-// For consistency, let's assume it's defined in the hook now.
 
 export const saveToStorage = (userInputs, chatMessages) => {
   try {
@@ -20,11 +16,11 @@ export const saveToStorage = (userInputs, chatMessages) => {
 
 /**
  * Load user inputs and chat messages from localStorage.
- * @returns {object} - An object containing loadedInputs (or null) and loadedChat (or null).
+ * @returns {object} - An object containing loadedInputs (parsed object or null) and loadedChat (parsed object or null).
  */
 export const loadFromStorage = () => {
   let loadedInputs = null;
-  let loadedChat = null;
+  let loadedChat = null; // Keep as object keyed by section ID
 
   try {
     const savedInputsString = localStorage.getItem('paperPlannerData');
@@ -32,38 +28,39 @@ export const loadFromStorage = () => {
 
     if (savedInputsString) {
       loadedInputs = JSON.parse(savedInputsString);
-      console.log("Loaded inputs from storage:", loadedInputs);
+      console.log("[storageService] Loaded inputs from storage:", loadedInputs);
     } else {
-      console.log("No saved inputs found in storage.");
+      console.log("[storageService] No saved inputs found in storage.");
     }
 
     if (savedChatString) {
       loadedChat = JSON.parse(savedChatString);
-      if (typeof loadedChat !== 'object' || loadedChat === null) { // Allow array or object for chat for now
-          console.warn("Loaded chat messages might not be in the expected object format.", loadedChat);
-          // Handle migration or default if necessary, setting to null for now if invalid
-          if(Array.isArray(loadedChat) && loadedChat.length === 0) loadedChat = {}; // Convert empty array to empty object
-          else if (!Array.isArray(loadedChat) && typeof loadedChat !== 'object') loadedChat = null;
+      // Ensure it's an object; reset if invalid format found
+      if (typeof loadedChat !== 'object' || loadedChat === null || Array.isArray(loadedChat)) {
+          console.warn("[storageService] Loaded chat messages were not in the expected object format. Resetting chat.");
+          loadedChat = {};
+      } else {
+          console.log("[storageService] Loaded chat from storage:", loadedChat);
       }
-      console.log("Loaded chat from storage:", loadedChat);
-
     } else {
-      console.log("No saved chat found in storage.");
+        console.log("[storageService] No saved chat found in storage.");
+        loadedChat = {}; // Ensure it's an empty object if nothing is loaded
     }
 
   } catch (error) {
-    console.error('Error loading progress from storage:', error);
-    // Return nulls on error
-    loadedInputs = null;
-    loadedChat = null;
+    console.error('[storageService] Error loading progress from storage:', error);
+    loadedInputs = null; // Ensure nulls on error
+    loadedChat = {};
   }
 
-  return { loadedInputs, loadedChat }; // Return whatever was found (or null)
+  return { loadedInputs, loadedChat }; // Return whatever was found (or null/empty object)
 };
 
 
 export const clearStorage = () => {
   localStorage.removeItem('paperPlannerData');
   localStorage.removeItem('paperPlannerChat');
-   console.log("Cleared storage.");
+   console.log("[storageService] Cleared storage.");
 };
+
+// Removed createInitialInputs from here; it belongs in the hook using it.
