@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 
 /**
- * SectionCard component with larger fonts
+ * SectionCard component with focus behavior that only changes instruction panel
+ * when explicitly clicked on inputs
  */
 const SectionCard = ({
   section,
@@ -35,16 +36,9 @@ const SectionCard = ({
     button: 'text-sm'
   };
   
-  // When isCurrentSection changes, focus the textarea if this is the active section
-  useEffect(() => {
-    if (isCurrentSection && textareaRef.current && section.type !== 'checklist') {
-      // Only focus if not already focused to avoid stealing focus from another element
-      if (document.activeElement !== textareaRef.current) {
-        textareaRef.current.focus();
-      }
-    }
-  }, [isCurrentSection, section.type]);
-
+  // Only focus the textarea when this section becomes active due to explicit user interaction
+  // We removed auto-focusing behavior to prevent unwanted focus changes
+  
   // Check if content has been modified from placeholder
   const hasUserModifiedContent = () => {
     if (section.id === 'philosophy') {
@@ -58,8 +52,8 @@ const SectionCard = ({
     return content.trim() !== '' && content !== placeholder;
   };
 
-  // Force this section to be active when interacted with
-  const forceActiveSection = () => {
+  // Only set active section when user explicitly interacts with inputs
+  const handleDirectInteraction = () => {
     setActiveSection(section.id);
     handleSectionChange(section.id);
   };
@@ -72,12 +66,6 @@ const SectionCard = ({
         ${isCompleted ? 'border-2 border-green-500' : isCurrentSection ? 'border-2 border-indigo-500' : 'border border-gray-200'}
         ${isCurrentSection ? 'relative' : ''}
       `}
-      onClick={() => {
-        if (section.type !== 'checklist' && textareaRef.current) {
-          textareaRef.current.focus();
-        }
-        forceActiveSection();
-      }}
     >
       {/* Connection dot for active section */}
       {isCurrentSection && (
@@ -86,13 +74,7 @@ const SectionCard = ({
       
       {/* Section Header */}
       <div className="flex justify-between items-center mb-4">
-        <h2 
-          className={`font-bold ${fontSizes.title}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            forceActiveSection();
-          }}
-        >
+        <h2 className={`font-bold ${fontSizes.title}`}>
           {section.title}
         </h2>
         {isCompleted && !isCurrentSection && (
@@ -114,9 +96,8 @@ const SectionCard = ({
                   : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
               }`}
               onClick={(e) => {
-                e.stopPropagation();
+                handleDirectInteraction();
                 handleCheckboxChange(option.id);
-                forceActiveSection();
               }}
             >
               <div className="flex items-start">
@@ -126,8 +107,8 @@ const SectionCard = ({
                     id={option.id}
                     checked={userInputs.philosophy && userInputs.philosophy.includes(option.id)}
                     onChange={() => {
+                      handleDirectInteraction();
                       handleCheckboxChange(option.id);
-                      forceActiveSection();
                     }}
                     className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
@@ -150,17 +131,12 @@ const SectionCard = ({
           value={userInputs[section.id] || ''}
           onChange={(e) => {
             handleInputChange(section.id, e.target.value);
-            forceActiveSection();
           }}
           onFocus={() => {
-            forceActiveSection();
+            handleDirectInteraction();
           }}
-          onClick={(e) => {
-            e.stopPropagation();
-            forceActiveSection();
-          }}
-          onKeyDown={() => {
-            forceActiveSection();
+          onClick={() => {
+            handleDirectInteraction();
           }}
           className={`w-full p-4 border border-gray-200 rounded-lg ${fontSizes.content} focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all`}
           rows={6} /* Limit to 6 visible rows maximum */
@@ -173,7 +149,6 @@ const SectionCard = ({
       <div className="mt-4 flex justify-end">
         <button
           onClick={(e) => {
-            e.stopPropagation();
             handleFirstVersionFinished();
           }}
           disabled={loading || (!hasUserModifiedContent() && !isCompleted)}
