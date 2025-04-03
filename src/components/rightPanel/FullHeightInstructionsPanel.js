@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { callOpenAI } from '../../services/openaiService';
+import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
 
 /**
  * Simplified full-height instructions panel with Improve button
@@ -55,18 +56,7 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
       // Update the instructions in the DOM
       const instructionsEl = document.querySelector('.instructions-content');
       if (instructionsEl) {
-        // Create new content with improved instructions
-        const newContent = response.split('\n\n').map((paragraph, i) => {
-          const p = document.createElement('p');
-          p.className = 'mb-3';
-          p.textContent = paragraph;
-          return p;
-        });
-
-        // Clear existing content and add new paragraphs
-        instructionsEl.innerHTML = '';
-        newContent.forEach(p => instructionsEl.appendChild(p));
-
+        instructionsEl.innerHTML = `<ReactMarkdown className="prose prose-blue max-w-none text-blue-700 text-lg">${response}</ReactMarkdown>`;
         console.log("Instructions improved successfully");
       }
     } catch (error) {
