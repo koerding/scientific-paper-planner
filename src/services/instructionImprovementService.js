@@ -95,7 +95,7 @@ export const improveBatchInstructions = async (
 
     // *** Build the REVISED prompt for the AI ***
     const prompt = `
-I need you to act as a helpful and encouraging editor improving instruction content for a scientific paper planning tool. The user has made progress on some sections, and the instructions MUST be updated based on their input.
+I need you to act as a helpful and encouraging editor improving instruction content for a scientific paper planning tool that is used by PhD students. The user has made progress on some sections, and the instructions MUST be updated based on their progress so far.
 
 For each section PROVIDED BELOW, I'll provide:
 1. The current full instruction text (field name: 'instructionsText')
@@ -104,8 +104,8 @@ For each section PROVIDED BELOW, I'll provide:
 Your task is, FOR EACH SECTION PROVIDED:
 1. **Analyze** the 'userContent' to understand what the user has already addressed well regarding the goals in 'instructionsText'.
 2. **Start** your response for 'instructionsText' with a brief (1-2 sentence) positive acknowledgement of the specific points the user has successfully covered (e.g., "Great job clearly defining the research question!").
-3. **Then, critically EDIT** the *original* 'instructionsText'. Your **PRIMARY GOAL** is to **REMOVE** sentences or paragraphs that are now redundant because the user's content already covers that point or demonstrates understanding. Focus the remaining text *only* on what the user still needs to do or improve for that specific section.
-4. **If, after editing, you find the user has addressed *all* the key points from the original instructions**, DO NOT provide minimal remaining instructions. Instead, replace the *entire* instruction text with a clear, positive, congratulatory message acknowledging they've completed the main goals for this section (e.g., "Excellent work on this section! You've addressed all the key points regarding X and Y. Ready for the next step!").
+3. **Then, critically EDIT** the *original* 'instructionsText'. Your **PRIMARY GOAL** is to **REMOVE** sentences or paragraphs that are now no longer helpful to them because the user's content already covers that point. Focus the remaining text *only* on what the user still needs to do or improve for that specific section.
+4. **If, after editing, you find the user has addressed *all* the key points from the original instructions**, DO NOT provide minimal remaining instructions. Instead, replace the *entire* instruction text with a clear, positive, congratulatory message acknowledging all the points they are doing right already. After all, they've completed the main goals for this section (e.g., "Excellent work on this section! You've addressed all the key points regarding X, Y,... and Z. Ready for the next step!").
 5. **Otherwise (if points remain),** append the edited, focused, and likely shorter remaining instructions after your positive preamble (from step 2).
 6. Maintain a helpful and encouraging tone throughout. Preserve necessary markdown formatting (like ### headings) in the edited text.
 7. Return the **complete, updated instruction text** (which might be just the positive preamble, the preamble plus remaining instructions, or the congratulatory message) inside the 'instructionsText' field for that section.
