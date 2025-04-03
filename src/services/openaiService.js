@@ -1,8 +1,7 @@
 /**
  * Service for interacting with the OpenAI API.
- * UPDATED: Reads single 'instructions.text' field in buildMessages.
+ * Uses environment variables. Reads single 'instructions.text'. Logs removed.
  */
-// Reads API Key and Model from Environment Variables
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
 
@@ -11,18 +10,15 @@ const buildMessages = (prompt, contextType, userInputs, sections) => {
   const systemMessage = `You are a helpful assistant for planning scientific papers. Context type: ${contextType}.`;
   const messages = [{ role: 'system', content: systemMessage }];
 
-  // console.log(`[openaiService buildMessages] Received sections (${Array.isArray(sections) ? sections.length : 'Not an array'}):`, sections); // Keep for debugging if needed
-
   // Add section context safely using the new 'instructions.text'
   if (Array.isArray(sections)) {
     sections.forEach((section, index) => {
-      // Check for valid section object and ensure instructions.text exists
+      // Strict check for valid section object at the start of the loop iteration
       if (!section || typeof section !== 'object' || !section.id || !section.title || !section.instructions || typeof section.instructions.text !== 'string') {
-          console.warn(`[openaiService buildMessages] Skipping invalid/incomplete section or missing instructions.text at index ${index}:`, section);
+          // console.warn(`[openaiService buildMessages] Skipping invalid or incomplete section object at index ${index}:`, section); // Keep warn if needed
           return; // Skip this iteration entirely
       }
 
-      // Use the single instructions text field
       const instructionText = section.instructions.text;
       const userInput = userInputs && section.id ? (userInputs[section.id] || '') : '';
       const safeUserInput = (typeof userInput === 'string' ? userInput : JSON.stringify(userInput)) || 'N/A';
@@ -42,7 +38,6 @@ Current User Input: ${safeUserInput}`
   return messages;
 };
 
-
 // Main function to call the OpenAI API
 export const callOpenAI = async (
     prompt,
@@ -59,7 +54,7 @@ export const callOpenAI = async (
     throw new Error("OpenAI API key not configured in environment variables.");
   }
 
-  console.log(`[openaiService callOpenAI] Calling API. Context: ${contextType}, Model: ${model}`);
+  // console.log(`[openaiService callOpenAI] Calling API. Context: ${contextType}, Model: ${model}`); // Removed log
   const messages = buildMessages(prompt, contextType, userInputs, sections);
 
   const body = JSON.stringify({
@@ -90,7 +85,7 @@ export const callOpenAI = async (
     }
 
     const data = await response.json();
-    console.log("[openaiService callOpenAI] API Response OK");
+    // console.log("[openaiService callOpenAI] API Response OK"); // Removed log
 
     const responseContent = data.choices?.[0]?.message?.content?.trim();
     if (!responseContent) {
