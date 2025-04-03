@@ -1,17 +1,17 @@
 {
   "id": "question",
-  "title": "Question",
+  "title": "Research Question & Philosophy",
   "type": "text",
-  "maxLength": 2000,
-  "inputPlaceholder": "Start writing your research question here...",
+  "maxLength": 3000,
+  "inputPlaceholder": "Start writing your research question and philosophy here...",
   "completeButtonText": "MARK COMPLETE",
   "loadingButtonText": "Processing...",
   "instructions": {
-    "title": "A WELL-SPECIFIED QUESTION",
-    "description": "The cornerstone of scientific inquiry is selecting a well-defined question. Ask yourself: What do you want to study and why? A strong question can drive understanding, foster innovation, and solve real-world problems. Consider who else might share your interest. Often, a well-crafted question serves as a conceptual model that frames reality in distinct ways.",
+    "title": "A WELL-SPECIFIED QUESTION WITH CLEAR RESEARCH PHILOSOPHY",
+    "description": "The cornerstone of scientific inquiry is selecting a well-defined question with an appropriate research philosophy. A strong question can drive understanding, foster innovation, and solve real-world problems.\n\nConsider who else might share your interest. Often, a well-crafted question serves as a conceptual model that frames reality in distinct ways.\n\nClarity about question logic and your research philosophy is essential. There are a small number of canonical approaches in neuroscience research:\n\n• HYPOTHESIS TESTING: Does mechanism X explain observation Y? Can I distinguish between competing mechanisms?\n\n• EXPLORATORY: What patterns exist in this dataset? What brain areas are active during this process?\n\n• ENGINEERING/NEEDS-DRIVEN: How can I solve problem X? What intervention achieves outcome Y?\n\nIdentify which philosophy best matches your research goals and make this explicit in your question formulation.",
     "workStep": {
-      "title": "Drafting",
-      "content": "Draft your question in detail. Spend about 5 minutes on your initial version and plan to refine it as you gain new insights. You may have to revisit this as you go through this design work. It is ok if it starts out being suboptimal. Just write your best idea of the question you want to work on. Include a brief explanation of why this question matters to you (objectives).\n\nMake a list of scientists who will also care about the question. We recommend starting with about 5 to have a crosssection of the field."
+      "title": "Drafting Your Question and Philosophy",
+      "content": "Draft your research question and identify your research philosophy. Spend about 10 minutes on your initial version and plan to refine it as you gain new insights.\n\nFor your question: Be clear about what you want to study and why it matters to you (objectives). Make a list of scientists who will also care about the question.\n\nFor your philosophy: Explicitly state whether you're doing hypothesis testing, exploratory research, or needs-driven research. Explain how this approach aligns with your research goals.\n\nMake sure your question and philosophy are compatible with each other. For instance, a hypothesis-testing approach would require a question that can be answered with competing explanations, while an exploratory approach would be more focused on identifying patterns or relationships."
     }
   },
   "completionChecklist": {
@@ -20,6 +20,10 @@
       {
         "text": "Write a clear research question",
         "checkPattern": "Research Question:"
+      },
+      {
+        "text": "Explain your research philosophy",
+        "checkPattern": "Research Philosophy:"
       },
       {
         "text": "Explain why this question matters",
@@ -31,11 +35,11 @@
       }
     ]
   },
-  "placeholder": "Research Question:\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
+  "placeholder": "Research Question:\n\nResearch Philosophy: [Explicitly state whether your approach is hypothesis testing, exploratory, or needs-driven, and explain why this philosophy is appropriate for your research question]\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
   "placeholders": {
-    "hypothesis": "Research Question:\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
-    "exploratory": "Research Area for Exploration:\n\nWhy this exploration matters (objectives):\n- \n- \n- \n\nScientists who would care about this exploration:\n1. \n2. \n3. \n4. \n5. ",
-    "needs": "Problem Statement:\n\nWhy solving this problem matters (objectives):\n- \n- \n- \n\nStakeholders who would care about this solution:\n1. \n2. \n3. \n4. \n5. "
+    "hypothesis": "Research Question:\n\nResearch Philosophy: [I am taking a hypothesis-testing approach because...]\n\nWhy this question matters (objectives):\n- \n- \n- \n\nScientists who would care about this question:\n1. \n2. \n3. \n4. \n5. ",
+    "exploratory": "Research Area for Exploration:\n\nResearch Philosophy: [I am taking an exploratory approach because...]\n\nWhy this exploration matters (objectives):\n- \n- \n- \n\nScientists who would care about this exploration:\n1. \n2. \n3. \n4. \n5. ",
+    "needs": "Problem Statement:\n\nResearch Philosophy: [I am taking a needs-driven approach because...]\n\nWhy solving this problem matters (objectives):\n- \n- \n- \n\nStakeholders who would care about this solution:\n1. \n2. \n3. \n4. \n5. "
   },
-  "llmInstructions": "Above, I wrote down the scientific question I want to ask. I also wrote down why this question is important to me and who else would be interested in this question. I want you to check if the question feels like a good question for scientific inquiry. I want you to list strengths and weaknesses of this question. I want you to check if the question well matches the expressed reasons for wanting to answer that question, and I want you to make a list of strengths/weaknesses in the match between question and objectives. I want you to evaluate to which level the listed scientists really would find this question interesting, again in terms of pros and cons. For the list I would also like you to give me 5 more professors that may be interested, ideally some that may be even more interested in the topic."
+  "llmInstructions": "Above, I wrote down my scientific question and research philosophy. I also wrote down why this question is important to me and who else would be interested. I want you to check if the question feels like a good question for scientific inquiry and if the research philosophy aligns well with the question. Please evaluate:\n\n1. Strengths and weaknesses of the question\n2. Whether the research philosophy (hypothesis testing, exploratory, or needs-driven) is appropriate for the question\n3. How well the question matches my stated objectives\n4. Whether the listed scientists would truly find this question interesting\n\nPlease also suggest 3-5 additional professors or researchers who might be especially interested in this topic. If my research philosophy isn't explicit or doesn't align with my question, help me refine both to create a coherent research approach."
 }
