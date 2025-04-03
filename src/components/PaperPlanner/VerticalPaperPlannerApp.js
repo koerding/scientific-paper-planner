@@ -3,13 +3,16 @@ import sectionContent from '../../sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
 import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
-import InstructionsPanel from '../rightPanel/InstructionsPanel';
-import AIChatPanel from '../rightPanel/AIChatPanel';
+import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
+import ModernChatInterface from '../chat/ModernChatInterface';
 import './PaperPlanner.css';
 
 /**
- * Vertical Paper Planner with 1/3 for user content, 2/3 for instructions and AI
- * All sections visible at once with vertical scrolling
+ * Redesigned Paper Planner with:
+ * - Full width for user content
+ * - Full-height instruction panel
+ * - Minimizable chat interface
+ * - Larger fonts
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // State tracking for active section and focus
@@ -121,13 +124,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }, 2000);
   };
 
-  // Helper functions (moved from utils to prevent import issues)
-  // Format timestamp for chat messages
-  const formatTime = () => {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
   // Check if a section has content beyond placeholder
   const hasSectionContent = (sectionId) => {
     if (sectionId === 'philosophy') {
@@ -166,11 +162,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Use 100% width instead of max-w-7xl */}
-      <div className="w-full px-4 pb-12">
+      {/* Full width content */}
+      <div className="w-full pb-12">
         {/* Header Component */}
         <AppHeader
-          sections={sectionContent.sections}
           activeSection={activeSection}
           setActiveSection={setActiveSectionWithManualFlag}
           handleSectionChange={handleSectionChange}
@@ -179,15 +174,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           exportProject={exportProject}
         />
         
-        {/* Main content area - 50% for user content, 50% for instruction & AI (fixed) */}
-        <div style={{ display: 'flex' }}>
-          {/* Left column - User editable sections - scrollable (50% width) */}
-          <div style={{ 
-            width: '50%',
-            paddingRight: '1rem', 
-            overflowY: 'auto',
-            paddingBottom: '50px' 
-          }}>
+        {/* Main content area with adjusted layout */}
+        <div className="flex">
+          {/* Left column - User editable sections - taking 2/3 width */}
+          <div className="w-2/3 px-8 py-6" style={{ marginRight: '33.333%' }}>
             {sectionContent.sections.map((section) => {
               const isCurrentSection = activeSection === section.id;
               const isCompleted = hasSectionContent(section.id);
@@ -210,48 +200,32 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   }}
                   setActiveSection={setActiveSectionWithManualFlag}
                   handleSectionChange={handleSectionChange}
+                  useLargerFonts={true} // Enable larger fonts
                 />
               );
             })}
           </div>
-          
-          {/* Right column - Fixed instructions and AI - 50% width */}
-          <div style={{ 
-            width: '50%',
-            paddingLeft: '1rem',
-            position: 'relative'
-          }}>
-            <div style={{
-              position: 'fixed',
-              width: 'calc(50% - 2rem)',
-              height: 'calc(100vh - 140px)', /* Subtract header height and padding */
-              display: 'flex',
-              flexDirection: 'column',
-              zIndex: 10
-            }}>
-              {/* Instructions Panel Component - Top 50% */}
-              <InstructionsPanel 
-                currentSection={getCurrentSection()} 
-              />
-              
-              {/* AI Chat Panel Component - Bottom 50% */}
-              <AIChatPanel
-                currentSection={currentSection}
-                chatMessages={chatMessages}
-                currentMessage={currentMessage}
-                setCurrentMessage={setCurrentMessage}
-                handleSendMessage={handleSendMessage}
-                loading={loading}
-                formatTime={formatTime}
-              />
-            </div>
-          </div>
         </div>
         
         {/* Footer */}
-        <div className="text-center text-gray-500 text-sm mt-12 border-t border-gray-200 pt-6">
+        <div className="text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6">
           <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
         </div>
+        
+        {/* Full-height instructions panel (fixed position) */}
+        <FullHeightInstructionsPanel 
+          currentSection={getCurrentSection()} 
+        />
+        
+        {/* Minimizable chat interface */}
+        <ModernChatInterface
+          currentSection={currentSection}
+          chatMessages={chatMessages}
+          currentMessage={currentMessage}
+          setCurrentMessage={setCurrentMessage}
+          handleSendMessage={handleSendMessage}
+          loading={loading}
+        />
         
         {/* Confirmation Dialog */}
         <ConfirmDialog
