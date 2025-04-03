@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import FullWidthPaperPlannerApp from './FullWidthPaperPlannerApp'; // Import the new full-width component
+import FullWidthPaperPlannerApp from './FullWidthPaperPlannerApp'; // Use your current main component
 import sectionContent from '../../data/sectionContent.json';  
 import { callOpenAI } from '../../services/openaiService';
 import '../../styles/PaperPlanner.css';
@@ -9,11 +9,10 @@ import '../../styles/PaperPlanner.css';
  * Contains core state management and API calls
  */
 const PaperPlannerApp = () => {
-  // State
+  // State - UPDATED: Removed philosophy array
   const [userInputs, setUserInputs] = useState({
     question: '',
     hypothesis: '',
-    philosophy: [],
     experiment: '',
     analysis: '',
     process: '',
@@ -76,19 +75,7 @@ const PaperPlannerApp = () => {
     });
   };
 
-  const handleCheckboxChange = (id) => {
-    const newPhilosophy = [...userInputs.philosophy];
-    if (newPhilosophy.includes(id)) {
-      const index = newPhilosophy.indexOf(id);
-      newPhilosophy.splice(index, 1);
-    } else {
-      newPhilosophy.push(id);
-    }
-    setUserInputs({
-      ...userInputs,
-      philosophy: newPhilosophy
-    });
-  };
+  // REMOVED: handleCheckboxChange function is no longer needed
 
   // Send regular chat message with full context
   const handleSendMessage = async () => {
@@ -114,8 +101,7 @@ const PaperPlannerApp = () => {
         currentMessage, 
         currentSection, 
         userInputs, 
-        sectionContent.sections, 
-        sectionContent.philosophyOptions
+        sectionContent.sections
       );
       
       // Add AI response to chat
@@ -149,8 +135,8 @@ const PaperPlannerApp = () => {
   // Handle "First version finished" button with llmInstructions and all section context
   const handleFirstVersionFinished = async () => {
     // Don't do anything if there's no content yet
-    if (!userInputs[currentSection] && currentSection !== 'philosophy') return;
-    if (currentSection === 'philosophy' && userInputs.philosophy.length === 0) return;
+    if (!userInputs[currentSection]) return;
+    // REMOVED: Special case for philosophy
     
     setLoading(true);
     
@@ -173,13 +159,12 @@ const PaperPlannerApp = () => {
         [currentSection]: newMessages
       });
       
-      // Call OpenAI API with the detailed instructions and pass the philosophyOptions
+      // Call OpenAI API with the detailed instructions
       const aiResponse = await callOpenAI(
         aiInstructions, 
         currentSection, 
         userInputs, 
-        sectionContent.sections, 
-        sectionContent.philosophyOptions
+        sectionContent.sections
       );
       
       // Add AI response to chat
@@ -211,11 +196,10 @@ const PaperPlannerApp = () => {
   };
 
   const resetProject = () => {
-    // Clear all user inputs
+    // Clear all user inputs - UPDATED: Removed philosophy array
     setUserInputs({
       question: '',
       hypothesis: '',
-      philosophy: [],
       experiment: '',
       analysis: '',
       process: '',
@@ -251,29 +235,26 @@ const PaperPlannerApp = () => {
     }
   };
 
-  // Function to export project
+  // Function to export project - UPDATED: Removed philosophy special handling
   const exportProject = () => {
     const exportContent = `# Scientific Paper Project Plan
 
-## 1. Research Question
+## 1. Research Question & Philosophy
 ${userInputs.question || "Not completed yet"}
 
 ## 2. Hypotheses
 ${userInputs.hypothesis || "Not completed yet"}
 
-## 3. Research Philosophy
-${userInputs.philosophy.map(id => `- ${sectionContent.philosophyOptions.find(o => o.id === id).label}`).join('\n') || "Not selected yet"}
-
-## 4. Experimental Design
+## 3. Experimental Design
 ${userInputs.experiment || "Not completed yet"}
 
-## 5. Data Analysis Plan
+## 4. Data Analysis Plan
 ${userInputs.analysis || "Not completed yet"}
 
-## 6. Process, Skills & Timeline
+## 5. Process, Skills & Timeline
 ${userInputs.process || "Not completed yet"}
 
-## 7. Abstract
+## 6. Abstract
 ${userInputs.abstract || "Not completed yet"}
 `;
 
@@ -293,7 +274,7 @@ ${userInputs.abstract || "Not completed yet"}
     URL.revokeObjectURL(url);
   };
 
-  // Hook for the Paper Planner
+  // Hook for the Paper Planner - UPDATED: Removed handleCheckboxChange
   const usePaperPlannerHook = {
     currentSection,
     currentIndex,
@@ -306,7 +287,6 @@ ${userInputs.abstract || "Not completed yet"}
     setShowConfirmDialog,
     handleSectionChange,
     handleInputChange,
-    handleCheckboxChange,
     handleSendMessage,
     handleFirstVersionFinished,
     resetProject,
@@ -315,7 +295,7 @@ ${userInputs.abstract || "Not completed yet"}
     exportProject
   };
 
-  // Use the full-width paper planner app
+  // Use the appropriate paper planner app component
   return (
     <FullWidthPaperPlannerApp 
       usePaperPlannerHook={usePaperPlannerHook}
