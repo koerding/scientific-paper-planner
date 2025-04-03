@@ -8,7 +8,7 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Full-Width Paper Planner App
- * Maintains the fixed header with buttons and full-width layout
+ * UPDATED: Removed philosophy special handling
  */
 const FullWidthPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // State tracking for active section
@@ -28,7 +28,6 @@ const FullWidthPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setShowConfirmDialog,
     handleSectionChange,
     handleInputChange,
-    handleCheckboxChange,
     handleSendMessage,
     handleFirstVersionFinished,
     resetProject,
@@ -51,7 +50,7 @@ const FullWidthPaperPlannerApp = ({ usePaperPlannerHook }) => {
       
       // Pre-fill text for every section that's not already filled
       sectionContent.sections.forEach(section => {
-        if (section.type !== 'checklist' && section.placeholder) {
+        if (section.placeholder) {
           if (!userInputs[section.id] || userInputs[section.id].trim() === '') {
             handleInputChange(section.id, section.placeholder);
           }
@@ -210,9 +209,7 @@ const FullWidthPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 isCompleted={isCompleted}
                 userInputs={userInputs}
                 handleInputChange={handleInputChange}
-                handleCheckboxChange={handleCheckboxChange}
                 handleFirstVersionFinished={handleFirstVersionFinished}
-                philosophyOptions={sectionContent.philosophyOptions}
                 loading={loading}
                 sectionRef={sectionRefs.current[section.id]}
                 onClick={() => {
