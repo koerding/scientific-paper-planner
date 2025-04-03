@@ -1,5 +1,6 @@
 /**
  * Service for improving instructions based on user progress
+ * UPDATED: Removed philosophy special handling
  */
 
 // This function analyzes user progress and generates improved instructions
@@ -12,16 +13,12 @@ export const improveInstructions = async (
   try {
     // Identify which sections have meaningful user content
     const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
-      if (sectionId === 'philosophy') {
-        return userInputs.philosophy && userInputs.philosophy.length > 0;
-      } else {
-        const content = userInputs[sectionId] || '';
-        const section = sectionContent.sections.find(s => s.id === sectionId);
-        const placeholder = section?.placeholder || '';
-        
-        // Check if content has been modified from placeholder
-        return content.trim() !== '' && content !== placeholder;
-      }
+      const content = userInputs[sectionId] || '';
+      const section = sectionContent.sections.find(s => s.id === sectionId);
+      const placeholder = section?.placeholder || '';
+      
+      // Check if content has been modified from placeholder
+      return content.trim() !== '' && content !== placeholder;
     });
     
     // Skip if no sections have progress
@@ -32,17 +29,7 @@ export const improveInstructions = async (
     // Prepare data for each section
     const sectionsData = sectionsWithProgress.map(sectionId => {
       const section = sectionContent.sections.find(s => s.id === sectionId);
-      let userContent;
-      
-      if (sectionId === 'philosophy') {
-        const philosophyLabels = userInputs.philosophy.map(id => {
-          const philosophy = sectionContent.philosophyOptions.find(p => p.id === id);
-          return philosophy ? philosophy.label : '';
-        });
-        userContent = philosophyLabels.join('\n');
-      } else {
-        userContent = userInputs[sectionId] || '';
-      }
+      const userContent = userInputs[sectionId] || '';
       
       return {
         id: sectionId,
@@ -88,7 +75,7 @@ For each section, provide your improved instructions in this format:
 
     // Call the OpenAI API
     console.log("[Instruction Improvement] Sending request to OpenAI");
-    const response = await callOpenAI(prompt, "improve_instructions", userInputs, sectionContent.sections, sectionContent.philosophyOptions);
+    const response = await callOpenAI(prompt, "improve_instructions", userInputs, sectionContent.sections);
     
     // Parse the response
     let improvedInstructions;
