@@ -3,7 +3,7 @@ import { saveToStorage, loadFromStorage, clearStorage } from '../services/storag
 import { callOpenAI } from '../services/openaiService';
 import sectionContent from '../data/sectionContent.json'; // Import section data
 
-// Helper function to create initial state from placeholders - Moved here
+// Helper function to create initial state from placeholders
 const createInitialInputs = () => {
   const initialInputs = {};
   if (sectionContent && Array.isArray(sectionContent.sections)) {
@@ -14,6 +14,7 @@ const createInitialInputs = () => {
     });
   } else {
      console.error("[usePaperPlanner] Failed to load sectionContent or sections array is missing for initial state.");
+     // Define fallbacks
      const fallbackSections = ['question', 'hypothesis', 'experiment', 'analysis', 'process', 'abstract'];
      fallbackSections.forEach(id => { initialInputs[id] = ''; });
   }
@@ -21,7 +22,7 @@ const createInitialInputs = () => {
   return initialInputs;
 };
 
-// Helper function to create initial chat state
+// Helper function to create initial chat state structure
 const createInitialChatMessages = () => {
     const initialChat = {};
      if (sectionContent && Array.isArray(sectionContent.sections)) {
@@ -37,61 +38,77 @@ const createInitialChatMessages = () => {
 
 
 const usePaperPlanner = () => {
-  // Initialize state using the placeholders from sectionContent.json
+  // Initialize state using the placeholder creation function directly
   const [userInputs, setUserInputs] = useState(createInitialInputs);
-  const [chatMessages, setChatMessages] = useState(createInitialChatMessages); // Initialize chat state structure
+  const [chatMessages, setChatMessages] = useState(createInitialChatMessages);
 
-  // Existing states
-  const [currentSection, setCurrentSection] = useState('question'); // Tracks context for chat/AI
+  // Other states
+  const [currentSection, setCurrentSection] = useState('question');
   const [currentMessage, setCurrentMessage] = useState('');
-  const [loading, setLoading] = useState(false); // Maybe separate loading states later
+  const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  // Load saved data on initial mount and merge it
+  // Load saved data ONCE on mount and merge carefully
   useEffect(() => {
-    console.log("[usePaperPlanner Effect] Attempting to load from storage...");
+    console.log("[usePaperPlanner Effect] Attempting to load from storage on mount...");
     const { loadedInputs, loadedChat } = loadFromStorage();
 
-    // Merge loaded inputs onto the initial placeholder state
+    // Update inputs state based on loaded data
     if (loadedInputs) {
-      setUserInputs(prevInputs => {
-        const mergedInputs = { ...prevInputs }; // Start with placeholder state
+      // Use functional update to ensure we're merging with the initial state
+      setUserInputs(prevInitialInputs => {
+        const mergedInputs = { ...prevInitialInputs }; // Start with initial placeholder state
+        console.log("[usePaperPlanner Effect] Merging loaded data onto initial state...");
+        let updatesMade = false;
         for (const sectionId in loadedInputs) {
-          // Only overwrite placeholder if loaded data is not null/undefined
-          // and potentially check if it's different from the initial placeholder if desired
-          if (loadedInputs.hasOwnProperty(sectionId) && loadedInputs[sectionId] !== undefined && loadedInputs[sectionId] !== null) {
-            // If you want to avoid overwriting with empty strings from storage:
-            // if (String(loadedInputs[sectionId]).trim() !== '') {
-            //    mergedInputs[sectionId] = loadedInputs[sectionId];
-            // }
-            // For now, let's just merge whatever is saved:
-            mergedInputs[sectionId] = loadedInputs[sectionId];
+          if (loadedInputs.hasOwnProperty(sectionId) && prevInitialInputs.hasOwnProperty(sectionId)) {
+            const loadedValue = loadedInputs[sectionId];
+            const placeholderValue = prevInitialInputs[sectionId];
+            // Only overwrite placeholder if loaded value exists, is not just whitespace, AND is different from the placeholder
+            if (loadedValue !== undefined && loadedValue !== null && String(loadedValue).trim() !== '' && loadedValue !== placeholderValue) {
+              mergedInputs[sectionId] = loadedValue;
+              updatesMade = true;
+              // console.log(`[usePaperPlanner Effect] Merged section ${sectionId} with saved value.`);
+            } else {
+              // console.log(`[usePaperPlanner Effect] Kept placeholder for section ${sectionId}.`);
+            }
           }
         }
-        console.log("[usePaperPlanner Effect] Merged loaded inputs:", mergedInputs);
-        return mergedInputs;
+        if (updatesMade) {
+            console.log("[usePaperPlanner Effect] Final merged inputs state:", mergedInputs);
+            return mergedInputs; // Return the merged state
+        } else {
+            console.log("[usePaperPlanner Effect] No meaningful saved inputs found to merge, keeping initial state.");
+            return prevInitialInputs; // Return the initial state if no meaningful updates
+        }
       });
     } else {
-       console.log("[usePaperPlanner Effect] No inputs loaded, keeping initial placeholder state.");
-       // Ensure state is set to initial if load fails completely (though useState does this)
-       setUserInputs(createInitialInputs());
+       console.log("[usePaperPlanner Effect] No saved inputs object found, keeping initial state.");
+       // State already initialized with placeholders, do nothing
     }
 
-    // Merge loaded chat messages
+    // Update chat state based on loaded data
     if (loadedChat) {
-        setChatMessages(prevChat => {
-            const mergedChat = { ...prevChat }; // Start with initial structure
-            for (const sectionId in loadedChat) {
-                if (loadedChat.hasOwnProperty(sectionId) && Array.isArray(loadedChat[sectionId])) {
+        setChatMessages(prevInitialChat => {
+             const mergedChat = { ...prevInitialChat }; // Start with initial structure
+             let chatUpdatesMade = false;
+             for (const sectionId in loadedChat) {
+                 if (loadedChat.hasOwnProperty(sectionId) && Array.isArray(loadedChat[sectionId]) && loadedChat[sectionId].length > 0) {
                      mergedChat[sectionId] = loadedChat[sectionId];
-                }
-            }
-            console.log("[usePaperPlanner Effect] Merged loaded chat messages:", mergedChat);
-            return mergedChat;
+                     chatUpdatesMade = true;
+                 }
+             }
+             if(chatUpdatesMade){
+                 console.log("[usePaperPlanner Effect] Merged loaded chat messages:", mergedChat);
+                 return mergedChat;
+             } else {
+                 console.log("[usePaperPlanner Effect] No meaningful saved chat found, keeping initial state.");
+                 return prevInitialChat;
+             }
         });
     } else {
-         console.log("[usePaperPlanner Effect] No chat loaded, keeping initial chat state.");
-         setChatMessages(createInitialChatMessages());
+        console.log("[usePaperPlanner Effect] No saved chat object found, keeping initial chat state.");
+        // State already initialized, do nothing
     }
 
   }, []); // Empty dependency array ensures this runs only once on mount
@@ -99,10 +116,15 @@ const usePaperPlanner = () => {
 
   // Save progress whenever userInputs or chatMessages change
   useEffect(() => {
-    saveToStorage(userInputs, chatMessages);
-    console.log("[usePaperPlanner Effect] Saved progress to storage.");
+    // Add a check to prevent saving immediately after initial load/merge if desired,
+    // but generally saving on every change is fine.
+    if (Object.keys(userInputs).length > 0) { // Simple check to avoid saving empty initial state if error occurs
+        saveToStorage(userInputs, chatMessages);
+       // console.log("[usePaperPlanner Effect] Saved progress to storage."); // Can be noisy
+    }
   }, [userInputs, chatMessages]);
 
+  // Rest of the handlers remain the same...
   const handleInputChange = useCallback((sectionId, value) => {
     setUserInputs(prevInputs => ({
       ...prevInputs,
@@ -116,113 +138,87 @@ const usePaperPlanner = () => {
   }, []);
 
   const handleSendMessage = useCallback(async () => {
-    if (!currentMessage.trim() || !currentSection) return;
-
-    const newUserMessage = { role: 'user', content: currentMessage };
-    // Add to the correct section's chat array
-    setChatMessages(prevMessages => ({
-        ...prevMessages,
-        [currentSection]: [...(prevMessages[currentSection] || []), newUserMessage]
-    }));
-
-    setLoading(true);
-    const messageToSend = currentMessage; // Capture message before clearing
-    setCurrentMessage(''); // Clear input field immediately
-
-    try {
-      const sectionsForContext = sectionContent?.sections || [];
-      const response = await callOpenAI(
-          messageToSend, // Use captured message
-          currentSection,
-          userInputs,
-          sectionsForContext
-      );
-      const newAssistantMessage = { role: 'assistant', content: response };
-       setChatMessages(prevMessages => ({
-           ...prevMessages,
-           [currentSection]: [...(prevMessages[currentSection] || []), newAssistantMessage]
-       }));
-    } catch (error) {
-      console.error("Error sending message:", error);
-      const errorMessage = { role: 'assistant', content: `Sorry, there was an error processing your message. (${error.message})` };
-       setChatMessages(prevMessages => ({
-           ...prevMessages,
-           [currentSection]: [...(prevMessages[currentSection] || []), errorMessage]
-       }));
-    } finally {
-      setLoading(false);
-    }
-  }, [currentMessage, currentSection, userInputs]);
-
-
-  // Function called when user marks a section as 'First version finished'
-  const handleFirstVersionFinished = useCallback(async (sectionId) => {
-     console.log(`First version finished for section: ${sectionId}`);
-     const contentToReview = userInputs[sectionId];
-     const currentSectionObj = sectionContent.sections.find(s => s.id === sectionId);
-     const aiInstructions = currentSectionObj?.llmInstructions; // Get LLM instructions for context
-
-     if (!contentToReview || !aiInstructions) {
-         console.warn(`No content or LLM instructions found for section ${sectionId}. Cannot request review.`);
-         return;
-     }
-
+    // ... (keep existing handleSendMessage logic) ...
+     if (!currentMessage.trim() || !currentSection) return;
+     const newUserMessage = { role: 'user', content: currentMessage };
+     setChatMessages(prevMessages => ({
+         ...prevMessages,
+         [currentSection]: [...(prevMessages[currentSection] || []), newUserMessage]
+     }));
      setLoading(true);
-
-     // Use the predefined LLM instructions as the prompt
-     const reviewPrompt = aiInstructions;
-
-     // Add a user message to the chat indicating the action (optional, for UI clarity)
-      const displayMessage = { role: 'user', content: `Requesting review for ${currentSectionObj.title}...` };
-      setChatMessages(prevMessages => ({
-           ...prevMessages,
-           [sectionId]: [...(prevMessages[sectionId] || []), displayMessage]
-       }));
-
-
+     const messageToSend = currentMessage;
+     setCurrentMessage('');
      try {
-        const sectionsForContext = sectionContent?.sections || [];
-        const response = await callOpenAI(
-            reviewPrompt, // Send the LLM instructions as the main prompt
-            sectionId,
-            userInputs, // Send all user inputs for context
-            sectionsForContext
-        );
-        const newAssistantMessage = { role: 'assistant', content: response };
+       const sectionsForContext = sectionContent?.sections || [];
+       const response = await callOpenAI(messageToSend, currentSection, userInputs, sectionsForContext);
+       const newAssistantMessage = { role: 'assistant', content: response };
         setChatMessages(prevMessages => ({
             ...prevMessages,
-            [sectionId]: [...(prevMessages[sectionId] || []), newAssistantMessage] // Add response to the correct section
+            [currentSection]: [...(prevMessages[currentSection] || []), newAssistantMessage]
         }));
      } catch (error) {
-        console.error(`Error getting review for ${sectionId}:`, error);
-        const errorMessage = { role: 'assistant', content: `Sorry, there was an error reviewing the ${sectionId} section. (${error.message})` };
-         setChatMessages(prevMessages => ({
+       console.error("Error sending message:", error);
+       const errorMessage = { role: 'assistant', content: `Sorry, there was an error processing your message. (${error.message})` };
+        setChatMessages(prevMessages => ({
             ...prevMessages,
-            [sectionId]: [...(prevMessages[sectionId] || []), errorMessage]
+            [currentSection]: [...(prevMessages[currentSection] || []), errorMessage]
         }));
      } finally {
-        setLoading(false);
+       setLoading(false);
      }
-  }, [userInputs]); // Dependency on userInputs
+  }, [currentMessage, currentSection, userInputs]);
 
+  const handleFirstVersionFinished = useCallback(async (sectionId) => {
+    // ... (keep existing handleFirstVersionFinished logic) ...
+      console.log(`First version finished for section: ${sectionId}`);
+      const contentToReview = userInputs[sectionId];
+      const currentSectionObj = sectionContent.sections.find(s => s.id === sectionId);
+      const aiInstructions = currentSectionObj?.llmInstructions;
+      if (!contentToReview || !aiInstructions) {
+          console.warn(`No content or LLM instructions found for section ${sectionId}. Cannot request review.`);
+          return;
+      }
+      setLoading(true);
+      const reviewPrompt = aiInstructions;
+       const displayMessage = { role: 'user', content: `Requesting review for ${currentSectionObj.title}...` };
+       setChatMessages(prevMessages => ({
+            ...prevMessages,
+            [sectionId]: [...(prevMessages[sectionId] || []), displayMessage]
+        }));
+      try {
+         const sectionsForContext = sectionContent?.sections || [];
+         const response = await callOpenAI(reviewPrompt, sectionId, userInputs, sectionsForContext);
+         const newAssistantMessage = { role: 'assistant', content: response };
+         setChatMessages(prevMessages => ({
+             ...prevMessages,
+             [sectionId]: [...(prevMessages[sectionId] || []), newAssistantMessage]
+         }));
+      } catch (error) {
+         console.error(`Error getting review for ${sectionId}:`, error);
+         const errorMessage = { role: 'assistant', content: `Sorry, there was an error reviewing the ${sectionId} section. (${error.message})` };
+          setChatMessages(prevMessages => ({
+             ...prevMessages,
+             [sectionId]: [...(prevMessages[sectionId] || []), errorMessage]
+         }));
+      } finally {
+         setLoading(false);
+      }
+  }, [userInputs]);
 
-  // Reset project function
   const resetProject = useCallback(() => {
     clearStorage();
-    setUserInputs(createInitialInputs()); // Reset state to initial placeholders
-    setChatMessages(createInitialChatMessages()); // Reset chat
+    setUserInputs(createInitialInputs());
+    setChatMessages(createInitialChatMessages());
     setCurrentSection('question');
     setShowConfirmDialog(false);
     console.log("Project reset to initial state.");
   }, []);
 
-  // Export functionality
   const exportProject = useCallback(() => {
     import('../../utils/exportUtils').then(module => {
-      // Pass sectionContent to get section titles if needed by export function
       module.exportProject(userInputs, chatMessages, sectionContent);
     }).catch(err => console.error("Failed to load or run export:", err));
-  }, [userInputs, chatMessages]); // Depend on data to be exported
+  }, [userInputs, chatMessages]);
 
 
   return {
