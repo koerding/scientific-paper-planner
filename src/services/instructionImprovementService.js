@@ -97,9 +97,18 @@ For each section, provide your improved instructions in this format:
     try {
       // Try to parse the JSON response
       // The AI might return text outside the JSON, so we need to extract it
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      const jsonRegex = /\[\s*\{[\s\S]*\}\s*\]|\{[\s\S]*\}/;
+      const jsonMatch = response.match(jsonRegex);
+      
       if (jsonMatch) {
-        improvedInstructions = JSON.parse(jsonMatch[0]);
+        const extractedJson = jsonMatch[0];
+        // Check if it's an array or single object
+        if (extractedJson.trim().startsWith('[')) {
+          improvedInstructions = JSON.parse(extractedJson);
+        } else {
+          // If it's a single object, wrap it in an array
+          improvedInstructions = [JSON.parse(extractedJson)];
+        }
       } else {
         throw new Error("Could not extract JSON from response");
       }
