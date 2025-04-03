@@ -1,26 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-// Removed: import CheckboxItem from './CheckboxItem'; // Component file is missing
+// Removed CheckboxItem import
 
 const SectionCard = ({
   section,
   isCurrentSection,
-  isCompleted, // Prop indicating if marked complete (might not be used now)
+  isCompleted, // Keep receiving this prop, might be useful later
   userInputs,
   handleInputChange,
   handleFirstVersionFinished,
   loading,
   sectionRef,
   onClick,
-  setActiveSection, // Keep props even if unused by this component directly
-  handleSectionChange, // Keep props even if unused by this component directly
+  // Removed unused setActiveSection, handleSectionChange props from signature if not needed
   useLargerFonts = false
 }) => {
-  // Removed: const [checklistComplete, setChecklistComplete] = useState(false);
   const textareaRef = useRef(null);
-
   const textValue = userInputs[section.id] || '';
 
-  // Removed: useEffect hook that calculated checklistComplete
+  // Determine if user has actually added content beyond the initial placeholder
+  const hasMeaningfulContent = () => {
+    const placeholder = section.placeholder || '';
+    return textValue !== placeholder && String(textValue).trim() !== '';
+  };
 
   // Auto-resize textarea height
   useEffect(() => {
@@ -30,26 +31,56 @@ const SectionCard = ({
     }
   }, [textValue]);
 
-  // Determine button text and disabled state (simplified as checklist is removed)
-  // You might want to re-evaluate the completion logic here.
-  // For now, let's just disable based on loading.
-  // Consider if 'isCompleted' prop should play a role or if button should always be enabled when not loading.
+  // Button state - enable if not loading AND has meaningful content
   const buttonText = loading ? section.loadingButtonText : section.completeButtonText;
-  const isButtonDisabled = loading; // Simplified disabling logic
-
+  const isButtonDisabled = loading || !hasMeaningfulContent();
 
   return (
-    <div ref={sectionRef} className={`mb-12 p-6 rounded-lg shadow-md transition-all duration-300 ease-in-out ${isCurrentSection ? 'bg-white border-2 border-blue-500 shadow-xl' : 'bg-gray-100 border border-gray-200 hover:shadow-lg'}`} onClick={onClick}>
-      <h2 className={`font-semibold mb-4 ${useLargerFonts ? 'text-3xl' : 'text-2xl'} text-gray-800`}>{section.title}</h2>
+    <div
+      ref={sectionRef}
+      className={`bg-white rounded-lg shadow-sm p-5 mb-6 transition-all duration-300 ease-in-out
+        ${isCurrentSection ? 'border-2 border-blue-500 shadow-xl' : 'border border-gray-200 hover:shadow-lg'}
+        ${isCompleted ? 'border-green-500' : ''} // Add green border if completed
+      `}
+      onClick={onClick} // Keep onClick on the main div to set active section
+    >
+      {/* Header with Title and Button */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className={`font-semibold ${useLargerFonts ? 'text-3xl' : 'text-2xl'} text-gray-800 mr-4`}>
+          {section.title}
+        </h2>
+        {/* Moved Button Here */}
+        <button
+           onClick={(e) => {
+                e.stopPropagation(); // Prevent card's onClick from firing
+                handleFirstVersionFinished(section.id);
+            }}
+           disabled={isButtonDisabled}
+           className={`py-1 px-3 rounded-md text-white font-medium transition-colors whitespace-nowrap ${ // Reduced padding, added whitespace-nowrap
+             isButtonDisabled
+               ? 'bg-gray-400 cursor-not-allowed'
+               : 'bg-green-600 hover:bg-green-700'
+           } ${useLargerFonts ? 'text-base' : 'text-sm'}`} // Adjusted font size
+         >
+           {loading ? (
+              <span className="flex items-center justify-center">
+                {/* Simple loading text or smaller spinner */}
+                ...
+              </span>
+            ) : (
+             buttonText
+            )}
+         </button>
+      </div>
 
       {/* Input Area */}
-      <div className="mb-4">
+      <div className="mb-4"> {/* Reduced bottom margin */}
         <textarea
           ref={textareaRef}
           className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-400 outline-none resize-none overflow-hidden ${useLargerFonts ? 'text-xl leading-relaxed' : 'text-base'} ${isCurrentSection ? 'bg-blue-50' : 'bg-white'}`}
           value={textValue}
           onChange={(e) => handleInputChange(section.id, e.target.value)}
-          rows="5"
+          rows="1" // Start with 1 row, auto-expand will handle height
           maxLength={section.maxLength}
         />
         {section.maxLength && (
@@ -60,30 +91,8 @@ const SectionCard = ({
       </div>
 
       {/* Removed Checklist Section */}
-      {/* {section.completionChecklist && ( ... )} */}
 
-      {/* Completion Button */}
-      <button
-         onClick={() => handleFirstVersionFinished(section.id)}
-         disabled={isButtonDisabled}
-         className={`w-full py-2 px-4 rounded-md text-white font-medium transition-colors ${
-           isButtonDisabled
-             ? 'bg-gray-400 cursor-not-allowed'
-             : 'bg-green-600 hover:bg-green-700'
-         } ${useLargerFonts ? 'text-lg' : 'text-base'}`}
-       >
-         {loading ? (
-            <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {buttonText}
-            </span>
-          ) : (
-           buttonText
-          )}
-       </button>
+      {/* Removed Full Width Button Section */}
 
     </div>
   );
