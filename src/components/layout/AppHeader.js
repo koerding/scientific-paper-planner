@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 /**
  * Application header with absolute positioning to ensure buttons are visible
@@ -161,7 +161,7 @@ const AppHeader = ({
   };
 
   // Effect to capture Ctrl+S keyboard shortcut
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault(); // Prevent browser's save dialog
