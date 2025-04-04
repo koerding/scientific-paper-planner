@@ -1,4 +1,4 @@
-// Correct imports section for VerticalPaperPlannerApp.js
+// Complete VerticalPaperPlannerApp.js with fixes for colored borders
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
@@ -190,34 +190,45 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         );
         setLocalSectionContent(updatedSections); // Set the new state
         
-        // Analyze instruction and feedback content to determine completion status
-        const newCompletionStatus = {};
+        // Process completion status explicitly
+        const newCompletionStatuses = {};
         
         result.improvedData.forEach(item => {
-          // Check if the instruction text includes congratulatory messages
-          const isComplete = item.editedInstructions.includes('Excellent work') || 
-                            item.editedInstructions.includes('Great job') ||
-                            item.editedInstructions.includes('Well done') ||
-                            item.editedInstructions.includes('completed all');
-                            
-          // Check if there are substantial remaining instructions
-          const hasSubstantialInstructions = item.editedInstructions.includes('Point') ||
-                                           item.editedInstructions.includes('Step') ||
-                                           item.editedInstructions.includes('still need');
+          console.log(`Processing completion status for ${item.id}:`, item);
           
-          // Categorize completion status
-          if (isComplete) {
-            newCompletionStatus[item.id] = 'complete';
-          } else if (hasSubstantialInstructions) {
-            newCompletionStatus[item.id] = 'progress';
-          } else {
-            newCompletionStatus[item.id] = 'unstarted';
+          // First check for explicit completionStatus field from the API
+          if (item.completionStatus) {
+            newCompletionStatuses[item.id] = item.completionStatus;
+          }
+          // Alternatively, analyze content for completion markers
+          else {
+            // Check for congratulatory messages in editedInstructions
+            const isComplete = item.editedInstructions.includes('Excellent work') || 
+                              item.editedInstructions.includes('Great job') ||
+                              item.editedInstructions.includes('Well done') ||
+                              item.editedInstructions.includes('completed all');
+                              
+            // Check for substantial remaining instructions
+            const hasSubstantialInstructions = item.editedInstructions.includes('Point') ||
+                                             item.editedInstructions.includes('Step') ||
+                                             item.editedInstructions.includes('still need');
+            
+            if (isComplete) {
+              newCompletionStatuses[item.id] = 'complete';
+            } else if (hasSubstantialInstructions) {
+              newCompletionStatuses[item.id] = 'progress';
+            } else {
+              newCompletionStatuses[item.id] = 'unstarted';
+            }
           }
         });
         
+        console.log("Updating section completion statuses:", newCompletionStatuses);
+        
+        // Set the new completion statuses
         setSectionCompletionStatus(prevStatus => ({
           ...prevStatus,
-          ...newCompletionStatus
+          ...newCompletionStatuses
         }));
       } else {
         console.error("[handleMagic] Failed to improve instructions:", result.message || "No improved instructions returned.");
@@ -274,6 +285,33 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setActiveSectionWithManualFlag(method);
   };
 
+  // Render a section with proper completion status
+  const renderSection = (section) => {
+    if (!section || !section.id) return null;
+    
+    const isCurrentActive = activeSection === section.id;
+    
+    // Get completion status from explicit state or calculate it
+    const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
+    
+    console.log(`Rendering section ${section.id} with status:`, completionStatus);
+    
+    return (
+      <SectionCard
+        key={section.id}
+        section={section}
+        isCurrentSection={isCurrentActive}
+        completionStatus={completionStatus} // Explicitly pass the completion status
+        userInputs={userInputs}
+        handleInputChange={handleInputChange}
+        loading={chatLoading && currentSectionIdForChat === section.id}
+        sectionRef={sectionRefs.current[section.id]}
+        onClick={() => setActiveSectionWithManualFlag(section.id)}
+        useLargerFonts={true}
+      />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="w-full pb-12">
@@ -292,25 +330,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             {/* Display first two sections: Question and Audience */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => section?.id === 'question' || section?.id === 'audience')
-              .map((section) => {
-                if (!section || !section.id) return null;
-                const isCurrentActive = activeSection === section.id;
-                const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
-                return (
-                  <SectionCard
-                    key={section.id}
-                    section={section}
-                    isCurrentSection={isCurrentActive}
-                    completionStatus={completionStatus}
-                    userInputs={userInputs} // from hook
-                    handleInputChange={handleInputChange} // from hook
-                    loading={chatLoading && currentSectionIdForChat === section.id} // from hook
-                    sectionRef={sectionRefs.current[section.id]}
-                    onClick={() => setActiveSectionWithManualFlag(section.id)}
-                    useLargerFonts={true}
-                  />
-                );
-              })}
+              .map(section => renderSection(section))}
 
             {/* Research Approach Toggle */}
             <ResearchApproachToggle
@@ -321,48 +341,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             {/* Display active approach section */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
-              .map((section) => {
-                if (!section || !section.id) return null;
-                const isCurrentActive = activeSection === section.id;
-                const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
-                return (
-                  <SectionCard
-                    key={section.id}
-                    section={section}
-                    isCurrentSection={isCurrentActive}
-                    completionStatus={completionStatus}
-                    userInputs={userInputs} // from hook
-                    handleInputChange={handleInputChange} // from hook
-                    loading={chatLoading && currentSectionIdForChat === section.id} // from hook
-                    sectionRef={sectionRefs.current[section.id]}
-                    onClick={() => setActiveSectionWithManualFlag(section.id)}
-                    useLargerFonts={true}
-                  />
-                );
-              })}
+              .map(section => renderSection(section))}
 
             {/* Related Papers Section */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => section?.id === 'relatedpapers')
-              .map((section) => {
-                if (!section || !section.id) return null;
-                const isCurrentActive = activeSection === section.id;
-                const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
-                return (
-                  <SectionCard
-                    key={section.id}
-                    section={section}
-                    isCurrentSection={isCurrentActive}
-                    completionStatus={completionStatus}
-                    userInputs={userInputs} // from hook
-                    handleInputChange={handleInputChange} // from hook
-                    loading={chatLoading && currentSectionIdForChat === section.id} // from hook
-                    sectionRef={sectionRefs.current[section.id]}
-                    onClick={() => setActiveSectionWithManualFlag(section.id)}
-                    useLargerFonts={true}
-                  />
-                );
-              })}
+              .map(section => renderSection(section))}
 
             {/* Data Acquisition Toggle */}
             <DataAcquisitionToggle
@@ -373,48 +357,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             {/* Display active data acquisition section */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
-              .map((section) => {
-                if (!section || !section.id) return null;
-                const isCurrentActive = activeSection === section.id;
-                const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
-                return (
-                  <SectionCard
-                    key={section.id}
-                    section={section}
-                    isCurrentSection={isCurrentActive}
-                    completionStatus={completionStatus}
-                    userInputs={userInputs} // from hook
-                    handleInputChange={handleInputChange} // from hook
-                    loading={chatLoading && currentSectionIdForChat === section.id} // from hook
-                    sectionRef={sectionRefs.current[section.id]}
-                    onClick={() => setActiveSectionWithManualFlag(section.id)}
-                    useLargerFonts={true}
-                  />
-                );
-              })}
+              .map(section => renderSection(section))}
 
             {/* Display remaining sections: Analysis, Process, Abstract */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
-              .map((section) => {
-                if (!section || !section.id) return null;
-                const isCurrentActive = activeSection === section.id;
-                const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
-                return (
-                  <SectionCard
-                    key={section.id}
-                    section={section}
-                    isCurrentSection={isCurrentActive}
-                    completionStatus={completionStatus}
-                    userInputs={userInputs} // from hook
-                    handleInputChange={handleInputChange} // from hook
-                    loading={chatLoading && currentSectionIdForChat === section.id} // from hook
-                    sectionRef={sectionRefs.current[section.id]}
-                    onClick={() => setActiveSectionWithManualFlag(section.id)}
-                    useLargerFonts={true}
-                  />
-                );
-              })}
+              .map(section => renderSection(section))}
           </div>
         </div>
 
