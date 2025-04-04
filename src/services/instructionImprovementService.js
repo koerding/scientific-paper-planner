@@ -225,10 +225,10 @@ Your task is, FOR **EACH** section provided:
 
 **CRITICAL REQUIREMENTS:**
 * **JSON Output:** Respond ONLY with a valid JSON array. Each object in the array must correspond to one of the input section IDs and have EXACTLY these two keys:
-    * `"id"`: (string) The section ID.
-    * `"editedInstructions"`: (string) The result from Part 2 (edited instructions or congratulatory message).
-    * `"feedback"`: (string) The result from Part 1 (strengths, weaknesses, suggestions).
-* **Markdown Preservation:** Preserve markdown (###, **, lists) within the string values of `"editedInstructions"` and `"feedback"`.
+    * \`"id"\`: (string) The section ID.
+    * \`"editedInstructions"\`: (string) The result from Part 2 (edited instructions or congratulatory message).
+    * \`"feedback"\`: (string) The result from Part 1 (strengths, weaknesses, suggestions).
+* **Markdown Preservation:** Preserve markdown (###, **, lists) within the string values of \`"editedInstructions"\` and \`"feedback"\`.
 * **Formatting:** Ensure proper markdown line breaks (blank lines between paragraphs, after headings). No trailing commas in the JSON.
 * **Conciseness:** Keep responses focused and reasonably concise (total response < 4000 chars).
 
@@ -238,8 +238,8 @@ ${JSON.stringify(sectionsData, null, 2)}
 Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example object format:
 {
   "id": "section_id",
-  "editedInstructions": "Great start defining X! Now focus on...\n\n1. Point Y\n2. Point Z",
-  "feedback": "**Strengths:** Clear definition of X.\n\n**Weaknesses:** Point Y lacks detail.\n\n**Suggestions:** Elaborate on the methodology for Y."
+  "editedInstructions": "Great start defining X! Now focus on...\\n\\n1. Point Y\\n2. Point Z",
+  "feedback": "**Strengths:** Clear definition of X.\\n\\n**Weaknesses:** Point Y lacks detail.\\n\\n**Suggestions:** Elaborate on the methodology for Y."
 }
 `;
 
@@ -316,7 +316,7 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
 
     return {
         success: true,
-        improvedData: improvedInstructionsAndFeedback // Return the array containing objects with both fields
+        improvedInstructions: improvedInstructionsAndFeedback // Return the array containing objects with both fields
     };
   } catch (error) {
     console.error("Error improving batch instructions:", error);
