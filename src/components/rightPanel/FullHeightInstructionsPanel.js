@@ -2,15 +2,14 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 /**
- * Simplified full-height instructions panel with Improve button
- * UPDATED: Renders separate instructions and feedback sections if available
+ * Simplified full-height instructions panel with Magic button (renamed from Improve)
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
 
-  // Enhanced improve handler
-  const handleImproveClick = () => {
-    console.log("Improve button clicked!", new Date().toISOString());
+  // Enhanced magic handler (previously improve handler)
+  const handleMagicClick = () => {
+    console.log("Magic button clicked!", new Date().toISOString());
     const now = Date.now();
     if (now - lastClickTime < 1500) { // Increase debounce slightly
       console.log("Prevented rapid double-click");
@@ -22,7 +21,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
       try {
         improveInstructions();
       } catch (error) {
-        console.error("Error triggering improvement:", error);
+        console.error("Error triggering magic:", error);
         // Optionally show an error message to the user here
       }
     } else {
@@ -58,12 +57,12 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
                 {currentSection.instructions?.title || currentSection.title || 'Instructions'}
               </h3>
               <button
-                onClick={handleImproveClick}
+                onClick={handleMagicClick}
                 disabled={loading || !currentSection}
                 className={`px-4 py-2 rounded-lg text-base font-medium transition-all flex-shrink-0 ${ // Prevent button shrinking
                   loading || !currentSection
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow hover:shadow-md'
+                    : 'bg-purple-600 text-white hover:bg-purple-700 shadow hover:shadow-md'
                   }`}
               >
                 {loading ? (
@@ -72,9 +71,16 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Improving...
+                    Magic in progress...
                   </span>
-                ) : 'Improve Instructions'}
+                ) : (
+                  <span className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                    Magic
+                  </span>
+                )}
               </button>
             </div>
 
