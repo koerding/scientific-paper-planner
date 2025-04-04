@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 
 /**
  * Application header with absolute positioning to ensure buttons are visible
- * UPDATED: Fixed file loading functionality
+ * UPDATED: Added Examples button
  */
 const AppHeader = ({
   activeSection, // Keep props even if unused by this component itself
@@ -11,12 +11,13 @@ const AppHeader = ({
   scrollToSection,
   resetProject,
   exportProject,
-  loadProject
+  loadProject,
+  showExamples
 }) => {
   // Use ref for file input to better control it
   const fileInputRef = useRef(null);
 
-  // Handle file input change - with more debug and better error handling
+  // Handle file input change
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     console.log("File selected:", file);
@@ -128,6 +129,18 @@ const AppHeader = ({
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             New
+          </button>
+
+          {/* Examples Button */}
+          <button
+            onClick={() => { if(typeof showExamples === 'function') showExamples(); }}
+            className="flex items-center px-3 py-1.5 border border-purple-500 text-purple-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-purple-50 transition-colors"
+            title="Browse example projects"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Examples
           </button>
 
           {/* Load Button - Triggers hidden file input */}
