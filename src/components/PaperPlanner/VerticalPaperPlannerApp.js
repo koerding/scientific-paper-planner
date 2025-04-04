@@ -1,4 +1,4 @@
-// Complete VerticalPaperPlannerApp.js with fixes for colored borders
+// Updated VerticalPaperPlannerApp.js with saveProject support
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
@@ -17,9 +17,7 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
- * ADDED: Section completion tracking with color-coded borders
- * REMOVED: Mark Complete buttons
- * RENAMED: "Improve Instructions" button to "Magic"
+ * UPDATED: Added saveProject functionality
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
@@ -39,6 +37,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSendMessage,
     resetProject: hookResetProject,
     exportProject,
+    saveProject, // NEW: Extract saveProject from hook
     loadProject
   } = usePaperPlannerHook; // Destructure the hook data here
 
@@ -92,76 +91,170 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         return typeof content === 'string' && content.trim() !== '' && content !== placeholders[sectionId];
     };
 
-    // Check if user has modified input in any of the approach sections
-    if (isModified('hypothesis')) {
-      setActiveApproach('hypothesis');
-    } else if (isModified('needsresearch')) {
-      setActiveApproach('needsresearch');
-    } else if (isModified('exploratoryresearch')) {
-      setActiveApproach('exploratoryresearch');
-    } else {
-       setActiveApproach('hypothesis'); // Default if none are modified
-    }
+  // Render a section with proper completion status
+  const renderSection = (section) => {
+    if (!section || !section.id) return null;
+    
+    const isCurrentActive = activeSection === section.id;
+    
+    // Get completion status from explicit state or calculate it
+    const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
+    
+    console.log(`Rendering section ${section.id} with status:`, completionStatus);
+    
+    return (
+      <SectionCard
+        key={section.id}
+        section={section}
+        isCurrentSection={isCurrentActive}
+        completionStatus={completionStatus} // Explicitly pass the completion status
+        userInputs={userInputs}
+        handleInputChange={handleInputChange}
+        loading={chatLoading && currentSectionIdForChat === section.id}
+        sectionRef={sectionRefs.current[section.id]}
+        onClick={() => setActiveSectionWithManualFlag(section.id)}
+        useLargerFonts={true}
+      />
+    );
+};
 
-    // Check if user has modified input in any of the data acquisition sections
-    if (isModified('experiment')) {
-      setActiveDataMethod('experiment');
-    } else if (isModified('existingdata')) {
-      setActiveDataMethod('existingdata');
-    } else {
-       setActiveDataMethod('experiment'); // Default if none are modified
-    }
-  }, [userInputs, localSectionContent.sections]); // Add localSectionContent.sections dependency
-
-  const setActiveSectionWithManualFlag = (sectionId) => {
-    setActiveSection(sectionId);
-    handleSectionChange(sectionId); // Update context for chat/API calls in the hook
+export default VerticalPaperPlannerApp;
   };
 
-  // Helper to check if section has meaningful content beyond placeholder
-  const hasSectionContent = (sectionId) => {
-    const content = userInputs[sectionId];
-    const section = localSectionContent.sections.find(s => s?.id === sectionId);
-    const placeholder = section?.placeholder || '';
-    const stringContent = typeof content === 'string' ? content : JSON.stringify(content);
-    // Consider it 'completed' if it's not empty and different from placeholder
-    return stringContent && stringContent.trim() !== '' && stringContent !== placeholder;
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="w-full pb-12">
+        <AppHeader
+          activeSection={activeSection}
+          setActiveSection={setActiveSectionWithManualFlag}
+          handleSectionChange={handleSectionChange}
+          scrollToSection={scrollToSection}
+          resetProject={() => setShowConfirmDialog(true)} // Trigger dialog from hook state
+          exportProject={exportProject} // From hook
+          saveProject={saveProject} // NEW: Pass save function from hook
+          loadProject={loadProject} // From hook
+          setShowExamplesDialog={setShowExamplesDialog} // Pass setter from hook to header
+        />
+
+        <div className="flex">
+          <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
+            {/* Display first two sections: Question and Audience */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'question' || section?.id === 'audience')
+              .map(section => renderSection(section))}
+
+            {/* Research Approach Toggle */}
+            <ResearchApproachToggle
+              activeApproach={activeApproach}
+              setActiveApproach={handleApproachToggle}
+            />
+
+            {/* Display active approach section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
+              .map(section => renderSection(section))}
+
+            {/* Related Papers Section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'relatedpapers')
+              .map(section => renderSection(section))}
+
+            {/* Data Acquisition Toggle */}
+            <DataAcquisitionToggle
+              activeMethod={activeDataMethod}
+              setActiveMethod={handleDataMethodToggle}
+            />
+
+            {/* Display active data acquisition section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
+              .map(section => renderSection(section))}
+
+            {/* Display remaining sections: Analysis, Process, Abstract */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
+              .map(section => renderSection(section))}
+          </div>
+        </div>
+
+        <div className="text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6">
+          <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
+        </div>
+
+        <FullHeightInstructionsPanel
+          currentSection={sectionDataForPanel} // Pass data from local state
+          improveInstructions={handleMagic} // Updated to handleMagic
+          loading={improvingInstructions}
+        />
+
+        <ModernChatInterface
+          currentSection={currentSectionIdForChat} // From hook
+          chatMessages={chatMessages} // From hook
+          currentMessage={currentMessage} // From hook
+          setCurrentMessage={setCurrentMessage} // From hook
+          handleSendMessage={handleSendMessage} // From hook
+          loading={chatLoading} // From hook
+        />
+
+        <ConfirmDialog
+          showConfirmDialog={showConfirmDialog} // From hook
+          setShowConfirmDialog={setShowConfirmDialog} // From hook
+          resetProject={handleResetRequest} // Use combined reset handler
+        />
+
+        {/* Render ExamplesDialog, passing props from hook */}
+        <ExamplesDialog
+            showExamplesDialog={showExamplesDialog}
+            setShowExamplesDialog={setShowExamplesDialog}
+            loadProject={loadProject}
+        />
+      </div>
+    </div>
+  );
+
+  // Combine local reset logic with hook's reset logic
+  const handleResetRequest = () => {
+      hookResetProject(); // Call the hook's reset (clears storage, resets hook state)
+      // Reset local instructions state using a deep copy of original content
+      try {
+          setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent)));
+      } catch(e) {
+          console.error("Failed to reset local section content:", e);
+          setLocalSectionContent({ sections: [] }); // Fallback to empty
+      }
+      setActiveSection(sectionContent?.sections?.[0]?.id || 'question'); // Reset active section locally safely
+      setActiveApproach('hypothesis'); // Reset active approach
+      setActiveDataMethod('experiment'); // Reset active data method
+      setSectionCompletionStatus({}); // Reset completion statuses
   };
 
-  // Determine completion status for a section
-  const getSectionCompletionStatus = (sectionId) => {
-    // If there's an explicit completion status from the AI, use it
-    if (sectionCompletionStatus[sectionId]) {
-      return sectionCompletionStatus[sectionId];
+  const sectionDataForPanel = getCurrentSectionData();
+
+  // Check if a section should be displayed based on toggles
+  const shouldDisplaySection = (sectionId) => {
+    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
+      return sectionId === activeApproach;
     }
-    
-    // Otherwise, determine based on content length and feedback
-    const content = userInputs[sectionId];
-    if (!content || content.trim() === '') {
-      return 'unstarted';
+
+    if (sectionId === 'experiment' || sectionId === 'existingdata') {
+      return sectionId === activeDataMethod;
     }
-    
-    // Check if the section has a placeholder and if the content is different
-    const section = localSectionContent.sections.find(s => s?.id === sectionId);
-    const placeholder = section?.placeholder || '';
-    
-    if (content === placeholder) {
-      return 'unstarted';
-    }
-    
-    // Basic content length check (a very basic heuristic)
-    // A better approach would be to analyze the actual quality via the AI
-    if (content.length > placeholder.length * 1.5) {
-      return 'progress';
-    }
-    
-    return 'unstarted';
+
+    return true; // All other sections are always displayed
   };
 
-  const scrollToSection = (sectionId) => {
-    if (sectionRefs.current[sectionId]?.current) {
-      sectionRefs.current[sectionId].current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  // Handle approach toggle
+  const handleApproachToggle = (approach) => {
+    setActiveApproach(approach);
+    // If we switch to this approach, automatically set it as the active section
+    setActiveSectionWithManualFlag(approach);
+  };
+
+  // Handle data method toggle
+  const handleDataMethodToggle = (method) => {
+    setActiveDataMethod(method);
+    // If we switch to this method, automatically set it as the active section
+    setActiveSectionWithManualFlag(method);
   };
 
   // Get the current section data *from local state* for instructions display
@@ -240,166 +333,74 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Combine local reset logic with hook's reset logic
-  const handleResetRequest = () => {
-      hookResetProject(); // Call the hook's reset (clears storage, resets hook state)
-      // Reset local instructions state using a deep copy of original content
-      try {
-          setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent)));
-      } catch(e) {
-          console.error("Failed to reset local section content:", e);
-          setLocalSectionContent({ sections: [] }); // Fallback to empty
-      }
-      setActiveSection(sectionContent?.sections?.[0]?.id || 'question'); // Reset active section locally safely
-      setActiveApproach('hypothesis'); // Reset active approach
-      setActiveDataMethod('experiment'); // Reset active data method
-      setSectionCompletionStatus({}); // Reset completion statuses
+  // Helper to check if section has meaningful content beyond placeholder
+  const hasSectionContent = (sectionId) => {
+    const content = userInputs[sectionId];
+    const section = localSectionContent.sections.find(s => s?.id === sectionId);
+    const placeholder = section?.placeholder || '';
+    const stringContent = typeof content === 'string' ? content : JSON.stringify(content);
+    // Consider it 'completed' if it's not empty and different from placeholder
+    return stringContent && stringContent.trim() !== '' && stringContent !== placeholder;
   };
 
-  const sectionDataForPanel = getCurrentSectionData();
+  // Determine completion status for a section
+  const getSectionCompletionStatus = (sectionId) => {
+    // If there's an explicit completion status from the AI, use it
+    if (sectionCompletionStatus[sectionId]) {
+      return sectionCompletionStatus[sectionId];
+    }
+    
+    // Otherwise, determine based on content length and feedback
+    const content = userInputs[sectionId];
+    if (!content || content.trim() === '') {
+      return 'unstarted';
+    }
+    
+    // Check if the section has a placeholder and if the content is different
+    const section = localSectionContent.sections.find(s => s?.id === sectionId);
+    const placeholder = section?.placeholder || '';
+    
+    if (content === placeholder) {
+      return 'unstarted';
+    }
+    
+    // Basic content length check (a very basic heuristic)
+    // A better approach would be to analyze the actual quality via the AI
+    if (content.length > placeholder.length * 1.5) {
+      return 'progress';
+    }
+    
+    return 'unstarted';
+  };
 
-  // Check if a section should be displayed based on toggles
-  const shouldDisplaySection = (sectionId) => {
-    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
-      return sectionId === activeApproach;
+  const scrollToSection = (sectionId) => {
+    if (sectionRefs.current[sectionId]?.current) {
+      sectionRefs.current[sectionId].current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+    // Check if user has modified input in any of the approach sections
+    if (isModified('hypothesis')) {
+      setActiveApproach('hypothesis');
+    } else if (isModified('needsresearch')) {
+      setActiveApproach('needsresearch');
+    } else if (isModified('exploratoryresearch')) {
+      setActiveApproach('exploratoryresearch');
+    } else {
+       setActiveApproach('hypothesis'); // Default if none are modified
     }
 
-    if (sectionId === 'experiment' || sectionId === 'existingdata') {
-      return sectionId === activeDataMethod;
+    // Check if user has modified input in any of the data acquisition sections
+    if (isModified('experiment')) {
+      setActiveDataMethod('experiment');
+    } else if (isModified('existingdata')) {
+      setActiveDataMethod('existingdata');
+    } else {
+       setActiveDataMethod('experiment'); // Default if none are modified
     }
+  }, [userInputs, localSectionContent.sections]); // Add localSectionContent.sections dependency
 
-    return true; // All other sections are always displayed
+  const setActiveSectionWithManualFlag = (sectionId) => {
+    setActiveSection(sectionId);
+    handleSectionChange(sectionId); // Update context for chat/API calls in the hook
   };
-
-  // Handle approach toggle
-  const handleApproachToggle = (approach) => {
-    setActiveApproach(approach);
-    // If we switch to this approach, automatically set it as the active section
-    setActiveSectionWithManualFlag(approach);
-  };
-
-  // Handle data method toggle
-  const handleDataMethodToggle = (method) => {
-    setActiveDataMethod(method);
-    // If we switch to this method, automatically set it as the active section
-    setActiveSectionWithManualFlag(method);
-  };
-
-  // Render a section with proper completion status
-  const renderSection = (section) => {
-    if (!section || !section.id) return null;
-    
-    const isCurrentActive = activeSection === section.id;
-    
-    // Get completion status from explicit state or calculate it
-    const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
-    
-    console.log(`Rendering section ${section.id} with status:`, completionStatus);
-    
-    return (
-      <SectionCard
-        key={section.id}
-        section={section}
-        isCurrentSection={isCurrentActive}
-        completionStatus={completionStatus} // Explicitly pass the completion status
-        userInputs={userInputs}
-        handleInputChange={handleInputChange}
-        loading={chatLoading && currentSectionIdForChat === section.id}
-        sectionRef={sectionRefs.current[section.id]}
-        onClick={() => setActiveSectionWithManualFlag(section.id)}
-        useLargerFonts={true}
-      />
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="w-full pb-12">
-        <AppHeader
-          activeSection={activeSection}
-          setActiveSection={setActiveSectionWithManualFlag}
-          scrollToSection={scrollToSection}
-          resetProject={() => setShowConfirmDialog(true)} // Trigger dialog from hook state
-          exportProject={exportProject} // From hook
-          loadProject={loadProject} // From hook
-          setShowExamplesDialog={setShowExamplesDialog} // <-- Pass setter from hook to header
-        />
-
-        <div className="flex">
-          <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
-            {/* Display first two sections: Question and Audience */}
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-              .filter(section => section?.id === 'question' || section?.id === 'audience')
-              .map(section => renderSection(section))}
-
-            {/* Research Approach Toggle */}
-            <ResearchApproachToggle
-              activeApproach={activeApproach}
-              setActiveApproach={handleApproachToggle}
-            />
-
-            {/* Display active approach section */}
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-              .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
-              .map(section => renderSection(section))}
-
-            {/* Related Papers Section */}
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-              .filter(section => section?.id === 'relatedpapers')
-              .map(section => renderSection(section))}
-
-            {/* Data Acquisition Toggle */}
-            <DataAcquisitionToggle
-              activeMethod={activeDataMethod}
-              setActiveMethod={handleDataMethodToggle}
-            />
-
-            {/* Display active data acquisition section */}
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-              .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
-              .map(section => renderSection(section))}
-
-            {/* Display remaining sections: Analysis, Process, Abstract */}
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-              .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
-              .map(section => renderSection(section))}
-          </div>
-        </div>
-
-        <div className="text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6">
-          <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
-        </div>
-
-        <FullHeightInstructionsPanel
-          currentSection={sectionDataForPanel} // Pass data from local state
-          improveInstructions={handleMagic} // Updated to handleMagic
-          loading={improvingInstructions}
-        />
-
-        <ModernChatInterface
-          currentSection={currentSectionIdForChat} // From hook
-          chatMessages={chatMessages} // From hook
-          currentMessage={currentMessage} // From hook
-          setCurrentMessage={setCurrentMessage} // From hook
-          handleSendMessage={handleSendMessage} // From hook
-          loading={chatLoading} // From hook
-        />
-
-        <ConfirmDialog
-          showConfirmDialog={showConfirmDialog} // From hook
-          setShowConfirmDialog={setShowConfirmDialog} // From hook
-          resetProject={handleResetRequest} // Use combined reset handler
-        />
-
-        {/* Render ExamplesDialog, passing props from hook */}
-        <ExamplesDialog
-            showExamplesDialog={showExamplesDialog}
-            setShowExamplesDialog={setShowExamplesDialog}
-            loadProject={loadProject}
-        />
-      </div>
-    </div>
-  );
-};
-
-export default VerticalPaperPlannerApp;
