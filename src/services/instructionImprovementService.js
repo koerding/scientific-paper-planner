@@ -2,11 +2,10 @@
  * Service for improving instructions based on user progress
  * UPDATED: Added robust JSON parsing for truncated responses and fixed markdown formatting
  * UPDATED: Separated AI response into 'editedInstructions' and 'feedback'
- * UPDATED: Refactored updateSectionWithImprovedInstructions to simplify try...catch
+ * UPDATED: Enhanced to also determine completion status of sections
  */
 import { callOpenAI } from './openaiService';
 
-// ... (keep the repairTruncatedJson and fixMarkdownFormatting functions as they were) ...
 /**
  * Advanced JSON parser that handles truncated API responses
  * Updated to expect 'editedInstructions' and 'feedback' fields
@@ -72,6 +71,8 @@ function repairTruncatedJson(text) {
                             const parsedItem = JSON.parse(currentItemText);
                              // Basic validation for the new structure
                             if (parsedItem && typeof parsedItem.id === 'string' && typeof parsedItem.editedInstructions === 'string' && typeof parsedItem.feedback === 'string') {
+                                // Add completion status detection
+                                parsedItem.completionStatus = detectCompletionStatus(parsedItem.editedInstructions, parsedItem.feedback);
                                 arrayItems.push(parsedItem);
                             } else {
                                 console.warn("Skipping incomplete/invalid item during repair:", currentItemText);
@@ -107,6 +108,75 @@ function repairTruncatedJson(text) {
     throw new Error("Could not repair the JSON: it may be severely truncated or malformed");
 }
 
+/**
+ * Detect completion status for a section based on instruction and feedback content
+ * @param {string} instructionText - The edited instruction text
+ * @param {string} feedbackText - The feedback text
+ * @returns {string} - The completion status: 'complete', 'progress', or 'unstarted'
+ */
+function detectCompletionStatus(instructionText, feedbackText) {
+    // Check for congratulatory messages that indicate completion
+    const congratsPatterns = [
+        /excellent work/i,
+        /great job/i,
+        /well done/i,
+        /all the key points/i,
+        /completed all/i,
+        /perfect/i,
+        /outstanding/i,
+        /you've addressed everything/i
+    ];
+    
+    // Check for phrases that indicate substantial remaining work
+    const workNeededPatterns = [
+        /still need to/i,
+        /consider adding/i,
+        /needs more detail/i,
+        /incomplete/i,
+        /missing/i,
+        /insufficient/i,
+        /should include/i,
+        /required element/i,
+        /lacks/i
+    ];
+
+    // Check for progress indicators
+    const progressPatterns = [
+        /good start/i,
+        /making progress/i,
+        /on the right track/i,
+        /solid foundation/i,
+        /heading in the right direction/i
+    ];
+
+    // Check if it's complete
+    const isComplete = congratsPatterns.some(pattern => 
+        pattern.test(instructionText) || pattern.test(feedbackText)
+    );
+    
+    if (isComplete) {
+        return 'complete';
+    }
+    
+    // Check if substantial work is needed
+    const needsWork = workNeededPatterns.some(pattern => 
+        pattern.test(instructionText) || pattern.test(feedbackText)
+    );
+    
+    // Check if there's progress
+    const hasProgress = progressPatterns.some(pattern => 
+        pattern.test(instructionText) || pattern.test(feedbackText)
+    );
+    
+    if (needsWork && !hasProgress) {
+        return 'unstarted';
+    } else if (hasProgress || needsWork) {
+        return 'progress';
+    }
+    
+    // Default case
+    return 'unstarted';
+}
 
 /**
  * Function to fix common markdown formatting issues in improved instructions
@@ -147,9 +217,9 @@ function fixMarkdownFormatting(text) {
   return fixed;
 }
 
-
 /**
  * Improves instructions for multiple sections, now separating instructions and feedback.
+ * Also adds completion status detection for each section.
  * @param {Array} currentSections - Array of section objects (full list)
  * @param {Object} userInputs - User inputs for all sections
  * @param {Object} sectionContent - The full section content object (used for original instructions)
@@ -216,6 +286,7 @@ Your task is, FOR **EACH** section provided:
 **Part 1: Generate Feedback**
 1.  Analyze the 'userContent' against the goals in 'originalInstructionsText'.
 2.  Write a constructive feedback section (max 150 words). Start with a brief (1-2 sentence) positive acknowledgement of specific points the user covered well. Then, clearly list strengths, weaknesses, and specific, actionable suggestions for improvement based *only* on what remains unaddressed or needs refinement according to the 'originalInstructionsText' and general standards of scientific rigor/clarity. Format this feedback using markdown (e.g., use bold for **Strengths:**, **Weaknesses:**, **Suggestions:**).
+3.  Include a clear assessment of completeness. Use phrases like "excellent work" for complete sections, "good start" or "making progress" for partial completion, and highlight specific missing elements for incomplete sections.
 
 **Part 2: Generate Edited Instructions**
 1.  Critically **EDIT** the 'originalInstructionsText'. Your **PRIMARY GOAL** is to **REMOVE** instruction points that the 'userContent' satisfactorily addresses.
@@ -224,10 +295,11 @@ Your task is, FOR **EACH** section provided:
 4.  **Otherwise (if points remain),** create the edited instruction text. Start with a brief (1-2 sentence) positive acknowledgement (same as step 1.2 in Feedback part) and then append the remaining, edited instructions.
 
 **CRITICAL REQUIREMENTS:**
-* **JSON Output:** Respond ONLY with a valid JSON array. Each object in the array must correspond to one of the input section IDs and have EXACTLY these two keys:
+* **JSON Output:** Respond ONLY with a valid JSON array. Each object in the array must correspond to one of the input section IDs and have EXACTLY these three keys:
     * \`"id"\`: (string) The section ID.
     * \`"editedInstructions"\`: (string) The result from Part 2 (edited instructions or congratulatory message).
     * \`"feedback"\`: (string) The result from Part 1 (strengths, weaknesses, suggestions).
+    * \`"completionStatus"\`: (string) Your assessment of the section's completion: "complete", "progress", or "unstarted".
 * **Markdown Preservation:** Preserve markdown (###, **, lists) within the string values of \`"editedInstructions"\` and \`"feedback"\`.
 * **Formatting:** Ensure proper markdown line breaks (blank lines between paragraphs, after headings). No trailing commas in the JSON.
 * **Conciseness:** Keep responses focused and reasonably concise (total response < 4000 chars).
@@ -239,10 +311,10 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
 {
   "id": "section_id",
   "editedInstructions": "Great start defining X! Now focus on...\\n\\n1. Point Y\\n2. Point Z",
-  "feedback": "**Strengths:** Clear definition of X.\\n\\n**Weaknesses:** Point Y lacks detail.\\n\\n**Suggestions:** Elaborate on the methodology for Y."
+  "feedback": "**Strengths:** Clear definition of X.\\n\\n**Weaknesses:** Point Y lacks detail.\\n\\n**Suggestions:** Elaborate on the methodology for Y.",
+  "completionStatus": "progress"
 }
 `;
-
 
     console.log("[Instruction Improvement] Sending batch request to OpenAI for sections:", sectionsWithProgress.join(', '));
     const sectionsForContext = sectionContent?.sections || []; // Pass full structure for context if needed
@@ -285,7 +357,9 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
         const isValid = improvedInstructionsAndFeedback.every(item =>
             item && typeof item.id === 'string' &&
             typeof item.editedInstructions === 'string' && // Check for new field
-            typeof item.feedback === 'string'              // Check for new field
+            typeof item.feedback === 'string' &&           // Check for new field
+            (typeof item.completionStatus === 'string' ||  // Check for completeness status
+             item.completionStatus === undefined)          // Allow undefined for backward compatibility
         );
 
         if (!isValid) {
@@ -303,6 +377,13 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
              console.warn("Proceeding with partially valid response:", improvedInstructionsAndFeedback);
         }
 
+        // If completionStatus is missing, add it based on the content
+        improvedInstructionsAndFeedback.forEach(item => {
+            if (!item.completionStatus) {
+                item.completionStatus = detectCompletionStatus(item.editedInstructions, item.feedback);
+            }
+        });
+
         console.log(`[Instruction Improvement] Successfully parsed ${improvedInstructionsAndFeedback.length} improved sections with feedback.`);
 
     } catch (error) {
@@ -316,7 +397,7 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
 
     return {
         success: true,
-        improvedInstructions: improvedInstructionsAndFeedback // Return the array containing objects with both fields
+        improvedData: improvedInstructionsAndFeedback // Return the array containing objects with both fields
     };
   } catch (error) {
     console.error("Error improving batch instructions:", error);
@@ -325,81 +406,4 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
         message: error.message || "An error occurred while improving instructions"
     };
   }
-};
-
-/**
- * Updates section content with improved instructions AND feedback
- * Refactored to check sectionContent validity *before* try block.
- * @param {Object} sectionContent - The original section content object
- * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback }
- * @returns {Object} - Updated section content object
- */
-export const updateSectionWithImprovedInstructions = (sectionContent, improvedData) => {
-    // Validate inputs upfront
-    if (typeof sectionContent !== 'object' || sectionContent === null) {
-         console.error("updateSectionWithImprovedInstructions received invalid sectionContent:", sectionContent);
-         return { sections: [] }; // Return default structure immediately
-    }
-
-    if (!Array.isArray(improvedData)) {
-        console.error("Invalid improvedData format: Expected an array.");
-         // Return a safe copy of the original content if improvedData is bad
-        try {
-            return JSON.parse(JSON.stringify(sectionContent));
-        } catch(e) {
-            console.error("Error deep copying sectionContent during improvedData validation failure", e);
-            return { sections: [] };
-        }
-    }
-
-    let updatedSectionsData;
-    try {
-        // Deep copy is likely safe now after the initial check
-        updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
-    } catch(e) {
-        console.error("Error deep copying section content", e);
-        return { sections: [] }; // Return default structure on copy error
-    }
-
-    // Ensure sections array exists after copy
-    if (!Array.isArray(updatedSectionsData.sections)) {
-        console.error("updatedSectionsData does not have a valid sections array after copy.");
-        updatedSectionsData.sections = [];
-    }
-
-    improvedData.forEach(improvement => {
-        if (!improvement || typeof improvement.id !== 'string' ||
-            typeof improvement.editedInstructions !== 'string' ||
-            typeof improvement.feedback !== 'string') {
-            console.warn("Skipping invalid improvement object:", improvement);
-            return; // Skip this invalid item
-        }
-
-        const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
-
-        if (sectionIndex !== -1) {
-             if (!updatedSectionsData.sections[sectionIndex]) {
-                 console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
-                 return;
-             }
-             if (!updatedSectionsData.sections[sectionIndex].instructions) {
-                 updatedSectionsData.sections[sectionIndex].instructions = {};
-                 console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
-             }
-
-             const fixedInstructions = fixMarkdownFormatting(improvement.editedInstructions);
-             const fixedFeedback = fixMarkdownFormatting(improvement.feedback);
-
-             updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions;
-             updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback;
-
-             delete updatedSectionsData.sections[sectionIndex].instructions.description;
-             delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
-
-        } else {
-            console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
-        }
-    });
-
-    return updatedSectionsData;
 };
