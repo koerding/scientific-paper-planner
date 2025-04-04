@@ -20,23 +20,7 @@ import '../../styles/PaperPlanner.css';
  * ADDED: ExamplesDialog rendering and state management
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
-  const [activeSection, setActiveSection] = useState('question');
-  const [activeApproach, setActiveApproach] = useState('hypothesis');
-  const [activeDataMethod, setActiveDataMethod] = useState('experiment');
-  const sectionRefs = useRef({});
-
-  // Use local state for instructions potentially modified by AI
-  const [localSectionContent, setLocalSectionContent] = useState(() => {
-      // Use deep copy on initial load to prevent mutation issues if sectionContent is used elsewhere
-      try {
-          return JSON.parse(JSON.stringify(sectionContent));
-      } catch (e) {
-          console.error("Failed to parse initial sectionContent", e);
-          return { sections: [] }; // Fallback
-      }
-  });
-  const [improvingInstructions, setImprovingInstructions] = useState(false);
-
+  // Receive the *entire* hook result as a prop
   const {
     currentSection: currentSectionIdForChat,
     userInputs,
@@ -55,7 +39,25 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     resetProject: hookResetProject, // Rename to avoid conflict
     exportProject,
     loadProject
-  } = usePaperPlannerHook;
+  } = usePaperPlannerHook; // Destructure the hook data here
+
+  const [activeSection, setActiveSection] = useState(currentSectionIdForChat); // Initialize with hook's currentSection
+  const [activeApproach, setActiveApproach] = useState('hypothesis');
+  const [activeDataMethod, setActiveDataMethod] = useState('experiment');
+  const sectionRefs = useRef({});
+
+  // Use local state for instructions potentially modified by AI
+  const [localSectionContent, setLocalSectionContent] = useState(() => {
+      // Use deep copy on initial load to prevent mutation issues if sectionContent is used elsewhere
+      try {
+          return JSON.parse(JSON.stringify(sectionContent));
+      } catch (e) {
+          console.error("Failed to parse initial sectionContent", e);
+          return { sections: [] }; // Fallback
+      }
+  });
+  const [improvingInstructions, setImprovingInstructions] = useState(false);
+
 
   // Effect to map refs
   useEffect(() => {
@@ -68,12 +70,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   }, [localSectionContent.sections]);
 
-  // Effect for initial active section setting
-  useEffect(() => {
-      setActiveSection('question');
-      // Let the hook manage the initial chat context section
-      // handleSectionChange('question');
-  }, []);
+  // Effect for initial active section setting based on hook
+   useEffect(() => {
+       setActiveSection(currentSectionIdForChat);
+   }, [currentSectionIdForChat]);
+
 
   // Effect to update active approach and data method based on user inputs
   useEffect(() => {
@@ -115,7 +116,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
-    handleSectionChange(sectionId); // Update context for chat/API calls
+    handleSectionChange(sectionId); // Update context for chat/API calls in the hook
   };
 
   // Helper to check if section has meaningful content beyond placeholder
@@ -179,7 +180,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
            console.error("Failed to reset local section content:", e);
            setLocalSectionContent({ sections: [] }); // Fallback to empty
        }
-      setActiveSection('question'); // Reset active section locally
+      setActiveSection(sectionContent?.sections?.[0]?.id || 'question'); // Reset active section locally safely
       setActiveApproach('hypothesis'); // Reset active approach
       setActiveDataMethod('experiment'); // Reset active data method
   };
@@ -220,10 +221,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           activeSection={activeSection}
           setActiveSection={setActiveSectionWithManualFlag}
           scrollToSection={scrollToSection}
-          resetProject={() => setShowConfirmDialog(true)} // Trigger dialog
-          exportProject={exportProject}
-          loadProject={loadProject}
-          setShowExamplesDialog={setShowExamplesDialog} // <-- Pass setter to header
+          resetProject={() => setShowConfirmDialog(true)} // Trigger dialog from hook state
+          exportProject={exportProject} // From hook
+          loadProject={loadProject} // From hook
+          setShowExamplesDialog={setShowExamplesDialog} // <-- Pass setter from hook to header
         />
 
         <div className="flex">
@@ -241,10 +242,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                     section={section}
                     isCurrentSection={isCurrentActive}
                     isCompleted={isCompleted}
-                    userInputs={userInputs}
-                    handleInputChange={handleInputChange}
-                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
-                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    userInputs={userInputs} // from hook
+                    handleInputChange={handleInputChange} // from hook
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)} // from hook
+                    loading={chatLoading && currentSectionIdForChat === section.id} // from hook
                     sectionRef={sectionRefs.current[section.id]}
                     onClick={() => setActiveSectionWithManualFlag(section.id)}
                     useLargerFonts={true}
@@ -271,10 +272,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                     section={section}
                     isCurrentSection={isCurrentActive}
                     isCompleted={isCompleted}
-                    userInputs={userInputs}
-                    handleInputChange={handleInputChange}
-                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
-                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    userInputs={userInputs} // from hook
+                    handleInputChange={handleInputChange} // from hook
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)} // from hook
+                    loading={chatLoading && currentSectionIdForChat === section.id} // from hook
                     sectionRef={sectionRefs.current[section.id]}
                     onClick={() => setActiveSectionWithManualFlag(section.id)}
                     useLargerFonts={true}
@@ -295,10 +296,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                     section={section}
                     isCurrentSection={isCurrentActive}
                     isCompleted={isCompleted}
-                    userInputs={userInputs}
-                    handleInputChange={handleInputChange}
-                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
-                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    userInputs={userInputs} // from hook
+                    handleInputChange={handleInputChange} // from hook
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)} // from hook
+                    loading={chatLoading && currentSectionIdForChat === section.id} // from hook
                     sectionRef={sectionRefs.current[section.id]}
                     onClick={() => setActiveSectionWithManualFlag(section.id)}
                     useLargerFonts={true}
@@ -325,10 +326,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                     section={section}
                     isCurrentSection={isCurrentActive}
                     isCompleted={isCompleted}
-                    userInputs={userInputs}
-                    handleInputChange={handleInputChange}
-                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
-                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    userInputs={userInputs} // from hook
+                    handleInputChange={handleInputChange} // from hook
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)} // from hook
+                    loading={chatLoading && currentSectionIdForChat === section.id} // from hook
                     sectionRef={sectionRefs.current[section.id]}
                     onClick={() => setActiveSectionWithManualFlag(section.id)}
                     useLargerFonts={true}
@@ -349,10 +350,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                     section={section}
                     isCurrentSection={isCurrentActive}
                     isCompleted={isCompleted}
-                    userInputs={userInputs}
-                    handleInputChange={handleInputChange}
-                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
-                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    userInputs={userInputs} // from hook
+                    handleInputChange={handleInputChange} // from hook
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)} // from hook
+                    loading={chatLoading && currentSectionIdForChat === section.id} // from hook
                     sectionRef={sectionRefs.current[section.id]}
                     onClick={() => setActiveSectionWithManualFlag(section.id)}
                     useLargerFonts={true}
@@ -373,21 +374,21 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         />
 
         <ModernChatInterface
-          currentSection={currentSectionIdForChat}
-          chatMessages={chatMessages}
-          currentMessage={currentMessage}
-          setCurrentMessage={setCurrentMessage}
-          handleSendMessage={handleSendMessage}
-          loading={chatLoading}
+          currentSection={currentSectionIdForChat} // From hook
+          chatMessages={chatMessages} // From hook
+          currentMessage={currentMessage} // From hook
+          setCurrentMessage={setCurrentMessage} // From hook
+          handleSendMessage={handleSendMessage} // From hook
+          loading={chatLoading} // From hook
         />
 
         <ConfirmDialog
-          showConfirmDialog={showConfirmDialog}
-          setShowConfirmDialog={setShowConfirmDialog}
+          showConfirmDialog={showConfirmDialog} // From hook
+          setShowConfirmDialog={setShowConfirmDialog} // From hook
           resetProject={handleResetRequest} // Use combined reset handler
         />
 
-        {/* Render ExamplesDialog */}
+        {/* Render ExamplesDialog, passing props from hook */}
         <ExamplesDialog
             showExamplesDialog={showExamplesDialog}
             setShowExamplesDialog={setShowExamplesDialog}
