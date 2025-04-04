@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
+import ExamplesDialog from './ExamplesDialog'; // <-- Import ExamplesDialog
 import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
 import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
@@ -16,6 +17,7 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
+ * ADDED: ExamplesDialog rendering and state management
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [activeSection, setActiveSection] = useState('question');
@@ -42,8 +44,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     currentMessage,
     loading: chatLoading,
     showConfirmDialog,
+    showExamplesDialog, // <-- Get examples dialog state from hook
     setCurrentMessage,
     setShowConfirmDialog,
+    setShowExamplesDialog, // <-- Get examples dialog setter from hook
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
@@ -73,22 +77,41 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Effect to update active approach and data method based on user inputs
   useEffect(() => {
-    // Check if user has input in any of the approach sections
-    if (userInputs.hypothesis && userInputs.hypothesis.trim() !== '') {
-      setActiveApproach('hypothesis');
-    } else if (userInputs.needsresearch && userInputs.needsresearch.trim() !== '') {
-      setActiveApproach('needsresearch');
-    } else if (userInputs.exploratoryresearch && userInputs.exploratoryresearch.trim() !== '') {
-      setActiveApproach('exploratoryresearch');
+    // Determine default placeholder content for each section
+    const placeholders = {};
+    if (localSectionContent?.sections) {
+        localSectionContent.sections.forEach(s => {
+            if (s?.id) placeholders[s.id] = s.placeholder || '';
+        });
     }
 
-    // Check if user has input in any of the data acquisition sections
-    if (userInputs.experiment && userInputs.experiment.trim() !== '') {
-      setActiveDataMethod('experiment');
-    } else if (userInputs.existingdata && userInputs.existingdata.trim() !== '') {
-      setActiveDataMethod('existingdata');
+    // Helper to check if content is different from placeholder
+    const isModified = (sectionId) => {
+        const content = userInputs[sectionId];
+        return typeof content === 'string' && content.trim() !== '' && content !== placeholders[sectionId];
+    };
+
+    // Check if user has modified input in any of the approach sections
+    if (isModified('hypothesis')) {
+      setActiveApproach('hypothesis');
+    } else if (isModified('needsresearch')) {
+      setActiveApproach('needsresearch');
+    } else if (isModified('exploratoryresearch')) {
+      setActiveApproach('exploratoryresearch');
+    } else {
+       setActiveApproach('hypothesis'); // Default if none are modified
     }
-  }, [userInputs]);
+
+    // Check if user has modified input in any of the data acquisition sections
+    if (isModified('experiment')) {
+      setActiveDataMethod('experiment');
+    } else if (isModified('existingdata')) {
+      setActiveDataMethod('existingdata');
+    } else {
+       setActiveDataMethod('experiment'); // Default if none are modified
+    }
+  }, [userInputs, localSectionContent.sections]); // Add localSectionContent.sections dependency
+
 
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
@@ -101,10 +124,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     const section = localSectionContent.sections.find(s => s?.id === sectionId);
     const placeholder = section?.placeholder || '';
     const stringContent = typeof content === 'string' ? content : JSON.stringify(content);
-    if (!stringContent || stringContent.trim() === '') return false;
-    if (stringContent === placeholder) return false;
-    return true;
+    // Consider it 'completed' if it's not empty and different from placeholder
+    return stringContent && stringContent.trim() !== '' && stringContent !== placeholder;
   };
+
 
   const scrollToSection = (sectionId) => {
     if (sectionRefs.current[sectionId]?.current) {
@@ -149,7 +172,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Combine local reset logic with hook's reset logic
   const handleResetRequest = () => {
       hookResetProject(); // Call the hook's reset (clears storage, resets hook state)
-      setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent))); // Reset local instructions state
+      // Reset local instructions state using a deep copy of original content
+       try {
+          setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent)));
+       } catch(e) {
+           console.error("Failed to reset local section content:", e);
+           setLocalSectionContent({ sections: [] }); // Fallback to empty
+       }
       setActiveSection('question'); // Reset active section locally
       setActiveApproach('hypothesis'); // Reset active approach
       setActiveDataMethod('experiment'); // Reset active data method
@@ -162,11 +191,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
       return sectionId === activeApproach;
     }
-    
+
     if (sectionId === 'experiment' || sectionId === 'existingdata') {
       return sectionId === activeDataMethod;
     }
-    
+
     return true; // All other sections are always displayed
   };
 
@@ -194,6 +223,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           resetProject={() => setShowConfirmDialog(true)} // Trigger dialog
           exportProject={exportProject}
           loadProject={loadProject}
+          setShowExamplesDialog={setShowExamplesDialog} // <-- Pass setter to header
         />
 
         <div className="flex">
@@ -221,13 +251,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   />
                 );
               })}
-            
+
             {/* Research Approach Toggle */}
-            <ResearchApproachToggle 
+            <ResearchApproachToggle
               activeApproach={activeApproach}
               setActiveApproach={handleApproachToggle}
             />
-            
+
             {/* Display active approach section */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
@@ -251,7 +281,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   />
                 );
               })}
-            
+
             {/* Related Papers Section */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => section?.id === 'relatedpapers')
@@ -275,13 +305,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   />
                 );
               })}
-            
+
             {/* Data Acquisition Toggle */}
-            <DataAcquisitionToggle 
+            <DataAcquisitionToggle
               activeMethod={activeDataMethod}
               setActiveMethod={handleDataMethodToggle}
             />
-            
+
             {/* Display active data acquisition section */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
@@ -305,7 +335,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                   />
                 );
               })}
-            
+
             {/* Display remaining sections: Analysis, Process, Abstract */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
@@ -355,6 +385,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           showConfirmDialog={showConfirmDialog}
           setShowConfirmDialog={setShowConfirmDialog}
           resetProject={handleResetRequest} // Use combined reset handler
+        />
+
+        {/* Render ExamplesDialog */}
+        <ExamplesDialog
+            showExamplesDialog={showExamplesDialog}
+            setShowExamplesDialog={setShowExamplesDialog}
+            loadProject={loadProject}
         />
       </div>
     </div>
