@@ -1,4 +1,4 @@
-// Updated VerticalPaperPlannerApp.js with PDF import support
+// Updated VerticalPaperPlannerApp.js with more generous completion status
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
@@ -17,7 +17,7 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
- * UPDATED: Added document import functionality
+ * UPDATED: Much more generous completion status detection
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
@@ -39,7 +39,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     exportProject,
     saveProject,
     loadProject,
-    importDocumentContent // NEW: Extract document import function
+    importDocumentContent
   } = usePaperPlannerHook; // Destructure the hook data here
 
   const [activeSection, setActiveSection] = useState(currentSectionIdForChat);
@@ -128,36 +128,89 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     return stringContent && stringContent.trim() !== '' && stringContent !== placeholder;
   };
 
-  // UPDATED: More generous completion status detection
+  // MUCH MORE GENEROUS completion status detection
   const getSectionCompletionStatus = (sectionId) => {
     // If there's an explicit completion status from the AI, use it
     if (sectionCompletionStatus[sectionId]) {
       return sectionCompletionStatus[sectionId];
     }
     
-    // Otherwise, determine based on content length and feedback
+    // Get content and template
     const content = userInputs[sectionId];
     if (!content || content.trim() === '') {
       return 'unstarted';
     }
     
-    // Check if the section has a placeholder and if the content is different
     const section = localSectionContent.sections.find(s => s?.id === sectionId);
     const placeholder = section?.placeholder || '';
     
+    // If content is exactly the placeholder, it's unstarted
     if (content === placeholder) {
       return 'unstarted';
     }
     
-    // MORE GENEROUS GRADING:
-    // If they've made any substantial modifications to the template, mark as 'progress'
-    // This is a very basic check - just 20% longer than the template
-    if (content.length > placeholder.length * 1.2) {
-      return 'progress';
-    }
+    // VERY GENEROUS GRADING:
+    // If they've written anything meaningful beyond the template, mark it as complete
     
-    // If they've made at least some modifications, still give them 'progress'
+    // Check if the content has actual text that differs from placeholder
     if (content !== placeholder && content.trim().length > 0) {
+      // If they've filled in at least the minimum amount of information expected
+      // For example, in hypothesis they need: two hypotheses and why they matter
+      // In audience they need: communities and specific researchers
+      
+      // Count the number of filled lines or sections
+      const lines = content.split('\n').filter(line => line.trim().length > 0);
+      const placeholderLines = placeholder.split('\n').filter(line => line.trim().length > 0);
+      
+      // For most sections, if they filled in at least 50% of expected points, mark complete
+      // This is a much more generous threshold than before
+      if (lines.length >= placeholderLines.length * 0.5) {
+        // Additional section-specific checks for certain key fields
+        if (sectionId === 'hypothesis') {
+          // For hypothesis, check if they have two hypotheses and at least one reason
+          // looking for lines that start with "Hypothesis 1", "Hypothesis 2", and at least one "-" item
+          const hasH1 = content.includes('Hypothesis 1:');
+          const hasH2 = content.includes('Hypothesis 2:');
+          const hasReason = content.includes('-');
+          
+          if (hasH1 && hasH2) {
+            return 'complete';
+          }
+        } 
+        else if (sectionId === 'audience') {
+          // For audience, check if they've listed at least one community and one researcher
+          const communitySection = content.includes('Target Audience/Community');
+          const researcherSection = content.includes('Specific Researchers/Labs');
+          const hasItems = content.includes('1.') && (content.includes('2.') || content.includes('- '));
+          
+          if (communitySection && researcherSection && hasItems) {
+            return 'complete';
+          }
+        }
+        else if (sectionId === 'question') {
+          // For research question, check if they have both question and significance
+          const hasQuestion = content.includes('Research Question:');
+          const hasSignificance = content.includes('Significance/Impact:');
+          
+          if (hasQuestion && hasSignificance) {
+            return 'complete';
+          }
+        }
+        else {
+          // For all other sections, be very generous - if they've written more than a few lines
+          if (content.length > 50 && lines.length >= 3) {
+            return 'complete';
+          }
+        }
+      }
+      
+      // If the content is substantial but doesn't meet specific criteria
+      // still mark as complete if it's significantly longer than template
+      if (content.length > placeholder.length * 1.2) {
+        return 'complete';
+      }
+      
+      // If it's not clearly complete but they've made progress, mark as progress
       return 'progress';
     }
     
@@ -208,26 +261,35 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           }
           // Alternatively, analyze content for completion markers
           else {
-            // Check for congratulatory messages in editedInstructions
-            const isComplete = item.editedInstructions.includes('Excellent work') || 
-                              item.editedInstructions.includes('Great job') ||
-                              item.editedInstructions.includes('Well done') ||
-                              item.editedInstructions.includes('completed all');
-                              
-            // MORE GENEROUS MARKING:
-            // If the content looks substantial, mark as 'complete'
+            // Make this much more generous - almost anything with feedback should be "complete"
             const userContent = userInputs[item.id] || '';
-            const section = localSectionContent.sections.find(s => s?.id === item.id);
-            const placeholder = section?.placeholder || '';
             
-            if (isComplete || 
-                (userContent.length > placeholder.length * 1.5 && !item.editedInstructions.includes('missing'))) {
-              newCompletionStatuses[item.id] = 'complete';
-            } else if (userContent.trim() !== '' && userContent !== placeholder) {
-              // If they've done some work, mark as 'progress'
-              newCompletionStatuses[item.id] = 'progress';
-            } else {
-              newCompletionStatuses[item.id] = 'unstarted';
+            if (userContent.trim() !== '') {
+              // Check if there's any feedback - if so, mark as complete
+              if (item.feedback && item.feedback.length > 20) {
+                newCompletionStatuses[item.id] = 'complete';
+                return;
+              }
+              
+              // Check for congratulatory messages in editedInstructions
+              const isComplete = item.editedInstructions.includes('Excellent work') || 
+                                item.editedInstructions.includes('Great job') ||
+                                item.editedInstructions.includes('Well done') ||
+                                item.editedInstructions.includes('completed all');
+                                
+              // MORE GENEROUS MARKING:
+              // If they've written anything substantial, mark as complete
+              const section = localSectionContent.sections.find(s => s?.id === item.id);
+              const placeholder = section?.placeholder || '';
+              
+              if (isComplete || userContent.length > placeholder.length * 1.2) {
+                newCompletionStatuses[item.id] = 'complete';
+              } else if (userContent.trim() !== '' && userContent !== placeholder) {
+                // If they've done some work, mark as progress
+                newCompletionStatuses[item.id] = 'progress';
+              } else {
+                newCompletionStatuses[item.id] = 'unstarted';
+              }
             }
           }
         });
