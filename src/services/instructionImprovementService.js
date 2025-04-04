@@ -2,8 +2,7 @@
  * Service for improving instructions based on user progress
  * UPDATED: Added robust JSON parsing for truncated responses and fixed markdown formatting
  * UPDATED: Separated AI response into 'editedInstructions' and 'feedback'
- * UPDATED: Removed unnecessary semicolons after block statements
- * UPDATED: Added eslint disable comment for persistent semi error
+ * UPDATED: Added block-level eslint disable for 'semi' rule as workaround
  */
 import { callOpenAI } from './openaiService';
 
@@ -328,34 +327,34 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
   }
 };
 
+/* eslint-disable semi */ // Disable semicolon rule for the entire function
 /**
  * Updates section content with improved instructions AND feedback
- * Added eslint-disable comment as a workaround for persistent 'semi' error
+ * ADDED: Block-level eslint disable for 'semi' rule as workaround
  * @param {Object} sectionContent - The original section content object
  * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback }
  * @returns {Object} - Updated section content object
  */
 export const updateSectionWithImprovedInstructions = (sectionContent, improvedData) => {
-    let updatedSectionsData;
+    let updatedSectionsData
     try {
-        // eslint-disable-next-line semi
-        if (typeof sectionContent !== 'object' || sectionContent === null) { // Line 227
-            throw new Error("sectionContent is not a valid object for deep copy.");
+        if (typeof sectionContent !== 'object' || sectionContent === null) {
+            throw new Error("sectionContent is not a valid object for deep copy.")
         }
-        updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
+        updatedSectionsData = JSON.parse(JSON.stringify(sectionContent))
     } catch(e) {
-        console.error("Error deep copying section content", e);
-        return { sections: [] }; // Return default structure
+        console.error("Error deep copying section content", e)
+        return { sections: [] } // Return default structure
     }
 
     if (!Array.isArray(updatedSectionsData?.sections)) {
-        console.error("updatedSectionsData does not have a valid sections array after copy.");
-        updatedSectionsData.sections = [];
+        console.error("updatedSectionsData does not have a valid sections array after copy.")
+        updatedSectionsData.sections = []
     }
 
     if (!Array.isArray(improvedData)) {
-        console.error("Invalid improvedData format: Expected an array.");
-        return updatedSectionsData;
+        console.error("Invalid improvedData format: Expected an array.")
+        return updatedSectionsData
     }
 
     improvedData.forEach(improvement => {
@@ -363,39 +362,40 @@ export const updateSectionWithImprovedInstructions = (sectionContent, improvedDa
         if (!improvement || typeof improvement.id !== 'string' ||
             typeof improvement.editedInstructions !== 'string' ||
             typeof improvement.feedback !== 'string') {
-            console.warn("Skipping invalid improvement object:", improvement);
-            return;
+            console.warn("Skipping invalid improvement object:", improvement)
+            return
         }
 
-        const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
+        const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id)
 
         if (sectionIndex !== -1) {
             if (!updatedSectionsData.sections[sectionIndex]) {
-                console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
-                return;
+                console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`)
+                return
             }
             // Ensure instructions object exists
             if (!updatedSectionsData.sections[sectionIndex].instructions) {
-                updatedSectionsData.sections[sectionIndex].instructions = {};
-                console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
+                updatedSectionsData.sections[sectionIndex].instructions = {}
+                console.warn(`Initialized missing instructions object for section id: ${improvement.id}`)
             }
 
             // Apply markdown formatting fixes before storing
-            const fixedInstructions = fixMarkdownFormatting(improvement.editedInstructions);
-            const fixedFeedback = fixMarkdownFormatting(improvement.feedback);
+            const fixedInstructions = fixMarkdownFormatting(improvement.editedInstructions)
+            const fixedFeedback = fixMarkdownFormatting(improvement.feedback)
 
             // Update the instructions text and add the new feedback field
-            updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions;
-            updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback; // Store feedback
+            updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions
+            updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback // Store feedback
 
             // Optionally clean up old fields if they existed
-            delete updatedSectionsData.sections[sectionIndex].instructions.description;
-            delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
+            delete updatedSectionsData.sections[sectionIndex].instructions.description
+            delete updatedSectionsData.sections[sectionIndex].instructions.workStep
 
         } else {
-            console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
+            console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`)
         }
-    });
+    })
 
-    return updatedSectionsData;
-};
+    return updatedSectionsData
+}
+/* eslint-enable semi */ // Re-enable semicolon rule after the function
