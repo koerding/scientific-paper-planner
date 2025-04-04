@@ -270,5 +270,3 @@ Based on the filename, file metadata, and any content hints, create a plausible 
     };
   }
 };
- Analysis Method: Unknown\n\nHow Analysis Addresses Research Question: Unknown\n\nUncertainty Quantification: Unknown\n\nSpecial Cases Handling: Unknown",
-        process: "Skills Needed vs. Skills I Have: Unknown\n\nColl
