@@ -2,7 +2,7 @@
  * Service for improving instructions based on user progress
  * UPDATED: Added robust JSON parsing for truncated responses and fixed markdown formatting
  * UPDATED: Separated AI response into 'editedInstructions' and 'feedback'
- * UPDATED: Added block-level eslint disable for 'semi' rule as workaround
+ * UPDATED: Refactored variable declaration in updateSectionWithImprovedInstructions to avoid parser confusion
  */
 import { callOpenAI } from './openaiService';
 
@@ -327,75 +327,77 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
   }
 };
 
-/* eslint-disable semi */ // Disable semicolon rule for the entire function
 /**
  * Updates section content with improved instructions AND feedback
- * ADDED: Block-level eslint disable for 'semi' rule as workaround
+ * Refactored variable declaration/assignment.
  * @param {Object} sectionContent - The original section content object
  * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback }
  * @returns {Object} - Updated section content object
  */
 export const updateSectionWithImprovedInstructions = (sectionContent, improvedData) => {
-    let updatedSectionsData
+    // Declare variable before try block to ensure correct scope
+    let updatedSectionsData = null;
     try {
         if (typeof sectionContent !== 'object' || sectionContent === null) {
-            throw new Error("sectionContent is not a valid object for deep copy.")
+            throw new Error("sectionContent is not a valid object for deep copy.");
         }
-        updatedSectionsData = JSON.parse(JSON.stringify(sectionContent))
+        // Assign inside try block
+        updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
     } catch(e) {
-        console.error("Error deep copying section content", e)
-        return { sections: [] } // Return default structure
+        console.error("Error deep copying section content", e);
+        // Ensure a default object is returned even on copy error
+        return { sections: [] };
     }
 
-    if (!Array.isArray(updatedSectionsData?.sections)) {
-        console.error("updatedSectionsData does not have a valid sections array after copy.")
-        updatedSectionsData.sections = []
+    // Check if sections array exists after potential copy error
+    if (!updatedSectionsData || !Array.isArray(updatedSectionsData.sections)) {
+        console.error("updatedSectionsData does not have a valid sections array.");
+        // Attempt to initialize if possible, otherwise return a safe default
+        if (updatedSectionsData && typeof updatedSectionsData === 'object') {
+            updatedSectionsData.sections = [];
+        } else {
+            return { sections: [] };
+        }
     }
 
     if (!Array.isArray(improvedData)) {
-        console.error("Invalid improvedData format: Expected an array.")
-        return updatedSectionsData
+        console.error("Invalid improvedData format: Expected an array.");
+        return updatedSectionsData; // Return potentially initialized data
     }
 
     improvedData.forEach(improvement => {
-        // Validate the structure of each improvement object
         if (!improvement || typeof improvement.id !== 'string' ||
             typeof improvement.editedInstructions !== 'string' ||
             typeof improvement.feedback !== 'string') {
-            console.warn("Skipping invalid improvement object:", improvement)
-            return
+            console.warn("Skipping invalid improvement object:", improvement);
+            return;
         }
 
-        const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id)
+        const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
 
         if (sectionIndex !== -1) {
             if (!updatedSectionsData.sections[sectionIndex]) {
-                console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`)
-                return
+                console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
+                return;
             }
-            // Ensure instructions object exists
             if (!updatedSectionsData.sections[sectionIndex].instructions) {
-                updatedSectionsData.sections[sectionIndex].instructions = {}
-                console.warn(`Initialized missing instructions object for section id: ${improvement.id}`)
+                updatedSectionsData.sections[sectionIndex].instructions = {};
+                console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
             }
 
-            // Apply markdown formatting fixes before storing
-            const fixedInstructions = fixMarkdownFormatting(improvement.editedInstructions)
-            const fixedFeedback = fixMarkdownFormatting(improvement.feedback)
+            const fixedInstructions = fixMarkdownFormatting(improvement.editedInstructions);
+            const fixedFeedback = fixMarkdownFormatting(improvement.feedback);
 
-            // Update the instructions text and add the new feedback field
-            updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions
-            updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback // Store feedback
+            updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions;
+            updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback;
 
-            // Optionally clean up old fields if they existed
-            delete updatedSectionsData.sections[sectionIndex].instructions.description
-            delete updatedSectionsData.sections[sectionIndex].instructions.workStep
+            delete updatedSectionsData.sections[sectionIndex].instructions.description;
+            delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
 
         } else {
-            console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`)
+            console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
         }
-    })
+    });
 
-    return updatedSectionsData
-}
-/* eslint-enable semi */ // Re-enable semicolon rule after the function
+    return updatedSectionsData;
+};
