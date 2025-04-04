@@ -184,19 +184,18 @@ export const improveBatchInstructions = async (
 
     // *** Build the user-improved prompt for the AI ***
     const prompt = `
-I need you to act as a helpful and encouraging editor improving instruction content for a scientific paper planning tool that is used by PhD students. The user has made progress on some sections, and the instructions MUST be updated based on their progress so far.
+I need you to act as a helpful and encouraging editor improving instruction content for a scientific paper planning tool that is used by PhD students in science, engineering, or medicine. The user has made progress on some sections, and the instructions MUST be updated based on their progress so far.
 
 For each section PROVIDED BELOW, I'll provide:
-1. The current full instruction text (field name: 'instructionsText')
+1. The full instruction text given originally to the user (field name: 'instructionsText')
 2. The user's current content for that section (field name: 'userContent')
 
 Your task is, FOR EACH SECTION PROVIDED:
 1. **Analyze** the 'userContent' to understand what the user has already addressed well regarding the goals in 'instructionsText'.
-2. **Start** your response for 'instructionsText' with a brief (1-2 sentence) positive acknowledgement of the specific points the user has successfully covered (e.g., "Great job clearly defining the research question!").
-3. **Then, critically EDIT** the *original* 'instructionsText'. Your **PRIMARY GOAL** is to **REMOVE** sentences or paragraphs that are now no longer helpful to them because the user's content already covers that point. Focus the remaining text *only* on what the user still needs to do or improve for that specific section. Make sure you remove the points if a reasonable person can argue that the point is satisfied by the text.
-4. **If, after editing, you find the user has addressed *****all***** the key points from the original instructions**, DO NOT provide minimal remaining instructions. Instead, replace the *entire* instruction text with a clear, positive, congratulatory message acknowledging all the points they are doing right already. After all, they've completed the main goals for this section (e.g., "Excellent work on this section! You've addressed all the key points regarding X, Y,... and Z. Ready for the next step!").
-5. **Otherwise (if points remain),** append the edited, focused, and likely shorter remaining instructions after your positive preamble (from step 2).
-6. Maintain a helpful and encouraging tone throughout.
+2. **Start** your response for 'instructionsText' with a brief (1-2 sentence) positive acknowledgement of the specific points the user has successfully covered (e.g., "Great job clearly defining the research question, it is specific and the terms will be clear to others in the field.").
+3. **Then, critically EDIT** the *original* 'instructionsText'. Your **PRIMARY GOAL** is to **REMOVE** content that asks the user to solve an issue that the users responses satisfactorily address (e.g. if their question is clear, remove a sentence that asks them to be clear). Focus the remaining text *only* on what the user has not addressed yet, or whose quality is too low according to the standards of published papers. Make sure you remove the points if a reasonable person can argue that the point is satisfied by the text. Feel free to make minor edits that improve the text (e.g. removing numbers that now no longer make sense).
+4. **If, after editing, you find the user has addressed *****all***** the key points from the original instructions**, DO NOT provide minimal remaining instructions. Instead, replace the *entire* instruction text with a clear, positive, congratulatory message acknowledging all the points they are doing right. After all, they've completed the main goals for this section (e.g., "Excellent work on this section! You've addressed all the key points regarding X, Y,... and Z. Ready for the next step!").
+5. **Otherwise (if points remain),** append the edited and likely shorter remaining instructions after your positive preamble (from step 2).
 
 CRITICAL MARKDOWN FORMATTING REQUIREMENTS:
 1. Preserve ALL markdown formatting (like ### headings, **bold text**, lists) in the edited text
@@ -209,7 +208,7 @@ CRITICAL MARKDOWN FORMATTING REQUIREMENTS:
 IMPORTANT FORMATTING RULES:
 1. JSON responses must be valid without trailing commas
 2. Avoid excessively long instructionsText values that might get truncated
-3. Keep the total response under 4000 characters if possible
+3. Keep the total response under 4000 characters
 4. DO NOT use trailing commas in JSON objects as they are not valid JSON
 5. For example, use {"id": "value", "key": "value"} NOT {"id": "value", "key": "value",}
 
