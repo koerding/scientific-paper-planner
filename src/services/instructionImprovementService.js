@@ -1,107 +1,110 @@
 /**
  * Service for improving instructions based on user progress
  * UPDATED: Added robust JSON parsing for truncated responses and fixed markdown formatting
+ * UPDATED: Separated AI response into 'editedInstructions' and 'feedback'
  */
 import { callOpenAI } from './openaiService';
 
 /**
  * Advanced JSON parser that handles truncated API responses
+ * Updated to expect 'editedInstructions' and 'feedback' fields
  * @param {string} text - The JSON string to parse, possibly truncated
- * @returns {any} - The parsed JSON object
+ * @returns {any} - The parsed JSON object or array
  */
 function repairTruncatedJson(text) {
-  // First, check if we have a clean valid JSON already
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    console.log("First parse attempt failed, trying to repair...", e);
-  }
+    // First, check if we have a clean valid JSON already
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        console.log("First parse attempt failed, trying to repair...", e);
+    }
 
-  // Clean up any markdown formatting
-  let cleanText = text.replace(/```json\s*/, '').replace(/```\s*$/, '');
-  
-  // Fix trailing commas
-  cleanText = cleanText.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
-  
-  // Try to parse again after basic cleanup
-  try {
-    return JSON.parse(cleanText);
-  } catch (e) {
-    console.log("Basic cleanup parse failed, checking for truncation...", e);
-  }
-  
-  // Check if we have a truncated JSON array
-  if (cleanText.trim().startsWith('[') && !cleanText.trim().endsWith(']')) {
-    console.log("Detected truncated JSON array, attempting to repair");
-    
-    // Extract just the complete objects
-    const arrayItems = [];
-    let depth = 0;
-    let currentItem = '';
-    let inString = false;
-    let escapeNext = false;
-    
-    for (let i = 0; i < cleanText.length; i++) {
-      const char = cleanText[i];
-      
-      // Handle string detection with escape sequences
-      if (char === '\\' && !escapeNext) {
-        escapeNext = true;
-        currentItem += char;
-        continue;
-      }
-      
-      if (char === '"' && !escapeNext) {
-        inString = !inString;
-      }
-      
-      escapeNext = false;
-      
-      // Only count braces when not in a string
-      if (!inString) {
-        if (char === '{') depth++;
-        if (char === '}') depth--;
-        
-        // When we close an object at the top level, we've completed an item
-        if (depth === 0 && char === '}') {
-          currentItem += char;
-          // We've found a complete object
-          try {
-            // Verify it's a valid JSON object
-            const parsedItem = JSON.parse(currentItem);
-            arrayItems.push(parsedItem);
-            currentItem = '';
-            // Skip any commas or whitespace
-            while (i + 1 < cleanText.length && 
-                  (cleanText[i + 1] === ',' || 
-                   cleanText[i + 1] === ' ' || 
-                   cleanText[i + 1] === '\n' || 
-                   cleanText[i + 1] === '\r' || 
-                   cleanText[i + 1] === '\t')) {
-              i++;
+    // Clean up any markdown formatting
+    let cleanText = text.replace(/```json\s*/, '').replace(/```\s*$/, '');
+
+    // Fix trailing commas (important for potentially truncated JSON)
+    cleanText = cleanText.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
+
+    // Try to parse again after basic cleanup
+    try {
+        return JSON.parse(cleanText);
+    } catch (e) {
+        console.log("Basic cleanup parse failed, checking for truncation...", e);
+    }
+
+    // Check if we have a truncated JSON array
+    if (cleanText.trim().startsWith('[') && !cleanText.trim().endsWith(']')) {
+        console.log("Detected truncated JSON array, attempting to repair");
+
+        const arrayItems = [];
+        let braceDepth = 0;
+        let currentItemText = '';
+        let inString = false;
+        let escapeNext = false;
+        let itemStartIndex = -1;
+
+        for (let i = 0; i < cleanText.length; i++) {
+            const char = cleanText[i];
+
+            // Handle string detection with escape sequences
+            if (char === '\\' && !escapeNext) {
+                escapeNext = true;
+            } else if (char === '"' && !escapeNext) {
+                inString = !inString;
+            } else {
+                escapeNext = false;
             }
-          } catch (e) {
-            console.log("Found invalid JSON object, skipping:", currentItem);
-            currentItem = '';
-          }
-          continue;
+
+
+            // Track object boundaries only when not inside a string
+            if (!inString) {
+                if (char === '{') {
+                    if (braceDepth === 0) itemStartIndex = i; // Mark start of a top-level object
+                    braceDepth++;
+                } else if (char === '}') {
+                    braceDepth--;
+                    // If we close an object at the top level, try to parse it
+                    if (braceDepth === 0 && itemStartIndex !== -1) {
+                        currentItemText = cleanText.substring(itemStartIndex, i + 1);
+                        try {
+                            const parsedItem = JSON.parse(currentItemText);
+                             // Basic validation for the new structure
+                            if (parsedItem && typeof parsedItem.id === 'string' && typeof parsedItem.editedInstructions === 'string' && typeof parsedItem.feedback === 'string') {
+                                arrayItems.push(parsedItem);
+                            } else {
+                                console.warn("Skipping incomplete/invalid item during repair:", currentItemText);
+                            }
+                            currentItemText = '';
+                            itemStartIndex = -1; // Reset start index
+
+                            // Skip trailing comma and whitespace
+                            let nextCharIndex = i + 1;
+                            while (nextCharIndex < cleanText.length && /^\s*,?\s*$/.test(cleanText.substring(i + 1, nextCharIndex + 1))) {
+                                nextCharIndex++;
+                            }
+                            i = nextCharIndex - 1; // Move index forward
+
+                        } catch (parseErr) {
+                            console.log("Found invalid JSON object during repair, skipping:", currentItemText, parseErr);
+                            currentItemText = '';
+                            itemStartIndex = -1; // Reset start index
+                        }
+                    }
+                }
+            }
+        } // End for loop
+
+        // If we extracted at least one complete object
+        if (arrayItems.length > 0) {
+            console.log(`Successfully extracted ${arrayItems.length} complete objects from truncated JSON`);
+            return arrayItems;
         }
-      }
-      
-      // Add character to current item
-      currentItem += char;
     }
-    
-    // If we extracted at least one complete object
-    if (arrayItems.length > 0) {
-      console.log(`Successfully extracted ${arrayItems.length} complete objects from truncated JSON`);
-      return arrayItems;
-    }
-  }
-  
-  // If we couldn't fix it with any method above, throw an error
-  throw new Error("Could not repair the JSON: it may be severely truncated or malformed");
+
+    // If we couldn't fix it, throw the original parsing error or a generic one
+    throw new Error("Could not repair the JSON: it may be severely truncated or malformed");
 }
+
 
 /**
  * Function to fix common markdown formatting issues in improved instructions
@@ -110,72 +113,86 @@ function repairTruncatedJson(text) {
  */
 function fixMarkdownFormatting(text) {
   if (!text) return text;
-  
+
   // Fix headings that don't have proper spacing
   let fixed = text.replace(/([^\n])###/g, '$1\n\n###');
-  
+  // Ensure headings have a space after them if they don't already
+  fixed = fixed.replace(/(###)([^ \n])/g, '$1 $2');
   // Ensure headings have a line break after them
-  fixed = fixed.replace(/###([^#\n]+)([^\n])/g, '### $1\n$2');
-  
-  // Ensure proper spacing between paragraphs
-  fixed = fixed.replace(/\*\*([^*]+)\*\*([^\n])/g, '**$1**\n$2');
-  
+  fixed = fixed.replace(/(###.*)([^\n])/g, '$1\n$2');
+  // Remove extra spaces after ###
+  fixed = fixed.replace(/###\s+/g, '### ');
+
+  // Ensure proper spacing between paragraphs and after headings
+  fixed = fixed.replace(/([.!?])([A-Za-z0-9*`])/g, '$1\n\n$2'); // Between sentences
+  fixed = fixed.replace(/(\*\*)\n([A-Za-z0-9])/g, '$1\n\n$2'); // After bold
+  fixed = fixed.replace(/(### .*)\n([^*])/g, '$1\n\n$2'); // Ensure gap after heading
+
   // Make sure bullet points have proper spacing
   fixed = fixed.replace(/([^\n])\* /g, '$1\n\n* ');
-  
+  // Ensure lists start on a new line if preceded by text
+  fixed = fixed.replace(/([a-zA-Z.!?])(\n\* )/g, '$1\n\n* ');
+
   // Add space after congratulatory messages before starting instructions
-  fixed = fixed.replace(/(Excellent work|Great job|Well done)([^!]*)!([^\n])/g, '$1$2!\n\n$3');
-  
-  // Ensure double line breaks between sections
-  fixed = fixed.replace(/([.!?])([A-Z])/g, '$1\n\n$2');
-  
+  fixed = fixed.replace(/(Excellent work|Great job|Well done)([^!]*)!([^\n\s])/g, '$1$2!\n\n$3');
+
+  // Ensure double line breaks between major points or sections if not already there
+  fixed = fixed.replace(/(\.\s*\n)(?=[A-Z0-9*#])/g, '$1\n');
+
+  // Trim leading/trailing whitespace which might affect markdown rendering
+  fixed = fixed.trim();
+
   return fixed;
 }
 
+
 /**
- * Improves instructions for multiple sections
+ * Improves instructions for multiple sections, now separating instructions and feedback.
  * @param {Array} currentSections - Array of section objects (full list)
  * @param {Object} userInputs - User inputs for all sections
- * @param {Object} sectionContent - The full section content object
+ * @param {Object} sectionContent - The full section content object (used for original instructions)
  * @param {Function} apiCallFunction - Function to call the API
- * @returns {Promise<Object>} - Result with success flag and improved instructions
+ * @returns {Promise<Object>} - Result with success flag and improved instructions/feedback
  */
 export const improveBatchInstructions = async (
-  currentSections,
+  currentSections, // Use this for current (potentially already modified) instructions if needed for context
   userInputs,
-  sectionContent,
+  sectionContent, // Pass the original JSON for original instructions
   apiCallFunction = callOpenAI
 ) => {
   try {
     // Identify sections with meaningful user content
     const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
-      const content = userInputs[sectionId];
-      const section = sectionContent?.sections?.find(s => s.id === sectionId);
-      const placeholder = section?.placeholder || '';
-      if (typeof content !== 'string') return false;
-      return content.trim() !== '' && content !== placeholder;
+        const content = userInputs[sectionId];
+        // Find the original placeholder
+        const originalSection = sectionContent?.sections?.find(s => s.id === sectionId);
+        const placeholder = originalSection?.placeholder || '';
+        // Check if content is a non-empty string and different from placeholder
+        return typeof content === 'string' && content.trim() !== '' && content !== placeholder;
     });
+
 
     if (sectionsWithProgress.length === 0) {
        console.log("[Instruction Improvement] No sections found with user progress.");
       return { success: false, message: "No sections with progress to improve" };
     }
 
-    // Prepare data for sections with progress
+    // Prepare data using ORIGINAL instructions from sectionContent
     const sectionsData = sectionsWithProgress.map(sectionId => {
-      const section = sectionContent?.sections?.find(s => s.id === sectionId);
-      if (!section || !section.instructions?.text) {
-          console.warn(`Section or instructions text missing for ID ${sectionId}. Skipping.`);
-          return null;
-      }
-      const userContent = userInputs[sectionId] || '';
-      return {
-        id: sectionId,
-        title: section.title,
-        instructionsText: section.instructions.text,
-        userContent
-      };
+        const originalSection = sectionContent?.sections?.find(s => s.id === sectionId);
+        if (!originalSection || !originalSection.instructions?.text) {
+            console.warn(`Original section or instructions text missing for ID ${sectionId}. Skipping.`);
+            return null;
+        }
+        const userContent = userInputs[sectionId] || '';
+        return {
+            id: sectionId,
+            title: originalSection.title,
+            originalInstructionsText: originalSection.instructions.text, // Use original text
+            userContent
+        };
     }).filter(data => data !== null);
+
 
     if (sectionsData.length === 0) {
       console.log("[Instruction Improvement] No valid sections found with user progress after filtering.");
@@ -183,208 +200,197 @@ export const improveBatchInstructions = async (
     }
 
     // *** Build the user-improved prompt for the AI ***
+    // UPDATED PROMPT for separate instructions and feedback
     const prompt = `
-I need you to act as a helpful and encouraging editor improving instruction content for a scientific paper planning tool that is used by PhD students in science, engineering, or medicine. The user has made progress on some sections, and the instructions MUST be updated based on their progress so far.
+Act as a helpful editor for a scientific paper planning tool for PhD students. You will receive sections the user has worked on.
 
 For each section PROVIDED BELOW, I'll provide:
-1. The full instruction text given originally to the user (field name: 'instructionsText')
-2. The user's current content for that section (field name: 'userContent')
+1. The section ID ('id') and title ('title').
+2. The **original** instruction text given to the user ('originalInstructionsText').
+3. The user's current content for that section ('userContent').
 
-Your task is, FOR EACH SECTION PROVIDED:
-1. **Analyze** the 'userContent' to understand what the user has already addressed well regarding the goals in 'instructionsText'.
-2. **Start** your response for 'instructionsText' with a brief (1-2 sentence) positive acknowledgement of the specific points the user has successfully covered (e.g., "Great job clearly defining the research question, it is specific and the terms will be clear to others in the field.").
-3. **Then, critically EDIT** the *original* 'instructionsText'. Your **PRIMARY GOAL** is to **REMOVE** content that asks the user to solve an issue that the users responses satisfactorily address (e.g. if their question is clear, remove a sentence that asks them to be clear). Focus the remaining text *only* on what the user has not addressed yet, or whose quality is too low according to the standards of published papers. Make sure you remove the points if a reasonable person can argue that the point is satisfied by the text. Feel free to make minor edits that improve the text (e.g. removing numbers that now no longer make sense).
-4. **If, after editing, you find the user has addressed *****all***** the key points from the original instructions**, DO NOT provide minimal remaining instructions. Instead, replace the *entire* instruction text with a clear, positive, congratulatory message acknowledging all the points they are doing right. After all, they've completed the main goals for this section (e.g., "Excellent work on this section! You've addressed all the key points regarding X, Y,... and Z. Ready for the next step!").
-5. **Otherwise (if points remain),** append the edited and likely shorter remaining instructions after your positive preamble (from step 2).
+Your task is, FOR **EACH** section provided:
 
-CRITICAL MARKDOWN FORMATTING REQUIREMENTS:
-1. Preserve ALL markdown formatting (like ### headings, **bold text**, lists) in the edited text
-2. Always leave a blank line after each heading (###)
-3. Always leave a blank line between paragraphs
-4. Always leave a blank line after your positive preamble and before starting the actual instructions
-5. Ensure proper spacing for bullet points and numbered lists
-6. Make sure headings and sections are clearly separated with blank lines
+**Part 1: Generate Feedback**
+1.  Analyze the 'userContent' against the goals in 'originalInstructionsText'.
+2.  Write a constructive feedback section (max 150 words). Start with a brief (1-2 sentence) positive acknowledgement of specific points the user covered well. Then, clearly list strengths, weaknesses, and specific, actionable suggestions for improvement based *only* on what remains unaddressed or needs refinement according to the 'originalInstructionsText' and general standards of scientific rigor/clarity. Format this feedback using markdown (e.g., use bold for **Strengths:**, **Weaknesses:**, **Suggestions:**).
 
-IMPORTANT FORMATTING RULES:
-1. JSON responses must be valid without trailing commas
-2. Avoid excessively long instructionsText values that might get truncated
-3. Keep the total response under 4000 characters
-4. DO NOT use trailing commas in JSON objects as they are not valid JSON
-5. For example, use {"id": "value", "key": "value"} NOT {"id": "value", "key": "value",}
+**Part 2: Generate Edited Instructions**
+1.  Critically **EDIT** the 'originalInstructionsText'. Your **PRIMARY GOAL** is to **REMOVE** instruction points that the 'userContent' satisfactorily addresses.
+2.  Focus the remaining text *only* on what the user still needs to address or improve according to the 'originalInstructionsText'. Remove points if a reasonable person would agree the user's text addresses them. Feel free to make minor edits for flow (e.g., renumbering if needed). Preserve all markdown (headings, bold, lists).
+3.  **If the user has addressed ALL key points well,** replace the *entire* instruction text with a clear, positive, congratulatory message (e.g., "Excellent work on this section! You've addressed all the key points regarding X, Y, and Z. Ready for the next step!").
+4.  **Otherwise (if points remain),** create the edited instruction text. Start with a brief (1-2 sentence) positive acknowledgement (same as step 1.2 in Feedback part) and then append the remaining, edited instructions.
+
+**CRITICAL REQUIREMENTS:**
+* **JSON Output:** Respond ONLY with a valid JSON array. Each object in the array must correspond to one of the input section IDs and have EXACTLY these two keys:
+    * `"id"`: (string) The section ID.
+    * `"editedInstructions"`: (string) The result from Part 2 (edited instructions or congratulatory message).
+    * `"feedback"`: (string) The result from Part 1 (strengths, weaknesses, suggestions).
+* **Markdown Preservation:** Preserve markdown (###, **, lists) within the string values of `"editedInstructions"` and `"feedback"`.
+* **Formatting:** Ensure proper markdown line breaks (blank lines between paragraphs, after headings). No trailing commas in the JSON.
+* **Conciseness:** Keep responses focused and reasonably concise (total response < 4000 chars).
 
 Here are the sections to improve:
 ${JSON.stringify(sectionsData, null, 2)}
 
-Respond ONLY with a valid JSON array containing objects for EACH section ID listed above. Use the following format exactly for each object in the array:
-[
-  {
-    "id": "section_id",
-    "instructionsText": "Positive preamble + edited instructions text OR congratulatory message here..."
-  }
-]
-Ensure the output is ONLY the JSON array, starting with '[' and ending with ']', and DO NOT include trailing commas or markdown formatting around the JSON.
+Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example object format:
+{
+  "id": "section_id",
+  "editedInstructions": "Great start defining X! Now focus on...\n\n1. Point Y\n2. Point Z",
+  "feedback": "**Strengths:** Clear definition of X.\n\n**Weaknesses:** Point Y lacks detail.\n\n**Suggestions:** Elaborate on the methodology for Y."
+}
 `;
 
+
     console.log("[Instruction Improvement] Sending batch request to OpenAI for sections:", sectionsWithProgress.join(', '));
-    const sectionsToPassToOpenAI = Array.isArray(sectionContent?.sections) ? sectionContent.sections : [];
+    const sectionsForContext = sectionContent?.sections || []; // Pass full structure for context if needed
 
     const response = await apiCallFunction(
         prompt,
-        "improve_instructions_batch",
-        userInputs,
-        sectionsToPassToOpenAI,
-        { max_tokens: 2000 } // Limit token length to avoid truncation
+        "improve_instructions_batch", // Context type for potential API-side logging/routing
+        userInputs, // Provide current user inputs for overall context
+        sectionsForContext, // Provide overall structure for context
+        { max_tokens: 2500 } // Adjusted token limit for potentially longer responses
     );
 
+
     // Parse the response with our robust parser
-    let improvedInstructions;
+    let improvedInstructionsAndFeedback;
     try {
-      // Log the raw response for debugging
-      console.log("Raw response from API:", response);
-      
-      // Use our robust parser
-      improvedInstructions = repairTruncatedJson(response);
-      
-      // Ensure we have an array
-      if (!Array.isArray(improvedInstructions)) {
-        // Try to extract array from the response using regex
-        const jsonRegex = /(\[[\s\S]*\])/;
-        const jsonMatch = response.match(jsonRegex);
-        if (jsonMatch && jsonMatch[0]) {
-          try {
-            improvedInstructions = repairTruncatedJson(jsonMatch[0]);
-          } catch (err) {
-            console.warn("Failed to extract with regex:", err);
-          }
-        }
-        
-        // If still not an array, look for the array brackets and try to extract
-        if (!Array.isArray(improvedInstructions)) {
-          const startIdx = response.indexOf('[');
-          if (startIdx !== -1) {
-            // Extract everything from the opening bracket
-            const partial = response.substring(startIdx);
-            try {
-              improvedInstructions = repairTruncatedJson(partial);
-            } catch (err) {
-              console.warn("Failed to extract from bracket:", err);
+        console.log("Raw response from API:", response);
+        improvedInstructionsAndFeedback = repairTruncatedJson(response);
+
+        // Validate array structure
+        if (!Array.isArray(improvedInstructionsAndFeedback)) {
+             // Attempt recovery if not an array (similar logic as before, adapted for new fields)
+            const jsonRegex = /(\[[\s\S]*\])/;
+            const jsonMatch = response.match(jsonRegex);
+            if (jsonMatch && jsonMatch[0]) {
+                try {
+                    improvedInstructionsAndFeedback = repairTruncatedJson(jsonMatch[0]);
+                } catch (err) {
+                    console.warn("Failed to extract with regex during recovery:", err);
+                }
             }
-          }
-        }
-        
-        // If still not an array, try one more approach - manually looking for objects
-        if (!Array.isArray(improvedInstructions)) {
-          // Look for objects with id and instructionsText
-          const idMatches = [...response.matchAll(/"id"\s*:\s*"([^"]+)"/g)];
-          const textMatches = [...response.matchAll(/"instructionsText"\s*:\s*"([^"]+)"/g)];
-          
-          if (idMatches.length > 0 && textMatches.length > 0) {
-            improvedInstructions = [];
-            for (let i = 0; i < Math.min(idMatches.length, textMatches.length); i++) {
-              improvedInstructions.push({
-                id: idMatches[i][1],
-                instructionsText: textMatches[i][1].replace(/\\n/g, '\n')
-              });
+            // Further recovery attempts if needed...
+
+            if (!Array.isArray(improvedInstructionsAndFeedback)) {
+                throw new Error("Parsed response is not an array and could not be recovered.");
             }
-          }
         }
-        
-        // If all attempts failed, throw an error
-        if (!Array.isArray(improvedInstructions)) {
-          throw new Error("Parsed response is not an array and could not be converted to one.");
+
+        // Validate object structure within the array
+        const isValid = improvedInstructionsAndFeedback.every(item =>
+            item && typeof item.id === 'string' &&
+            typeof item.editedInstructions === 'string' && // Check for new field
+            typeof item.feedback === 'string'              // Check for new field
+        );
+
+        if (!isValid) {
+            console.warn("Parsed response contains items with missing id, editedInstructions, or feedback:", improvedInstructionsAndFeedback);
+            // Filter out invalid items
+            improvedInstructionsAndFeedback = improvedInstructionsAndFeedback.filter(item =>
+                 item && typeof item.id === 'string' &&
+                 typeof item.editedInstructions === 'string' &&
+                 typeof item.feedback === 'string'
+            );
+
+            if (improvedInstructionsAndFeedback.length === 0) {
+                throw new Error("No valid items found after filtering parsed response for required fields (id, editedInstructions, feedback).");
+            }
+             console.warn("Proceeding with partially valid response:", improvedInstructionsAndFeedback);
         }
-      }
-      
-      // Validate object structure
-      const isValid = improvedInstructions.every(item => 
-        item && typeof item.id === 'string' && typeof item.instructionsText === 'string');
-      
-      if (!isValid) {
-        console.warn("Parsed response contains items with missing id or instructionsText:", improvedInstructions);
-        improvedInstructions = improvedInstructions.filter(item => 
-          item && typeof item.id === 'string' && typeof item.instructionsText === 'string');
-        
-        if(improvedInstructions.length === 0) {
-          throw new Error("No valid items found after filtering parsed response.");
-        }
-      }
-      
-      console.log(`[Instruction Improvement] Successfully parsed ${improvedInstructions.length} improved sections.`);
+
+        console.log(`[Instruction Improvement] Successfully parsed ${improvedInstructionsAndFeedback.length} improved sections with feedback.`);
+
     } catch (error) {
-      console.error("Error parsing instruction improvement response:", error);
-      console.log("Raw response received:", response);
-      return {
-        success: false,
-        message: `Failed to parse improved instructions: ${error.message}`
-      };
+        console.error("Error parsing instruction improvement response:", error);
+        console.log("Raw response received:", response); // Log raw response on error
+        return {
+            success: false,
+            message: `Failed to parse improved instructions/feedback: ${error.message}`
+        };
     }
 
     return {
-      success: true,
-      improvedInstructions
+        success: true,
+        improvedData: improvedInstructionsAndFeedback // Return the array containing objects with both fields
     };
   } catch (error) {
     console.error("Error improving batch instructions:", error);
     return {
-      success: false,
-      message: error.message || "An error occurred while improving instructions"
+        success: false,
+        message: error.message || "An error occurred while improving instructions"
     };
   }
 };
 
 /**
- * Updates section content with improved instructions
+ * Updates section content with improved instructions AND feedback
  * @param {Object} sectionContent - The original section content object
- * @param {Array} improvedInstructions - Array of improved instruction objects
+ * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback }
  * @returns {Object} - Updated section content object
  */
-export const updateSectionWithImprovedInstructions = (sectionContent, improvedInstructions) => {
- let updatedSectionsData;
- try {
-     if (typeof sectionContent !== 'object' || sectionContent === null) {
-         throw new Error("sectionContent is not a valid object for deep copy.");
-     }
-     updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
- } catch(e) {
-     console.error("Error deep copying section content", e);
-     return { sections: [] }; // Return default structure
- }
+export const updateSectionWithImprovedInstructions = (sectionContent, improvedData) => {
+    let updatedSectionsData;
+    try {
+        if (typeof sectionContent !== 'object' || sectionContent === null) {
+            throw new Error("sectionContent is not a valid object for deep copy.");
+        }
+        updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
+    } catch(e) {
+        console.error("Error deep copying section content", e);
+        return { sections: [] }; // Return default structure
+    }
 
- if (!Array.isArray(updatedSectionsData?.sections)) {
-     console.error("updatedSectionsData does not have a valid sections array after copy.");
-     updatedSectionsData.sections = [];
- }
+    if (!Array.isArray(updatedSectionsData?.sections)) {
+        console.error("updatedSectionsData does not have a valid sections array after copy.");
+        updatedSectionsData.sections = [];
+    }
 
- if (!Array.isArray(improvedInstructions)) {
-     console.error("Invalid improvedInstructions format: Expected an array.");
-     return updatedSectionsData;
- }
+    if (!Array.isArray(improvedData)) {
+        console.error("Invalid improvedData format: Expected an array.");
+        return updatedSectionsData;
+    }
 
- improvedInstructions.forEach(improvement => {
-   if (!improvement || typeof improvement.id !== 'string' || typeof improvement.instructionsText !== 'string') {
-       console.warn("Skipping invalid improvement object (missing id or instructionsText):", improvement);
-       return;
-   }
-   const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
-   if (sectionIndex !== -1) {
-      if (!updatedSectionsData.sections[sectionIndex]) {
-         console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
-         return;
-     }
-      if (!updatedSectionsData.sections[sectionIndex].instructions) {
-         updatedSectionsData.sections[sectionIndex].instructions = {};
-          console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
-     }
-     
-     // Apply markdown formatting fixes before storing the updated instructions
-     const fixedText = fixMarkdownFormatting(improvement.instructionsText);
-     updatedSectionsData.sections[sectionIndex].instructions.text = fixedText;
-     
-     delete updatedSectionsData.sections[sectionIndex].instructions.description;
-     delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
-   } else {
-       console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
-   }
- });
- return updatedSectionsData;
+    improvedData.forEach(improvement => {
+        // Validate the structure of each improvement object
+        if (!improvement || typeof improvement.id !== 'string' ||
+            typeof improvement.editedInstructions !== 'string' ||
+            typeof improvement.feedback !== 'string') {
+            console.warn("Skipping invalid improvement object:", improvement);
+            return;
+        }
+
+        const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
+
+        if (sectionIndex !== -1) {
+            if (!updatedSectionsData.sections[sectionIndex]) {
+                console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
+                return;
+            }
+            // Ensure instructions object exists
+            if (!updatedSectionsData.sections[sectionIndex].instructions) {
+                updatedSectionsData.sections[sectionIndex].instructions = {};
+                console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
+            }
+
+            // Apply markdown formatting fixes before storing
+            const fixedInstructions = fixMarkdownFormatting(improvement.editedInstructions);
+            const fixedFeedback = fixMarkdownFormatting(improvement.feedback);
+
+            // Update the instructions text and add the new feedback field
+            updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions;
+            updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback; // Store feedback
+
+            // Optionally clean up old fields if they existed
+            delete updatedSectionsData.sections[sectionIndex].instructions.description;
+            delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
+
+        } else {
+            console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
+        }
+    });
+
+    return updatedSectionsData;
 };
