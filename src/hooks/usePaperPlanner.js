@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
-import { importPaperFromPdf } from '../services/pdfImportService'; // New import
+import { importDocumentContent as importDocumentFromFile } from '../services/documentImportService';
 import sectionContent from '../data/sectionContent.json';
 import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
@@ -285,27 +285,30 @@ const usePaperPlanner = () => {
     }
   }, [initialTemplates]);
 
-  // NEW: Import PDF content
-  const importPdfContent = useCallback(async (pdfFile) => {
+  // NEW: Import document content
+  const importDocumentContent = useCallback(async (file) => {
     setLoading(true);
     
     try {
       // First, ask for confirmation
-      if (!window.confirm("Importing content from PDF will replace your current work. Continue?")) {
+      if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
         setLoading(false);
         return;
       }
       
-      // Call the PDF import service
-      const importedData = await importPaperFromPdf(pdfFile);
+      // Call the document import service - Use the imported function from documentImportService
+      const importedData = await importDocumentFromFile(file);
       
       // Use the loadProject function to handle the imported data
       loadProject(importedData);
       
       return true;
     } catch (error) {
-      console.error("Error importing PDF content:", error);
-      alert(`Error importing PDF: ${error.message || "Unknown error"}`);
+      console.error("Error importing document content:", error);
+      
+      // More user-friendly error message
+      alert("We had some trouble processing this document. You might want to try a different file format.");
+      
       return false;
     } finally {
       setLoading(false);
@@ -334,7 +337,7 @@ const usePaperPlanner = () => {
     exportProject,
     saveProject,
     loadProject,
-    importPdfContent // NEW: Add PDF import function
+    importDocumentContent // NEW: Add document import function
   };
 };
 
