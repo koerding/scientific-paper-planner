@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 
 /**
  * Application header with absolute positioning to ensure buttons are visible
+ * ADDED: Examples button and handler
  */
 const AppHeader = ({
   activeSection,
@@ -10,7 +11,8 @@ const AppHeader = ({
   scrollToSection,
   resetProject,
   exportProject,
-  loadProject
+  loadProject,
+  setShowExamplesDialog // <-- Add prop to control examples dialog
 }) => {
   // Use ref for file input to better control it
   const fileInputRef = useRef(null);
@@ -18,7 +20,7 @@ const AppHeader = ({
   // Handle file input change
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
-    
+
     if (!file) {
       return;
     }
@@ -30,12 +32,12 @@ const AppHeader = ({
     }
 
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       try {
         const content = e.target.result;
         const data = JSON.parse(content);
-        
+
         if (typeof loadProject === 'function') {
           loadProject(data);
         } else {
@@ -46,14 +48,14 @@ const AppHeader = ({
         alert("Error loading file. Please make sure it's a valid project file.");
       }
     };
-    
+
     reader.onerror = (error) => {
       console.error("Error reading file:", error);
       alert("Error reading file. Please try again.");
     };
 
     reader.readAsText(file);
-    
+
     // Reset file input so the same file can be selected again
     event.target.value = null;
   };
@@ -62,6 +64,15 @@ const AppHeader = ({
   const handleLoadClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  // Handle examples button click
+  const handleExamplesClick = () => {
+    if (typeof setShowExamplesDialog === 'function') {
+      setShowExamplesDialog(true);
+    } else {
+        console.error("setShowExamplesDialog function is not provided to AppHeader");
     }
   };
 
@@ -131,7 +142,7 @@ const AppHeader = ({
               </svg>
               Load
             </button>
-            <input 
+            <input
               ref={fileInputRef}
               type="file"
               accept=".json"
@@ -139,6 +150,18 @@ const AppHeader = ({
               style={{ display: 'none' }}
             />
           </div>
+
+          {/* Examples Button */}
+          <button
+            onClick={handleExamplesClick}
+            className="flex items-center px-3 py-1.5 border border-purple-500 text-purple-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-purple-50 transition-colors"
+            title="Load an example project"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            Examples
+          </button>
 
           <button
             onClick={() => { if(typeof exportProject === 'function') exportProject(); }}
