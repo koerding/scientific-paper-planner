@@ -26,19 +26,20 @@ const SectionCard = ({
 
   // Determine the border color and style based on completion status
   const getBorderStyle = () => {
+    // Current section gets blue focus border regardless of completion
     if (isCurrentSection) {
-      // Current section gets blue focus border regardless of completion
-      return 'border-3 border-blue-500 shadow-xl';
+      return 'border-4 border-blue-500 shadow-xl';
     }
     
+    // Otherwise, use completion status for border color
     switch (completionStatus) {
       case 'complete':
-        return 'border-3 border-green-600';
+        return 'border-4 border-green-600';
       case 'progress':
-        return 'border-3 border-yellow-500';
+        return 'border-4 border-yellow-500';
       case 'unstarted':
       default:
-        return 'border border-gray-200 hover:shadow-lg';
+        return 'border-4 border-red-300';
     }
   };
 
@@ -71,6 +72,9 @@ const SectionCard = ({
           </p>
         )}
       </div>
+      
+      {/* Debug info - remove in production */}
+      {/* <p className="text-xs text-gray-400">Status: {completionStatus}</p> */}
     </div>
   );
 };
