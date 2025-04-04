@@ -1,328 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import VerticalPaperPlannerApp from './VerticalPaperPlannerApp'; // Using your existing component
-import sectionContent from '../../data/sectionContent.json';  
-import { callOpenAI } from '../../services/openaiService';
-import { exportProject as exportProjectFunction } from '../../utils/exportUtils';
+// Correct imports section for VerticalPaperPlannerApp.js
+import React, { useState, useEffect, useRef } from 'react';
+import sectionContent from '../../data/sectionContent.json';
+import ConfirmDialog from './ConfirmDialog';
+import AppHeader from '../layout/AppHeader';
+import SectionCard from '../sections/SectionCard';
+import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
+import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
+import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
+import ModernChatInterface from '../chat/ModernChatInterface';
+import {
+  improveBatchInstructions,
+  updateSectionWithImprovedInstructions
+} from '../../services/instructionImprovementService';
 import '../../styles/PaperPlanner.css';
 
 /**
- * Main entry point for the Paper Planner
- * Contains core state management and API calls
- * UPDATED: Simplified load project functionality
+ * Enhanced Paper Planner with research approach and data acquisition toggles
  */
-const PaperPlannerApp = () => {
-  // State - Pre-fill with templates from sectionContent
-  const initialState = {};
-  sectionContent.sections.forEach(section => {
-    if (section && section.id) {
-      // Use placeholder as initial content
-      initialState[section.id] = section.placeholder || '';
-    }
-  });
+const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
+  const [activeSection, setActiveSection] = useState('question');
+  const [activeApproach, setActiveApproach] = useState('hypothesis');
+  const [activeDataMethod, setActiveDataMethod] = useState('experiment');
+  const sectionRefs = useRef({});
 
-  // Initialize states
-  const [userInputs, setUserInputs] = useState(initialState);
-  const [currentSection, setCurrentSection] = useState(sectionContent.sections[0].id);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [chatMessages, setChatMessages] = useState({});
-  const [currentMessage, setCurrentMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-
-  // Initialize chat messages for each section
-  useEffect(() => {
-    const initialChatMessages = {};
-    sectionContent.sections.forEach(section => {
-      initialChatMessages[section.id] = [];
-    });
-    setChatMessages(initialChatMessages);
-  }, []);
-
-  // Load saved data from localStorage
-  useEffect(() => {
-    try {
-      const savedInputs = localStorage.getItem('paperPlannerData');
-      const savedChat = localStorage.getItem('paperPlannerChat');
-      
-      if (savedInputs) {
-        const parsedInputs = JSON.parse(savedInputs);
-        // Make sure we're not overwriting templates with empty values
-        const mergedInputs = {...initialState};
-        
-        // Only use saved values if they exist and are different from templates
-        Object.keys(parsedInputs).forEach(sectionId => {
-          if (parsedInputs[sectionId] && parsedInputs[sectionId].trim() !== '') {
-            mergedInputs[sectionId] = parsedInputs[sectionId];
-          }
-        });
-        
-        setUserInputs(mergedInputs);
-      }
-      
-      if (savedChat) {
-        setChatMessages(JSON.parse(savedChat));
-      }
-    } catch (error) {
-      console.error('Error loading saved data:', error);
-    }
-  }, []);
-
-  // Save to localStorage when data changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('paperPlannerData', JSON.stringify(userInputs));
-      localStorage.setItem('paperPlannerChat', JSON.stringify(chatMessages));
-    } catch (error) {
-      console.error('Error saving data:', error);
-    }
-  }, [userInputs, chatMessages]);
-
-  // Handler functions
-  const handleSectionChange = (sectionId) => {
-    setCurrentSection(sectionId);
-    setCurrentIndex(sectionContent.sections.findIndex(s => s.id === sectionId));
-  };
-
-  const handleInputChange = (section, value) => {
-    setUserInputs({
-      ...userInputs,
-      [section]: value
-    });
-  };
-
-  // Send regular chat message with full context
-  const handleSendMessage = async () => {
-    if (currentMessage.trim() === '') return;
-    
-    // Add user message to chat
-    const newMessages = [
-      ...chatMessages[currentSection], 
-      { role: 'user', content: currentMessage }
-    ];
-    
-    setChatMessages({
-      ...chatMessages,
-      [currentSection]: newMessages
-    });
-    
-    setCurrentMessage('');
-    setLoading(true);
-    
-    try {
-      // Call OpenAI API with the current message and all context
-      const aiResponse = await callOpenAI(
-        currentMessage, 
-        currentSection, 
-        userInputs, 
-        sectionContent.sections
-      );
-      
-      // Add AI response to chat
-      const updatedMessages = [
-        ...newMessages,
-        { role: 'assistant', content: aiResponse }
-      ];
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: updatedMessages
-      });
-    } catch (error) {
-      console.error('Error getting AI response:', error);
-      
-      // Add error message to chat
-      const errorMessage = { 
-        role: 'assistant', 
-        content: 'Sorry, there was an error processing your request. Please try again.' 
-      };
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: [...newMessages, errorMessage]
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle "First version finished" button with llmInstructions and all section context
-  const handleFirstVersionFinished = async () => {
-    // Don't do anything if there's no content yet
-    if (!userInputs[currentSection]) return;
-    
-    setLoading(true);
-    
-    try {
-      // Simple message for the UI
-      const displayMessage = "I've finished my first version. Can you provide feedback?";
-      
-      // Get detailed instructions from JSON
-      const currentSectionObj = sectionContent.sections.find(s => s.id === currentSection);
-      const aiInstructions = currentSectionObj.llmInstructions;
-      
-      // Add the simple message to chat for the user to see
-      const newMessages = [
-        ...chatMessages[currentSection], 
-        { role: 'user', content: displayMessage }
-      ];
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: newMessages
-      });
-      
-      // Call OpenAI API with the detailed instructions
-      const aiResponse = await callOpenAI(
-        aiInstructions, 
-        currentSection, 
-        userInputs, 
-        sectionContent.sections
-      );
-      
-      // Add AI response to chat
-      const updatedMessages = [
-        ...newMessages,
-        { role: 'assistant', content: aiResponse }
-      ];
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: updatedMessages
-      });
-    } catch (error) {
-      console.error('Error getting AI response:', error);
-      
-      // Add error message to chat
-      const errorMessage = { 
-        role: 'assistant', 
-        content: 'Sorry, there was an error processing your request. Please try again.' 
-      };
-      
-      setChatMessages({
-        ...chatMessages,
-        [currentSection]: [...chatMessages[currentSection], { role: 'user', content: "I've finished my first version. Can you provide feedback?" }, errorMessage]
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resetProject = () => {
-    // Reset to template values
-    const freshInputs = {};
-    sectionContent.sections.forEach(section => {
-      if (section && section.id) {
-        freshInputs[section.id] = section.placeholder || '';
-      }
-    });
-    setUserInputs(freshInputs);
-    
-    // Clear all chat messages
-    const freshChatMessages = {};
-    sectionContent.sections.forEach(section => {
-      if (section && section.id) {
-        freshChatMessages[section.id] = [];
-      }
-    });
-    
-    setChatMessages(freshChatMessages);
-    setCurrentSection(sectionContent.sections[0].id);
-    
-    // Clear localStorage
-    localStorage.removeItem('paperPlannerData');
-    localStorage.removeItem('paperPlannerChat');
-  };
-
-  const goToNextSection = () => {
-    const newIndex = currentIndex + 1;
-    if (newIndex < sectionContent.sections.length) {
-      handleSectionChange(sectionContent.sections[newIndex].id);
-    }
-  };
-
-  const goToPreviousSection = () => {
-    const newIndex = currentIndex - 1;
-    if (newIndex >= 0) {
-      handleSectionChange(sectionContent.sections[newIndex].id);
-    }
-  };
-
-  // Function to export project
-  const exportProject = () => {
-    exportProjectFunction(userInputs, chatMessages, sectionContent);
-  };
-
-  // Function to load project from imported JSON file - SIMPLIFIED VERSION
-  const loadProject = (data) => {
-    // Simple validation
-    if (!data || !data.userInputs) {
-      alert("Invalid project file format. Please select a valid project file.");
-      return;
-    }
-    
-    // Confirm before loading
-    if (window.confirm("Loading this project will replace your current work. Are you sure you want to continue?")) {
+  // Use local state for instructions potentially modified by AI
+  const [localSectionContent, setLocalSectionContent] = useState(() => {
+      // Use deep copy on initial load to prevent mutation issues if sectionContent is used elsewhere
       try {
-        // Create template values using sectionContent
-        const templateValues = {};
-        sectionContent.sections.forEach(section => {
-          if (section && section.id) {
-            templateValues[section.id] = section.placeholder || '';
-          }
-        });
-        
-        // Merge with loaded data
-        const mergedInputs = {...templateValues};
-        Object.keys(data.userInputs).forEach(sectionId => {
-          if (data.userInputs[sectionId] && typeof data.userInputs[sectionId] === 'string' && 
-              data.userInputs[sectionId].trim() !== '') {
-            mergedInputs[sectionId] = data.userInputs[sectionId];
-          }
-        });
-        
-        // Update user inputs state
-        setUserInputs(mergedInputs);
-        
-        // Create empty chat messages
-        const emptyChat = {};
-        sectionContent.sections.forEach(section => {
-          if (section && section.id) {
-            emptyChat[section.id] = [];
-          }
-        });
-        
-        // Merge with loaded chat messages if they exist
-        const mergedChat = {...emptyChat};
-        if (data.chatMessages) {
-          Object.keys(data.chatMessages).forEach(sectionId => {
-            if (Array.isArray(data.chatMessages[sectionId])) {
-              mergedChat[sectionId] = data.chatMessages[sectionId];
-            }
-          });
-        }
-        
-        // Update chat messages state
-        setChatMessages(mergedChat);
-        
-        // Save to localStorage
-        localStorage.setItem('paperPlannerData', JSON.stringify(mergedInputs));
-        localStorage.setItem('paperPlannerChat', JSON.stringify(mergedChat));
-        
-        alert("Project loaded successfully!");
-      } catch (error) {
-        alert("Error loading project: " + (error.message || "Unknown error"));
+          return JSON.parse(JSON.stringify(sectionContent));
+      } catch (e) {
+          console.error("Failed to parse initial sectionContent", e);
+          return { sections: [] }; // Fallback
       }
-    }
-  };
+  });
+  const [improvingInstructions, setImprovingInstructions] = useState(false);
 
-  // Hook for the Paper Planner
-  const usePaperPlannerHook = {
-    currentSection,
-    currentIndex,
+  const {
+    currentSection: currentSectionIdForChat,
     userInputs,
     chatMessages,
     currentMessage,
-    loading,
+    loading: chatLoading,
     showConfirmDialog,
     setCurrentMessage,
     setShowConfirmDialog,
@@ -330,19 +48,317 @@ const PaperPlannerApp = () => {
     handleInputChange,
     handleSendMessage,
     handleFirstVersionFinished,
-    resetProject,
-    goToNextSection,
-    goToPreviousSection,
+    resetProject: hookResetProject, // Rename to avoid conflict
     exportProject,
     loadProject
+  } = usePaperPlannerHook;
+
+  // Effect to map refs
+  useEffect(() => {
+    if (localSectionContent?.sections) {
+        localSectionContent.sections.forEach(section => {
+            if (section?.id) {
+               sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
+            }
+        });
+    }
+  }, [localSectionContent.sections]);
+
+  // Effect for initial active section setting
+  useEffect(() => {
+      setActiveSection('question');
+      // Let the hook manage the initial chat context section
+      // handleSectionChange('question');
+  }, []);
+
+  // Effect to update active approach and data method based on user inputs
+  useEffect(() => {
+    // Check if user has input in any of the approach sections
+    if (userInputs.hypothesis && userInputs.hypothesis.trim() !== '') {
+      setActiveApproach('hypothesis');
+    } else if (userInputs.needsresearch && userInputs.needsresearch.trim() !== '') {
+      setActiveApproach('needsresearch');
+    } else if (userInputs.exploratoryresearch && userInputs.exploratoryresearch.trim() !== '') {
+      setActiveApproach('exploratoryresearch');
+    }
+
+    // Check if user has input in any of the data acquisition sections
+    if (userInputs.experiment && userInputs.experiment.trim() !== '') {
+      setActiveDataMethod('experiment');
+    } else if (userInputs.existingdata && userInputs.existingdata.trim() !== '') {
+      setActiveDataMethod('existingdata');
+    }
+  }, [userInputs]);
+
+  const setActiveSectionWithManualFlag = (sectionId) => {
+    setActiveSection(sectionId);
+    handleSectionChange(sectionId); // Update context for chat/API calls
   };
 
-  // Use your existing VerticalPaperPlannerApp
+  // Helper to check if section has meaningful content beyond placeholder
+  const hasSectionContent = (sectionId) => {
+    const content = userInputs[sectionId];
+    const section = localSectionContent.sections.find(s => s?.id === sectionId);
+    const placeholder = section?.placeholder || '';
+    const stringContent = typeof content === 'string' ? content : JSON.stringify(content);
+    if (!stringContent || stringContent.trim() === '') return false;
+    if (stringContent === placeholder) return false;
+    return true;
+  };
+
+  const scrollToSection = (sectionId) => {
+    if (sectionRefs.current[sectionId]?.current) {
+      sectionRefs.current[sectionId].current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Get the current section data *from local state* for instructions display
+  const getCurrentSectionData = () => {
+    if (!localSectionContent || !Array.isArray(localSectionContent.sections)) {
+        return null;
+    }
+    return localSectionContent.sections.find(s => s && s.id === activeSection) || null;
+  };
+
+  // Handle improving instructions
+  const handleImproveInstructions = async () => {
+    setImprovingInstructions(true);
+    try {
+      const result = await improveBatchInstructions(
+        localSectionContent.sections, // Pass current sections (potentially already improved)
+        userInputs,
+        sectionContent // Pass original structure for context if needed by AI prompt generation
+      );
+
+      if (result.success && result.improvedInstructions && result.improvedInstructions.length > 0) {
+        const updatedSections = updateSectionWithImprovedInstructions(
+          localSectionContent, // Update based on current local state
+          result.improvedInstructions
+        );
+        setLocalSectionContent(updatedSections); // Set the new state
+      } else {
+        console.error("[handleImproveInstructions] Failed to improve instructions:", result.message || "No improved instructions returned.");
+      }
+    } catch (error) {
+      console.error("[handleImproveInstructions] Error during improvement process:", error);
+    } finally {
+      setImprovingInstructions(false);
+    }
+  };
+
+  // Combine local reset logic with hook's reset logic
+  const handleResetRequest = () => {
+      hookResetProject(); // Call the hook's reset (clears storage, resets hook state)
+      setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent))); // Reset local instructions state
+      setActiveSection('question'); // Reset active section locally
+      setActiveApproach('hypothesis'); // Reset active approach
+      setActiveDataMethod('experiment'); // Reset active data method
+  };
+
+  const sectionDataForPanel = getCurrentSectionData();
+
+  // Check if a section should be displayed based on toggles
+  const shouldDisplaySection = (sectionId) => {
+    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
+      return sectionId === activeApproach;
+    }
+    
+    if (sectionId === 'experiment' || sectionId === 'existingdata') {
+      return sectionId === activeDataMethod;
+    }
+    
+    return true; // All other sections are always displayed
+  };
+
+  // Handle approach toggle
+  const handleApproachToggle = (approach) => {
+    setActiveApproach(approach);
+    // If we switch to this approach, automatically set it as the active section
+    setActiveSectionWithManualFlag(approach);
+  };
+
+  // Handle data method toggle
+  const handleDataMethodToggle = (method) => {
+    setActiveDataMethod(method);
+    // If we switch to this method, automatically set it as the active section
+    setActiveSectionWithManualFlag(method);
+  };
+
   return (
-    <VerticalPaperPlannerApp 
-      usePaperPlannerHook={usePaperPlannerHook}
-    />
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="w-full pb-12">
+        <AppHeader
+          activeSection={activeSection}
+          setActiveSection={setActiveSectionWithManualFlag}
+          scrollToSection={scrollToSection}
+          resetProject={() => setShowConfirmDialog(true)} // Trigger dialog
+          exportProject={exportProject}
+          loadProject={loadProject}
+        />
+
+        <div className="flex">
+          <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
+            {/* Display first two sections: Question and Audience */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'question' || section?.id === 'audience')
+              .map((section) => {
+                if (!section || !section.id) return null;
+                const isCurrentActive = activeSection === section.id;
+                const isCompleted = hasSectionContent(section.id);
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    isCurrentSection={isCurrentActive}
+                    isCompleted={isCompleted}
+                    userInputs={userInputs}
+                    handleInputChange={handleInputChange}
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
+                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    sectionRef={sectionRefs.current[section.id]}
+                    onClick={() => setActiveSectionWithManualFlag(section.id)}
+                    useLargerFonts={true}
+                  />
+                );
+              })}
+            
+            {/* Research Approach Toggle */}
+            <ResearchApproachToggle 
+              activeApproach={activeApproach}
+              setActiveApproach={handleApproachToggle}
+            />
+            
+            {/* Display active approach section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
+              .map((section) => {
+                if (!section || !section.id) return null;
+                const isCurrentActive = activeSection === section.id;
+                const isCompleted = hasSectionContent(section.id);
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    isCurrentSection={isCurrentActive}
+                    isCompleted={isCompleted}
+                    userInputs={userInputs}
+                    handleInputChange={handleInputChange}
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
+                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    sectionRef={sectionRefs.current[section.id]}
+                    onClick={() => setActiveSectionWithManualFlag(section.id)}
+                    useLargerFonts={true}
+                  />
+                );
+              })}
+            
+            {/* Related Papers Section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'relatedpapers')
+              .map((section) => {
+                if (!section || !section.id) return null;
+                const isCurrentActive = activeSection === section.id;
+                const isCompleted = hasSectionContent(section.id);
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    isCurrentSection={isCurrentActive}
+                    isCompleted={isCompleted}
+                    userInputs={userInputs}
+                    handleInputChange={handleInputChange}
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
+                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    sectionRef={sectionRefs.current[section.id]}
+                    onClick={() => setActiveSectionWithManualFlag(section.id)}
+                    useLargerFonts={true}
+                  />
+                );
+              })}
+            
+            {/* Data Acquisition Toggle */}
+            <DataAcquisitionToggle 
+              activeMethod={activeDataMethod}
+              setActiveMethod={handleDataMethodToggle}
+            />
+            
+            {/* Display active data acquisition section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
+              .map((section) => {
+                if (!section || !section.id) return null;
+                const isCurrentActive = activeSection === section.id;
+                const isCompleted = hasSectionContent(section.id);
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    isCurrentSection={isCurrentActive}
+                    isCompleted={isCompleted}
+                    userInputs={userInputs}
+                    handleInputChange={handleInputChange}
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
+                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    sectionRef={sectionRefs.current[section.id]}
+                    onClick={() => setActiveSectionWithManualFlag(section.id)}
+                    useLargerFonts={true}
+                  />
+                );
+              })}
+            
+            {/* Display remaining sections: Analysis, Process, Abstract */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
+              .map((section) => {
+                if (!section || !section.id) return null;
+                const isCurrentActive = activeSection === section.id;
+                const isCompleted = hasSectionContent(section.id);
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    isCurrentSection={isCurrentActive}
+                    isCompleted={isCompleted}
+                    userInputs={userInputs}
+                    handleInputChange={handleInputChange}
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
+                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    sectionRef={sectionRefs.current[section.id]}
+                    onClick={() => setActiveSectionWithManualFlag(section.id)}
+                    useLargerFonts={true}
+                  />
+                );
+              })}
+          </div>
+        </div>
+
+        <div className="text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6">
+          <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
+        </div>
+
+        <FullHeightInstructionsPanel
+          currentSection={sectionDataForPanel} // Pass data from local state
+          improveInstructions={handleImproveInstructions}
+          loading={improvingInstructions}
+        />
+
+        <ModernChatInterface
+          currentSection={currentSectionIdForChat}
+          chatMessages={chatMessages}
+          currentMessage={currentMessage}
+          setCurrentMessage={setCurrentMessage}
+          handleSendMessage={handleSendMessage}
+          loading={chatLoading}
+        />
+
+        <ConfirmDialog
+          showConfirmDialog={showConfirmDialog}
+          setShowConfirmDialog={setShowConfirmDialog}
+          resetProject={handleResetRequest} // Use combined reset handler
+        />
+      </div>
+    </div>
   );
 };
 
-export default PaperPlannerApp;
+export default VerticalPaperPlannerApp;
