@@ -37,7 +37,7 @@ const getInitialState = () => {
   // Important: We'll set this flag to determine if we should use localStorage data or templates
   const hasStoredData = loadedInputs && Object.keys(loadedInputs).length > 0;
 
-  return { 
+  return {
     initialUserInputs: initialContent, // Start with clean templates by default
     initialChatMessages: initialChat,
     initialTemplates: initialContent,
@@ -50,11 +50,11 @@ const getInitialState = () => {
 const usePaperPlanner = () => {
   // Get initial state with a single useState call to avoid multiple re-renders
   const [initialState] = useState(getInitialState);
-  
+
   // Destructure values from the initial state
-  const { 
-    initialUserInputs, 
-    initialChatMessages, 
+  const {
+    initialUserInputs,
+    initialChatMessages,
     initialTemplates,
     storedInputs,
     storedChat,
@@ -71,10 +71,10 @@ const usePaperPlanner = () => {
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showExamplesDialog, setShowExamplesDialog] = useState(false);
-  
+
   // Add state to track if we've loaded from storage
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
-  
+
   // Add state to track if we've prompted about stored data
   const [hasPromptedAboutStorage, setHasPromptedAboutStorage] = useState(false);
 
@@ -84,13 +84,13 @@ const usePaperPlanner = () => {
       const useStoredData = window.confirm(
         "We found a previously saved project. Would you like to load it? Click 'Cancel' to start with a fresh template."
       );
-      
+
       if (useStoredData) {
         // User wants to use stored data
         setUserInputs(storedInputs);
         setChatMessages(storedChat);
       }
-      
+
       setHasPromptedAboutStorage(true);
       setIsInitialLoadComplete(true);
     } else {
@@ -118,37 +118,51 @@ const usePaperPlanner = () => {
     setCurrentSection(sectionId);
   }, []);
 
+  // MODIFIED: Passes chat history to callOpenAI
   const handleSendMessage = useCallback(async () => {
     if (!currentMessage.trim() || !currentSection) return;
     const newUserMessage = { role: 'user', content: currentMessage };
-    // Ensure the section exists in chatMessages before trying to spread it
+    // Get the current history for the section *before* adding the new message
+    const historyForApi = chatMessages[currentSection] || [];
+    // Update UI state immediately
     setChatMessages(prevMessages => ({
         ...prevMessages,
-        [currentSection]: [...(prevMessages[currentSection] || []), newUserMessage]
+        [currentSection]: [...historyForApi, newUserMessage]
     }));
     setLoading(true);
     const messageToSend = currentMessage;
     setCurrentMessage('');
     try {
       const sectionsForContext = sectionContent?.sections || [];
-      const response = await callOpenAI(messageToSend, currentSection, userInputs, sectionsForContext);
+      // *** Pass the historyForApi to callOpenAI ***
+      const response = await callOpenAI(
+        messageToSend,
+        currentSection,
+        userInputs,
+        sectionsForContext,
+        {}, // options
+        historyForApi // Pass the history
+      );
       const newAssistantMessage = { role: 'assistant', content: response };
        setChatMessages(prevMessages => ({
            ...prevMessages,
-           [currentSection]: [...(prevMessages[currentSection] || []), newAssistantMessage] // Ensure array exists
+           // Use the already updated historyForApi plus the new user message AND the assistant response
+           [currentSection]: [...historyForApi, newUserMessage, newAssistantMessage]
        }));
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage = { role: 'assistant', content: `Sorry, there was an error processing your message. (${error.message})` };
        setChatMessages(prevMessages => ({
            ...prevMessages,
-           [currentSection]: [...(prevMessages[currentSection] || []), errorMessage] // Ensure array exists
+           // Use the already updated historyForApi plus the new user message AND the error message
+           [currentSection]: [...historyForApi, newUserMessage, errorMessage]
        }));
     } finally {
       setLoading(false);
     }
-  }, [currentMessage, currentSection, userInputs]);
+  }, [currentMessage, currentSection, userInputs, chatMessages]); // Add chatMessages dependency
 
+  // MODIFIED: Passes chat history to callOpenAI
   const handleFirstVersionFinished = useCallback(async (sectionId) => {
     const contentToReview = userInputs[sectionId];
     const currentSectionObj = sectionContent?.sections?.find(s => s.id === sectionId);
@@ -157,35 +171,46 @@ const usePaperPlanner = () => {
     setLoading(true);
     const reviewPrompt = aiInstructions;
     const displayMessage = { role: 'user', content: `Requesting review for ${currentSectionObj.title}...` };
+    // Get history before adding display message
+    const historyForApi = chatMessages[sectionId] || [];
     setChatMessages(prevMessages => ({
         ...prevMessages,
-        [sectionId]: [...(prevMessages[sectionId] || []), displayMessage] // Ensure array exists
+        [sectionId]: [...historyForApi, displayMessage]
     }));
     try {
       const sectionsForContext = sectionContent?.sections || [];
-      const response = await callOpenAI(reviewPrompt, sectionId, userInputs, sectionsForContext);
+      // *** Pass historyForApi to callOpenAI ***
+      const response = await callOpenAI(
+        reviewPrompt,
+        sectionId,
+        userInputs,
+        sectionsForContext,
+        {}, // options
+        historyForApi // Pass the history
+      );
       const newAssistantMessage = { role: 'assistant', content: response };
       setChatMessages(prevMessages => ({
           ...prevMessages,
-          [sectionId]: [...(prevMessages[sectionId] || []), newAssistantMessage] // Ensure array exists
+          [sectionId]: [...historyForApi, displayMessage, newAssistantMessage]
       }));
     } catch (error) {
       console.error(`Error getting review for ${sectionId}:`, error);
       const errorMessage = { role: 'assistant', content: `Sorry, there was an error reviewing the ${sectionId} section. (${error.message})` };
       setChatMessages(prevMessages => ({
           ...prevMessages,
-          [sectionId]: [...(prevMessages[sectionId] || []), errorMessage] // Ensure array exists
+          [sectionId]: [...historyForApi, displayMessage, errorMessage]
       }));
     } finally {
       setLoading(false);
     }
-  }, [userInputs]);
+  }, [userInputs, chatMessages]); // Add chatMessages dependency
+
 
   // Reset project function - FIXED to correctly use fresh templates
   const resetProject = useCallback(() => {
     // Clear localStorage first
     clearStorage();
-    
+
     // Create fresh copies of the templates
     const freshInputs = JSON.parse(JSON.stringify(initialTemplates));
     const freshChat = {};
@@ -194,7 +219,7 @@ const usePaperPlanner = () => {
         freshChat[section.id] = [];
       }
     });
-    
+
     // Set the state to fresh templates
     setUserInputs(freshInputs);
     setChatMessages(freshChat);
@@ -209,10 +234,10 @@ const usePaperPlanner = () => {
   // Save project function that only saves JSON for loading later
   const saveProject = useCallback((fileName = 'scientific-paper-plan') => {
     // Ensure the fileName has .json extension
-    const safeFileName = fileName.endsWith('.json') 
-      ? fileName 
+    const safeFileName = fileName.endsWith('.json')
+      ? fileName
       : `${fileName}.json`;
-    
+
     const jsonData = {
       userInputs,
       chatMessages,
@@ -222,18 +247,18 @@ const usePaperPlanner = () => {
 
     const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
     const jsonUrl = URL.createObjectURL(jsonBlob);
-    
+
     // Create a link and trigger download of JSON
     const jsonLink = document.createElement('a');
     jsonLink.href = jsonUrl;
     jsonLink.download = safeFileName;
     document.body.appendChild(jsonLink);
     jsonLink.click();
-    
+
     // Clean up JSON file link
     document.body.removeChild(jsonLink);
     URL.revokeObjectURL(jsonUrl);
-    
+
     return true;
   }, [userInputs, chatMessages]);
 
@@ -288,27 +313,27 @@ const usePaperPlanner = () => {
   // NEW: Import document content
   const importDocumentContent = useCallback(async (file) => {
     setLoading(true);
-    
+
     try {
       // First, ask for confirmation
       if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
         setLoading(false);
         return;
       }
-      
+
       // Call the document import service - Use the imported function from documentImportService
       const importedData = await importDocumentFromFile(file);
-      
+
       // Use the loadProject function to handle the imported data
       loadProject(importedData);
-      
+
       return true;
     } catch (error) {
       console.error("Error importing document content:", error);
-      
+
       // More user-friendly error message
       alert("We had some trouble processing this document. You might want to try a different file format.");
-      
+
       return false;
     } finally {
       setLoading(false);
