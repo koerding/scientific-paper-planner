@@ -3,6 +3,7 @@
  * UPDATED: Added robust JSON parsing for truncated responses and fixed markdown formatting
  * UPDATED: Separated AI response into 'editedInstructions' and 'feedback'
  * UPDATED: Enhanced to also determine completion status of sections
+ * UPDATED: Made completion status detection much more generous
  */
 import { callOpenAI } from './openaiService';
 
@@ -110,6 +111,7 @@ function repairTruncatedJson(text) {
 
 /**
  * Detect completion status for a section based on instruction and feedback content
+ * UPDATED: Made much more generous in marking sections as complete
  * @param {string} instructionText - The edited instruction text
  * @param {string} feedbackText - The feedback text
  * @returns {string} - The completion status: 'complete', 'progress', or 'unstarted'
@@ -121,61 +123,78 @@ function detectCompletionStatus(instructionText, feedbackText) {
         /great job/i,
         /well done/i,
         /all the key points/i,
-        /completed all/i,
+        /completed/i,
         /perfect/i,
         /outstanding/i,
-        /you've addressed everything/i
+        /you've addressed/i,
+        /good job/i,
+        /nicely done/i,
+        /impressive/i,
+        /complete/i,
+        /thorough/i,
+        /clear/i,
+        /strong/i
     ];
     
-    // Check for phrases that indicate substantial remaining work
-    const workNeededPatterns = [
-        /still need to/i,
-        /consider adding/i,
-        /needs more detail/i,
-        /incomplete/i,
-        /missing/i,
-        /insufficient/i,
-        /should include/i,
-        /required element/i,
-        /lacks/i
+    // Check for phrases that indicate substantial problems
+    const problemPatterns = [
+        /completely missing/i,
+        /no attempt/i,
+        /hasn't been addressed/i,
+        /empty/i,
+        /blank/i,
+        /nothing provided/i
     ];
 
-    // Check for progress indicators
+    // Check for progress indicators or partial completion
     const progressPatterns = [
         /good start/i,
         /making progress/i,
         /on the right track/i,
         /solid foundation/i,
-        /heading in the right direction/i
+        /heading in the right direction/i,
+        /needs more/i,
+        /could improve/i,
+        /add more detail/i,
+        /consider including/i,
+        /somewhat/i,
+        /partially/i
     ];
-
-    // Check if it's complete
+    
+    // Check content length - if there's substantive content, be generous
+    const hasSubstantiveContent = 
+        (instructionText && instructionText.length > 100) || 
+        (feedbackText && feedbackText.length > 100);
+    
+    // MUCH MORE GENEROUS CRITERIA:
+    // If they've received any congratulatory feedback or substantive feedback, mark as 'complete'
     const isComplete = congratsPatterns.some(pattern => 
         pattern.test(instructionText) || pattern.test(feedbackText)
     );
     
-    if (isComplete) {
+    if (isComplete || (feedbackText && feedbackText.length > 20)) {
         return 'complete';
     }
     
-    // Check if substantial work is needed
-    const needsWork = workNeededPatterns.some(pattern => 
+    // Only mark as 'unstarted' if there are explicit indicators of a major problem
+    const hasMajorProblems = problemPatterns.some(pattern => 
         pattern.test(instructionText) || pattern.test(feedbackText)
     );
     
-    // Check if there's progress
-    const hasProgress = progressPatterns.some(pattern => 
-        pattern.test(instructionText) || pattern.test(feedbackText)
-    );
-    
-    if (needsWork && !hasProgress) {
+    if (hasMajorProblems && !hasSubstantiveContent) {
         return 'unstarted';
-    } else if (hasProgress || needsWork) {
+    }
+    
+    // By default, if they've written anything meaningful or have any feedback,
+    // mark as 'progress' at minimum
+    if (hasSubstantiveContent || progressPatterns.some(pattern => 
+        pattern.test(instructionText) || pattern.test(feedbackText)
+    )) {
         return 'progress';
     }
     
-    // Default case
-    return 'unstarted';
+    // Default case - be generous and mark as progress
+    return 'progress';
 }
 
 /**
