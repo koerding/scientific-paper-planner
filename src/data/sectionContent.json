@@ -12,85 +12,8 @@
       "instructions": {
         "title": "Formulating Your Research Question",
         "text": "A good research question drives your entire study and helps you focus your efforts. It's the foundation of scientific inquiry.\n\n1. Write the question.\n\n2. If you ask a normative question, be clear about the objective. If you ask a correlation question, don't do it for a causal goal.\n\n3. Explain why the question matters to the field.\n\n4. Ensure your question is answerable with your anticipated resources."
-      },
-      "placeholder": "Research Question:[Write it out] \n\nSignificance/Impact: [Why it matters]\n",
-      "llmInstructions": "Above, I wrote down my scientific question. I also wrote down why this question is important to me. I want you to check if the question feels like a good question for scientific inquiry. Please evaluate:\n\n1. Strengths and weaknesses of the question (including clarity and scope)\n2. How well the question matches my stated significance/objectives\n3. If it's a normative question, is the objective clear? If it's a correlation question, is it being asked for correlation (not causation)?\n\nPlease provide constructive feedback on how to strengthen the research question if needed."
-    },
-    {
-      "id": "audience",
-      "title": "Target Audience",
-      "type": "text",
-      "maxLength": 1500,
-      "inputPlaceholder": "List the target audience for your research...",
-      "completeButtonText": "MARK COMPLETE",
-      "loadingButtonText": "Processing...",
-      "instructions": {
-        "title": "Identifying Your Target Audience",
-        "text": "Every research project needs an audience. Knowing who will read and care about your work helps you focus your approach and presentation style.\n\n1. Identify primary academic communities who would benefit most directly.\n\n2. For each audience, note how your research might impact their work.\n\n3. Specify 3-5 individual researchers or research groups representing your audience."
-      },
-      "placeholder": "Target Audience/Community:\n1. \n2. \n3. \n4. \n5. ",
-      "llmInstructions": "I see you've identified potential audiences for your research. Let me help you evaluate these choices:\n\n1. How appropriate these audience selections are given your research question\n2. Whether there are additional important audiences you might have overlooked\n3. How clearly you've articulated why each audience would be interested\n\nI'll also suggest 3-5 additional specific researchers, labs, or communities who might be especially interested in this topic based on your research question and audiences identified."
-    },
-    {
-      "id": "hypothesis",
-      "title": "Hypothesis",
-      "type": "text",
-      "maxLength": 2000,
-      "inputPlaceholder": "Start writing your hypotheses here...",
-      "completeButtonText": "MARK COMPLETE",
-      "loadingButtonText": "Analyzing hypotheses...",
-      "instructions": {
-        "title": "Hypothesis-driven Research",
-        "text": "Hypothesis-driven research tests specific predictions derived from theory. It's the classic approach where you make a clear, testable guess about how things work.\n\n1. Formulate at least two distinct, testable hypotheses.\n\n2. Ensure each hypothesis is specific and clearly stated.\n\n3. Your experiment must be able to differentiate between these hypotheses.\n\n4. Explain why distinguishing between these hypotheses matters to the field.\n\n5. Explain how data can help you decide between these hypotheses."
-      },
-      "placeholder": "Hypothesis 1: [State the first specific, testable hypothesis.]\n\nHypothesis 2: [State the second specific, testable hypothesis, distinct from H1.]\n\nWhy distinguishing these hypotheses matters:\n- \n- ",
-      "llmInstructions": "I've reviewed your hypotheses. Let me provide feedback on:\n\n1. The strengths and weaknesses of each hypothesis, particularly regarding specificity and testability\n2. How well they align with your research question\n3. Whether distinguishing between them would be consequential for the field\n4. How clearly your key terms are defined\n5. Whether your hypotheses are appropriately distinct from each other\n\nI'll provide constructive suggestions for refining your hypotheses to make them more testable and meaningful."
-    },
-    {
-      "id": "needsresearch",
-      "title": "Needs-Based",
-      "type": "text",
-      "maxLength": 2000,
-      "inputPlaceholder": "Define the needs your research addresses...",
-      "completeButtonText": "MARK COMPLETE",
-      "loadingButtonText": "Analyzing needs...",
-      "instructions": {
-        "title": "Needs-Based Research",
-        "text": "Needs-based research aims to solve practical problems rather than test theories. It focuses on developing solutions that address specific real-world challenges faced by people or systems.\n\n1. Clearly identify who needs this research (patients, clinicians, engineers, policymakers).\n\n2. Explain why they need it - what specific problem are you solving?\n\n3. Describe the current options/solutions and their limitations.\n\n4. Define concrete success criteria - how will you know if your solution works?\n\n5. Explain what specific improvement or advance your solution offers over existing approaches."
-      },
-      "placeholder": "Who needs this research:\n\nWhy they need it (specific problem to solve):\n\nCurrent approaches and their limitations:\n\nSuccess criteria (how will you measure if your solution works):\n\nAdvantages of your proposed approach:",
-      "llmInstructions": "I see you've outlined a needs-based approach. Let me help evaluate how well you've defined the problem and solution space:\n\n1. How clearly you've identified the specific stakeholders who need this research\n2. Whether you've articulated a concrete problem that needs solving\n3. How thoroughly you've assessed current approaches and their limitations\n4. Whether your success criteria are specific and measurable\n5. How convincing your case is that your approach offers meaningful advantages\n\nI'll provide constructive feedback on strengthening your needs-based framework and ensuring it addresses a genuine gap."
-    },
-    {
-      "id": "exploratoryresearch",
-      "title": "Exploratory",
-      "type": "text",
-      "maxLength": 2000,
-      "inputPlaceholder": "Define your exploratory approach...",
-      "completeButtonText": "MARK COMPLETE",
-      "loadingButtonText": "Analyzing approach...",
-      "instructions": {
-        "title": "Exploratory Research",
-        "text": "Exploratory research aims to discover patterns and generate hypotheses rather than testing them. It's about finding interesting connections in data without preconceived expectations about what you'll find.\n\n1. Describe the phenomena, dataset, or system you want to explore.\n\n2. List 3-5 specific patterns, relationships, or discoveries your approach might reveal.\n\n3. Explain what makes this exploration novel or valuable to your field.\n\n4. Describe what tools or analytical approaches you'll use for discovery.\n\n5. Outline how you'll distinguish meaningful patterns from random variation."
-      },
-      "placeholder": "Phenomena/data/system to explore:\n\nPotential discoveries your approach might reveal:\n1. \n2. \n3. \n\nValue of this exploration to the field:\n\nAnalytical approaches for discovery:\n\nStrategy for validating findings:",
-      "llmInstructions": "I see you've outlined your exploratory approach. Let me help evaluate this framework:\n\n1. How clearly you've defined what you're exploring and why it's worth investigating\n2. How specific and interesting your potential discoveries seem to be\n3. Whether your analytical approaches are appropriate for the phenomena you're exploring\n4. How well you've considered validation and distinguishing signal from noise\n5. Whether this exploration could lead to valuable scientific insights\n\nI'll provide constructive feedback on strengthening your exploratory approach and ensuring it has scientific value beyond simple data mining."
-    },
-    {
-      "id": "relatedpapers",
-      "title": "Related Papers",
-      "type": "text",
-      "maxLength": 2000,
-      "inputPlaceholder": "List the related papers here...",
-      "completeButtonText": "MARK COMPLETE",
-      "loadingButtonText": "Processing...",
-      "instructions": {
-        "title": "Identifying Relevant Literature",
-        "text": "Every research project builds on existing work. Finding relevant papers helps you avoid reinventing the wheel and positions your work within the scientific conversation.\n\n1. List 5 papers that test similar hypotheses or address related questions.\n\n2. Explain how each paper relates to your specific research question.\n\n3. Identify what gap your research will fill that these papers don't address.\n\n4. Consider papers with contrasting perspectives or results to yours."
-      },
-      "placeholder": "Most similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
-      "llmInstructions": "I'll evaluate the papers you've listed as most relevant to your research:\n\n1. Based on the paper titles/authors you've provided, I'll assess how relevant they appear to be to your specific hypotheses\n2. I'll suggest what key aspects of these papers might be particularly important to consider for your work\n3. I'll suggest what types of additional papers might be valuable to include (e.g., methodological papers, contrasting perspectives)\n4. If you've included enough information, I'll highlight potential gaps in the literature that your work could address\n\nNote that I can only evaluate based on the information you've provided about these papers - I don't have the ability to search for or read the actual papers."
-    },
+    ]
+},
     {
       "id": "experiment",
       "title": "Experiment",
@@ -166,5 +89,81 @@
       "placeholder": "Background: [Introduce field, gap, significance. 1-2 sentences]\n\nObjective/Question: [State primary aim/question/hypothesis. 1 sentence]\n\nMethods: [Briefly describe design, participants, key procedures. 1-2 sentences]\n\n(Expected) Results: [Summarize anticipated main finding and how it addresses the objective. 1-2 sentences]\n\nConclusion/Implications: [State main conclusion and broader impact. 1-2 sentences]",
       "llmInstructions": "I want you to check the resulting abstract. Does it logically follow from the previous sections (Question, Hypothesis, Experiment, Analysis)? Does it adhere to the requested structure (Background, Objective, Methods, Results, Conclusion)? Is it convincing and clearly written? Is the language precise? What specific changes (e.g., word choice, sentence structure) would make it more powerful or clear? Use a constructive, Socratic dialogue style. Help the user reflect on what they learned by going through this planning process. Ask what they might do differently next time they plan a study."
     }
-  ]
-}
+      "placeholder": "Research Question:[Write it out] \n\nSignificance/Impact: [Why it matters]\n",
+      "llmInstructions": "Above, I wrote down my scientific question. I also wrote down why this question is important to me. I want you to check if the question feels like a good question for scientific inquiry. Please evaluate:\n\n1. Strengths and weaknesses of the question (including clarity and scope)\n2. How well the question matches my stated significance/objectives\n3. If it's a normative question, is the objective clear? If it's a correlation question, is it being asked for correlation (not causation)?\n\nPlease provide constructive feedback on how to strengthen the research question if needed."
+    },
+    {
+      "id": "audience",
+      "title": "Target Audience",
+      "type": "text",
+      "maxLength": 1500,
+      "inputPlaceholder": "List the target audience for your research...",
+      "completeButtonText": "MARK COMPLETE",
+      "loadingButtonText": "Processing...",
+      "instructions": {
+        "title": "Identifying Your Target Audience",
+        "text": "Every research project needs an audience. Knowing who will read and care about your work helps you focus your approach and presentation style.\n\n1. Identify primary academic communities who would benefit most directly (e.g., computational neuroscience, motor control researchers).\n\n2. For each community, note how your research might impact their work.\n\n3. Then, specify 3-5 individual researchers or research groups representing your audience (specific labs or scientists)."
+      },
+      "placeholder": "Target Audience/Community (research fields/disciplines):\n1. \n2. \n3. \n\nSpecific Researchers/Labs (individual scientists or groups):\n1. \n2. \n3. ",
+      "llmInstructions": "I see you've identified potential audiences for your research. Let me help you evaluate these choices:\n\n1. How appropriate these audience selections are given your research question\n2. Whether there are additional important audiences you might have overlooked\n3. How clearly you've articulated why each audience would be interested\n\nI'll also suggest 3-5 additional specific researchers, labs, or communities who might be especially interested in this topic based on your research question and audiences identified."
+    },
+    {
+      "id": "hypothesis",
+      "title": "Hypothesis",
+      "type": "text",
+      "maxLength": 2000,
+      "inputPlaceholder": "Start writing your hypotheses here...",
+      "completeButtonText": "MARK COMPLETE",
+      "loadingButtonText": "Analyzing hypotheses...",
+      "instructions": {
+        "title": "Hypothesis-driven Research",
+        "text": "Hypothesis-driven research tests specific predictions derived from theory. It's the classic approach where you make a clear, testable guess about how things work.\n\n1. Formulate at least two distinct, testable hypotheses.\n\n2. Ensure each hypothesis is specific and clearly stated.\n\n3. Your experiment must be able to differentiate between these hypotheses.\n\n4. Explain why distinguishing between these hypotheses matters to the field.\n\n5. Explain how data can help you decide between these hypotheses."
+      },
+      "placeholder": "Hypothesis 1: [State the first specific, testable hypothesis.]\n\nHypothesis 2: [State the second specific, testable hypothesis, distinct from H1.]\n\nWhy distinguishing these hypotheses matters:\n- \n- ",
+      "llmInstructions": "I've reviewed your hypotheses. Let me provide feedback on:\n\n1. The strengths and weaknesses of each hypothesis, particularly regarding specificity and testability\n2. How well they align with your research question\n3. Whether distinguishing between them would be consequential for the field\n4. How clearly your key terms are defined\n5. Whether your hypotheses are appropriately distinct from each other\n\nI'll provide constructive suggestions for refining your hypotheses to make them more testable and meaningful."
+    },
+    {
+      "id": "needsresearch",
+      "title": "Needs-Based",
+      "type": "text",
+      "maxLength": 2000,
+      "inputPlaceholder": "Define the needs your research addresses...",
+      "completeButtonText": "MARK COMPLETE",
+      "loadingButtonText": "Analyzing needs...",
+      "instructions": {
+        "title": "Needs-Based Research",
+        "text": "Needs-based research aims to solve practical problems rather than test theories. It focuses on developing solutions that address specific real-world challenges faced by people or systems.\n\n1. Clearly identify who needs this research (patients, clinicians, engineers, policymakers).\n\n2. Explain why they need it - what specific problem are you solving?\n\n3. Describe the current options/solutions and their limitations.\n\n4. Define concrete success criteria - how will you know if your solution works?\n\n5. Explain what specific improvement or advance your solution offers over existing approaches."
+      },
+      "placeholder": "Who needs this research:\n\nWhy they need it (specific problem to solve):\n\nCurrent approaches and their limitations:\n\nSuccess criteria (how will you measure if your solution works):\n\nAdvantages of your proposed approach:",
+      "llmInstructions": "I see you've outlined a needs-based approach. Let me help evaluate how well you've defined the problem and solution space:\n\n1. How clearly you've identified the specific stakeholders who need this research\n2. Whether you've articulated a concrete problem that needs solving\n3. How thoroughly you've assessed current approaches and their limitations\n4. Whether your success criteria are specific and measurable\n5. How convincing your case is that your approach offers meaningful advantages\n\nI'll provide constructive feedback on strengthening your needs-based framework and ensuring it addresses a genuine gap."
+    },
+    {
+      "id": "exploratoryresearch",
+      "title": "Exploratory",
+      "type": "text",
+      "maxLength": 2000,
+      "inputPlaceholder": "Define your exploratory approach...",
+      "completeButtonText": "MARK COMPLETE",
+      "loadingButtonText": "Analyzing approach...",
+      "instructions": {
+        "title": "Exploratory Research",
+        "text": "Exploratory research aims to discover patterns and generate hypotheses rather than testing them. It's about finding interesting connections in data without preconceived expectations about what you'll find.\n\n1. Describe the phenomena, dataset, or system you want to explore.\n\n2. List 3-5 specific patterns, relationships, or discoveries your approach might reveal.\n\n3. Explain what makes this exploration novel or valuable to your field.\n\n4. Describe what tools or analytical approaches you'll use for discovery.\n\n5. Outline how you'll distinguish meaningful patterns from random variation."
+      },
+      "placeholder": "Phenomena/data/system to explore:\n\nPotential discoveries your approach might reveal:\n1. \n2. \n3. \n\nValue of this exploration to the field:\n\nAnalytical approaches for discovery:\n\nStrategy for validating findings:",
+      "llmInstructions": "I see you've outlined your exploratory approach. Let me help evaluate this framework:\n\n1. How clearly you've defined what you're exploring and why it's worth investigating\n2. How specific and interesting your potential discoveries seem to be\n3. Whether your analytical approaches are appropriate for the phenomena you're exploring\n4. How well you've considered validation and distinguishing signal from noise\n5. Whether this exploration could lead to valuable scientific insights\n\nI'll provide constructive feedback on strengthening your exploratory approach and ensuring it has scientific value beyond simple data mining."
+    },
+    {
+      "id": "relatedpapers",
+      "title": "Related Papers",
+      "type": "text",
+      "maxLength": 2000,
+      "inputPlaceholder": "List the related papers here...",
+      "completeButtonText": "MARK COMPLETE",
+      "loadingButtonText": "Processing...",
+      "instructions": {
+        "title": "Identifying Relevant Literature",
+        "text": "Every research project builds on existing work. Finding relevant papers helps you avoid reinventing the wheel and positions your work within the scientific conversation.\n\n1. List 5 papers that test similar hypotheses or address related questions.\n\n2. Explain how each paper relates to your specific research question.\n\n3. Identify what gap your research will fill that these papers don't address.\n\n4. Consider papers with contrasting perspectives or results to yours."
+      },
+      "placeholder": "Most similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
+      "llmInstructions": "I'll evaluate the papers you've listed as most relevant to your research:\n\n1. Based on the paper titles/authors you've provided, I'll assess how relevant they appear to be to your specific hypotheses\n2. I'll suggest what key aspects of these papers might be particularly important to consider for your work\n3. I'll suggest what types of additional papers might be valuable to include (e.g., methodological papers, contrasting perspectives)\n4. If you've included enough information, I'll highlight potential gaps in the literature that your work could address\n\nNote that I can only evaluate based on the information you've provided about these papers - I don't have the ability to search for or read the actual papers."
+    },
