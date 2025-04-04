@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
+import { importPaperFromPdf } from '../services/pdfImportService'; // New import
 import sectionContent from '../data/sectionContent.json';
 import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
@@ -203,37 +204,6 @@ const usePaperPlanner = () => {
     exportProjectFunction(userInputs, chatMessages, sectionContent);
   }, [userInputs, chatMessages]);
 
-  // NEW: Save project function that only saves JSON for loading later
-  const saveProject = useCallback((fileName = 'scientific-paper-plan') => {
-    // Ensure the fileName has .json extension
-    const safeFileName = fileName.endsWith('.json') 
-      ? fileName 
-      : `${fileName}.json`;
-    
-    const jsonData = {
-      userInputs,
-      chatMessages,
-      timestamp: new Date().toISOString(),
-      version: "1.0"
-    };
-
-    const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
-    const jsonUrl = URL.createObjectURL(jsonBlob);
-    
-    // Create a link and trigger download of JSON
-    const jsonLink = document.createElement('a');
-    jsonLink.href = jsonUrl;
-    jsonLink.download = safeFileName;
-    document.body.appendChild(jsonLink);
-    jsonLink.click();
-    
-    // Clean up JSON file link
-    document.body.removeChild(jsonLink);
-    URL.revokeObjectURL(jsonUrl);
-    
-    return true;
-  }, [userInputs, chatMessages]);
-
   // Function to load project from imported JSON file
   const loadProject = useCallback((data) => {
     if (!validateProjectData(data)) {
@@ -282,6 +252,33 @@ const usePaperPlanner = () => {
     }
   }, [initialTemplates]);
 
+  // NEW: Import PDF content
+  const importPdfContent = useCallback(async (pdfFile) => {
+    setLoading(true);
+    
+    try {
+      // First, ask for confirmation
+      if (!window.confirm("Importing content from PDF will replace your current work. Continue?")) {
+        setLoading(false);
+        return;
+      }
+      
+      // Call the PDF import service
+      const importedData = await importPaperFromPdf(pdfFile);
+      
+      // Use the loadProject function to handle the imported data
+      loadProject(importedData);
+      
+      return true;
+    } catch (error) {
+      console.error("Error importing PDF content:", error);
+      alert(`Error importing PDF: ${error.message || "Unknown error"}`);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [loadProject]);
+
   // Return all state and handlers needed by the components
   return {
     userInputs,
@@ -302,9 +299,39 @@ const usePaperPlanner = () => {
     handleFirstVersionFinished,
     resetProject,
     exportProject,
-    saveProject,  // NEW: Add save function
+    saveProject,
     loadProject,
+    importPdfContent // NEW: Add PDF import function
   };
 };
 
-export default usePaperPlanner;
+  // Save project function that only saves JSON for loading later
+  const saveProject = useCallback((fileName = 'scientific-paper-plan') => {
+    // Ensure the fileName has .json extension
+    const safeFileName = fileName.endsWith('.json') 
+      ? fileName 
+      : `${fileName}.json`;
+    
+    const jsonData = {
+      userInputs,
+      chatMessages,
+      timestamp: new Date().toISOString(),
+      version: "1.0"
+    };
+
+    const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    
+    // Create a link and trigger download of JSON
+    const jsonLink = document.createElement('a');
+    jsonLink.href = jsonUrl;
+    jsonLink.download = safeFileName;
+    document.body.appendChild(jsonLink);
+    jsonLink.click();
+    
+    // Clean up JSON file link
+    document.body.removeChild(jsonLink);
+    URL.revokeObjectURL(jsonUrl);
+    
+    return true;
+  }, [userInputs, chatMessages]);
