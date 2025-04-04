@@ -1,16 +1,22 @@
 /**
  * Utilities for exporting project content
+ * UPDATED: Added support for custom file naming and separated JSON export
  */
-
 
 /**
  * Exports the project as a markdown file
  * @param {Object} userInputs - The user inputs
  * @param {Object} chatMessages - The chat messages
  * @param {Object} sectionContent - The section content
- * @param {boolean} saveJSON - Whether to also save in JSON format for later loading
+ * @param {string} [fileName] - Optional custom file name (without extension)
  */
-export const exportProject = (userInputs, chatMessages, sectionContent, saveJSON = true) => {
+export const exportProject = (userInputs, chatMessages, sectionContent, fileName) => {
+  // Ask for a file name if not provided
+  const customFileName = fileName || prompt("Enter a name for your exported file:", "scientific-paper-plan");
+  
+  // If user cancels prompt, exit the function
+  if (!customFileName) return;
+  
   // Determine research approach based on filled out sections
   let researchApproach = "";
   
@@ -64,19 +70,43 @@ ${userInputs.abstract || "Not completed yet"}
   const mdBlob = new Blob([exportContent], { type: 'text/markdown' });
   const mdUrl = URL.createObjectURL(mdBlob);
   
+  // Ensure filename has .md extension
+  const safeFileName = customFileName.endsWith('.md') 
+    ? customFileName 
+    : `${customFileName}.md`;
+  
   // Create a link and trigger download of markdown
   const mdLink = document.createElement('a');
   mdLink.href = mdUrl;
-  mdLink.download = 'scientific-paper-plan.md';
+  mdLink.download = safeFileName;
   document.body.appendChild(mdLink);
   mdLink.click();
   
   // Clean up markdown file link
   document.body.removeChild(mdLink);
   URL.revokeObjectURL(mdUrl);
+};
 
-  // If saveJSON is true, also save as JSON for later loading
-  if (saveJSON) {
+/**
+ * Creates a JSON project file for later loading
+ * @param {Object} userInputs - The user inputs
+ * @param {Object} chatMessages - The chat messages
+ * @param {string} [fileName] - Optional custom file name (without extension)
+ * @returns {boolean} Success indicator
+ */
+export const saveProjectAsJson = (userInputs, chatMessages, fileName) => {
+  try {
+    // Ask for file name if not provided
+    const customFileName = fileName || prompt("Enter a name for your project file:", "scientific-paper-plan");
+    
+    // If user cancels prompt, exit the function
+    if (!customFileName) return false;
+    
+    // Ensure filename has .json extension
+    const safeFileName = customFileName.endsWith('.json') 
+      ? customFileName 
+      : `${customFileName}.json`;
+    
     const jsonData = {
       userInputs,
       chatMessages,
@@ -90,13 +120,18 @@ ${userInputs.abstract || "Not completed yet"}
     // Create a link and trigger download of JSON
     const jsonLink = document.createElement('a');
     jsonLink.href = jsonUrl;
-    jsonLink.download = 'scientific-paper-plan.json';
+    jsonLink.download = safeFileName;
     document.body.appendChild(jsonLink);
     jsonLink.click();
     
     // Clean up JSON file link
     document.body.removeChild(jsonLink);
     URL.revokeObjectURL(jsonUrl);
+    
+    return true;
+  } catch (error) {
+    console.error("Error saving project as JSON:", error);
+    return false;
   }
 };
 
