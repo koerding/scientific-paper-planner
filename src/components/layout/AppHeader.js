@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 
 /**
  * Application header with absolute positioning to ensure buttons are visible
- * ADDED: PDF Import button for loading content from scientific papers
+ * UPDATED: Improved document import feature for PDF and Word files
  */
 const AppHeader = ({
   activeSection,
@@ -13,12 +13,12 @@ const AppHeader = ({
   exportProject,
   saveProject,
   loadProject,
-  importPdfContent, // New prop for importing content from PDF
+  importDocumentContent, // Renamed from importPdfContent to reflect broader support
   setShowExamplesDialog
 }) => {
   // Use refs for file inputs
   const fileInputRef = useRef(null);
-  const pdfInputRef = useRef(null);
+  const documentInputRef = useRef(null);
   
   // States for visual feedback
   const [isSaving, setIsSaving] = useState(false);
@@ -67,32 +67,39 @@ const AppHeader = ({
     event.target.value = null;
   };
 
-  // Handle PDF file input change
-  const handlePdfChange = async (event) => {
+  // Handle document file input change (PDF or Word)
+  const handleDocumentChange = async (event) => {
     const file = event.target.files?.[0];
 
     if (!file) {
       return;
     }
 
-    // Check file type
-    if (!file.type.includes('pdf')) {
-      alert("Please select a PDF file");
+    // Check file type (PDF or Word)
+    if (!file.type.includes('pdf') && 
+        !file.type.includes('word') && 
+        !file.type.includes('docx') && 
+        !file.type.includes('doc') &&
+        !file.name.endsWith('.pdf') && 
+        !file.name.endsWith('.docx') && 
+        !file.name.endsWith('.doc')) {
+      alert("Please select a PDF or Word document");
       return;
     }
 
     setIsImporting(true);
 
     try {
-      // Call the importPdfContent function with the file
-      if (typeof importPdfContent === 'function') {
-        await importPdfContent(file);
+      // Call the importDocumentContent function with the file
+      if (typeof importDocumentContent === 'function') {
+        await importDocumentContent(file);
       } else {
-        alert("PDF import functionality is not available");
+        alert("Document import functionality is not available");
       }
     } catch (error) {
-      console.error("Error importing PDF:", error);
-      alert("Error importing PDF: " + (error.message || "Unknown error"));
+      console.error("Error importing document:", error);
+      // More user-friendly error message
+      alert("We had some trouble processing this document. You might want to try a different file or format.");
     } finally {
       setIsImporting(false);
       // Reset file input so the same file can be selected again
@@ -107,10 +114,10 @@ const AppHeader = ({
     }
   };
 
-  // Handle PDF import button click
-  const handlePdfImportClick = () => {
-    if (pdfInputRef.current) {
-      pdfInputRef.current.click();
+  // Handle document import button click
+  const handleDocumentImportClick = () => {
+    if (documentInputRef.current) {
+      documentInputRef.current.click();
     }
   };
 
@@ -273,17 +280,17 @@ const AppHeader = ({
             />
           </div>
 
-          {/* PDF Import Button - NEW */}
+          {/* Document Import Button - RENAMED */}
           <div className="relative">
             <button
-              onClick={handlePdfImportClick}
+              onClick={handleDocumentImportClick}
               disabled={isImporting}
               className={`flex items-center px-3 py-1.5 border rounded text-sm font-medium transition-colors shadow-sm ${
                 isImporting
                   ? 'bg-gray-100 text-gray-400 border-gray-400 cursor-wait'
                   : 'bg-white text-orange-600 border-orange-500 hover:bg-orange-50'
               }`}
-              title="Import content from a scientific paper (PDF)"
+              title="Create example project from a scientific paper (PDF or Word)"
             >
               {isImporting ? (
                 <>
@@ -291,22 +298,22 @@ const AppHeader = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Importing PDF...
+                  Processing...
                 </>
               ) : (
                 <>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
-                  Import PDF
+                  Make Example from PDF/Doc
                 </>
               )}
             </button>
             <input
-              ref={pdfInputRef}
+              ref={documentInputRef}
               type="file"
-              accept=".pdf"
-              onChange={handlePdfChange}
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleDocumentChange}
               style={{ display: 'none' }}
             />
           </div>
