@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 /**
  * Application header with absolute positioning to ensure buttons are visible
- * UPDATED: Added Load button and input file handler
+ * UPDATED: Fixed file loading functionality
  */
 const AppHeader = ({
   activeSection, // Keep props even if unused by this component itself
@@ -13,26 +13,65 @@ const AppHeader = ({
   exportProject,
   loadProject
 }) => {
-  // Handle file input change
+  // Use ref for file input to better control it
+  const fileInputRef = useRef(null);
+
+  // Handle file input change - with more debug and better error handling
   const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = JSON.parse(e.target.result);
-          if (typeof loadProject === 'function') {
-            loadProject(data);
-          }
-        } catch (error) {
-          console.error("Error parsing loaded file:", error);
-          alert("Error loading file. Please make sure it's a valid project file.");
-        }
-      };
-      reader.readAsText(file);
+    const file = event.target.files?.[0];
+    console.log("File selected:", file);
+    
+    if (!file) {
+      console.log("No file selected");
+      return;
     }
+
+    // Check file type
+    if (!file.name.endsWith('.json')) {
+      alert("Please select a JSON file (ending in .json)");
+      return;
+    }
+
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      console.log("File loaded, parsing content...");
+      try {
+        const content = e.target.result;
+        console.log("File content loaded, length:", content.length);
+        const data = JSON.parse(content);
+        console.log("JSON parsed successfully");
+        
+        if (typeof loadProject === 'function') {
+          console.log("Calling loadProject with data");
+          loadProject(data);
+        } else {
+          console.error("loadProject is not a function");
+          alert("Loading functionality is not available");
+        }
+      } catch (error) {
+        console.error("Error parsing loaded file:", error);
+        alert("Error loading file. Please make sure it's a valid project file.");
+      }
+    };
+    
+    reader.onerror = (error) => {
+      console.error("Error reading file:", error);
+      alert("Error reading file. Please try again.");
+    };
+
+    console.log("Starting to read file as text");
+    reader.readAsText(file);
+    
     // Reset file input so the same file can be selected again
     event.target.value = null;
+  };
+
+  // Handle load button click
+  const handleLoadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   return (
@@ -94,7 +133,7 @@ const AppHeader = ({
           {/* Load Button - Triggers hidden file input */}
           <div className="relative">
             <button
-              onClick={() => document.getElementById('loadProjectInput').click()}
+              onClick={handleLoadClick}
               className="flex items-center px-3 py-1.5 border border-blue-500 text-blue-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-blue-50 transition-colors"
               title="Load a saved project"
             >
@@ -104,7 +143,7 @@ const AppHeader = ({
               Load
             </button>
             <input 
-              id="loadProjectInput"
+              ref={fileInputRef}
               type="file"
               accept=".json"
               onChange={handleFileChange}
