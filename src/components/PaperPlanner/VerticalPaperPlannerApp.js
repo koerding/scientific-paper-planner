@@ -4,8 +4,10 @@ import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
 import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
+import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
+import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
-import ModernChatInterface from '../chat/ModernChatInterface'; // Ensure this path is correct
+import ModernChatInterface from '../chat/ModernChatInterface';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -13,10 +15,12 @@ import {
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Paper Planner - Cleaned logs.
+ * Enhanced Paper Planner with research approach and data acquisition toggles
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [activeSection, setActiveSection] = useState('question');
+  const [activeApproach, setActiveApproach] = useState('hypothesis');
+  const [activeDataMethod, setActiveDataMethod] = useState('experiment');
   const sectionRefs = useRef({});
 
   // Use local state for instructions potentially modified by AI
@@ -59,13 +63,31 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   }, [localSectionContent.sections]);
 
-   // Effect for initial active section setting
-   useEffect(() => {
-       setActiveSection('question');
-       // Let the hook manage the initial chat context section
-       // handleSectionChange('question');
-   }, []);
+  // Effect for initial active section setting
+  useEffect(() => {
+      setActiveSection('question');
+      // Let the hook manage the initial chat context section
+      // handleSectionChange('question');
+  }, []);
 
+  // Effect to update active approach and data method based on user inputs
+  useEffect(() => {
+    // Check if user has input in any of the approach sections
+    if (userInputs.hypothesis && userInputs.hypothesis.trim() !== '') {
+      setActiveApproach('hypothesis');
+    } else if (userInputs.needsresearch && userInputs.needsresearch.trim() !== '') {
+      setActiveApproach('needsresearch');
+    } else if (userInputs.exploratoryresearch && userInputs.exploratoryresearch.trim() !== '') {
+      setActiveApproach('exploratoryresearch');
+    }
+
+    // Check if user has input in any of the data acquisition sections
+    if (userInputs.experiment && userInputs.experiment.trim() !== '') {
+      setActiveDataMethod('experiment');
+    } else if (userInputs.existingdata && userInputs.existingdata.trim() !== '') {
+      setActiveDataMethod('existingdata');
+    }
+  }, [userInputs]);
 
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
@@ -123,14 +145,43 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-   // Combine local reset logic with hook's reset logic
-   const handleResetRequest = () => {
-       hookResetProject(); // Call the hook's reset (clears storage, resets hook state)
-       setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent))); // Reset local instructions state
-       setActiveSection('question'); // Reset active section locally
-   };
+  // Combine local reset logic with hook's reset logic
+  const handleResetRequest = () => {
+      hookResetProject(); // Call the hook's reset (clears storage, resets hook state)
+      setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent))); // Reset local instructions state
+      setActiveSection('question'); // Reset active section locally
+      setActiveApproach('hypothesis'); // Reset active approach
+      setActiveDataMethod('experiment'); // Reset active data method
+  };
 
   const sectionDataForPanel = getCurrentSectionData();
+
+  // Check if a section should be displayed based on toggles
+  const shouldDisplaySection = (sectionId) => {
+    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
+      return sectionId === activeApproach;
+    }
+    
+    if (sectionId === 'experiment' || sectionId === 'existingdata') {
+      return sectionId === activeDataMethod;
+    }
+    
+    return true; // All other sections are always displayed
+  };
+
+  // Handle approach toggle
+  const handleApproachToggle = (approach) => {
+    setActiveApproach(approach);
+    // If we switch to this approach, automatically set it as the active section
+    setActiveSectionWithManualFlag(approach);
+  };
+
+  // Handle data method toggle
+  const handleDataMethodToggle = (method) => {
+    setActiveDataMethod(method);
+    // If we switch to this method, automatically set it as the active section
+    setActiveSectionWithManualFlag(method);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -145,27 +196,137 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
         <div className="flex">
           <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.map((section) => {
-              if (!section || !section.id) return null;
-              const isCurrentActive = activeSection === section.id;
-               // isCompleted might need refinement depending on desired logic without checklist
-              const isCompleted = hasSectionContent(section.id);
-              return (
-                <SectionCard
-                  key={section.id}
-                  section={section}
-                  isCurrentSection={isCurrentActive}
-                  isCompleted={isCompleted}
-                  userInputs={userInputs}
-                  handleInputChange={handleInputChange}
-                  handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
-                  loading={chatLoading && currentSectionIdForChat === section.id}
-                  sectionRef={sectionRefs.current[section.id]}
-                  onClick={() => setActiveSectionWithManualFlag(section.id)}
-                  useLargerFonts={true}
-                />
-              );
-            })}
+            {/* Display first two sections: Question and Audience */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'question' || section?.id === 'audience')
+              .map((section) => {
+                if (!section || !section.id) return null;
+                const isCurrentActive = activeSection === section.id;
+                const isCompleted = hasSectionContent(section.id);
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    isCurrentSection={isCurrentActive}
+                    isCompleted={isCompleted}
+                    userInputs={userInputs}
+                    handleInputChange={handleInputChange}
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
+                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    sectionRef={sectionRefs.current[section.id]}
+                    onClick={() => setActiveSectionWithManualFlag(section.id)}
+                    useLargerFonts={true}
+                  />
+                );
+              })}
+            
+            {/* Research Approach Toggle */}
+            <ResearchApproachToggle 
+              activeApproach={activeApproach}
+              setActiveApproach={handleApproachToggle}
+            />
+            
+            {/* Display active approach section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
+              .map((section) => {
+                if (!section || !section.id) return null;
+                const isCurrentActive = activeSection === section.id;
+                const isCompleted = hasSectionContent(section.id);
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    isCurrentSection={isCurrentActive}
+                    isCompleted={isCompleted}
+                    userInputs={userInputs}
+                    handleInputChange={handleInputChange}
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
+                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    sectionRef={sectionRefs.current[section.id]}
+                    onClick={() => setActiveSectionWithManualFlag(section.id)}
+                    useLargerFonts={true}
+                  />
+                );
+              })}
+            
+            {/* Related Papers Section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'relatedpapers')
+              .map((section) => {
+                if (!section || !section.id) return null;
+                const isCurrentActive = activeSection === section.id;
+                const isCompleted = hasSectionContent(section.id);
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    isCurrentSection={isCurrentActive}
+                    isCompleted={isCompleted}
+                    userInputs={userInputs}
+                    handleInputChange={handleInputChange}
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
+                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    sectionRef={sectionRefs.current[section.id]}
+                    onClick={() => setActiveSectionWithManualFlag(section.id)}
+                    useLargerFonts={true}
+                  />
+                );
+              })}
+            
+            {/* Data Acquisition Toggle */}
+            <DataAcquisitionToggle 
+              activeMethod={activeDataMethod}
+              setActiveMethod={handleDataMethodToggle}
+            />
+            
+            {/* Display active data acquisition section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
+              .map((section) => {
+                if (!section || !section.id) return null;
+                const isCurrentActive = activeSection === section.id;
+                const isCompleted = hasSectionContent(section.id);
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    isCurrentSection={isCurrentActive}
+                    isCompleted={isCompleted}
+                    userInputs={userInputs}
+                    handleInputChange={handleInputChange}
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
+                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    sectionRef={sectionRefs.current[section.id]}
+                    onClick={() => setActiveSectionWithManualFlag(section.id)}
+                    useLargerFonts={true}
+                  />
+                );
+              })}
+            
+            {/* Display remaining sections: Analysis, Process, Abstract */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
+              .map((section) => {
+                if (!section || !section.id) return null;
+                const isCurrentActive = activeSection === section.id;
+                const isCompleted = hasSectionContent(section.id);
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    isCurrentSection={isCurrentActive}
+                    isCompleted={isCompleted}
+                    userInputs={userInputs}
+                    handleInputChange={handleInputChange}
+                    handleFirstVersionFinished={() => handleFirstVersionFinished(section.id)}
+                    loading={chatLoading && currentSectionIdForChat === section.id}
+                    sectionRef={sectionRefs.current[section.id]}
+                    onClick={() => setActiveSectionWithManualFlag(section.id)}
+                    useLargerFonts={true}
+                  />
+                );
+              })}
           </div>
         </div>
 
