@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
-import { callOpenAI } from '../services/openaiService';
-import sectionContent from '../data/sectionContent.json';
+import { saveToStorage, loadFromStorage, clearStorage } from '../../services/storageService';
+import { callOpenAI } from '../../services/openaiService';
+import sectionContent from '../../data/sectionContent.json';
+import { validateProjectData } from '../../utils/exportUtils'; // Added for loadProject validation
+import { exportProject as exportProjectFunction } from '../../utils/exportUtils'; // Ensure export is imported
 
 // Helper function to create the initial state, INCLUDING loading from storage
 const getInitialState = () => {
@@ -55,22 +57,23 @@ const getInitialState = () => {
     }
   }
 
-  return { initialUserInputs: finalInputs, initialChatMessages: finalChat };
+  return { initialUserInputs: finalInputs, initialChatMessages: finalChat, initialTemplates: initialContent }; // Also return initial templates
 };
 
 
 const usePaperPlanner = () => {
   // Initialize state directly using the combined load/merge function result
-  const [{ initialUserInputs, initialChatMessages }] = useState(getInitialState);
+  const [{ initialUserInputs, initialChatMessages, initialTemplates }] = useState(getInitialState); // Destructure initialTemplates
 
   const [userInputs, setUserInputs] = useState(initialUserInputs);
   const [chatMessages, setChatMessages] = useState(initialChatMessages);
 
   // Other states
-  const [currentSection, setCurrentSection] = useState('question');
+  const [currentSection, setCurrentSection] = useState(sectionContent?.sections?.[0]?.id || 'question'); // Safer initial section
   const [currentMessage, setCurrentMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showExamplesDialog, setShowExamplesDialog] = useState(false); // <-- Add state for examples dialog
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false); // Still useful to prevent immediate save
 
   // Flag initial load as complete after the first render cycle
@@ -126,37 +129,37 @@ const usePaperPlanner = () => {
     setLoading(true);
     const reviewPrompt = aiInstructions;
     const displayMessage = { role: 'user', content: `Requesting review for ${currentSectionObj.title}...` };
-    setChatMessages(prevMessages => ({ ...prevMessages, [sectionId]: [...(prevMessages[sectionId] || []), displayMessage] }));
+    // Ensure the section exists in chatMessages before trying to spread it
+    setChatMessages(prevMessages => ({
+      ...prevMessages,
+      [sectionId]: [...(prevMessages[sectionId] || []), displayMessage]
+    }));
     try {
       const sectionsForContext = sectionContent?.sections || [];
       const response = await callOpenAI(reviewPrompt, sectionId, userInputs, sectionsForContext);
       const newAssistantMessage = { role: 'assistant', content: response };
-      setChatMessages(prevMessages => ({ ...prevMessages, [sectionId]: [...(prevMessages[sectionId] || []), newAssistantMessage] }));
+      setChatMessages(prevMessages => ({
+        ...prevMessages,
+        [sectionId]: [...(prevMessages[sectionId] || []), newAssistantMessage]
+      }));
     } catch (error) {
       console.error(`Error getting review for ${sectionId}:`, error);
       const errorMessage = { role: 'assistant', content: `Sorry, there was an error reviewing the ${sectionId} section. (${error.message})` };
-      setChatMessages(prevMessages => ({ ...prevMessages, [sectionId]: [...(prevMessages[sectionId] || []), errorMessage] }));
+      setChatMessages(prevMessages => ({
+        ...prevMessages,
+        [sectionId]: [...(prevMessages[sectionId] || []), errorMessage]
+      }));
     } finally {
       setLoading(false);
     }
   }, [userInputs]);
 
+
   // Reset project function - now resets to the template content
   const resetProject = useCallback(() => {
     clearStorage();
-    
-    // Re-initialize with template content
-    const templates = {};
-    if (sectionContent && Array.isArray(sectionContent.sections)) {
-      sectionContent.sections.forEach(section => {
-        if (section && section.id) {
-          templates[section.id] = section.placeholder || '';
-        }
-      });
-    }
-    
-    setUserInputs(templates);
-    
+    setUserInputs(initialTemplates); // Use initialTemplates from state
+
     // Clear chat messages
     const emptyChat = {};
     sectionContent.sections.forEach(section => {
@@ -164,18 +167,62 @@ const usePaperPlanner = () => {
         emptyChat[section.id] = [];
       }
     });
-    
     setChatMessages(emptyChat);
-    setCurrentSection('question');
+    setCurrentSection(sectionContent?.sections?.[0]?.id || 'question'); // Reset to first section safely
     setShowConfirmDialog(false);
-  }, []);
+  }, [initialTemplates]); // Depend on initialTemplates
 
   const exportProject = useCallback(() => {
-    import('../../utils/exportUtils').then(module => {
-      module.exportProject(userInputs, chatMessages, sectionContent);
-    }).catch(err => console.error("Failed to load or run export:", err));
+    exportProjectFunction(userInputs, chatMessages, sectionContent); // Use imported function
   }, [userInputs, chatMessages]);
 
+   // Function to load project from imported JSON file
+   const loadProject = useCallback((data) => {
+    if (!validateProjectData(data)) {
+      alert("Invalid project file format. Please select a valid project file.");
+      return;
+    }
+
+    // Confirm before loading
+    if (window.confirm("Loading this project will replace your current work. Are you sure you want to continue?")) {
+      try {
+        // Load user inputs, ensuring we keep template values for any missing sections
+        const mergedInputs = {...initialTemplates}; // Use initialTemplates from state
+        Object.keys(data.userInputs).forEach(sectionId => {
+            // Check if the sectionId actually exists in our current template structure
+            if (mergedInputs.hasOwnProperty(sectionId)) {
+                const loadedValue = data.userInputs[sectionId];
+                // Only load if it's a non-empty string and potentially different from the template
+                if (loadedValue && typeof loadedValue === 'string' && loadedValue.trim() !== '') {
+                    mergedInputs[sectionId] = loadedValue;
+                }
+            }
+        });
+        setUserInputs(mergedInputs);
+
+        // Load chat messages, ensuring we have empty arrays for any missing sections
+        const mergedChat = {};
+        sectionContent.sections.forEach(section => {
+          if (section && section.id) {
+            mergedChat[section.id] = (data.chatMessages && Array.isArray(data.chatMessages[section.id]))
+                                     ? data.chatMessages[section.id]
+                                     : [];
+          }
+        });
+        setChatMessages(mergedChat);
+
+        // Explicitly save to storage after loading
+        saveToStorage(mergedInputs, mergedChat);
+
+        setCurrentSection(sectionContent?.sections?.[0]?.id || 'question'); // Reset to first section safely
+
+        alert("Project loaded successfully!");
+      } catch (error) {
+        console.error("Error loading project:", error);
+        alert("Error loading project. Please try again.");
+      }
+    }
+  }, [initialTemplates]); // Depend on initialTemplates
 
   return {
     userInputs,
@@ -184,16 +231,19 @@ const usePaperPlanner = () => {
     currentMessage,
     loading,
     showConfirmDialog,
-    setChatMessages, // Exposing setters might not be needed depending on VerticalPaperPlannerApp
+    showExamplesDialog, // <-- Expose examples dialog state
+    setChatMessages,
     setUserInputs,
     setCurrentMessage,
     setShowConfirmDialog,
+    setShowExamplesDialog, // <-- Expose examples dialog setter
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
     handleFirstVersionFinished,
     resetProject,
     exportProject,
+    loadProject,
   };
 };
 
