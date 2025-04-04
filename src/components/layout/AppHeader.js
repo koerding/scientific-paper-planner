@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 
 /**
  * Application header with absolute positioning to ensure buttons are visible
- * ADDED: Save button with visual feedback and keyboard shortcut support
+ * ADDED: PDF Import button for loading content from scientific papers
  */
 const AppHeader = ({
   activeSection,
@@ -11,15 +11,20 @@ const AppHeader = ({
   scrollToSection,
   resetProject,
   exportProject,
-  saveProject,  // New prop for saving functionality
+  saveProject,
   loadProject,
+  importPdfContent, // New prop for importing content from PDF
   setShowExamplesDialog
 }) => {
-  // Use ref for file input to better control it
+  // Use refs for file inputs
   const fileInputRef = useRef(null);
-  const [isSaving, setIsSaving] = useState(false); // Added state for save indicator
+  const pdfInputRef = useRef(null);
+  
+  // States for visual feedback
+  const [isSaving, setIsSaving] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
-  // Handle file input change
+  // Handle JSON file input change
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
 
@@ -62,10 +67,50 @@ const AppHeader = ({
     event.target.value = null;
   };
 
+  // Handle PDF file input change
+  const handlePdfChange = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    // Check file type
+    if (!file.type.includes('pdf')) {
+      alert("Please select a PDF file");
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      // Call the importPdfContent function with the file
+      if (typeof importPdfContent === 'function') {
+        await importPdfContent(file);
+      } else {
+        alert("PDF import functionality is not available");
+      }
+    } catch (error) {
+      console.error("Error importing PDF:", error);
+      alert("Error importing PDF: " + (error.message || "Unknown error"));
+    } finally {
+      setIsImporting(false);
+      // Reset file input so the same file can be selected again
+      event.target.value = null;
+    }
+  };
+
   // Handle load button click
   const handleLoadClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  // Handle PDF import button click
+  const handlePdfImportClick = () => {
+    if (pdfInputRef.current) {
+      pdfInputRef.current.click();
     }
   };
 
@@ -166,6 +211,7 @@ const AppHeader = ({
            gap: '0.5rem',
            zIndex: 1001
         }}>
+          {/* New Button */}
           <button
             onClick={() => { if(typeof resetProject === 'function') resetProject(); }}
             className="flex items-center px-3 py-1.5 border border-red-500 text-red-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-red-50 transition-colors"
@@ -177,7 +223,7 @@ const AppHeader = ({
             New
           </button>
 
-          {/* Save Button - NEW */}
+          {/* Save Button */}
           <button
             onClick={handleSaveClick}
             disabled={isSaving}
@@ -227,6 +273,44 @@ const AppHeader = ({
             />
           </div>
 
+          {/* PDF Import Button - NEW */}
+          <div className="relative">
+            <button
+              onClick={handlePdfImportClick}
+              disabled={isImporting}
+              className={`flex items-center px-3 py-1.5 border rounded text-sm font-medium transition-colors shadow-sm ${
+                isImporting
+                  ? 'bg-gray-100 text-gray-400 border-gray-400 cursor-wait'
+                  : 'bg-white text-orange-600 border-orange-500 hover:bg-orange-50'
+              }`}
+              title="Import content from a scientific paper (PDF)"
+            >
+              {isImporting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Importing PDF...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  Import PDF
+                </>
+              )}
+            </button>
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handlePdfChange}
+              style={{ display: 'none' }}
+            />
+          </div>
+
           {/* Examples Button */}
           <button
             onClick={handleExamplesClick}
@@ -239,6 +323,7 @@ const AppHeader = ({
             Examples
           </button>
 
+          {/* Export Button */}
           <button
             onClick={() => { if(typeof exportProject === 'function') exportProject(); }}
             className="flex items-center px-3 py-1.5 border border-green-500 text-green-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-green-50 transition-colors"
