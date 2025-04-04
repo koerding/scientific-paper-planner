@@ -1,8 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 
 /**
  * Application header with absolute positioning to ensure buttons are visible
- * ADDED: Examples button and handler
+ * ADDED: Save button with visual feedback and keyboard shortcut support
  */
 const AppHeader = ({
   activeSection,
@@ -11,11 +11,13 @@ const AppHeader = ({
   scrollToSection,
   resetProject,
   exportProject,
+  saveProject,  // New prop for saving functionality
   loadProject,
-  setShowExamplesDialog // <-- Add prop to control examples dialog
+  setShowExamplesDialog
 }) => {
   // Use ref for file input to better control it
   const fileInputRef = useRef(null);
+  const [isSaving, setIsSaving] = useState(false); // Added state for save indicator
 
   // Handle file input change
   const handleFileChange = (event) => {
@@ -76,6 +78,51 @@ const AppHeader = ({
     }
   };
 
+  // Handle save button click with visual indicator
+  const handleSaveClick = () => {
+    if (typeof saveProject === 'function') {
+      setIsSaving(true);
+      
+      // Ask for file name
+      const fileName = prompt("Enter a name for your project file:", "my-research-project");
+      
+      if (fileName) {
+        try {
+          saveProject(fileName);
+          
+          // Show saving indicator then hide after delay
+          setTimeout(() => {
+            setIsSaving(false);
+          }, 1000);
+        } catch (error) {
+          console.error("Error saving project:", error);
+          alert("Error saving project: " + error.message);
+          setIsSaving(false);
+        }
+      } else {
+        // User cancelled the prompt
+        setIsSaving(false);
+      }
+    } else {
+      console.error("saveProject function is not provided to AppHeader");
+    }
+  };
+
+  // Effect to capture Ctrl+S keyboard shortcut
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault(); // Prevent browser's save dialog
+        handleSaveClick();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   return (
     <header style={{
       position: 'relative',
@@ -128,6 +175,35 @@ const AppHeader = ({
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             New
+          </button>
+
+          {/* Save Button - NEW */}
+          <button
+            onClick={handleSaveClick}
+            disabled={isSaving}
+            className={`flex items-center px-3 py-1.5 border border-indigo-500 rounded text-sm font-medium transition-colors ${
+              isSaving 
+                ? 'bg-indigo-100 text-indigo-400 cursor-wait' 
+                : 'bg-white text-indigo-600 hover:bg-indigo-50'
+            } shadow-sm`}
+            title="Save your project (Ctrl+S)"
+          >
+            {isSaving ? (
+              <>
+                <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                Save
+              </>
+            )}
           </button>
 
           {/* Load Button - Triggers hidden file input */}
