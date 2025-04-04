@@ -1,0 +1,15 @@
+{
+  "userInputs": {
+    "question": "Research Question: How do neural networks with random weights and learned biases approximate functions?\n\nSignificance/Impact: Understanding the function approximation capabilities of such networks can inform both neuroscience and artificial intelligence research.",
+    "audience": "Target Audience/Community:\n1. Neuroscientists\n2. Machine Learning Researchers",
+    "hypothesis": "Hypothesis 1: Neural networks with random weights and learned biases can approximate a wide range of functions.\n\nHypothesis 2: Such networks have limited function approximation capabilities compared to fully trained networks.\n\nWhy distinguishing these hypotheses matters:\n- Clarifies the potential of partially trained networks.\n- Informs training strategies in neural network design.",
+    "relatedpapers": "Most similar papers:\n1. 'The Expressivity of Random Neural Networks with Learned Inputs' by Williams et al., 2024\n2. 'Expressivity of Neural Networks with Random Weights and Learned Biases' by Williams et al., 2024",
+    "existingdata": "Dataset name and source:\nNot applicable\n\nOriginal purpose:\nNot applicable\n\nPermissions to use data:\nNot applicable\n\nData quality information:\nNot applicable\n\nRelevant variables:\nNot applicable",
+    "analysis": "Data Cleaning: Not applicable\n\nPrimary Analysis: Theoretical analysis of function approximation capabilities\n\nHow Analysis Addresses Question: Provides insights into the potential and limitations of neural networks with random weights and learned biases in approximating functions.",
+    "process": "Skills Needed: Knowledge in neural network theory and mathematical analysis\n\nCollaborators: Not specified\n\nData Sharing: Not applicable",
+    "abstract": "Background: Neural networks are widely used for function approximation in various fields.\n\nObjective: To investigate the function approximation capabilities of neural networks with random weights and learned biases.\n\nMethods: Theoretical analysis of the expressivity of such networks.\n\nResults: Insights into the potential and limitations of these networks in approximating functions.\n\nConclusion: Understanding the expressivity of neural networks with random weights and learned biases can inform their application in neuroscience and machine learning."
+  },
+  "chatMessages": {},
+  "timestamp": "2025-04-03T12:00:00Z",
+  "version": "1.0"
+}
