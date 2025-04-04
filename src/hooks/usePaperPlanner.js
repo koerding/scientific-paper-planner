@@ -47,9 +47,11 @@ const getInitialState = () => {
   };
 };
 
-
 const usePaperPlanner = () => {
-  // Get initial state, but we're now setting things differently
+  // Get initial state with a single useState call to avoid multiple re-renders
+  const [initialState] = useState(getInitialState);
+  
+  // Destructure values from the initial state
   const { 
     initialUserInputs, 
     initialChatMessages, 
@@ -57,7 +59,7 @@ const usePaperPlanner = () => {
     storedInputs,
     storedChat,
     hasStoredData
-  } = getInitialState();
+  } = initialState;
 
   // Start with template values, not stored values
   const [userInputs, setUserInputs] = useState(initialUserInputs);
@@ -149,7 +151,7 @@ const usePaperPlanner = () => {
 
   const handleFirstVersionFinished = useCallback(async (sectionId) => {
     const contentToReview = userInputs[sectionId];
-    const currentSectionObj = sectionContent.sections.find(s => s.id === sectionId);
+    const currentSectionObj = sectionContent?.sections?.find(s => s.id === sectionId);
     const aiInstructions = currentSectionObj?.llmInstructions;
     if (!contentToReview || !aiInstructions) return;
     setLoading(true);
@@ -187,7 +189,7 @@ const usePaperPlanner = () => {
     // Create fresh copies of the templates
     const freshInputs = JSON.parse(JSON.stringify(initialTemplates));
     const freshChat = {};
-    sectionContent.sections.forEach(section => {
+    sectionContent?.sections?.forEach(section => {
       if (section && section.id) {
         freshChat[section.id] = [];
       }
@@ -204,6 +206,37 @@ const usePaperPlanner = () => {
     exportProjectFunction(userInputs, chatMessages, sectionContent);
   }, [userInputs, chatMessages]);
 
+  // Save project function that only saves JSON for loading later
+  const saveProject = useCallback((fileName = 'scientific-paper-plan') => {
+    // Ensure the fileName has .json extension
+    const safeFileName = fileName.endsWith('.json') 
+      ? fileName 
+      : `${fileName}.json`;
+    
+    const jsonData = {
+      userInputs,
+      chatMessages,
+      timestamp: new Date().toISOString(),
+      version: "1.0"
+    };
+
+    const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    
+    // Create a link and trigger download of JSON
+    const jsonLink = document.createElement('a');
+    jsonLink.href = jsonUrl;
+    jsonLink.download = safeFileName;
+    document.body.appendChild(jsonLink);
+    jsonLink.click();
+    
+    // Clean up JSON file link
+    document.body.removeChild(jsonLink);
+    URL.revokeObjectURL(jsonUrl);
+    
+    return true;
+  }, [userInputs, chatMessages]);
+
   // Function to load project from imported JSON file
   const loadProject = useCallback((data) => {
     if (!validateProjectData(data)) {
@@ -216,7 +249,7 @@ const usePaperPlanner = () => {
       try {
         // Load user inputs, ensuring we keep template values for any missing sections
         const mergedInputs = {...initialTemplates}; // Use initialTemplates from state
-        Object.keys(data.userInputs).forEach(sectionId => {
+        Object.keys(data.userInputs || {}).forEach(sectionId => {
             // Check if the sectionId actually exists in our current template structure
             if (mergedInputs.hasOwnProperty(sectionId)) {
                 const loadedValue = data.userInputs[sectionId];
@@ -305,33 +338,4 @@ const usePaperPlanner = () => {
   };
 };
 
-  // Save project function that only saves JSON for loading later
-  const saveProject = useCallback((fileName = 'scientific-paper-plan') => {
-    // Ensure the fileName has .json extension
-    const safeFileName = fileName.endsWith('.json') 
-      ? fileName 
-      : `${fileName}.json`;
-    
-    const jsonData = {
-      userInputs,
-      chatMessages,
-      timestamp: new Date().toISOString(),
-      version: "1.0"
-    };
-
-    const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
-    const jsonUrl = URL.createObjectURL(jsonBlob);
-    
-    // Create a link and trigger download of JSON
-    const jsonLink = document.createElement('a');
-    jsonLink.href = jsonUrl;
-    jsonLink.download = safeFileName;
-    document.body.appendChild(jsonLink);
-    jsonLink.click();
-    
-    // Clean up JSON file link
-    document.body.removeChild(jsonLink);
-    URL.revokeObjectURL(jsonUrl);
-    
-    return true;
-  }, [userInputs, chatMessages]);
+export default usePaperPlanner;
