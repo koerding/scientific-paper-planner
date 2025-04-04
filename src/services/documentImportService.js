@@ -16,7 +16,7 @@ import mammoth from 'mammoth';
 if (typeof window !== 'undefined' && 'Worker' in window) {
     // Find the installed version (run `npm list pdfjs-dist --depth=0`)
     // Replace X.Y.Z with the actual version number!
-    const pdfjsVersion = '5.9.91; // <-- IMPORTANT: REPLACE THIS WITH YOUR VERSION!
+    const pdfjsVersion = '5.9.91'; // <-- IMPORTANT: REPLACE THIS WITH YOUR VERSION!
 
     if (pdfjsVersion === '5.9.91') {
          console.warn("PDF.js version not set in documentImportService.js! PDF functionality might fail. Please run 'npm list pdfjs-dist --depth=0' and update the pdfjsVersion constant.");
