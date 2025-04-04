@@ -1,4 +1,5 @@
 // Updated VerticalPaperPlannerApp.js with more generous completion status
+// MODIFIED: Passes currentSectionTitle prop to ModernChatInterface
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
@@ -134,34 +135,34 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     if (sectionCompletionStatus[sectionId]) {
       return sectionCompletionStatus[sectionId];
     }
-    
+
     // Get content and template
     const content = userInputs[sectionId];
     if (!content || content.trim() === '') {
       return 'unstarted';
     }
-    
+
     const section = localSectionContent.sections.find(s => s?.id === sectionId);
     const placeholder = section?.placeholder || '';
-    
+
     // If content is exactly the placeholder, it's unstarted
     if (content === placeholder) {
       return 'unstarted';
     }
-    
+
     // VERY GENEROUS GRADING:
     // If they've written anything meaningful beyond the template, mark it as complete
-    
+
     // Check if the content has actual text that differs from placeholder
     if (content !== placeholder && content.trim().length > 0) {
       // If they've filled in at least the minimum amount of information expected
       // For example, in hypothesis they need: two hypotheses and why they matter
       // In audience they need: communities and specific researchers
-      
+
       // Count the number of filled lines or sections
       const lines = content.split('\n').filter(line => line.trim().length > 0);
       const placeholderLines = placeholder.split('\n').filter(line => line.trim().length > 0);
-      
+
       // For most sections, if they filled in at least 50% of expected points, mark complete
       // This is a much more generous threshold than before
       if (lines.length >= placeholderLines.length * 0.5) {
@@ -172,17 +173,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           const hasH1 = content.includes('Hypothesis 1:');
           const hasH2 = content.includes('Hypothesis 2:');
           const hasReason = content.includes('-');
-          
+
           if (hasH1 && hasH2) {
             return 'complete';
           }
-        } 
+        }
         else if (sectionId === 'audience') {
           // For audience, check if they've listed at least one community and one researcher
           const communitySection = content.includes('Target Audience/Community');
           const researcherSection = content.includes('Specific Researchers/Labs');
           const hasItems = content.includes('1.') && (content.includes('2.') || content.includes('- '));
-          
+
           if (communitySection && researcherSection && hasItems) {
             return 'complete';
           }
@@ -191,7 +192,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           // For research question, check if they have both question and significance
           const hasQuestion = content.includes('Research Question:');
           const hasSignificance = content.includes('Significance/Impact:');
-          
+
           if (hasQuestion && hasSignificance) {
             return 'complete';
           }
@@ -203,17 +204,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           }
         }
       }
-      
+
       // If the content is substantial but doesn't meet specific criteria
       // still mark as complete if it's significantly longer than template
       if (content.length > placeholder.length * 1.2) {
         return 'complete';
       }
-      
+
       // If it's not clearly complete but they've made progress, mark as progress
       return 'progress';
     }
-    
+
     return 'unstarted';
   };
 
@@ -228,6 +229,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     if (!localSectionContent || !Array.isArray(localSectionContent.sections)) {
         return null;
     }
+    // Use activeSection which tracks the manually focused section
     return localSectionContent.sections.find(s => s && s.id === activeSection) || null;
   };
 
@@ -248,13 +250,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           result.improvedData
         );
         setLocalSectionContent(updatedSections); // Set the new state
-        
+
         // Process completion status explicitly
         const newCompletionStatuses = {};
-        
+
         result.improvedData.forEach(item => {
           console.log(`Processing completion status for ${item.id}:`, item);
-          
+
           // First check for explicit completionStatus field from the API
           if (item.completionStatus) {
             newCompletionStatuses[item.id] = item.completionStatus;
@@ -263,25 +265,25 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           else {
             // Make this much more generous - almost anything with feedback should be "complete"
             const userContent = userInputs[item.id] || '';
-            
+
             if (userContent.trim() !== '') {
               // Check if there's any feedback - if so, mark as complete
               if (item.feedback && item.feedback.length > 20) {
                 newCompletionStatuses[item.id] = 'complete';
                 return;
               }
-              
+
               // Check for congratulatory messages in editedInstructions
-              const isComplete = item.editedInstructions.includes('Excellent work') || 
+              const isComplete = item.editedInstructions.includes('Excellent work') ||
                                 item.editedInstructions.includes('Great job') ||
                                 item.editedInstructions.includes('Well done') ||
                                 item.editedInstructions.includes('completed all');
-                                
+
               // MORE GENEROUS MARKING:
               // If they've written anything substantial, mark as complete
               const section = localSectionContent.sections.find(s => s?.id === item.id);
               const placeholder = section?.placeholder || '';
-              
+
               if (isComplete || userContent.length > placeholder.length * 1.2) {
                 newCompletionStatuses[item.id] = 'complete';
               } else if (userContent.trim() !== '' && userContent !== placeholder) {
@@ -293,9 +295,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             }
           }
         });
-        
+
         console.log("Updating section completion statuses:", newCompletionStatuses);
-        
+
         // Set the new completion statuses
         setSectionCompletionStatus(prevStatus => ({
           ...prevStatus,
@@ -310,6 +312,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       setImprovingInstructions(false);
     }
   };
+
 
   // Combine local reset logic with hook's reset logic
   const handleResetRequest = () => {
@@ -359,14 +362,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Render a section with proper completion status
   const renderSection = (section) => {
     if (!section || !section.id) return null;
-    
+
+    // Use activeSection to determine the *focused* card, not currentSectionIdForChat
     const isCurrentActive = activeSection === section.id;
-    
+
     // Get completion status from explicit state or calculate it
     const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
-    
-    console.log(`Rendering section ${section.id} with status:`, completionStatus);
-    
+
+    //console.log(`Rendering section ${section.id} with status:`, completionStatus);
+
     return (
       <SectionCard
         key={section.id}
@@ -375,19 +379,20 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         completionStatus={completionStatus} // Explicitly pass the completion status
         userInputs={userInputs}
         handleInputChange={handleInputChange}
-        loading={chatLoading && currentSectionIdForChat === section.id}
+        loading={chatLoading && currentSectionIdForChat === section.id} // Loading applies based on chat context
         sectionRef={sectionRefs.current[section.id]}
-        onClick={() => setActiveSectionWithManualFlag(section.id)}
+        onClick={() => setActiveSectionWithManualFlag(section.id)} // Set the active section on click
         useLargerFonts={true}
       />
     );
   };
 
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="w-full pb-12">
         <AppHeader
-          activeSection={activeSection}
+          activeSection={activeSection} // Pass the locally tracked active section
           setActiveSection={setActiveSectionWithManualFlag}
           handleSectionChange={handleSectionChange}
           scrollToSection={scrollToSection}
@@ -445,14 +450,16 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         </div>
 
         <FullHeightInstructionsPanel
-          currentSection={sectionDataForPanel} // Pass data from local state
+          currentSection={sectionDataForPanel} // Pass data from local state based on *activeSection*
           improveInstructions={handleMagic} // Updated to handleMagic
           loading={improvingInstructions}
           userInputs={userInputs} // NEW: Pass user inputs for analysis
         />
 
+        {/* MODIFIED: Pass the current section's title */}
         <ModernChatInterface
-          currentSection={currentSectionIdForChat} // From hook
+          currentSection={currentSectionIdForChat} // From hook (still needed for messages)
+          currentSectionTitle={sectionDataForPanel?.title} // NEW: Pass the title
           chatMessages={chatMessages} // From hook
           currentMessage={currentMessage} // From hook
           setCurrentMessage={setCurrentMessage} // From hook
