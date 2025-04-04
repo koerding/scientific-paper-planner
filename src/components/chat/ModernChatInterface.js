@@ -4,9 +4,11 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Modernized chat interface that can be minimized to a floating button
+ * MODIFIED: Receives currentSectionTitle prop and displays it dynamically
  */
 const ModernChatInterface = ({
   currentSection,
+  currentSectionTitle, // NEW PROP: To display the section title
   chatMessages,
   currentMessage,
   setCurrentMessage,
@@ -15,7 +17,7 @@ const ModernChatInterface = ({
 }) => {
   const [isMinimized, setIsMinimized] = useState(true);
   const messagesEndRef = useRef(null);
-  
+
   // Scroll to bottom when messages change or chat is opened
   useEffect(() => {
     if (!isMinimized && messagesEndRef.current) {
@@ -28,7 +30,7 @@ const ModernChatInterface = ({
     const now = new Date();
     return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-  
+
   // Toggle chat window visibility
   const toggleChat = () => {
     setIsMinimized(!isMinimized);
@@ -38,7 +40,7 @@ const ModernChatInterface = ({
     <>
       {/* Minimized chat icon */}
       {isMinimized && (
-        <div 
+        <div
           className="fixed bottom-6 right-6 z-50 cursor-pointer"
           onClick={toggleChat}
         >
@@ -49,16 +51,16 @@ const ModernChatInterface = ({
           </div>
         </div>
       )}
-      
+
       {/* Expanded chat interface */}
-      <div 
+      <div
         className={`fixed z-40 shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
           isMinimized ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
-        style={{ 
+        style={{
           bottom: '0',
           right: '0',
-          width: '50%', 
+          width: '50%',
           height: '80vh',
           maxHeight: '800px'
         }}
@@ -69,9 +71,12 @@ const ModernChatInterface = ({
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3">
               AI
             </div>
-            <h3 className="font-medium text-lg">Research Assistant</h3>
+            {/* MODIFIED: Dynamic title */}
+            <h3 className="font-medium text-lg truncate pr-2">
+              {currentSectionTitle ? `AI assistant for ${currentSectionTitle}` : 'AI Research Assistant'}
+            </h3>
           </div>
-          <button 
+          <button
             onClick={toggleChat}
             className="text-white hover:text-gray-200 focus:outline-none"
           >
@@ -80,7 +85,7 @@ const ModernChatInterface = ({
             </svg>
           </button>
         </div>
-        
+
         {/* Chat messages */}
         <div className="flex flex-col h-full" style={{ height: 'calc(100% - 56px)' }}>
           <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
@@ -93,17 +98,17 @@ const ModernChatInterface = ({
                 </div>
                 <h4 className="text-base font-medium text-gray-700 mb-1">Your AI Research Assistant</h4>
                 <p className="text-gray-500 text-base">
-                  I'll help you develop your research project. Click "Mark Complete" when you're ready for feedback!
+                  I'll help you develop your research project. Ask questions or click "Mark Complete" in the instructions panel when you're ready for feedback!
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
                 {chatMessages[currentSection].map((message, index) => {
                   const isUser = message.role === 'user';
-                  
+
                   return (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
                     >
                       <div className={`max-w-3/4 ${isUser ? 'order-2' : 'order-1'}`}>
@@ -113,12 +118,12 @@ const ModernChatInterface = ({
                             AI
                           </div>
                         )}
-                        
+
                         {/* Message bubble */}
-                        <div 
+                        <div
                           className={`rounded-lg px-3 py-2 inline-block ${
-                            isUser 
-                              ? 'bg-indigo-600 text-white rounded-tr-none' 
+                            isUser
+                              ? 'bg-indigo-600 text-white rounded-tr-none'
                               : 'bg-white border border-gray-200 rounded-tl-none shadow-sm'
                           }`}
                         >
@@ -132,7 +137,7 @@ const ModernChatInterface = ({
                               </ReactMarkdown>
                             </div>
                           )}
-                          
+
                           {/* Timestamp */}
                           <div className={`text-xs mt-1 ${isUser ? 'text-indigo-200 text-right' : 'text-gray-400'}`}>
                             {formatTime()}
@@ -142,7 +147,7 @@ const ModernChatInterface = ({
                     </div>
                   );
                 })}
-                
+
                 {/* Loading indicator */}
                 {loading && (
                   <div className="flex justify-start">
@@ -159,7 +164,7 @@ const ModernChatInterface = ({
               </div>
             )}
           </div>
-          
+
           {/* Chat input */}
           <div className="p-3 border-t border-gray-200 bg-white">
             <div className="flex">
