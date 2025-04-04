@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * Application header with absolute positioning to ensure buttons are visible
- * UPDATED: Increased font sizes using Tailwind classes.
+ * UPDATED: Added Load button and input file handler
  */
 const AppHeader = ({
   activeSection, // Keep props even if unused by this component itself
@@ -10,8 +10,31 @@ const AppHeader = ({
   handleSectionChange,
   scrollToSection,
   resetProject,
-  exportProject
+  exportProject,
+  loadProject
 }) => {
+  // Handle file input change
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (typeof loadProject === 'function') {
+            loadProject(data);
+          }
+        } catch (error) {
+          console.error("Error parsing loaded file:", error);
+          alert("Error loading file. Please make sure it's a valid project file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+    // Reset file input so the same file can be selected again
+    event.target.value = null;
+  };
+
   return (
     <header style={{
       position: 'relative', // Changed from sticky if it caused issues
@@ -67,6 +90,27 @@ const AppHeader = ({
             </svg>
             New
           </button>
+
+          {/* Load Button - Triggers hidden file input */}
+          <div className="relative">
+            <button
+              onClick={() => document.getElementById('loadProjectInput').click()}
+              className="flex items-center px-3 py-1.5 border border-blue-500 text-blue-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-blue-50 transition-colors"
+              title="Load a saved project"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Load
+            </button>
+            <input 
+              id="loadProjectInput"
+              type="file"
+              accept=".json"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
+          </div>
 
           <button
             onClick={() => { if(typeof exportProject === 'function') exportProject(); }} // Added check
