@@ -2,7 +2,7 @@
  * Service for improving instructions based on user progress
  * UPDATED: Added robust JSON parsing for truncated responses and fixed markdown formatting
  * UPDATED: Separated AI response into 'editedInstructions' and 'feedback'
- * UPDATED: Refactored variable declaration in updateSectionWithImprovedInstructions to avoid parser confusion
+ * UPDATED: Refactored updateSectionWithImprovedInstructions to simplify try...catch
  */
 import { callOpenAI } from './openaiService';
 
@@ -329,40 +329,42 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
 
 /**
  * Updates section content with improved instructions AND feedback
- * Refactored variable declaration/assignment.
+ * Refactored to check sectionContent validity *before* try block.
  * @param {Object} sectionContent - The original section content object
  * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback }
  * @returns {Object} - Updated section content object
  */
 export const updateSectionWithImprovedInstructions = (sectionContent, improvedData) => {
-    // Declare variable before try block to ensure correct scope
-    let updatedSectionsData = null;
-    try {
-        if (typeof sectionContent !== 'object' || sectionContent === null) {
-            throw new Error("sectionContent is not a valid object for deep copy.");
-        }
-        // Assign inside try block
-        updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
-    } catch(e) {
-        console.error("Error deep copying section content", e);
-        // Ensure a default object is returned even on copy error
-        return { sections: [] };
-    }
-
-    // Check if sections array exists after potential copy error
-    if (!updatedSectionsData || !Array.isArray(updatedSectionsData.sections)) {
-        console.error("updatedSectionsData does not have a valid sections array.");
-        // Attempt to initialize if possible, otherwise return a safe default
-        if (updatedSectionsData && typeof updatedSectionsData === 'object') {
-            updatedSectionsData.sections = [];
-        } else {
-            return { sections: [] };
-        }
+    // Validate inputs upfront
+    if (typeof sectionContent !== 'object' || sectionContent === null) {
+         console.error("updateSectionWithImprovedInstructions received invalid sectionContent:", sectionContent);
+         return { sections: [] }; // Return default structure immediately
     }
 
     if (!Array.isArray(improvedData)) {
         console.error("Invalid improvedData format: Expected an array.");
-        return updatedSectionsData; // Return potentially initialized data
+         // Return a safe copy of the original content if improvedData is bad
+        try {
+            return JSON.parse(JSON.stringify(sectionContent));
+        } catch(e) {
+            console.error("Error deep copying sectionContent during improvedData validation failure", e);
+            return { sections: [] };
+        }
+    }
+
+    let updatedSectionsData;
+    try {
+        // Deep copy is likely safe now after the initial check
+        updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
+    } catch(e) {
+        console.error("Error deep copying section content", e);
+        return { sections: [] }; // Return default structure on copy error
+    }
+
+    // Ensure sections array exists after copy
+    if (!Array.isArray(updatedSectionsData.sections)) {
+        console.error("updatedSectionsData does not have a valid sections array after copy.");
+        updatedSectionsData.sections = [];
     }
 
     improvedData.forEach(improvement => {
@@ -370,29 +372,29 @@ export const updateSectionWithImprovedInstructions = (sectionContent, improvedDa
             typeof improvement.editedInstructions !== 'string' ||
             typeof improvement.feedback !== 'string') {
             console.warn("Skipping invalid improvement object:", improvement);
-            return;
+            return; // Skip this invalid item
         }
 
         const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
 
         if (sectionIndex !== -1) {
-            if (!updatedSectionsData.sections[sectionIndex]) {
-                console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
-                return;
-            }
-            if (!updatedSectionsData.sections[sectionIndex].instructions) {
-                updatedSectionsData.sections[sectionIndex].instructions = {};
-                console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
-            }
+             if (!updatedSectionsData.sections[sectionIndex]) {
+                 console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
+                 return;
+             }
+             if (!updatedSectionsData.sections[sectionIndex].instructions) {
+                 updatedSectionsData.sections[sectionIndex].instructions = {};
+                 console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
+             }
 
-            const fixedInstructions = fixMarkdownFormatting(improvement.editedInstructions);
-            const fixedFeedback = fixMarkdownFormatting(improvement.feedback);
+             const fixedInstructions = fixMarkdownFormatting(improvement.editedInstructions);
+             const fixedFeedback = fixMarkdownFormatting(improvement.feedback);
 
-            updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions;
-            updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback;
+             updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions;
+             updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback;
 
-            delete updatedSectionsData.sections[sectionIndex].instructions.description;
-            delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
+             delete updatedSectionsData.sections[sectionIndex].instructions.description;
+             delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
 
         } else {
             console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
