@@ -11,7 +11,7 @@
       "loadingButtonText": "Processing...",
       "instructions": {
         "title": "Formulating Your Research Question",
-        "text": "A good research question drives your entire study and helps you focus your efforts. It's the foundation of scientific inquiry.\n\n1. Write the question.\n\n2. If you ask a normative question, be clear about the objective. If you ask a correlation question, don't do it for a causal goal.\n\n3. Explain why the question matters to the field.\n\n4. Ensure your question is answerable with your anticipated resources.\n\n5."
+        "text": "A good research question drives your entire study and helps you focus your efforts. It's the foundation of scientific inquiry.\n\n1. Write the question.\n\n2. If you ask a normative question, be clear about the objective. If you ask a correlation question, don't do it for a causal goal.\n\n3. Explain why the question matters to the field.\n\n4. Ensure your question is answerable with your anticipated resources."
       },
       "placeholder": "Research Question:[Write it out] \n\nSignificance/Impact: [Why it matters]\n",
       "llmInstructions": "Above, I wrote down my scientific question. I also wrote down why this question is important to me. I want you to check if the question feels like a good question for scientific inquiry. Please evaluate:\n\n1. Strengths and weaknesses of the question (including clarity and scope)\n2. How well the question matches my stated significance/objectives\n3. If it's a normative question, is the objective clear? If it's a correlation question, is it being asked for correlation (not causation)?\n\nPlease provide constructive feedback on how to strengthen the research question if needed."
