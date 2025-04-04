@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-// Correct the import path here:
-import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
+import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService'; // Corrected path
 import { callOpenAI } from '../services/openaiService';
 import sectionContent from '../data/sectionContent.json';
-import { validateProjectData } from '../../utils/exportUtils'; // Added for loadProject validation
-import { exportProject as exportProjectFunction } from '../../utils/exportUtils'; // Ensure export is imported
+// Correct the import paths here:
+import { validateProjectData } from '../utils/exportUtils';
+import { exportProject as exportProjectFunction } from '../utils/exportUtils';
 
 // Helper function to create the initial state, INCLUDING loading from storage
 const getInitialState = () => {
