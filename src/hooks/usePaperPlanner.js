@@ -73,8 +73,8 @@ const usePaperPlanner = () => {
   const [currentMessage, setCurrentMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showExamplesDialog, setShowExamplesDialog] = useState(false); // <-- Add state for examples dialog
-  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false); // Still useful to prevent immediate save
+  const [showExamplesDialog, setShowExamplesDialog] = useState(false); // <-- State for examples dialog
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
 
   // Flag initial load as complete after the first render cycle
   useEffect(() => {
@@ -103,7 +103,11 @@ const usePaperPlanner = () => {
   const handleSendMessage = useCallback(async () => {
     if (!currentMessage.trim() || !currentSection) return;
     const newUserMessage = { role: 'user', content: currentMessage };
-    setChatMessages(prevMessages => ({ ...prevMessages, [currentSection]: [...(prevMessages[currentSection] || []), newUserMessage] }));
+    // Ensure the section exists in chatMessages before trying to spread it
+    setChatMessages(prevMessages => ({
+        ...prevMessages,
+        [currentSection]: [...(prevMessages[currentSection] || []), newUserMessage]
+    }));
     setLoading(true);
     const messageToSend = currentMessage;
     setCurrentMessage('');
@@ -111,11 +115,17 @@ const usePaperPlanner = () => {
       const sectionsForContext = sectionContent?.sections || [];
       const response = await callOpenAI(messageToSend, currentSection, userInputs, sectionsForContext);
       const newAssistantMessage = { role: 'assistant', content: response };
-      setChatMessages(prevMessages => ({ ...prevMessages, [currentSection]: [...(prevMessages[currentSection] || []), newAssistantMessage] }));
+       setChatMessages(prevMessages => ({
+           ...prevMessages,
+           [currentSection]: [...(prevMessages[currentSection] || []), newAssistantMessage] // Ensure array exists
+       }));
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage = { role: 'assistant', content: `Sorry, there was an error processing your message. (${error.message})` };
-      setChatMessages(prevMessages => ({ ...prevMessages, [currentSection]: [...(prevMessages[currentSection] || []), errorMessage] }));
+       setChatMessages(prevMessages => ({
+           ...prevMessages,
+           [currentSection]: [...(prevMessages[currentSection] || []), errorMessage] // Ensure array exists
+       }));
     } finally {
       setLoading(false);
     }
@@ -129,25 +139,24 @@ const usePaperPlanner = () => {
     setLoading(true);
     const reviewPrompt = aiInstructions;
     const displayMessage = { role: 'user', content: `Requesting review for ${currentSectionObj.title}...` };
-    // Ensure the section exists in chatMessages before trying to spread it
     setChatMessages(prevMessages => ({
-      ...prevMessages,
-      [sectionId]: [...(prevMessages[sectionId] || []), displayMessage]
+        ...prevMessages,
+        [sectionId]: [...(prevMessages[sectionId] || []), displayMessage] // Ensure array exists
     }));
     try {
       const sectionsForContext = sectionContent?.sections || [];
       const response = await callOpenAI(reviewPrompt, sectionId, userInputs, sectionsForContext);
       const newAssistantMessage = { role: 'assistant', content: response };
       setChatMessages(prevMessages => ({
-        ...prevMessages,
-        [sectionId]: [...(prevMessages[sectionId] || []), newAssistantMessage]
+          ...prevMessages,
+          [sectionId]: [...(prevMessages[sectionId] || []), newAssistantMessage] // Ensure array exists
       }));
     } catch (error) {
       console.error(`Error getting review for ${sectionId}:`, error);
       const errorMessage = { role: 'assistant', content: `Sorry, there was an error reviewing the ${sectionId} section. (${error.message})` };
       setChatMessages(prevMessages => ({
-        ...prevMessages,
-        [sectionId]: [...(prevMessages[sectionId] || []), errorMessage]
+          ...prevMessages,
+          [sectionId]: [...(prevMessages[sectionId] || []), errorMessage] // Ensure array exists
       }));
     } finally {
       setLoading(false);
@@ -183,7 +192,7 @@ const usePaperPlanner = () => {
       return;
     }
 
-    // Confirm before loading
+    // Confirm before loading (optional, but good practice)
     if (window.confirm("Loading this project will replace your current work. Are you sure you want to continue?")) {
       try {
         // Load user inputs, ensuring we keep template values for any missing sections
@@ -192,7 +201,7 @@ const usePaperPlanner = () => {
             // Check if the sectionId actually exists in our current template structure
             if (mergedInputs.hasOwnProperty(sectionId)) {
                 const loadedValue = data.userInputs[sectionId];
-                // Only load if it's a non-empty string and potentially different from the template
+                // Only load if it's a non-empty string
                 if (loadedValue && typeof loadedValue === 'string' && loadedValue.trim() !== '') {
                     mergedInputs[sectionId] = loadedValue;
                 }
@@ -202,7 +211,7 @@ const usePaperPlanner = () => {
 
         // Load chat messages, ensuring we have empty arrays for any missing sections
         const mergedChat = {};
-        sectionContent.sections.forEach(section => {
+        (sectionContent?.sections || []).forEach(section => {
           if (section && section.id) {
             mergedChat[section.id] = (data.chatMessages && Array.isArray(data.chatMessages[section.id]))
                                      ? data.chatMessages[section.id]
@@ -224,6 +233,7 @@ const usePaperPlanner = () => {
     }
   }, [initialTemplates]); // Depend on initialTemplates
 
+  // Return all state and handlers needed by the components
   return {
     userInputs,
     chatMessages,
