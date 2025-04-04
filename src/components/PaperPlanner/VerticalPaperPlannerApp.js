@@ -360,4 +360,4 @@ const PaperPlannerApp = () => {
   );
 };
 
-export default PaperPlannerApp;
+export default VerticalPaperPlannerApp;
