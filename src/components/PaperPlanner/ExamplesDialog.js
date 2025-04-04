@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { loadExamples } from '../../utils/exampleUtils';
+// Correct the import path and case here:
+import { loadExamples } from '../../utils/ExampleUtils.js';
 
 /**
  * Dialog for loading example projects
@@ -15,7 +16,7 @@ const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject
     if (showExamplesDialog) {
       setLoading(true);
       setError(null);
-      
+
       loadExamples()
         .then(exampleData => {
           setExamples(exampleData);
@@ -37,7 +38,7 @@ const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject
   // Handle loading the selected example
   const handleLoadExample = () => {
     if (!selectedExample) return;
-    
+
     const example = examples.find(ex => ex.id === selectedExample);
     if (example && example.data) {
       loadProject(example.data);
