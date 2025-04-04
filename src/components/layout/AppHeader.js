@@ -203,7 +203,7 @@ const AppHeader = ({
               Scientific Paper Planner
             </h1>
             <p className="text-lg text-gray-600 m-0">
-              Design a hypothesis-based neuroscience project step-by-step
+              Design a scientific project step-by-step
             </p>
           </div>
         </div>
