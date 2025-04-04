@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import VerticalPaperPlannerApp from './VerticalPaperPlannerApp'; // Using your existing component
 import sectionContent from '../../data/sectionContent.json';  
 import { callOpenAI } from '../../services/openaiService';
-import { exportProject as exportProjectFunction, validateProjectData } from '../../utils/exportUtils';
+import { exportProject as exportProjectFunction } from '../../utils/exportUtils';
 import '../../styles/PaperPlanner.css';
 
 /**
  * Main entry point for the Paper Planner
  * Contains core state management and API calls
- * UPDATED: Added load project functionality with fixed implementation
+ * UPDATED: Simplified load project functionality
  */
 const PaperPlannerApp = () => {
   // State - Pre-fill with templates from sectionContent
@@ -252,65 +252,66 @@ const PaperPlannerApp = () => {
     exportProjectFunction(userInputs, chatMessages, sectionContent);
   };
 
-  // Function to load project from imported JSON file - FIXED VERSION
+  // Function to load project from imported JSON file - SIMPLIFIED VERSION
   const loadProject = (data) => {
-    console.log("loadProject called with data:", data);
-    
-    // Check if data exists and has the correct structure
-    if (!data || typeof data !== 'object') {
-      console.error("Invalid data format: not an object");
+    // Simple validation
+    if (!data || !data.userInputs) {
       alert("Invalid project file format. Please select a valid project file.");
-      return;
-    }
-    
-    // Check for userInputs property
-    if (!data.userInputs || typeof data.userInputs !== 'object') {
-      console.error("Invalid data format: missing or invalid userInputs");
-      alert("Invalid project file: missing user inputs data.");
       return;
     }
     
     // Confirm before loading
     if (window.confirm("Loading this project will replace your current work. Are you sure you want to continue?")) {
       try {
-        console.log("Starting to load project data");
+        // Create template values using sectionContent
+        const templateValues = {};
+        sectionContent.sections.forEach(section => {
+          if (section && section.id) {
+            templateValues[section.id] = section.placeholder || '';
+          }
+        });
         
-        // Load user inputs, ensuring we keep template values for any missing sections
-        const mergedInputs = {...initialState};
+        // Merge with loaded data
+        const mergedInputs = {...templateValues};
         Object.keys(data.userInputs).forEach(sectionId => {
-          if (data.userInputs[sectionId] && typeof data.userInputs[sectionId] === 'string' && data.userInputs[sectionId].trim() !== '') {
-            console.log(`Loading content for section: ${sectionId}`);
+          if (data.userInputs[sectionId] && typeof data.userInputs[sectionId] === 'string' && 
+              data.userInputs[sectionId].trim() !== '') {
             mergedInputs[sectionId] = data.userInputs[sectionId];
           }
         });
-        console.log("Setting userInputs state");
+        
+        // Update user inputs state
         setUserInputs(mergedInputs);
         
-        // Load chat messages, ensuring we have empty arrays for any missing sections
-        const mergedChat = {};
+        // Create empty chat messages
+        const emptyChat = {};
         sectionContent.sections.forEach(section => {
           if (section && section.id) {
-            mergedChat[section.id] = Array.isArray(data.chatMessages?.[section.id]) 
-              ? data.chatMessages[section.id] 
-              : [];
+            emptyChat[section.id] = [];
           }
         });
-        console.log("Setting chatMessages state");
+        
+        // Merge with loaded chat messages if they exist
+        const mergedChat = {...emptyChat};
+        if (data.chatMessages) {
+          Object.keys(data.chatMessages).forEach(sectionId => {
+            if (Array.isArray(data.chatMessages[sectionId])) {
+              mergedChat[sectionId] = data.chatMessages[sectionId];
+            }
+          });
+        }
+        
+        // Update chat messages state
         setChatMessages(mergedChat);
         
         // Save to localStorage
-        console.log("Saving to localStorage");
         localStorage.setItem('paperPlannerData', JSON.stringify(mergedInputs));
         localStorage.setItem('paperPlannerChat', JSON.stringify(mergedChat));
         
-        console.log("Project loaded successfully");
         alert("Project loaded successfully!");
       } catch (error) {
-        console.error("Error loading project:", error);
-        alert(`Error loading project: ${error.message}. Please try again.`);
+        alert("Error loading project: " + (error.message || "Unknown error"));
       }
-    } else {
-      console.log("Load cancelled by user");
     }
   };
 
