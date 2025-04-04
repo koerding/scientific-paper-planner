@@ -304,14 +304,14 @@ Your task is, FOR **EACH** section provided:
 
 **Part 1: Generate Feedback**
 1.  Analyze the 'userContent' against the goals in 'originalInstructionsText'.
-2.  Write a constructive feedback section (max 150 words). Start with a brief (1-2 sentence) positive acknowledgement of specific points the user covered well. Then, clearly list strengths, weaknesses, and specific, actionable suggestions for improvement based *only* on what remains unaddressed or needs refinement according to the 'originalInstructionsText' and general standards of scientific rigor/clarity. Format this feedback using markdown (e.g., use bold for **Strengths:**, **Weaknesses:**, **Suggestions:**).
+2.  Write a constructive feedback section (max 150 words). Start with a brief (1-2 sentence) positive acknowledgement of specific points the user covered well, *but only if the user has made substantial, meaningful changes beyond the placeholder text*. Then, clearly list strengths, weaknesses, and specific, actionable suggestions for improvement based *only* on what remains unaddressed or needs refinement according to the 'originalInstructionsText' and general standards of scientific rigor/clarity. Format this feedback using markdown (e.g., use bold for **Strengths:**, **Weaknesses:**, **Suggestions:**).
 3.  Include a clear assessment of completeness. Use phrases like "excellent work" for complete sections, "good start" or "making progress" for partial completion, and highlight specific missing elements for incomplete sections.
 
 **Part 2: Generate Edited Instructions**
 1.  Critically **EDIT** the 'originalInstructionsText'. Your **PRIMARY GOAL** is to **REMOVE** instruction points that the 'userContent' satisfactorily addresses.
 2.  Focus the remaining text *only* on what the user still needs to address or improve according to the 'originalInstructionsText'. Remove points if a reasonable person would agree the user's text addresses them. Feel free to make minor edits for flow (e.g., renumbering if needed). Preserve all markdown (headings, bold, lists).
 3.  **If the user has addressed ALL key points well,** replace the *entire* instruction text with a clear, positive, congratulatory message (e.g., "Excellent work on this section! You've addressed all the key points regarding X, Y, and Z. Ready for the next step!").
-4.  **Otherwise (if points remain),** create the edited instruction text. Start with a brief (1-2 sentence) positive acknowledgement (same as step 1.2 in Feedback part) and then append the remaining, edited instructions.
+4.  **Otherwise (if points remain),** create the edited instruction text. Start with a brief (1-2 sentence) positive acknowledgement of specific points the user covered well, *but only if the user has made substantial, meaningful changes beyond the placeholder text* (same as step 1.2 in Feedback part) and then append the remaining, edited instructions.
 
 **CRITICAL REQUIREMENTS:**
 * **JSON Output:** Respond ONLY with a valid JSON array. Each object in the array must correspond to one of the input section IDs and have EXACTLY these three keys:
@@ -319,6 +319,7 @@ Your task is, FOR **EACH** section provided:
     * \`"editedInstructions"\`: (string) The result from Part 2 (edited instructions or congratulatory message).
     * \`"feedback"\`: (string) The result from Part 1 (strengths, weaknesses, suggestions).
     * \`"completionStatus"\`: (string) Your assessment of the section's completion: "complete", "progress", or "unstarted".
+* **Placeholder Handling:** Do NOT use congratulatory language if the 'userContent' is identical or very similar to the original placeholder text for that section. In such cases, state that the section needs to be filled out.
 * **Markdown Preservation:** Preserve markdown (###, **, lists) within the string values of \`"editedInstructions"\` and \`"feedback"\`.
 * **Formatting:** Ensure proper markdown line breaks (blank lines between paragraphs, after headings). No trailing commas in the JSON.
 * **Conciseness:** Keep responses focused and reasonably concise (total response < 4000 chars).
