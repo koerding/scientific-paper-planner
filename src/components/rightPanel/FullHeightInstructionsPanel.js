@@ -1,28 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 /**
- * Enhanced full-height instructions panel with section title in header
- * and prefilled analysis of user's current content
+ * Enhanced full-height instructions panel
+ * UPDATED: Removed the Current Status white box
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
   improveInstructions, 
   loading,
-  userInputs // NEW: Pass user inputs to analyze current content
+  userInputs // Still need this for other functionality, but won't display status
 }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
-  const [analysisGenerated, setAnalysisGenerated] = useState(false);
 
-  // Function to generate initial analysis of user's content for this section
-  useEffect(() => {
-    if (currentSection && currentSection.id && userInputs && userInputs[currentSection.id]) {
-      // Reset analysis flag when section changes
-      setAnalysisGenerated(false);
-    }
-  }, [currentSection?.id]);
-
-  // Enhanced magic handler (previously improve handler)
+  // Enhanced magic handler
   const handleMagicClick = () => {
     console.log("Magic button clicked!", new Date().toISOString());
     const now = Date.now();
@@ -35,41 +26,12 @@ const FullHeightInstructionsPanel = ({
     if (typeof improveInstructions === 'function') {
       try {
         improveInstructions();
-        // After magic is clicked, set that analysis has been generated
-        setAnalysisGenerated(true);
       } catch (error) {
         console.error("Error triggering magic:", error);
         // Optionally show an error message to the user here
       }
     } else {
       console.error("improveInstructions is not a function");
-    }
-  };
-
-  // Get the section content for analysis
-  const userContent = currentSection && currentSection.id && userInputs ? 
-    userInputs[currentSection.id] : '';
-
-  // Basic analysis of user content length compared to template
-  const getBasicContentAnalysis = () => {
-    if (!userContent || !currentSection || !currentSection.placeholder) {
-      return "Please begin working on this section.";
-    }
-
-    if (userContent === currentSection.placeholder) {
-      return "You haven't started this section yet. The template is provided to help you get started.";
-    }
-
-    // Check how much they've written compared to template
-    const templateLength = currentSection.placeholder.length;
-    const contentLength = userContent.length;
-    
-    if (contentLength < templateLength * 1.2) {
-      return "You've begun work on this section, but there's still room to expand your content. Consider using the magic button for more specific feedback.";
-    } else if (contentLength < templateLength * 2) {
-      return "You've made good progress on this section. Use the magic button for detailed feedback on how to improve it further.";
-    } else {
-      return "You've written substantial content for this section. Use the magic button to check if you've addressed all requirements.";
     }
   };
 
@@ -131,16 +93,6 @@ const FullHeightInstructionsPanel = ({
                 )}
               </button>
             </div>
-
-            {/* Auto-generated Analysis/Status (before Magic is clicked) */}
-            {!analysisGenerated && !feedbackText && (
-              <div className="mb-6 p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
-                <h4 className="text-lg font-medium text-blue-700 mb-2">Current Status:</h4>
-                <p className="text-gray-700">
-                  {getBasicContentAnalysis()}
-                </p>
-              </div>
-            )}
 
             {/* Render Instructions */}
             {instructionsText ? (
