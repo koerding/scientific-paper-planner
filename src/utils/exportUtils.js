@@ -7,8 +7,9 @@
  * @param {Object} userInputs - The user inputs
  * @param {Object} chatMessages - The chat messages
  * @param {Object} sectionContent - The section content
+ * @param {boolean} saveJSON - Whether to also save in JSON format for later loading
  */
-export const exportProject = (userInputs, chatMessages, sectionContent) => {
+export const exportProject = (userInputs, chatMessages, sectionContent, saveJSON = true) => {
   // Determine research approach based on filled out sections
   let researchApproach = "";
   
@@ -58,18 +59,59 @@ ${userInputs.process || "Not completed yet"}
 ${userInputs.abstract || "Not completed yet"}
 `;
 
-  // Create a blob with the content
-  const blob = new Blob([exportContent], { type: 'text/markdown' });
-  const url = URL.createObjectURL(blob);
+  // Create a blob with the markdown content
+  const mdBlob = new Blob([exportContent], { type: 'text/markdown' });
+  const mdUrl = URL.createObjectURL(mdBlob);
   
-  // Create a link and trigger download
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'scientific-paper-plan.md';
-  document.body.appendChild(a);
-  a.click();
+  // Create a link and trigger download of markdown
+  const mdLink = document.createElement('a');
+  mdLink.href = mdUrl;
+  mdLink.download = 'scientific-paper-plan.md';
+  document.body.appendChild(mdLink);
+  mdLink.click();
   
-  // Clean up
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // Clean up markdown file link
+  document.body.removeChild(mdLink);
+  URL.revokeObjectURL(mdUrl);
+
+  // If saveJSON is true, also save as JSON for later loading
+  if (saveJSON) {
+    const jsonData = {
+      userInputs,
+      chatMessages,
+      timestamp: new Date().toISOString(),
+      version: "1.0"
+    };
+
+    const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    
+    // Create a link and trigger download of JSON
+    const jsonLink = document.createElement('a');
+    jsonLink.href = jsonUrl;
+    jsonLink.download = 'scientific-paper-plan.json';
+    document.body.appendChild(jsonLink);
+    jsonLink.click();
+    
+    // Clean up JSON file link
+    document.body.removeChild(jsonLink);
+    URL.revokeObjectURL(jsonUrl);
+  }
+};
+
+/**
+ * Validates loaded project data
+ * @param {Object} data - The data to validate
+ * @returns {boolean} - Whether the data is valid
+ */
+export const validateProjectData = (data) => {
+  // Check if data has required structure
+  if (!data || typeof data !== 'object') return false;
+  if (!data.userInputs || typeof data.userInputs !== 'object') return false;
+  
+  // Check if userInputs has at least some of the expected fields
+  const expectedFields = ['question', 'audience', 'hypothesis', 'analysis', 'abstract'];
+  const hasExpectedFields = expectedFields.some(field => Object.prototype.hasOwnProperty.call(data.userInputs, field));
+  
+  return hasExpectedFields;
 };
