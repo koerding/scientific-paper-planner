@@ -3,13 +3,13 @@ import ReactMarkdown from 'react-markdown';
 
 /**
  * Enhanced full-height instructions panel
- * UPDATED: Removed the Current Status white box
+ * UPDATED: Increased font size, improved markdown styling
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
   improveInstructions, 
   loading,
-  userInputs // Still need this for other functionality, but won't display status
+  userInputs
 }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
 
@@ -42,6 +42,15 @@ const FullHeightInstructionsPanel = ({
   const sectionTitle = currentSection?.title || "Instructions";
   const panelTitle = `${sectionTitle} Instructions & Feedback`;
 
+  // Custom styles for markdown content to match left side fonts
+  const customStyles = {
+    fontSize: 'text-xl leading-relaxed', // Larger font to match left side
+    content: 'prose-xl prose-blue max-w-none', // Increase prose size
+    heading: 'text-2xl font-semibold my-4', // Larger headings
+    divider: 'border-t border-blue-200 my-6', // Style for dividers (---)
+    listItem: 'my-3', // Add more space between list items
+  };
+
   return (
     <div
       className="bg-blue-50 border-l-4 border-blue-500 h-full overflow-y-auto"
@@ -63,7 +72,7 @@ const FullHeightInstructionsPanel = ({
         ) : (
           <>
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-2xl font-semibold text-blue-800 flex-grow mr-4">
+              <h3 className="text-3xl font-semibold text-blue-800 flex-grow mr-4">
                 {panelTitle}
               </h3>
               <button
@@ -94,28 +103,67 @@ const FullHeightInstructionsPanel = ({
               </button>
             </div>
 
-            {/* Render Instructions */}
+            {/* Render Instructions with improved styling */}
             {instructionsText ? (
-              <div className="prose prose-blue max-w-none instructions-content mb-6">
-                <ReactMarkdown>{instructionsText}</ReactMarkdown>
+              <div className={`${customStyles.content} instructions-content mb-6`}>
+                {/* Using custom component to render markdown with better styling */}
+                <StyledMarkdown 
+                  content={instructionsText} 
+                  customStyles={customStyles}
+                />
               </div>
             ) : (
-              <p className="text-blue-600 mb-6">Instructions not available for this section.</p>
+              <p className="text-blue-600 text-xl mb-6">Instructions not available for this section.</p>
             )}
 
             {/* Render Feedback Section if it exists */}
             {feedbackText && (
               <div className="mt-6 pt-4 border-t border-blue-300">
-                 {/* Use h3 or h4 for semantic structure, ReactMarkdown handles # */}
-                <h4 className="text-xl font-semibold text-blue-700 mb-3">Feedback</h4>
-                <div className="prose prose-blue max-w-none feedback-content">
-                  <ReactMarkdown>{feedbackText}</ReactMarkdown>
+                {/* Use h3 or h4 for semantic structure */}
+                <h4 className="text-2xl font-semibold text-blue-700 mb-3">Feedback</h4>
+                <div className={`${customStyles.content} feedback-content`}>
+                  <StyledMarkdown 
+                    content={feedbackText} 
+                    customStyles={customStyles}
+                  />
                 </div>
               </div>
             )}
           </>
         )}
       </div>
+    </div>
+  );
+};
+
+// Custom component to render markdown with enhanced styling
+const StyledMarkdown = ({ content, customStyles }) => {
+  // Process content to enhance list item styling
+  const processedContent = content
+    // Ensure lists have proper spacing and consistent bullet points
+    .replace(/\n\* /g, "\n• "); // Replace asterisks with bullet points for consistency
+  
+  return (
+    <div className={`${customStyles.fontSize}`}>
+      <ReactMarkdown
+        components={{
+          // Customize heading styles
+          h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
+          h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
+          h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
+          
+          // Style paragraphs and lists
+          p: ({ node, ...props }) => <p className="my-4" {...props} />,
+          ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
+          ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
+          li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
+          
+          // Style horizontal rules as dividers
+          hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
+        }}
+      >
+        {processedContent}
+      </ReactMarkdown>
     </div>
   );
 };
