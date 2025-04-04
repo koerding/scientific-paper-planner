@@ -17,7 +17,7 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
- * UPDATED: Added PDF import functionality
+ * UPDATED: Added document import functionality
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
@@ -39,7 +39,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     exportProject,
     saveProject,
     loadProject,
-    importPdfContent // NEW: Extract PDF import function
+    importDocumentContent // NEW: Extract document import function
   } = usePaperPlannerHook; // Destructure the hook data here
 
   const [activeSection, setActiveSection] = useState(currentSectionIdForChat);
@@ -333,7 +333,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           exportProject={exportProject} // From hook
           saveProject={saveProject} // From hook
           loadProject={loadProject} // From hook
-          importPdfContent={importPdfContent} // NEW: Pass PDF import function from hook
+          importDocumentContent={importDocumentContent} // NEW: Pass document import function
           setShowExamplesDialog={setShowExamplesDialog} // Pass setter from hook to header
         />
 
