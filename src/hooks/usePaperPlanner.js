@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService'; // Corrected path
+import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
 import sectionContent from '../data/sectionContent.json';
-// Correct the import paths here:
 import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
 
-// Helper function to create the initial state, INCLUDING loading from storage
+// Helper function to create the initial state, corrected to prioritize templates
 const getInitialState = () => {
+  // Create initial content from the placeholders in sectionContent
   const initialContent = {};
   const initialChat = {};
 
@@ -30,57 +30,71 @@ const getInitialState = () => {
      });
   }
 
-  // --- Load from storage and merge ---
-  const { loadedInputs, loadedChat } = loadFromStorage(); // Use the simplified load function
+  // --- Check localStorage but DON'T automatically merge with templates ---
+  const { loadedInputs, loadedChat } = loadFromStorage();
 
-  // Merge Inputs - ONLY if user has saved content that's different from the template
-  const finalInputs = { ...initialContent }; // Start with template content
-  if (loadedInputs && typeof loadedInputs === 'object') {
-    for (const sectionId in initialContent) {
-      if (loadedInputs.hasOwnProperty(sectionId)) {
-        const loadedValue = loadedInputs[sectionId];
-        const templateValue = initialContent[sectionId];
-        // Only use saved value if it exists and is different from the template
-        if (loadedValue !== undefined && loadedValue !== null && loadedValue !== templateValue) {
-          finalInputs[sectionId] = loadedValue;
-        }
-      }
-    }
-  }
+  // Important: We'll set this flag to determine if we should use localStorage data or templates
+  const hasStoredData = loadedInputs && Object.keys(loadedInputs).length > 0;
 
-  // Merge Chat
-  const finalChat = { ...initialChat };
-  if (loadedChat && typeof loadedChat === 'object') {
-    for (const sectionId in loadedChat) {
-      if (loadedChat.hasOwnProperty(sectionId) && Array.isArray(loadedChat[sectionId])) {
-        finalChat[sectionId] = loadedChat[sectionId];
-      }
-    }
-  }
-
-  return { initialUserInputs: finalInputs, initialChatMessages: finalChat, initialTemplates: initialContent }; // Also return initial templates
+  return { 
+    initialUserInputs: initialContent, // Start with clean templates by default
+    initialChatMessages: initialChat,
+    initialTemplates: initialContent,
+    storedInputs: loadedInputs,  // Store but don't automatically use
+    storedChat: loadedChat,
+    hasStoredData // Flag to know if we have stored data
+  };
 };
 
 
 const usePaperPlanner = () => {
-  // Initialize state directly using the combined load/merge function result
-  const [{ initialUserInputs, initialChatMessages, initialTemplates }] = useState(getInitialState); // Destructure initialTemplates
+  // Get initial state, but we're now setting things differently
+  const { 
+    initialUserInputs, 
+    initialChatMessages, 
+    initialTemplates,
+    storedInputs,
+    storedChat,
+    hasStoredData
+  } = getInitialState();
 
+  // Start with template values, not stored values
   const [userInputs, setUserInputs] = useState(initialUserInputs);
   const [chatMessages, setChatMessages] = useState(initialChatMessages);
 
   // Other states
-  const [currentSection, setCurrentSection] = useState(sectionContent?.sections?.[0]?.id || 'question'); // Safer initial section
+  const [currentSection, setCurrentSection] = useState(sectionContent?.sections?.[0]?.id || 'question');
   const [currentMessage, setCurrentMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showExamplesDialog, setShowExamplesDialog] = useState(false); // State for examples dialog
+  const [showExamplesDialog, setShowExamplesDialog] = useState(false);
+  
+  // Add state to track if we've loaded from storage
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+  
+  // Add state to track if we've prompted about stored data
+  const [hasPromptedAboutStorage, setHasPromptedAboutStorage] = useState(false);
 
-  // Flag initial load as complete after the first render cycle
+  // On first mount, check if there's stored data and prompt to use it
   useEffect(() => {
-    setIsInitialLoadComplete(true);
-  }, []);
+    if (hasStoredData && !hasPromptedAboutStorage) {
+      const useStoredData = window.confirm(
+        "We found a previously saved project. Would you like to load it? Click 'Cancel' to start with a fresh template."
+      );
+      
+      if (useStoredData) {
+        // User wants to use stored data
+        setUserInputs(storedInputs);
+        setChatMessages(storedChat);
+      }
+      
+      setHasPromptedAboutStorage(true);
+      setIsInitialLoadComplete(true);
+    } else {
+      // No stored data or already prompted
+      setIsInitialLoadComplete(true);
+    }
+  }, [hasStoredData, hasPromptedAboutStorage, storedInputs, storedChat]);
 
   // Save progress whenever userInputs or chatMessages change, *after* initial load
   useEffect(() => {
@@ -164,30 +178,64 @@ const usePaperPlanner = () => {
     }
   }, [userInputs]);
 
-
-  // Reset project function - now resets to the template content
+  // Reset project function - FIXED to correctly use fresh templates
   const resetProject = useCallback(() => {
+    // Clear localStorage first
     clearStorage();
-    setUserInputs(initialTemplates); // Use initialTemplates from state
-
-    // Clear chat messages
-    const emptyChat = {};
+    
+    // Create fresh copies of the templates
+    const freshInputs = JSON.parse(JSON.stringify(initialTemplates));
+    const freshChat = {};
     sectionContent.sections.forEach(section => {
       if (section && section.id) {
-        emptyChat[section.id] = [];
+        freshChat[section.id] = [];
       }
     });
-    setChatMessages(emptyChat);
-    setCurrentSection(sectionContent?.sections?.[0]?.id || 'question'); // Reset to first section safely
+    
+    // Set the state to fresh templates
+    setUserInputs(freshInputs);
+    setChatMessages(freshChat);
+    setCurrentSection(sectionContent?.sections?.[0]?.id || 'question');
     setShowConfirmDialog(false);
-  }, [initialTemplates]); // Depend on initialTemplates
+  }, [initialTemplates]);
 
   const exportProject = useCallback(() => {
-    exportProjectFunction(userInputs, chatMessages, sectionContent); // Use imported function
+    exportProjectFunction(userInputs, chatMessages, sectionContent);
   }, [userInputs, chatMessages]);
 
-   // Function to load project from imported JSON file
-   const loadProject = useCallback((data) => {
+  // NEW: Save project function that only saves JSON for loading later
+  const saveProject = useCallback((fileName = 'scientific-paper-plan') => {
+    // Ensure the fileName has .json extension
+    const safeFileName = fileName.endsWith('.json') 
+      ? fileName 
+      : `${fileName}.json`;
+    
+    const jsonData = {
+      userInputs,
+      chatMessages,
+      timestamp: new Date().toISOString(),
+      version: "1.0"
+    };
+
+    const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    
+    // Create a link and trigger download of JSON
+    const jsonLink = document.createElement('a');
+    jsonLink.href = jsonUrl;
+    jsonLink.download = safeFileName;
+    document.body.appendChild(jsonLink);
+    jsonLink.click();
+    
+    // Clean up JSON file link
+    document.body.removeChild(jsonLink);
+    URL.revokeObjectURL(jsonUrl);
+    
+    return true;
+  }, [userInputs, chatMessages]);
+
+  // Function to load project from imported JSON file
+  const loadProject = useCallback((data) => {
     if (!validateProjectData(data)) {
       alert("Invalid project file format. Please select a valid project file.");
       return;
@@ -215,8 +263,8 @@ const usePaperPlanner = () => {
         (sectionContent?.sections || []).forEach(section => {
           if (section && section.id) {
             mergedChat[section.id] = (data.chatMessages && Array.isArray(data.chatMessages[section.id]))
-                                     ? data.chatMessages[section.id]
-                                     : [];
+                                    ? data.chatMessages[section.id]
+                                    : [];
           }
         });
         setChatMessages(mergedChat);
@@ -232,7 +280,7 @@ const usePaperPlanner = () => {
         alert("Error loading project. Please try again.");
       }
     }
-  }, [initialTemplates]); // Depend on initialTemplates
+  }, [initialTemplates]);
 
   // Return all state and handlers needed by the components
   return {
@@ -242,18 +290,19 @@ const usePaperPlanner = () => {
     currentMessage,
     loading,
     showConfirmDialog,
-    showExamplesDialog, // Expose examples dialog state
+    showExamplesDialog,
     setChatMessages,
     setUserInputs,
     setCurrentMessage,
     setShowConfirmDialog,
-    setShowExamplesDialog, // Expose examples dialog setter
+    setShowExamplesDialog,
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
     handleFirstVersionFinished,
     resetProject,
     exportProject,
+    saveProject,  // NEW: Add save function
     loadProject,
   };
 };
