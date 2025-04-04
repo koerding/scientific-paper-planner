@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 
 /**
  * Enhanced full-height instructions panel
- * UPDATED: Increased font size, improved markdown styling
+ * UPDATED: Fixed numbered lists in feedback
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -123,7 +123,7 @@ const FullHeightInstructionsPanel = ({
                 <h4 className="text-2xl font-semibold text-blue-700 mb-3">Feedback</h4>
                 <div className={`${customStyles.content} feedback-content`}>
                   <StyledMarkdown 
-                    content={feedbackText} 
+                    content={fixNumberedLists(feedbackText)} 
                     customStyles={customStyles}
                   />
                 </div>
@@ -136,12 +136,70 @@ const FullHeightInstructionsPanel = ({
   );
 };
 
+/**
+ * Fixes numbered lists by ensuring they start at 1 and increment properly
+ * @param {string} text - Markdown text to process
+ * @returns {string} - Processed text with fixed numbering
+ */
+function fixNumberedLists(text) {
+  if (!text) return text;
+  
+  // Split text into lines
+  const lines = text.split('\n');
+  
+  // Find and group numbered list items
+  let inNumberedList = false;
+  let currentListItems = [];
+  let result = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isNumberedItem = /^\d+\.\s/.test(line.trim());
+    
+    if (isNumberedItem) {
+      // Extract the content after the number
+      const content = line.replace(/^\d+\.\s/, '');
+      
+      if (!inNumberedList) {
+        // Starting a new list
+        inNumberedList = true;
+        currentListItems = [content];
+      } else {
+        // Continuing the current list
+        currentListItems.push(content);
+      }
+    } else {
+      // Not a numbered item
+      if (inNumberedList) {
+        // End of a list, add renumbered items to result
+        for (let j = 0; j < currentListItems.length; j++) {
+          result.push(`${j + 1}. ${currentListItems[j]}`);
+        }
+        currentListItems = [];
+        inNumberedList = false;
+      }
+      
+      // Add the current non-list line
+      result.push(line);
+    }
+  }
+  
+  // Add any remaining list items
+  if (inNumberedList && currentListItems.length > 0) {
+    for (let j = 0; j < currentListItems.length; j++) {
+      result.push(`${j + 1}. ${currentListItems[j]}`);
+    }
+  }
+  
+  return result.join('\n');
+}
+
 // Custom component to render markdown with enhanced styling
 const StyledMarkdown = ({ content, customStyles }) => {
   // Process content to enhance list item styling
   const processedContent = content
-    // Ensure lists have proper spacing and consistent bullet points
-    .replace(/\n\* /g, "\n• "); // Replace asterisks with bullet points for consistency
+    // Replace asterisks with bullet points for consistency
+    .replace(/\n\* /g, "\n• ");
   
   return (
     <div className={`${customStyles.fontSize}`}>
