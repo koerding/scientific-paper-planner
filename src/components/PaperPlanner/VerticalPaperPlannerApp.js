@@ -8,6 +8,7 @@ import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
 import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
+import ExamplesDialog from './ExamplesDialog';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -50,7 +51,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleFirstVersionFinished,
     resetProject: hookResetProject, // Rename to avoid conflict
     exportProject,
-    loadProject
+    loadProject,
+    showExamples // New function for showing examples dialog
   } = usePaperPlannerHook;
 
   // Effect to map refs
@@ -194,6 +196,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           resetProject={() => setShowConfirmDialog(true)} // Trigger dialog
           exportProject={exportProject}
           loadProject={loadProject}
+          showExamples={showExamples} // Pass the showExamples function
         />
 
         <div className="flex">
@@ -355,6 +358,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           showConfirmDialog={showConfirmDialog}
           setShowConfirmDialog={setShowConfirmDialog}
           resetProject={handleResetRequest} // Use combined reset handler
+        />
+
+        {/* Add the Examples Dialog */}
+        <ExamplesDialog
+          showExamplesDialog={usePaperPlannerHook.showExamplesDialog || false}
+          setShowExamplesDialog={usePaperPlannerHook.setShowExamplesDialog || (() => {})}
+          loadProject={loadProject}
         />
       </div>
     </div>
