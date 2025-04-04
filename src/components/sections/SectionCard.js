@@ -3,10 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 const SectionCard = ({
   section,
   isCurrentSection,
-  isCompleted,
+  completionStatus = 'unstarted', // New prop: 'complete', 'progress', or 'unstarted'
   userInputs,
   handleInputChange,
-  handleFirstVersionFinished,
   loading,
   sectionRef,
   onClick,
@@ -17,12 +16,6 @@ const SectionCard = ({
   // Get the actual value stored in userInputs - this should be pre-filled with template content
   const textValue = userInputs[section.id] || '';
 
-  // Determine if user has actually modified the pre-filled content
-  const hasUserModifiedContent = () => {
-    // At minimum, there should be some content
-    return textValue.trim() !== '';
-  };
-
   // Auto-resize textarea height
   useEffect(() => {
     if (textareaRef.current) {
@@ -31,46 +24,35 @@ const SectionCard = ({
     }
   }, [textValue]);
 
-  // Button state - enable if not loading AND has content
-  const buttonText = loading ? section.loadingButtonText : section.completeButtonText;
-  const isButtonDisabled = loading || !hasUserModifiedContent();
+  // Determine the border color and style based on completion status
+  const getBorderStyle = () => {
+    if (isCurrentSection) {
+      // Current section gets blue focus border regardless of completion
+      return 'border-3 border-blue-500 shadow-xl';
+    }
+    
+    switch (completionStatus) {
+      case 'complete':
+        return 'border-3 border-green-600';
+      case 'progress':
+        return 'border-3 border-yellow-500';
+      case 'unstarted':
+      default:
+        return 'border border-gray-200 hover:shadow-lg';
+    }
+  };
 
   return (
     <div
       ref={sectionRef}
-      className={`bg-white rounded-lg shadow-sm p-5 mb-6 transition-all duration-300 ease-in-out
-        ${isCurrentSection ? 'border-2 border-blue-500 shadow-xl' : 'border border-gray-200 hover:shadow-lg'}
-        ${isCompleted ? 'border-green-500' : ''} // Add green border if completed
-      `}
+      className={`bg-white rounded-lg shadow-sm p-5 mb-6 transition-all duration-300 ease-in-out ${getBorderStyle()}`}
       onClick={onClick} // Keep onClick on the main div to set active section
     >
-      {/* Header with Title and Button */}
+      {/* Header with Title */}
       <div className="flex justify-between items-center mb-4">
         <h2 className={`font-semibold ${useLargerFonts ? 'text-3xl' : 'text-2xl'} text-gray-800 mr-4`}>
           {section.title}
         </h2>
-        {/* Moved Button Here */}
-        <button
-           onClick={(e) => {
-                e.stopPropagation(); // Prevent card's onClick from firing
-                handleFirstVersionFinished(section.id);
-            }}
-           disabled={isButtonDisabled}
-           className={`py-1 px-3 rounded-md text-white font-medium transition-colors whitespace-nowrap ${ // Reduced padding, added whitespace-nowrap
-             isButtonDisabled
-               ? 'bg-gray-400 cursor-not-allowed'
-               : 'bg-green-600 hover:bg-green-700'
-           } ${useLargerFonts ? 'text-base' : 'text-sm'}`} // Adjusted font size
-         >
-           {loading ? (
-              <span className="flex items-center justify-center">
-                {/* Simple loading text or smaller spinner */}
-                ...
-              </span>
-            ) : (
-             buttonText
-            )}
-         </button>
       </div>
 
       {/* Input Area */}
