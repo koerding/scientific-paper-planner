@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import VerticalPaperPlannerApp from './VerticalPaperPlannerApp'; // Using your existing component
 import sectionContent from '../../data/sectionContent.json';  
 import { callOpenAI } from '../../services/openaiService';
-import { exportProject as exportProjectFunction } from '../../utils/exportUtils';
+import { exportProject as exportProjectFunction, validateProjectData } from '../../utils/exportUtils';
 import '../../styles/PaperPlanner.css';
 
 /**
  * Main entry point for the Paper Planner
  * Contains core state management and API calls
- * UPDATED: Now includes new audience and related papers sections
+ * UPDATED: Added load project functionality
  */
 const PaperPlannerApp = () => {
   // State - Pre-fill with templates from sectionContent
@@ -252,6 +252,46 @@ const PaperPlannerApp = () => {
     exportProjectFunction(userInputs, chatMessages, sectionContent);
   };
 
+  // Function to load project from imported JSON file
+  const loadProject = (data) => {
+    if (!validateProjectData(data)) {
+      alert("Invalid project file format. Please select a valid project file.");
+      return;
+    }
+
+    // Confirm before loading
+    if (window.confirm("Loading this project will replace your current work. Are you sure you want to continue?")) {
+      try {
+        // Load user inputs, ensuring we keep template values for any missing sections
+        const mergedInputs = {...initialState};
+        Object.keys(data.userInputs).forEach(sectionId => {
+          if (data.userInputs[sectionId] && data.userInputs[sectionId].trim() !== '') {
+            mergedInputs[sectionId] = data.userInputs[sectionId];
+          }
+        });
+        setUserInputs(mergedInputs);
+        
+        // Load chat messages, ensuring we have empty arrays for any missing sections
+        const mergedChat = {};
+        sectionContent.sections.forEach(section => {
+          if (section && section.id) {
+            mergedChat[section.id] = data.chatMessages?.[section.id] || [];
+          }
+        });
+        setChatMessages(mergedChat);
+        
+        // Save to localStorage
+        localStorage.setItem('paperPlannerData', JSON.stringify(mergedInputs));
+        localStorage.setItem('paperPlannerChat', JSON.stringify(mergedChat));
+        
+        alert("Project loaded successfully!");
+      } catch (error) {
+        console.error("Error loading project:", error);
+        alert("Error loading project. Please try again.");
+      }
+    }
+  };
+
   // Hook for the Paper Planner
   const usePaperPlannerHook = {
     currentSection,
@@ -270,7 +310,8 @@ const PaperPlannerApp = () => {
     resetProject,
     goToNextSection,
     goToPreviousSection,
-    exportProject
+    exportProject,
+    loadProject
   };
 
   // Use your existing VerticalPaperPlannerApp
