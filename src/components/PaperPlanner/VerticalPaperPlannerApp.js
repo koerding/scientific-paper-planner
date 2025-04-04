@@ -1,4 +1,4 @@
-// Updated VerticalPaperPlannerApp.js with saveProject support
+// Updated VerticalPaperPlannerApp.js with PDF import support
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
@@ -17,7 +17,7 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
- * UPDATED: Added saveProject functionality
+ * UPDATED: Added PDF import functionality
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
@@ -37,8 +37,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSendMessage,
     resetProject: hookResetProject,
     exportProject,
-    saveProject, // NEW: Extract saveProject from hook
-    loadProject
+    saveProject,
+    loadProject,
+    importPdfContent // NEW: Extract PDF import function
   } = usePaperPlannerHook; // Destructure the hook data here
 
   const [activeSection, setActiveSection] = useState(currentSectionIdForChat);
@@ -127,7 +128,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     return stringContent && stringContent.trim() !== '' && stringContent !== placeholder;
   };
 
-  // Determine completion status for a section
+  // UPDATED: More generous completion status detection
   const getSectionCompletionStatus = (sectionId) => {
     // If there's an explicit completion status from the AI, use it
     if (sectionCompletionStatus[sectionId]) {
@@ -148,9 +149,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       return 'unstarted';
     }
     
-    // Basic content length check (a very basic heuristic)
-    // A better approach would be to analyze the actual quality via the AI
-    if (content.length > placeholder.length * 1.5) {
+    // MORE GENEROUS GRADING:
+    // If they've made any substantial modifications to the template, mark as 'progress'
+    // This is a very basic check - just 20% longer than the template
+    if (content.length > placeholder.length * 1.2) {
+      return 'progress';
+    }
+    
+    // If they've made at least some modifications, still give them 'progress'
+    if (content !== placeholder && content.trim().length > 0) {
       return 'progress';
     }
     
@@ -207,14 +214,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                               item.editedInstructions.includes('Well done') ||
                               item.editedInstructions.includes('completed all');
                               
-            // Check for substantial remaining instructions
-            const hasSubstantialInstructions = item.editedInstructions.includes('Point') ||
-                                             item.editedInstructions.includes('Step') ||
-                                             item.editedInstructions.includes('still need');
+            // MORE GENEROUS MARKING:
+            // If the content looks substantial, mark as 'complete'
+            const userContent = userInputs[item.id] || '';
+            const section = localSectionContent.sections.find(s => s?.id === item.id);
+            const placeholder = section?.placeholder || '';
             
-            if (isComplete) {
+            if (isComplete || 
+                (userContent.length > placeholder.length * 1.5 && !item.editedInstructions.includes('missing'))) {
               newCompletionStatuses[item.id] = 'complete';
-            } else if (hasSubstantialInstructions) {
+            } else if (userContent.trim() !== '' && userContent !== placeholder) {
+              // If they've done some work, mark as 'progress'
               newCompletionStatuses[item.id] = 'progress';
             } else {
               newCompletionStatuses[item.id] = 'unstarted';
@@ -321,8 +331,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           scrollToSection={scrollToSection}
           resetProject={() => setShowConfirmDialog(true)} // Trigger dialog from hook state
           exportProject={exportProject} // From hook
-          saveProject={saveProject} // NEW: Pass save function from hook
+          saveProject={saveProject} // From hook
           loadProject={loadProject} // From hook
+          importPdfContent={importPdfContent} // NEW: Pass PDF import function from hook
           setShowExamplesDialog={setShowExamplesDialog} // Pass setter from hook to header
         />
 
@@ -375,6 +386,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           currentSection={sectionDataForPanel} // Pass data from local state
           improveInstructions={handleMagic} // Updated to handleMagic
           loading={improvingInstructions}
+          userInputs={userInputs} // NEW: Pass user inputs for analysis
         />
 
         <ModernChatInterface
