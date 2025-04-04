@@ -92,3 +92,39 @@
   transform: translateY(-10px);
   transition: opacity 300ms, transform 300ms;
 }
+
+/* Add these styles to PaperPlanner.css */
+
+/* Custom border styles for completion status */
+.border-3 {
+  border-width: 3px !important;
+}
+
+.border-4 {
+  border-width: 4px !important;
+}
+
+/* Status-based border colors */
+.section-complete {
+  border-color: #10B981 !important; /* Green-500 */
+  border-width: 4px !important;
+}
+
+.section-progress {
+  border-color: #FBBF24 !important; /* Yellow-400 */
+  border-width: 4px !important;
+}
+
+.section-unstarted {
+  border-color: #EF4444 !important; /* Red-500 */
+  border-width: 4px !important;
+}
+
+/* Ensure borders are visible */
+.section-card {
+  transition: border-color 0.3s ease, border-width 0.3s ease, box-shadow 0.3s ease;
+}
+
+.section-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
