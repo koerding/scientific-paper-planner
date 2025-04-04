@@ -1,12 +1,16 @@
-/** @type {import('tailwindcss').Config} */
+// tailwind.config.js
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
+    "./public/index.html",
   ],
   theme: {
-    extend: {},
+    extend: {
+      borderWidth: {
+        '3': '3px',
+        '4': '4px',
+      },
+    },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [],
 }
