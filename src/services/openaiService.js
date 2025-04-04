@@ -8,8 +8,9 @@ const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
 const USE_FALLBACK = !apiKey || process.env.REACT_APP_USE_FALLBACK === 'true';
 
 // Add this to your openaiService.js file to enable debug mode and fallbacks
-const buildMessages = (prompt, contextType, userInputs, sections) => {
-  const systemMessage = `You are a helpful assistant for planning scientific papers. Context type: ${contextType}.`;
+// MODIFIED: Added currentChatHistory parameter
+const buildMessages = (prompt, contextType, userInputs, sections, currentChatHistory = []) => {
+  const systemMessage = `You are a helpful assistant for planning scientific papers. Context type: ${contextType}. Maintain conversation context based on previous messages.`;
   const messages = [{ role: 'system', content: systemMessage }];
 
   // Add section context safely using the new 'instructions.text'
@@ -26,7 +27,7 @@ const buildMessages = (prompt, contextType, userInputs, sections) => {
       const safeUserInput = (typeof userInput === 'string' ? userInput : JSON.stringify(userInput)) || 'N/A';
 
       messages.push({
-          role: 'user',
+          role: 'user', // Or adjust role based on how you structure context
           content: `Context for Section "${section.title}" (ID: ${section.id}):
 Instructions: ${instructionText || 'N/A'}
 Current User Input: ${safeUserInput}`
@@ -36,9 +37,23 @@ Current User Input: ${safeUserInput}`
        console.error("[openaiService buildMessages] 'sections' is not an array:", sections);
   }
 
+  // *** NEW: Prepend chat history ***
+  if (Array.isArray(currentChatHistory)) {
+    currentChatHistory.forEach(msg => {
+      // Basic validation of message structure
+      if (msg && (msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string') {
+        messages.push({ role: msg.role, content: msg.content });
+      } else {
+        console.warn("Skipping invalid message in chat history:", msg);
+      }
+    });
+  }
+
+  // Add the latest user prompt
   messages.push({ role: 'user', content: prompt });
   return messages;
 };
+
 
 // Mock response function for when no API key is available
 const mockResponse = (contextType, prompt) => {
@@ -50,11 +65,15 @@ Here are the updated instruction texts:
 [
   {
     "id": "question",
-    "instructionsText": "Great job defining your research question! You're asking whether speed-dating events between scientists increase collaboration probability, which is clear and testable. Here are some additional points to consider: 1) Think about the scope - are you focusing on specific scientific disciplines? 2) Consider quantifying what 'increased collaboration' means (joint papers, grant applications, etc.)."
+    "editedInstructions": "Great job defining your research question! You're asking whether speed-dating events between scientists increase collaboration probability, which is clear and testable. Here are some additional points to consider: 1) Think about the scope - are you focusing on specific scientific disciplines? 2) Consider quantifying what 'increased collaboration' means (joint papers, grant applications, etc.).",
+    "feedback": "**Strengths:** Clear question.\n**Weaknesses:** Scope unclear.\n**Suggestions:** Define collaboration metrics.",
+    "completionStatus": "progress"
   },
   {
     "id": "hypothesis",
-    "instructionsText": "I see you're interested in testing this hypothesis. Now you need to formulate specific, competing hypotheses. For example: H1: Scientists who meet in speed-dating events have significantly higher collaboration rates than those who meet in traditional conferences. H2: The format of initial meeting (speed-dating vs. traditional) has no effect on collaboration likelihood when controlling for research interests."
+    "editedInstructions": "Excellent work! You've addressed all key points. Ready for the next step!",
+    "feedback": "**Strengths:** Both hypotheses are clear and testable.\n**Weaknesses:** None noted.\n**Suggestions:** Proceed to experiment design.",
+    "completionStatus": "complete"
   }
 ]`;
   }
@@ -63,27 +82,31 @@ Here are the updated instruction texts:
   return `This is a mock response because no OpenAI API key is configured.
 Please set REACT_APP_OPENAI_API_KEY in your environment variables or .env file.
 
-For a real application, I would respond to your prompt about "${contextType}" with helpful information.
+For a real application, I would respond to your prompt about "${contextType}" with helpful information based on the conversation history provided.
 
 For testing purposes, you can continue using the application with this mock mode.`;
 };
 
 // Main function to call the OpenAI API with improved error handling
+// MODIFIED: Added chatHistory parameter
 export const callOpenAI = async (
     prompt,
     contextType = "general",
     userInputs = {},
     sections = [],
-    options = {}
+    options = {},
+    chatHistory = [] // Accept chat history
  ) => {
-   
+
   console.log(`[openaiService] API Call Request - Context: ${contextType}`, {
     apiKeyConfigured: !!apiKey,
     modelUsed: model,
     useFallback: USE_FALLBACK,
     promptLength: prompt.length,
     userInputsCount: Object.keys(userInputs).length,
-    sectionsCount: Array.isArray(sections) ? sections.length : 'Not an array'
+    sectionsCount: Array.isArray(sections) ? sections.length : 'Not an array',
+    // MODIFIED: Log history length
+    chatHistoryLength: Array.isArray(chatHistory) ? chatHistory.length : 'Not an array'
   });
 
   // If no API key is configured, use mock responses
@@ -95,7 +118,8 @@ export const callOpenAI = async (
   }
 
   const apiUrl = "https://api.openai.com/v1/chat/completions";
-  const messages = buildMessages(prompt, contextType, userInputs, sections);
+  // MODIFIED: Pass history to buildMessages
+  const messages = buildMessages(prompt, contextType, userInputs, sections, chatHistory);
 
   const body = JSON.stringify({
     model: model,
@@ -106,7 +130,7 @@ export const callOpenAI = async (
 
   try {
     console.log(`[openaiService] Sending request to OpenAI API...`);
-    
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -141,12 +165,12 @@ export const callOpenAI = async (
 
   } catch (error) {
     console.error("Error calling OpenAI API:", error);
-    
+
     // If the error is due to network connectivity, provide a clear message
     if (error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
       throw new Error("Network error: Unable to connect to OpenAI API. Please check your internet connection.");
     }
-    
+
     // Return a more user-friendly error
     throw new Error(`OpenAI API Error: ${error.message || 'Unknown error'}`);
   }
