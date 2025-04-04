@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { saveToStorage, loadFromStorage, clearStorage } from '../../services/storageService';
-import { callOpenAI } from '../../services/openaiService';
-import sectionContent from '../../data/sectionContent.json';
+// Correct the import path here:
+import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
+import { callOpenAI } from '../services/openaiService';
+import sectionContent from '../data/sectionContent.json';
 import { validateProjectData } from '../../utils/exportUtils'; // Added for loadProject validation
 import { exportProject as exportProjectFunction } from '../../utils/exportUtils'; // Ensure export is imported
 
@@ -73,7 +74,7 @@ const usePaperPlanner = () => {
   const [currentMessage, setCurrentMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showExamplesDialog, setShowExamplesDialog] = useState(false); // <-- State for examples dialog
+  const [showExamplesDialog, setShowExamplesDialog] = useState(false); // State for examples dialog
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
 
   // Flag initial load as complete after the first render cycle
@@ -241,12 +242,12 @@ const usePaperPlanner = () => {
     currentMessage,
     loading,
     showConfirmDialog,
-    showExamplesDialog, // <-- Expose examples dialog state
+    showExamplesDialog, // Expose examples dialog state
     setChatMessages,
     setUserInputs,
     setCurrentMessage,
     setShowConfirmDialog,
-    setShowExamplesDialog, // <-- Expose examples dialog setter
+    setShowExamplesDialog, // Expose examples dialog setter
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
