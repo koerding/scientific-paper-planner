@@ -1,3 +1,5 @@
+// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
+
 // Updated VerticalPaperPlannerApp.js with more generous completion status
 // MODIFIED: Passes currentSectionTitle prop to ModernChatInterface
 import React, { useState, useEffect, useRef } from 'react';
