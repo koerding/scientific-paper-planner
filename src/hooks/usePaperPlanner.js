@@ -8,6 +8,37 @@ import sectionContent from '../data/sectionContent.json';
 import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
 
+// Research approach education context to be included in system prompts
+const researchApproachContext = `
+IMPORTANT CONTEXT ABOUT RESEARCH APPROACHES:
+
+There are fundamentally different types of research questions that require different approaches:
+
+1. HYPOTHESIS-DRIVEN RESEARCH:
+   - Tests competing explanations about how the world works
+   - Structure: "Is the world more like A or more like B?"
+   - Example: "Does increased screen time (A) or reduced physical activity (B) contribute more to childhood obesity?"
+   - Scientific value comes from distinguishing between plausible alternative explanations
+   - Common in basic sciences (biology, psychology, neuroscience)
+   - Success means advancing theoretical understanding, even if no immediate application
+
+2. NEEDS-BASED RESEARCH:
+   - Addresses a specific problem that someone needs solved
+   - Structure: "How can we create X to solve problem Y for stakeholder Z?"
+   - Example: "How can we develop a screening tool to help doctors identify infants at risk for cerebral palsy?"
+   - Value comes from solving a real-world problem for specific stakeholders
+   - Common in applied fields (medicine, engineering, design)
+   - Success means creating something useful, even if it doesn't test fundamental theories
+
+3. EXPLORATORY RESEARCH:
+   - Examines data/phenomena without predetermined hypotheses to discover patterns
+   - Structure: "What patterns exist in X that we haven't noticed before?"
+   - Example: "What patterns of gene expression emerge when examining cancer cells under different conditions?"
+   - Value comes from discovering unexpected relationships
+   - Used in emerging fields or for complex systems
+   - Success means identifying novel patterns worthy of further investigation
+`;
+
 // Helper function to create the initial state, corrected to prioritize templates
 const getInitialState = () => {
   // Create initial content from the placeholders in sectionContent
@@ -131,7 +162,7 @@ const usePaperPlanner = () => {
     setCurrentSection(sectionId);
   }, []);
 
-  // MODIFIED: Handles both user messages and system-initiated Socratic prompts
+  // MODIFIED: Handles both user messages and system-initiated Socratic prompts with research approach context
   const handleSendMessage = useCallback(async (overrideMessage, isSocraticPrompt = false) => {
     const messageToSend = overrideMessage || currentMessage;
     
@@ -164,6 +195,13 @@ const usePaperPlanner = () => {
       // Get user's current content for this section
       const userContent = userInputs[currentSection] || '';
       
+      // Determine if we need research approach context based on the section
+      const needsResearchApproachContext = 
+        currentSection === 'hypothesis' || 
+        currentSection === 'needsresearch' || 
+        currentSection === 'exploratoryresearch' ||
+        currentSectionObj?.title?.toLowerCase().includes('approach');
+      
       // Generate appropriate system prompts based on whether this is a Socratic prompt or not
       let systemPrompt;
       let promptToSend;
@@ -181,7 +219,15 @@ Your approach:
 - Use questions to gently challenge assumptions
 - Keep responses concise and focused on the next step in their thinking
 
+${needsResearchApproachContext ? researchApproachContext : ''}
+
 The student is working on a scientific paper plan, specifically the "${currentSectionObj.title || 'Research'}" section.
+
+${needsResearchApproachContext ? `
+If they're working on a hypothesis section, focus on helping them articulate clear, competing explanations.
+If they're working on a needs-based section, focus on helping them clarify the stakeholder, problem, and proposed solution.
+If they're working on an exploratory section, focus on helping them articulate patterns they hope to discover.
+` : ''}
 
 This is the beginning of your conversation. Briefly introduce yourself, then ask 2-3 specific questions about their work that will help them think more deeply about what they're writing.
 
@@ -205,7 +251,15 @@ Your approach:
 - Use questions to gently challenge assumptions
 - Avoid lecturing or extensive explanations
 
+${needsResearchApproachContext ? researchApproachContext : ''}
+
 The student is working on the "${currentSectionObj.title || 'Research'}" section of their scientific paper plan.
+
+${needsResearchApproachContext ? `
+If they're working on a hypothesis section, focus on helping them articulate clear, competing explanations.
+If they're working on a needs-based section, focus on helping them clarify the stakeholder, problem, and proposed solution.
+If they're working on an exploratory section, focus on helping them articulate patterns they hope to discover.
+` : ''}
 
 Section instructions: ${instructionsText}
 
