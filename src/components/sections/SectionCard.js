@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Modified SectionCard with more explicit status classes for debugging
+// Modified SectionCard with only red/green status indicators
 const SectionCard = ({
   section,
   isCurrentSection,
@@ -25,28 +25,18 @@ const SectionCard = ({
     }
   }, [textValue]);
 
-  // DEBUGGING - Log the completion status when it changes
-  useEffect(() => {
-    console.log(`SectionCard ${section.id} mounted/updated with status: ${completionStatus}`);
-  }, [section.id, completionStatus]);
-
   // Determine the border classes based on completion status
+  // Now just using red/green (unstarted/complete)
   const getBorderClasses = () => {
     // Current section gets blue focus border regardless of completion
     if (isCurrentSection) {
       return 'border-4 border-blue-500 shadow-xl';
     }
     
-    // Otherwise, use completion status for border color with very explicit classes
-    switch (completionStatus) {
-      case 'complete':
-        return 'border-4 border-green-600 section-complete';
-      case 'progress':
-        return 'border-4 border-yellow-500 section-progress';
-      case 'unstarted':
-      default:
-        return 'border-4 border-red-300 section-unstarted';
-    }
+    // Just red/green for completion status - very simplified
+    return completionStatus === 'complete' 
+      ? 'border-4 border-green-600 section-complete'
+      : 'border-4 border-red-300 section-unstarted';
   };
 
   // Combine all the classes
@@ -75,19 +65,15 @@ const SectionCard = ({
           {section.title}
         </h2>
         
-        {/* Status Indicator for Debugging */}
+        {/* Status Indicator - Simplified to just red/green */}
         <div className="text-xs inline-block px-2 py-1 rounded" 
              style={{
                backgroundColor: 
-                 completionStatus === 'complete' ? '#d1fae5' : 
-                 completionStatus === 'progress' ? '#fef3c7' : 
-                 '#fee2e2',
+                 completionStatus === 'complete' ? '#d1fae5' : '#fee2e2',
                color: 
-                 completionStatus === 'complete' ? '#065f46' : 
-                 completionStatus === 'progress' ? '#92400e' : 
-                 '#b91c1c'
+                 completionStatus === 'complete' ? '#065f46' : '#b91c1c'
              }}>
-          {completionStatus}
+          {completionStatus === 'complete' ? 'complete' : 'empty'}
         </div>
       </div>
 
