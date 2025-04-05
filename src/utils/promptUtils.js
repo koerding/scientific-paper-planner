@@ -40,6 +40,13 @@ export const getApproachGuidanceText = (sectionId) => {
 };
 
 /**
+ * Alias for getApproachGuidanceText to maintain compatibility with existing code
+ * @param {string} sectionId - The section ID to get guidance for
+ * @returns {string} - The guidance text or empty string if not applicable
+ */
+export const getApproachGuidance = getApproachGuidanceText;
+
+/**
  * Replaces placeholders in a string with values from a parameters object.
  * @param {string} template - The string containing placeholders like {{key}}.
  * @param {object} params - An object where keys match placeholder names.
