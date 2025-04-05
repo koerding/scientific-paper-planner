@@ -2,7 +2,7 @@
 
 /**
  * Service for improving instructions based on user progress
- * SIMPLIFIED: Relies on well-structured prompts rather than complex parsing
+ * SIMPLIFIED: Uses more lenient completion status with only red/green options
  */
 import { callOpenAI } from './openaiService';
 import { 
@@ -13,7 +13,7 @@ import promptContent from '../data/promptContent.json';
 
 /**
  * Improves instructions for multiple sections, separating instructions and feedback.
- * Uses a simplified approach that relies on the LLM to format responses correctly.
+ * Uses a simplified approach with more lenient completion assessment.
  * @param {Array} currentSections - Array of section objects
  * @param {Object} userInputs - User inputs for all sections
  * @param {Object} sectionContent - The full section content object
@@ -83,23 +83,25 @@ For each section, I'll provide:
 For EACH section, please provide:
 1. Edited Instructions: Remove points the user has already addressed. If they've addressed all key points, provide a congratulatory message.
 2. Feedback: Brief, constructive feedback noting strengths, weaknesses, and suggestions.
-3. Completion Status: Assess as "complete", "progress", or "unstarted".
+3. Completion Status: ONLY use "complete" or "unstarted" as values, where:
+   - "complete" = The student wouldn't be embarrassed to show this to their professor (be VERY lenient here)
+   - "unstarted" = The section is essentially empty or unchanged from the template
 
 CRITICAL: Format your response as a valid JSON array of objects. Each object MUST have these exact keys:
 - "id": The section ID (string)
 - "editedInstructions": The edited instructions or congratulatory message (string)
 - "feedback": The feedback (string)
-- "completionStatus": The completion status (string)
+- "completionStatus": ONLY "complete" or "unstarted" (string)
 
 Here are the sections to improve:
 ${JSON.stringify(sectionsData, null, 2)}
 
 IMPORTANT:
-- Structure your response as clean, parseable JSON.
-- DO NOT prefix your response with "code blocks" or add any markdown formatting.
-- Start with "[" and end with "]".
-- Use proper JSON escaping for newlines (\\n) and quotes.
-- Be generous in assessing completion - if the user has made substantial progress, mark as "complete".
+- Use a VERY lenient standard for marking as "complete" - if the student has written anything meaningful at all, mark it as "complete"
+- Structure your response as clean, parseable JSON
+- DO NOT prefix your response with "code blocks" or add any markdown formatting
+- Start with "[" and end with "]"
+- Use proper JSON escaping for newlines (\\n) and quotes
 `;
 
     console.log("[Instruction Improvement] Sending batch request to OpenAI");
@@ -130,6 +132,14 @@ IMPORTANT:
         throw new Error("Response is not a JSON array");
       }
       
+      // Ensure we only have "complete" or "unstarted" as status values
+      improvedData.forEach(item => {
+        // If it's not specifically "unstarted", mark as "complete" (very lenient)
+        if (item.completionStatus !== "unstarted") {
+          item.completionStatus = "complete";
+        }
+      });
+      
       console.log(`[Instruction Improvement] Successfully parsed ${improvedData.length} improved sections`);
     } catch (error) {
       console.error("Error parsing instruction improvement response:", error);
@@ -155,7 +165,7 @@ IMPORTANT:
 
 /**
  * Updates section content with improved instructions AND feedback
- * Simplified version with better error handling
+ * Simplified version with better error handling and more lenient completion status
  * @param {Object} sectionContent - The original section content object
  * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback, completionStatus }
  * @returns {Object} - Updated section content object
@@ -211,10 +221,8 @@ export const updateSectionWithImprovedInstructions = (sectionContent, improvedDa
     section.instructions.text = improvement.editedInstructions || section.instructions.text;
     section.instructions.feedback = improvement.feedback || '';
     
-    // Store completion status if available
-    if (improvement.completionStatus) {
-      section.completionStatus = improvement.completionStatus;
-    }
+    // Store completion status if available - ensure it's only "complete" or "unstarted"
+    section.completionStatus = (improvement.completionStatus === "unstarted") ? "unstarted" : "complete";
   });
 
   return updatedSectionsData;
