@@ -1,3 +1,5 @@
+// FILE: src/services/instructionImprovementService.js
+
 /**
  * Service for improving instructions based on user progress
  * UPDATED: Added robust JSON parsing for truncated responses and fixed markdown formatting
@@ -304,13 +306,13 @@ Your task is, FOR **EACH** section provided:
 
 **Part 1: Generate Feedback**
 1.  Analyze the 'userContent' against the goals in 'originalInstructionsText'.
-2.  Write a constructive feedback section (max 150 words). Start with a brief (1-2 sentence) positive acknowledgement of specific points the user covered well, *but only if the user has made substantial, meaningful changes beyond the placeholder text*. Then, clearly list strengths, weaknesses, and specific, actionable suggestions for improvement based *only* on what remains unaddressed or needs refinement according to the 'originalInstructionsText' and general standards of scientific rigor/clarity. Format this feedback using markdown (e.g., use bold for **Strengths:**, **Weaknesses:**, **Suggestions:**).
+2.  Write a constructive feedback section (max 150 words). Start with a brief (1-2 sentence) positive acknowledgment of specific points the user covered well, *but only if the user has made substantial, meaningful changes beyond the placeholder text*. Then, clearly list strengths, weaknesses, and specific, actionable suggestions for improvement based *only* on what remains unaddressed or needs refinement according to the 'originalInstructionsText' and general standards of scientific rigor/clarity. Format this feedback using markdown (e.g., use bold for **Strengths:**, **Weaknesses:**, **Suggestions:**).
 3.  Include a clear assessment of completeness. Use phrases like "excellent work" for complete sections, "good start" or "making progress" for partial completion, and highlight specific missing elements for incomplete sections.
 
 **Part 2: Generate Edited Instructions**
 1.  Critically **EDIT** the 'originalInstructionsText'. Your **PRIMARY GOAL** is to **REMOVE** instruction points that the 'userContent' satisfactorily addresses.
-2.  Focus the remaining text *only* on what the user still needs to address or improve according to the 'originalInstructionsText'. Remove points if a reasonable person would agree the user's text addresses them. Feel free to make minor edits for flow (e.g., renumbering if needed). Preserve all markdown (headings, bold, lists).
-3.  **If the user has addressed ALL key points well,** replace the *entire* instruction text with a clear, positive, congratulatory message (e.g., "Excellent work on this section! You've addressed all the key points regarding X, Y, and Z. Ready for the next step!").
+2.  Focus the remaining text *only* on what the user still needs to address or improve according to the 'originalInstructionsText'. Remove points if a reasonable person would agree the user's text addresses them. Make minor edits for flow (e.g., renumbering if needed). Preserve all markdown otherwise (headings, bold, lists).
+3.  **If the user has addressed ALL key points well,** replace the *entire* instruction text with a clear, positive, congratulatory message (e.g., "Excellent work on this section! You've addressed all the key points regarding X[one keypoint they addressed well, Y[another key point], and Z [yet another key point]. Ready for the next step!").
 4.  **Otherwise (if points remain),** create the edited instruction text. Start with a brief (1-2 sentence) positive acknowledgement of specific points the user covered well, *but only if the user has made substantial, meaningful changes beyond the placeholder text* (same as step 1.2 in Feedback part) and then append the remaining, edited instructions.
 
 **CRITICAL REQUIREMENTS:**
