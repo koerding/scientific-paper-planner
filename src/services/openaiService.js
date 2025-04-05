@@ -12,7 +12,8 @@ const USE_FALLBACK = !apiKey || process.env.REACT_APP_USE_FALLBACK === 'true';
 // Add this to your openaiService.js file to enable debug mode and fallbacks
 // MODIFIED: Added currentChatHistory parameter
 const buildMessages = (prompt, contextType, userInputs, sections, currentChatHistory = []) => {
-  const systemMessage = `You are a helpful assistant helping a student who is planning a new scientific project. Context type: ${contextType}. Maintain conversation context based on previous messages.`;
+  // ** UPDATED SYSTEM MESSAGE (Option 2) **
+  const systemMessage = `You are an AI mentor guiding a student through the scientific project planning process. Adopt the persona of an experienced, encouraging professor. Foster critical thinking by asking insightful questions that prompt deeper reflection on their research question, design, and analysis. Offer constructive feedback and suggestions, maintaining a respectful and slightly formal tone appropriate for mentorship. Context type: ${contextType}. Maintain conversation context based on previous messages.`;
   const messages = [{ role: 'system', content: systemMessage }];
 
   // Add section context safely using the new 'instructions.text'
