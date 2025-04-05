@@ -36,17 +36,17 @@ const ModernChatInterface = ({
     if (currentSection && currentSection !== previousSectionRef.current) {
       // Only show initial prompt if there are no messages for this section yet
       const hasNoMessages = !chatMessages[currentSection] || chatMessages[currentSection].length === 0;
-      
+
       if (hasNoMessages && !hasShownInitialPrompt[currentSection]) {
         // Trigger initial Socratic question after a short delay
         const timer = setTimeout(() => {
           handleSendSocraticPrompt();
           setHasShownInitialPrompt(prev => ({...prev, [currentSection]: true}));
         }, 500);
-        
+
         return () => clearTimeout(timer);
       }
-      
+
       // Update ref to current section for next comparison
       previousSectionRef.current = currentSection;
     }
@@ -61,7 +61,7 @@ const ModernChatInterface = ({
   // Toggle chat window visibility
   const toggleChat = () => {
     setIsMinimized(!isMinimized);
-    
+
     // If opening chat for the first time with no messages, trigger Socratic prompt
     if (isMinimized && currentSection) {
       const hasNoMessages = !chatMessages[currentSection] || chatMessages[currentSection].length === 0;
@@ -79,15 +79,15 @@ const ModernChatInterface = ({
   const handleSendSocraticPrompt = () => {
     // This special message is picked up by the openAI service to trigger a Socratic-style response
     const specialPrompt = "__SOCRATIC_PROMPT__";
-    
+
     // Store the current message (if any)
     const tempMessage = currentMessage;
-    
+
     // Set special prompt and send
     setCurrentMessage(specialPrompt);
     setTimeout(() => {
       handleSendMessage(specialPrompt, true); // Pass true to indicate this is a system-initiated prompt
-      
+
       // Restore user's message (if any)
       setCurrentMessage(tempMessage);
     }, 50);
@@ -162,7 +162,7 @@ const ModernChatInterface = ({
               <div className="space-y-3">
                 {chatMessages[currentSection].map((message, index) => {
                   const isUser = message.role === 'user';
-                  
+
                   // Skip rendering special system-initiated prompts
                   if (message.content === "__SOCRATIC_PROMPT__" && isUser) {
                     return null;
