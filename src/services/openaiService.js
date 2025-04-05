@@ -3,6 +3,8 @@
 /**
  * Enhanced OpenAI service with better error reporting and fallback mode
  * MODIFIED: Accepts systemPrompt parameter for context-specific personas.
+ * MODIFIED: Improved handling of section-specific context data.
+ * MODIFIED: Enhanced to support truly Socratic-style conversations.
  */
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
@@ -10,42 +12,56 @@ const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
 // Fallback flag for development without API key
 const USE_FALLBACK = !apiKey || process.env.REACT_APP_USE_FALLBACK === 'true';
 
-// MODIFIED: Added systemPrompt parameter, removed internal systemMessage definition.
+// ENHANCED: Added support for special instructionsFeedback field and improved context handling
 const buildMessages = (prompt, contextType, userInputs, sections, currentChatHistory = [], systemPrompt = null) => {
   // Start with system prompt if provided
   const messages = systemPrompt ? [{ role: 'system', content: systemPrompt }] : [];
 
-  // Add section context safely using the new 'instructions.text'
-  // Note: Context might be less critical if the main prompt already contains it,
-  // but keeping it provides potentially useful background for the AI.
-  if (Array.isArray(sections)) {
-    sections.forEach((section, index) => {
-      if (!section || typeof section !== 'object' || !section.id || !section.title || !section.instructions || typeof section.instructions.text !== 'string') {
-          console.warn(`[openaiService buildMessages] Skipping invalid section at index ${index}`);
-          return;
-      }
+  // If it's a Socratic prompt indicator, we don't need to add section context 
+  // since it's already included in the system prompt
+  if (prompt === "__SOCRATIC_PROMPT__" && systemPrompt) {
+    // For Socratic prompts, we rely on the custom system prompt that already has context
+    return messages;
+  }
 
-      const instructionText = section.instructions.text;
-      const userInput = userInputs && section.id ? (userInputs[section.id] || '') : '';
-      const safeUserInput = (typeof userInput === 'string' ? userInput : JSON.stringify(userInput)) || 'N/A';
-
-      // Avoid duplicating system role message if systemPrompt wasn't provided initially
-      const roleForContext = messages.length > 0 ? 'user' : 'system';
-
+  // For regular messages, add section context (if not already in system prompt)
+  if (!systemPrompt || !systemPrompt.includes("Section instructions:")) {
+    // Find the specific section for the current context if available
+    const currentSectionObj = Array.isArray(sections) ? 
+      sections.find(s => s && s.id === contextType) : null;
+    
+    if (currentSectionObj) {
+      const sectionTitle = currentSectionObj.title || 'Unknown Section';
+      const instructionText = currentSectionObj.instructions?.text || 'No instructions available';
+      const feedbackText = currentSectionObj.instructions?.feedback || '';
+      const userInput = userInputs && currentSectionObj.id ? (userInputs[currentSectionObj.id] || '') : '';
+      
       messages.push({
-          role: roleForContext, // Use system if no system prompt, otherwise user for context
-          content: `Context for Section "${section.title}" (ID: ${section.id}):
-Instructions: ${instructionText || 'N/A'}
-Current User Input: ${safeUserInput}`
+        role: 'system',
+        content: `Context for Section "${sectionTitle}" (ID: ${currentSectionObj.id}):
+Instructions: ${instructionText}
+${feedbackText ? `Recent Feedback: ${feedbackText}\n` : ''}
+Current User Input: ${userInput || 'No content yet'}`
       });
-    });
-  } else {
-       console.error("[openaiService buildMessages] 'sections' is not an array:", sections);
+    }
+    else if (Array.isArray(sections)) {
+      // If specific section not found, provide minimal context about all sections
+      messages.push({
+        role: 'system',
+        content: `Working on a scientific paper plan with multiple sections.
+Current section: ${contextType || 'general'}`
+      });
+    }
   }
 
   // Prepend chat history (if any exists)
   if (Array.isArray(currentChatHistory)) {
-    currentChatHistory.forEach(msg => {
+    // Filter out any special prompt markers from history
+    const filteredHistory = currentChatHistory.filter(msg => 
+      !(msg.role === 'user' && msg.content === "__SOCRATIC_PROMPT__")
+    );
+    
+    filteredHistory.forEach(msg => {
       if (msg && (msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string') {
         messages.push({ role: msg.role, content: msg.content });
       } else {
@@ -54,14 +70,27 @@ Current User Input: ${safeUserInput}`
     });
   }
 
-  // Add the latest user prompt
-  messages.push({ role: 'user', content: prompt });
+  // Add the latest user prompt (unless it's a special prompt marker)
+  if (prompt !== "__SOCRATIC_PROMPT__") {
+    messages.push({ role: 'user', content: prompt });
+  }
+  
   return messages;
 };
 
-
-// Mock response function (remains unchanged)
+// Enhanced mock responses for better testing
 const mockResponse = (contextType, prompt) => {
+  if (prompt === "__SOCRATIC_PROMPT__") {
+    // Truly Socratic conversation starter
+    return `Hey there! I'm here to help you think through your ${contextType} section.
+
+What aspects of this topic are you finding most intriguing right now? 
+
+Have you considered what specific gap in the literature your work might address?
+
+What's been the most challenging part of formulating this section so far?`;
+  }
+  
   if (contextType === 'improve_instructions_batch') {
     return `
 Here are the instruction texts:
@@ -82,17 +111,32 @@ Here are the instruction texts:
 ]`;
   }
 
-  // For regular chat messages
-  return `This is a mock response because no OpenAI API key is configured.
-Please set REACT_APP_OPENAI_API_KEY in your environment variables or .env file.
+  // For regular chat messages - use question-based responses
+  const questions = [
+    "What led you to focus on this particular aspect?",
+    "How might this connect to the broader literature in your field?",
+    "Have you considered approaching this from a different angle?",
+    "What assumptions might be hidden in this formulation?",
+    "How would you explain the significance of this to someone outside your field?",
+    "What's the most surprising insight you've had while working on this?",
+    "Which part of this feels most uncertain to you right now?"
+  ];
+  
+  // Pick 1-2 random questions to include
+  const randomQuestion1 = questions[Math.floor(Math.random() * questions.length)];
+  let randomQuestion2 = questions[Math.floor(Math.random() * questions.length)];
+  while (randomQuestion2 === randomQuestion1) {
+    randomQuestion2 = questions[Math.floor(Math.random() * questions.length)];
+  }
 
-For a real application, I would respond to your prompt about "${contextType}" with helpful information based on the conversation history provided.
+  return `That's an interesting point about ${contextType}! 
 
-For testing purposes, you can continue using the application with this mock mode.`;
+I'm curious - ${randomQuestion1}
+
+${Math.random() > 0.5 ? randomQuestion2 : ''}`;
 };
 
-// Main function to call the OpenAI API
-// MODIFIED: Added systemPrompt parameter
+// Main function to call the OpenAI API - enhanced with special handling for Socratic prompts
 export const callOpenAI = async (
     prompt,
     contextType = "general",
@@ -100,19 +144,25 @@ export const callOpenAI = async (
     sections = [],
     options = {},
     chatHistory = [],
-    systemPrompt = null // NEW: Optional system prompt for specific persona
+    systemPrompt = null
  ) => {
 
-  console.log(`[openaiService] API Call Request - Context: ${contextType}`, {
-    apiKeyConfigured: !!apiKey,
-    modelUsed: model,
-    useFallback: USE_FALLBACK,
-    promptLength: prompt.length,
-    userInputsCount: Object.keys(userInputs).length,
-    sectionsCount: Array.isArray(sections) ? sections.length : 'Not an array',
-    chatHistoryLength: Array.isArray(chatHistory) ? chatHistory.length : 'Not an array',
-    hasSystemPrompt: !!systemPrompt
-  });
+  // Special handling for Socratic prompt
+  const isSocraticPrompt = prompt === "__SOCRATIC_PROMPT__";
+  if (isSocraticPrompt) {
+    console.log(`[openaiService] Socratic Prompt Request - Context: ${contextType}`);
+  } else {
+    console.log(`[openaiService] API Call Request - Context: ${contextType}`, {
+      apiKeyConfigured: !!apiKey,
+      modelUsed: model,
+      useFallback: USE_FALLBACK,
+      promptLength: prompt.length,
+      userInputsCount: Object.keys(userInputs).length,
+      sectionsCount: Array.isArray(sections) ? sections.length : 'Not an array',
+      chatHistoryLength: Array.isArray(chatHistory) ? chatHistory.length : 'Not an array',
+      hasSystemPrompt: !!systemPrompt
+    });
+  }
 
   // If no API key is configured, use mock responses
   if (USE_FALLBACK) {
@@ -122,14 +172,19 @@ export const callOpenAI = async (
   }
 
   const apiUrl = "https://api.openai.com/v1/chat/completions";
+  
   // Pass systemPrompt to buildMessages
   const messages = buildMessages(prompt, contextType, userInputs, sections, chatHistory, systemPrompt);
+
+  // If it's a Socratic prompt, use a slightly different configuration
+  const temperature = isSocraticPrompt ? 0.9 : (options.temperature ?? 0.7);
+  const max_tokens = options.max_tokens ?? 1024;
 
   const body = JSON.stringify({
     model: model,
     messages: messages,
-    temperature: options.temperature ?? 0.7,
-    max_tokens: options.max_tokens ?? 1024,
+    temperature: temperature,
+    max_tokens: max_tokens,
   });
 
   try {
@@ -177,3 +232,6 @@ export const callOpenAI = async (
     throw new Error(`OpenAI API Error: ${error.message || 'Unknown error'}`);
   }
 };
+
+// Export the helper functions for testing
+export { buildMessages, mockResponse };
