@@ -8,11 +8,9 @@ import { callOpenAI } from './openaiService';
 import {
   isResearchApproachSection,
   buildSystemPrompt,
-  buildTaskPrompt, // Ensure buildTaskPrompt is imported if used (added in previous step)
-  generateMockResponse // Ensure generateMockResponse is imported if used (added in previous step)
+  buildTaskPrompt,
+  generateMockResponse
 } from '../utils/promptUtils';
-// Removed unused import of promptContent if buildTaskPrompt handles it
-// import promptContent from '../data/promptContent.json'; // Removed if not directly used
 
 /**
  * Improves instructions for multiple sections, separating instructions and feedback.
@@ -171,23 +169,21 @@ export const improveBatchInstructions = async (
 };
 
 /**
- * Updates section content array with improved instructions AND feedback.
- * This function now takes the *current* sections array (from state) and updates it.
- * REMOVED EXPORT as it doesn't seem to be used in usePaperPlanner hook.
- * @param {Array} currentSections - The current array of section objects from state.
+ * Updates section content object with improved instructions AND feedback.
+ * @param {Object} currentSections - The current sections object from state.
  * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback, completionStatus } from the API.
- * @returns {Array} - A new array with updated section content. Returns the original array if inputs are invalid.
+ * @returns {Object} - A new object with updated section content.
  */
-const updateSectionsWithImprovedInstructions = (currentSections, improvedData) => { // <--- REMOVED 'export'
+export const updateSectionWithImprovedInstructions = (currentSections, improvedData) => {
   // Validate inputs
-  if (!Array.isArray(currentSections)) {
-    console.error("Invalid currentSections: Expected an array");
-    return currentSections || []; // Return original or empty array
+  if (!currentSections || typeof currentSections !== 'object') {
+    console.error("Invalid currentSections: Expected an object");
+    return currentSections || {}; // Return original or empty object
   }
 
   if (!Array.isArray(improvedData)) {
     console.error("Invalid improvedData: Expected an array");
-    return [...currentSections]; // Return a shallow copy of the original
+    return {...currentSections}; // Return a shallow copy of the original
   }
 
   // Create a deep copy to avoid modifying the original state directly
@@ -196,42 +192,41 @@ const updateSectionsWithImprovedInstructions = (currentSections, improvedData) =
     updatedSections = JSON.parse(JSON.stringify(currentSections));
   } catch(e) {
     console.error("Error creating deep copy of sections:", e);
-    return [...currentSections]; // Return shallow copy on error
+    return {...currentSections}; // Return shallow copy on error
   }
-
 
   // Update each section based on the improved data
   improvedData.forEach(improvement => {
     if (!improvement?.id) return; // Skip if improvement object is invalid
 
-    // Find the section in our deep copy
-    const sectionIndex = updatedSections.findIndex(s => s?.id === improvement.id);
+    // Check if sections is an array (original code assumed it was)
+    if (Array.isArray(updatedSections.sections)) {
+      // Find the section in our deep copy
+      const sectionIndex = updatedSections.sections.findIndex(s => s?.id === improvement.id);
 
-    if (sectionIndex === -1) {
-      console.warn(`Section not found in current state: ${improvement.id}. Cannot apply improvement.`);
-      return; // Skip if section doesn't exist in the current state
+      if (sectionIndex === -1) {
+        console.warn(`Section not found in current state: ${improvement.id}. Cannot apply improvement.`);
+        return; // Skip if section doesn't exist in the current state
+      }
+
+      const section = updatedSections.sections[sectionIndex];
+      if (!section) return; // Should not happen if findIndex worked, but safety check
+
+      // Initialize instructions object if it doesn't exist
+      if (!section.instructions) {
+        section.instructions = {};
+      }
+
+      // Update the instruction text, feedback, and completion status
+      section.instructions.text = improvement.editedInstructions || section.instructions.text || '';
+      section.instructions.feedback = improvement.feedback || ''; // Store feedback
     }
-
-    const section = updatedSections[sectionIndex];
-    if (!section) return; // Should not happen if findIndex worked, but safety check
-
-    // Initialize instructions object if it doesn't exist
-    if (!section.instructions) {
-      section.instructions = {};
+    // If updatedSections is not what we expect, log error
+    else {
+      console.error("Invalid sections structure:", updatedSections);
     }
-
-    // Update the instruction text, feedback, and completion status
-    // Use the improved data, falling back to existing data only if necessary (though shouldn't be needed)
-    section.instructions.text = improvement.editedInstructions || section.instructions.text || '';
-    section.instructions.feedback = improvement.feedback || ''; // Store feedback
-    // Ensure completion status is only "complete" or "unstarted"
-    section.completionStatus = (improvement.completionStatus === "unstarted") ? "unstarted" : "complete";
-
   });
 
-  // Return the new array with updated sections
+  // Return the new object with updated sections
   return updatedSections;
 };
-
-// Removed unused import if promptContent is only used via buildTaskPrompt
-// import promptContent from '../data/promptContent.json';
