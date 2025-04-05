@@ -136,14 +136,14 @@ const usePaperPlanner = () => {
     setCurrentSection(sectionId);
   }, []);
 
-  // REFACTORED: Handles both user messages and system-initiated Socratic prompts using utilities
-  const handleSendMessage = useCallback(async (overrideMessage, isSocraticPrompt = false) => {
+  // MODIFIED: Always uses Socratic style, whether for initial prompt or regular messages
+  const handleSendMessage = useCallback(async (overrideMessage, isInitialPrompt = false) => {
     const messageToSend = overrideMessage || currentMessage;
     
-    if ((!messageToSend.trim() || !currentSection) && !isSocraticPrompt) return;
+    if ((!messageToSend.trim() || !currentSection) && !isInitialPrompt) return;
 
-    // For standard user messages (not Socratic prompts)
-    if (!isSocraticPrompt) {
+    // For standard user messages (not initial prompts)
+    if (!isInitialPrompt) {
       const newUserMessage = { role: 'user', content: messageToSend };
       const historyForApi = chatMessages[currentSection] || [];
 
@@ -175,41 +175,26 @@ const usePaperPlanner = () => {
       // Get approach-specific guidance if needed
       const approachGuidance = needsResearchContext ? getApproachGuidance(currentSection) : '';
       
-      // Generate appropriate system prompts based on whether this is a Socratic prompt or not
-      let systemPrompt;
-      let promptToSend;
-      
-      if (isSocraticPrompt) {
-        // For Socratic prompts, use a truly question-based approach without giving answers
-        systemPrompt = buildSystemPrompt('socraticChat', {
-          needsResearchContext,
-          sectionTitle: currentSectionObj.title || 'Research',
-          approachGuidance: approachGuidance,
-          instructionsText,
-          userContent: userContent || "They haven't written anything substantial yet."
-        });
-        
-        // Create a special prompt that requests Socratic guidance
-        promptToSend = `I'm working on the ${currentSectionObj.title || 'current'} section of my scientific paper plan. Can you help me think through this?`;
-      } else {
-        // For regular conversations, maintain the Socratic approach but be more responsive
-        systemPrompt = buildSystemPrompt('regularChat', {
-          needsResearchContext,
-          sectionTitle: currentSectionObj.title || 'Research',
-          approachGuidance: approachGuidance,
-          instructionsText,
-          feedbackText,
-          userContent: userContent || "They haven't written anything substantial yet."
-        });
-        
-        promptToSend = messageToSend;
-      }
+      // Generate Socratic system prompt - we use the same style for all messages now
+      const systemPrompt = buildSystemPrompt('chat', {
+        needsResearchContext,
+        sectionTitle: currentSectionObj.title || 'Research',
+        approachGuidance: approachGuidance,
+        instructionsText,
+        feedbackText,
+        userContent: userContent || "They haven't written anything substantial yet."
+      });
       
       // Get chat history, but filter out any system-initiated prompts
       const historyForApi = chatMessages[currentSection] || [];
       const filteredHistory = historyForApi.filter(msg => 
         !(msg.role === 'user' && msg.content === "__SOCRATIC_PROMPT__")
       );
+
+      // For initial prompts, we use a special message
+      const promptToSend = isInitialPrompt 
+        ? `I'm working on the ${currentSectionObj.title || 'current'} section of my scientific paper plan. Can you help me think through this?` 
+        : messageToSend;
 
       // Call OpenAI with the appropriate prompts and context
       const response = await callOpenAI(
@@ -222,8 +207,8 @@ const usePaperPlanner = () => {
         systemPrompt            // The specific system prompt
       );
       
-      // For Socratic prompts, we need to add both the system prompt and the response
-      if (isSocraticPrompt) {
+      // For initial prompts, we need to add both the system prompt and the response
+      if (isInitialPrompt) {
         // Add a hidden user message (will be filtered out in display)
         const systemUserMessage = { role: 'user', content: "__SOCRATIC_PROMPT__" };
         
@@ -249,8 +234,8 @@ const usePaperPlanner = () => {
     } catch (error) {
       console.error("Error sending message:", error);
       
-      // For Socratic prompts, we need to add the system prompt first
-      if (isSocraticPrompt) {
+      // For initial prompts, we need to add the system prompt first
+      if (isInitialPrompt) {
         const systemUserMessage = { role: 'user', content: "__SOCRATIC_PROMPT__" };
         const errorMessage = { 
           role: 'assistant', 
@@ -424,7 +409,7 @@ const usePaperPlanner = () => {
     loading,
     showConfirmDialog,
     showExamplesDialog,
-    currentSectionData,  // NEW: Added to provide section data to chat
+    currentSectionData,  // Provides section data to chat
     setChatMessages,
     setUserInputs,
     setCurrentMessage,
