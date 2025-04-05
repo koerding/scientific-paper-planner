@@ -1,3 +1,5 @@
+// FILE: src/services/documentImportService.js
+
 /**
  * Service for importing content from PDF and Word documents using text extraction.
  * Uses OpenAI to extract structured information from scientific papers.
@@ -146,44 +148,42 @@ Extract key components from the provided scientific paper text and format them i
 1. Use ONLY plain ASCII characters.
 2. Do NOT use any HTML tags.
 3. Keep content simple and straightforward.
-4. Do NOT use citations or references.
-5. Replace mathematical variables with text descriptions.
-6. Use only single quotes for nested strings if needed.
-7. Avoid complex descriptions.
-8. Use standard newlines only.
-9. Ensure JSON remains valid.
+4. Replace mathematical variables with text descriptions.
+5. Use only single quotes for nested strings if needed.
+6. Use standard newlines only.
+7. Ensure JSON remains valid.
 
 ## Research Approach Selection
 Determine which research approach the paper likely uses based *only* on the provided text:
-1. Hypothesis-driven
-2. Needs-based
-3. Exploratory
+1. Hypothesis-driven (distinguish between hypotheses)
+2. Needs-based (solve a problem, e.g. engineering or medicine) 
+3. Exploratory (take data and see what is there)
 
 ## Data Collection Method Selection
 Determine which data collection method the paper likely uses based *only* on the provided text:
 1. Experiment
-2. Existing Data
+2. Analysis of Existing Data
 
 ## Output Format
 Output valid JSON matching this exact structure:
 {
   "userInputs": {
     "question": "Research Question: [simple description based on text]\\n\\nSignificance/Impact: [simple description based on text]",
-    "audience": "Target Audience/Community (research fields/disciplines):\\n1. [audience1 based on text]\\n2. [audience2 based on text]\\n\\nSpecific Researchers/Labs (individual scientists or groups):\\n1. [researcher1 based on text]\\n2. [researcher2 based on text]",
+    "audience": "Target Audience/Community (research fields/disciplines):\\n1. [audience1 based on text]\\n2. [audience2 based on text]\\n3. [audience3 based on text]\\n4. [audience4 based on text]\\n5. [audience5 based on text] \\n\\nSpecific Researchers/Labs (individual scientists or groups):\\n1. [researcher1 based on text]\\n2. [researcher2 based on text]\\n3. [researcher1 based on text]\\n4. [researcher1 based on text]\\n5. [researcher1 based on text]",
 
     // CHOOSE ONE based on text:
-    "hypothesis": "Hypothesis 1: [simple description based on text]\\n\\nHypothesis 2: [simple description based on text]\\n\\nWhy distinguishing these hypotheses matters:\\n- [reason1 based on text]\\n- [reason2 based on text]",
+    "hypothesis": "Hypothesis 1: [simple description based on text, only mention lack of clarity if it is truly unclear]\\n\\nHypothesis 2: [simple description based on text, only mention lack of clarity if it is truly unclear]\\n\\nWhy distinguishing these hypotheses matters:\\n- [reason1 based on text]\\n- [reason2 based on text]",
     "needsresearch": "Who needs this research:\\n[stakeholders based on text]\\n\\nWhy they need it:\\n[problem description based on text]\\n\\nCurrent approaches and limitations:\\n[existing solutions based on text]\\n\\nSuccess criteria:\\n[evaluation methods based on text]\\n\\nAdvantages of this approach:\\n[benefits based on text]",
-    "exploratoryresearch": "Phenomena explored:\\n[description based on text]\\n\\nPotential discoveries your approach might reveal:\\n1. [finding1 based on text]\\n2. [finding2 based on text]\\n\\nValue of this exploration to the field:\\n[importance based on text]\\n\\nAnalytical approaches for discovery:\\n[methods based on text]\\n\\nStrategy for validating findings:\\n[validation based on text]",
+    "exploratoryresearch": "Phenomena explored:\\n[description based on text]\\n\\nPotential discoveries your approach might reveal:\\n1. [finding1 based on text, if unspecified mention]\\n2. [finding2 based on text, if unspecified mention]\\n\\nValue of this exploration to the field:\\n[importance based on text, mention if there is lack of clarity]\\n\\nAnalytical approaches for discovery:\\n[methods based on text]\\n\\nStrategy for validating findings:\\n[validation based on text]",
 
-    "relatedpapers": "Most similar papers that test related hypotheses:\\n1. [paper1 based on text]\\n2. [paper2 based on text]\\n3. [paper3 based on text]\\n4. [paper4 based on text]\\n5. [paper5 based on text]",
+    "relatedpapers": "Most similar papers that test related hypotheses:\\n1. [paper1 based on text, ideally give full reference]\\n2. [paper2 based on text, ideally give full reference]\\n3. [paper3 based on text, ideally give full reference]\\n4. [paper4 based on text, ideally give full reference]\\n5. [paper5 based on text, ideally give full reference]",
 
     // CHOOSE ONE based on text:
-    "experiment": "Key Variables:\\n- Independent: [variables based on text]\\n- Dependent: [variables based on text]\\n- Controlled: [variables based on text]\\n\\nSample & Size Justification: [simple description based on text]\\n\\nData Collection Methods: [simple description based on text]\\n\\nPredicted Results: [simple description based on text]\\n\\nPotential Confounds & Mitigations: [simple description based on text]",
-    "existingdata": "Dataset name and source:\\n[description based on text]\\n\\nOriginal purpose of data collection:\\n[description based on text]\\n\\nRights/permissions to use the data:\\n[description based on text]\\n\\nData provenance and quality information:\\n[description based on text]\\n\\nRelevant variables in the dataset:\\n[description based on text]\\n\\nPotential limitations of using this dataset:\\n[description based on text]",
+    "experiment": "Key Variables:\\n- Independent: [variables based on text, mention if the text does not mention any]\\n- Dependent: [variables based on text, mention if the text does not mention any]\\n- Controlled: [variables based on text, mention if the text does not mention any]\\n\\nSample & Size Justification: [simple description based on text, mention if the text does not mention any]\\n\\nData Collection Methods: [simple description based on text, mention if the text does not mention any]\\n\\nPredicted Results: [simple description based on text, mention if the text does not mention any]\\n\\nPotential Confounds & Mitigations: [simple description based on text, mention if the text does not mention any]",
+    "existingdata": "Dataset name and source:\\n[description based on text, mention if the text does not specify]\\n\\nOriginal purpose of data collection:\\n[description based on text, mention if text does not specify]\\n\\nRights/permissions to use the data:\\n[description based on text, mention if the text does not specify]\\n\\nData provenance and quality information:\\n[description based on text, mention if the text does not specify]\\n\\nRelevant variables in the dataset:\\n[description based on text, mention if the text does not specify]\\n\\nPotential limitations of using this dataset:\\n[description based on text, mention if not specified]",
 
-    "analysis": "Data Cleaning & Exclusions:\\n[simple description based on text]\\n\\nPrimary Analysis Method:\\n[simple description based on text]\\n\\nHow Analysis Addresses Research Question:\\n[simple description based on text]\\n\\nUncertainty Quantification:\\n[simple description based on text]\\n\\nSpecial Cases Handling:\\n[simple description based on text]",
-    "process": "Skills Needed vs. Skills I Have:\\n[simple description based on text]\\n\\nCollaborators & Their Roles:\\n[simple description based on text]\\n\\nData/Code Sharing Plan:\\n[simple description based on text]\\n\\nTimeline & Milestones:\\n[simple description based on text]\\n\\nObstacles & Contingencies:\\n[simple description based on text]",
+    "analysis": "Data Cleaning & Exclusions:\\n[simple description based on text, mention if the text does not specify]\\n\\nPrimary Analysis Method:\\n[simple description based on text]\\n\\nHow Analysis Addresses Research Question:\\n[simple description based on text, mention if this is not clear]\\n\\nUncertainty Quantification:\\n[simple description based on text, this includes any statistical method, mention if not specified]\\n\\nSpecial Cases Handling:\\n[simple description based on text]",
+    "process": "Skills Needed vs. Skills I Have:\\n[simple description based on text, guess where necessary]\\n\\nCollaborators & Their Roles:\\n[simple description based on text, guess where necessary]\\n\\nData/Code Sharing Plan:\\n[simple description based on text]\\n\\nTimeline & Milestones:\\n[simple description based on text]\\n\\nObstacles & Contingencies:\\n[simple description based on text, guess where necessary]",
     "abstract": "Background: [simple description based on text]\\n\\nObjective/Question: [simple description based on text]\\n\\nMethods: [simple description based on text]\\n\\n(Expected) Results: [simple description based on text]\\n\\nConclusion/Implications: [simple description based on text]"
   },
   "chatMessages": {},
@@ -193,7 +193,8 @@ Output valid JSON matching this exact structure:
 
 ## IMPORTANT:
 - Base extraction *solely* on the provided text, which might be messy or truncated.
-- If information for a field is not found, explicitly state 'Not found in text'.
+- If information for a field is not found, explicitly state 'Not found in text'. 
+- If educated guesses are needed, make sure to communicate the lack of clarity.
 - Include ONLY ONE research approach field.
 - Include ONLY ONE data collection field.
 - Adhere STRICTLY to all JSON formatting rules.
