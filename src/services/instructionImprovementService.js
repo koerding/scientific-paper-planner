@@ -1,17 +1,100 @@
 // FILE: src/services/instructionImprovementService.js
 
 /**
+ * Updates section content with improved instructions AND feedback
+ * Refactored to check sectionContent validity *before* try block.
+ * @param {Object} sectionContent - The original section content object
+ * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback, completionStatus }
+ * @returns {Object} - Updated section content object
+ */
+export const updateSectionWithImprovedInstructions = (sectionContent, improvedData) => {
+    // Validate inputs upfront
+    if (typeof sectionContent !== 'object' || sectionContent === null) {
+         console.error("updateSectionWithImprovedInstructions received invalid sectionContent:", sectionContent);
+         return { sections: [] }; // Return default structure immediately
+    }
+
+    if (!Array.isArray(improvedData)) {
+        console.error("Invalid improvedData format: Expected an array.");
+         // Return a safe copy of the original content if improvedData is bad
+        try {
+            return JSON.parse(JSON.stringify(sectionContent));
+        } catch(e) {
+            console.error("Error deep copying sectionContent during improvedData validation failure", e);
+            return { sections: [] };
+        }
+    }
+
+    let updatedSectionsData;
+    try {
+        // Deep copy is likely safe now after the initial check
+        updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
+    } catch(e) {
+        console.error("Error deep copying section content", e);
+        return { sections: [] }; // Return default structure on copy error
+    }
+
+    // Ensure sections array exists after copy
+    if (!Array.isArray(updatedSectionsData.sections)) {
+        console.error("updatedSectionsData does not have a valid sections array after copy.");
+        updatedSectionsData.sections = [];
+    }
+
+    improvedData.forEach(improvement => {
+        if (!improvement || typeof improvement.id !== 'string' ||
+            typeof improvement.editedInstructions !== 'string' ||
+            typeof improvement.feedback !== 'string') {
+            console.warn("Skipping invalid improvement object:", improvement);
+            return; // Skip this invalid item
+        }
+
+        const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
+
+        if (sectionIndex !== -1) {
+             if (!updatedSectionsData.sections[sectionIndex]) {
+                 console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
+                 return;
+             }
+             if (!updatedSectionsData.sections[sectionIndex].instructions) {
+                 updatedSectionsData.sections[sectionIndex].instructions = {};
+                 console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
+             }
+
+             const fixedInstructions = fixMarkdownFormatting(improvement.editedInstructions);
+             const fixedFeedback = fixMarkdownFormatting(improvement.feedback);
+
+             updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions;
+             updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback;
+
+             // Store completion status if available
+             if (improvement.completionStatus) {
+                 updatedSectionsData.sections[sectionIndex].completionStatus = improvement.completionStatus;
+             }
+
+             delete updatedSectionsData.sections[sectionIndex].instructions.description;
+             delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
+
+        } else {
+            console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
+        }
+    });
+
+    return updatedSectionsData;
+};
+
+
+// Ensure we export both functions
+export { repairTruncatedJson, fixMarkdownFormatting, detectCompletionStatus };
  * Service for improving instructions based on user progress
- * UPDATED: Added robust JSON parsing for truncated responses and fixed markdown formatting
- * UPDATED: Separated AI response into 'editedInstructions' and 'feedback'
- * UPDATED: Enhanced to also determine completion status of sections
- * UPDATED: Made completion status detection much more generous
- * MODIFIED: Defines and passes its own system prompt to callOpenAI.
+ * REFACTORED: Uses centralized prompt content and utilities
  */
 import { callOpenAI } from './openaiService';
-
-// --- Helper functions (repairTruncatedJson, detectCompletionStatus, fixMarkdownFormatting) remain unchanged ---
-// (Include the existing code for these functions here)
+import { 
+  isResearchApproachSection, 
+  buildSystemPrompt, 
+  getApproachGuidance 
+} from '../utils/promptUtils';
+import promptContent from '../data/promptContent.json';
 
 /**
  * Advanced JSON parser that handles truncated API responses
@@ -242,10 +325,10 @@ function fixMarkdownFormatting(text) {
   return fixed;
 }
 
-
 /**
  * Improves instructions for multiple sections, now separating instructions and feedback.
  * Also adds completion status detection for each section.
+ * REFACTORED: Uses centralized prompt utilities.
  * @param {Array} currentSections - Array of section objects (full list)
  * @param {Object} userInputs - User inputs for all sections
  * @param {Object} sectionContent - The full section content object (used for original instructions)
@@ -267,7 +350,6 @@ export const improveBatchInstructions = async (
         return typeof content === 'string' && content.trim() !== '' && content !== placeholder;
     });
 
-
     if (sectionsWithProgress.length === 0) {
        console.log("[Instruction Improvement] No sections found with user progress.");
       return { success: false, message: "No sections with progress to improve" };
@@ -281,73 +363,42 @@ export const improveBatchInstructions = async (
             return null;
         }
         const userContent = userInputs[sectionId] || '';
+        
+        // Determine if this is a research approach section
+        const needsResearchContext = isResearchApproachSection(sectionId, originalSection);
+        
         return {
             id: sectionId,
             title: originalSection.title,
             originalInstructionsText: originalSection.instructions.text, // Use original text
-            userContent
+            userContent,
+            needsResearchContext
         };
     }).filter(data => data !== null);
-
 
     if (sectionsData.length === 0) {
       console.log("[Instruction Improvement] No valid sections found with user progress after filtering.");
       return { success: false, message: "No valid sections with progress to improve" };
     }
 
-    // *** Define System Prompt for Instruction Editing (Meticulous, Careful) ***
-    const instructionEditSystemPrompt = `You are an AI assistant acting as a meticulous editor for a scientific planning tool. Carefully analyze the user's input against the provided original instructions. Generate precise feedback and edited instructions according to the specified format. Focus on accuracy, clarity, and adherence to the editing rules. Note any ambiguities or areas needing further user clarification.`;
+    // Build the system prompt using our utility
+    const systemPrompt = buildSystemPrompt('instructionImprovement', {
+      needsResearchContext: sectionsData.some(section => section.needsResearchContext)
+    });
 
-    // *** Build the main prompt for the AI ***
-    // (This remains largely the same, defining the task and JSON structure)
-    const mainPrompt = `
-Act as a helpful editor for a scientific paper planning tool for PhD students. You will receive sections the user has worked on.
-
-For each section PROVIDED BELOW, I'll provide:
-1. The section ID ('id') and title ('title').
-2. The **original** instruction text given to the user ('originalInstructionsText').
-3. The user's current content for that section ('userContent').
-
-Your task is, FOR **EACH** section provided:
-
-**Part 1: Generate Feedback**
-1.  Analyze the 'userContent' against the goals in 'originalInstructionsText'.
-2.  Write a constructive feedback section (max 150 words). Start with a brief (1-2 sentence) positive acknowledgment of specific points the user covered well, *but only if the user has made substantial, meaningful changes beyond the placeholder text*. Then, clearly list strengths, weaknesses, and specific, actionable suggestions for improvement based *only* on what remains unaddressed or needs refinement according to the 'originalInstructionsText' and general standards of scientific rigor/clarity. Format this feedback using markdown (e.g., use bold for **Strengths:**, **Weaknesses:**, **Suggestions:**).
-3.  Include a clear assessment of completeness. Use phrases like "excellent work" for complete sections, "good start" or "making progress" for partial completion, and highlight specific missing elements for incomplete sections.
-
-**Part 2: Generate Edited Instructions**
-1.  Critically **EDIT** the 'originalInstructionsText'. Your **PRIMARY GOAL** is to **REMOVE** instruction points that the 'userContent' satisfactorily addresses.
-2.  Focus the remaining text *only* on what the user still needs to address or improve according to the 'originalInstructionsText'. Remove points if a reasonable person would agree the user's text addresses them. Make minor edits for flow (e.g., renumbering if needed). Preserve all markdown otherwise (headings, bold, lists).
-3.  **If the user has addressed ALL key points well,** replace the *entire* instruction text with a clear, positive, congratulatory message (e.g., "Excellent work on this section! You've addressed all the key points regarding X[one keypoint they addressed well, Y[another key point], and Z [yet another key point]. Ready for the next step!").
-4.  **Otherwise (if points remain),** create the edited instruction text. Start with a brief (1-2 sentence) positive acknowledgement of specific points the user covered well, *but only if the user has made substantial, meaningful changes beyond the placeholder text* (same as step 1.2 in Feedback part) and then append the remaining, edited instructions.
-
-**CRITICAL REQUIREMENTS:**
-* **JSON Output:** Respond ONLY with a valid JSON array. Each object in the array must correspond to one of the input section IDs and have EXACTLY these three keys:
-    * \`"id"\`: (string) The section ID.
-    * \`"editedInstructions"\`: (string) The result from Part 2 (edited instructions or congratulatory message).
-    * \`"feedback"\`: (string) The result from Part 1 (strengths, weaknesses, suggestions).
-    * \`"completionStatus"\`: (string) Your assessment of the section's completion: "complete", "progress", or "unstarted".
-* **Placeholder Handling:** Do NOT use congratulatory language if the 'userContent' is identical or very similar to the original placeholder text for that section. In such cases, state that the section needs to be filled out.
-* **Markdown Preservation:** Preserve markdown (###, **, lists) within the string values of \`"editedInstructions"\` and \`"feedback"\`.
-* **Formatting:** Ensure proper markdown line breaks (blank lines between paragraphs, after headings). No trailing commas in the JSON.
-* **Conciseness:** Keep responses focused and reasonably concise (total response < 4000 chars).
+    // Get the main task prompt from our centralized content
+    const mainPrompt = `${promptContent.instructionTaskPrompt}
 
 Here are the sections to improve:
 ${JSON.stringify(sectionsData, null, 2)}
 
-Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example object format:
-{
-  "id": "section_id",
-  "editedInstructions": "Great start defining X! Now focus on...\\n\\n1. Point Y\\n2. Point Z",
-  "feedback": "**Strengths:** Clear definition of X.\\n\\n**Weaknesses:** Point Y lacks detail.\\n\\n**Suggestions:** Elaborate on the methodology for Y.",
-  "completionStatus": "progress"
-}
-`;
+Respond ONLY with the JSON array, starting with '[' and ending with ']'. 
+${promptContent.instructionOutputExample}`;
 
     console.log("[Instruction Improvement] Sending batch request to OpenAI for sections:", sectionsWithProgress.join(', '));
     const sectionsForContext = sectionContent?.sections || []; // Pass full structure for context if needed
 
-    // *** Call the API function (callOpenAI) passing the specific system prompt ***
+    // Call the API function with our system prompt
     const response = await apiCallFunction(
         mainPrompt,                 // The detailed task prompt
         "improve_instructions_batch", // Context type
@@ -355,9 +406,8 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
         sectionsForContext,         // Provide overall structure for context
         { max_tokens: 2500 },       // Options
         [],                         // No chat history needed for this specific task
-        instructionEditSystemPrompt // Pass the specific system prompt
+        systemPrompt               // The system prompt from our utility
     );
-
 
     // Parse the response with our robust parser
     let improvedInstructionsAndFeedback;
@@ -436,88 +486,3 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
 };
 
 /**
- * Updates section content with improved instructions AND feedback
- * Refactored to check sectionContent validity *before* try block.
- * @param {Object} sectionContent - The original section content object
- * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback, completionStatus }
- * @returns {Object} - Updated section content object
- */
-// --- updateSectionWithImprovedInstructions function remains unchanged ---
-export const updateSectionWithImprovedInstructions = (sectionContent, improvedData) => {
-    // Validate inputs upfront
-    if (typeof sectionContent !== 'object' || sectionContent === null) {
-         console.error("updateSectionWithImprovedInstructions received invalid sectionContent:", sectionContent);
-         return { sections: [] }; // Return default structure immediately
-    }
-
-    if (!Array.isArray(improvedData)) {
-        console.error("Invalid improvedData format: Expected an array.");
-         // Return a safe copy of the original content if improvedData is bad
-        try {
-            return JSON.parse(JSON.stringify(sectionContent));
-        } catch(e) {
-            console.error("Error deep copying sectionContent during improvedData validation failure", e);
-            return { sections: [] };
-        }
-    }
-
-    let updatedSectionsData;
-    try {
-        // Deep copy is likely safe now after the initial check
-        updatedSectionsData = JSON.parse(JSON.stringify(sectionContent));
-    } catch(e) {
-        console.error("Error deep copying section content", e);
-        return { sections: [] }; // Return default structure on copy error
-    }
-
-    // Ensure sections array exists after copy
-    if (!Array.isArray(updatedSectionsData.sections)) {
-        console.error("updatedSectionsData does not have a valid sections array after copy.");
-        updatedSectionsData.sections = [];
-    }
-
-    improvedData.forEach(improvement => {
-        if (!improvement || typeof improvement.id !== 'string' ||
-            typeof improvement.editedInstructions !== 'string' ||
-            typeof improvement.feedback !== 'string') {
-            console.warn("Skipping invalid improvement object:", improvement);
-            return; // Skip this invalid item
-        }
-
-        const sectionIndex = updatedSectionsData.sections.findIndex(s => s && s.id === improvement.id);
-
-        if (sectionIndex !== -1) {
-             if (!updatedSectionsData.sections[sectionIndex]) {
-                 console.warn(`Target section at index ${sectionIndex} is undefined. Skipping improvement for id: ${improvement.id}`);
-                 return;
-             }
-             if (!updatedSectionsData.sections[sectionIndex].instructions) {
-                 updatedSectionsData.sections[sectionIndex].instructions = {};
-                 console.warn(`Initialized missing instructions object for section id: ${improvement.id}`);
-             }
-
-             const fixedInstructions = fixMarkdownFormatting(improvement.editedInstructions);
-             const fixedFeedback = fixMarkdownFormatting(improvement.feedback);
-
-             updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions;
-             updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback;
-
-             // Store completion status if available
-             if (improvement.completionStatus) {
-                 updatedSectionsData.sections[sectionIndex].completionStatus = improvement.completionStatus;
-             }
-
-             delete updatedSectionsData.sections[sectionIndex].instructions.description;
-             delete updatedSectionsData.sections[sectionIndex].instructions.workStep;
-
-        } else {
-            console.warn(`Could not find section with id: ${improvement.id} to apply improvement.`);
-        }
-    });
-
-    return updatedSectionsData;
-};
-
-
-// Ensure we export both functions
-export { repairTruncatedJson, fixMarkdownFormatting, detectCompletionStatus };
