@@ -1,3 +1,5 @@
+// FILE: src/services/openaiService.js
+
 /**
  * Enhanced OpenAI service with better error reporting and fallback mode
  */
@@ -10,7 +12,7 @@ const USE_FALLBACK = !apiKey || process.env.REACT_APP_USE_FALLBACK === 'true';
 // Add this to your openaiService.js file to enable debug mode and fallbacks
 // MODIFIED: Added currentChatHistory parameter
 const buildMessages = (prompt, contextType, userInputs, sections, currentChatHistory = []) => {
-  const systemMessage = `You are a helpful assistant for planning scientific papers. Context type: ${contextType}. Maintain conversation context based on previous messages.`;
+  const systemMessage = `You are a helpful assistant helping a student who is planning a new scientific project. Context type: ${contextType}. Maintain conversation context based on previous messages.`;
   const messages = [{ role: 'system', content: systemMessage }];
 
   // Add section context safely using the new 'instructions.text'
@@ -59,8 +61,7 @@ Current User Input: ${safeUserInput}`
 const mockResponse = (contextType, prompt) => {
   if (contextType === 'improve_instructions_batch') {
     return `
-I've analyzed the content and improved the instructions.
-Here are the updated instruction texts:
+Here are the instruction texts:
 
 [
   {
