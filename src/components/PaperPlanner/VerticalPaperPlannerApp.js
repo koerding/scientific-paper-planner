@@ -1,7 +1,6 @@
 // FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
+// MODIFIED: To pass currentSectionData to ModernChatInterface
 
-// Updated VerticalPaperPlannerApp.js with more generous completion status
-// MODIFIED: Passes currentSectionTitle prop to ModernChatInterface
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
@@ -20,12 +19,13 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
- * UPDATED: Much more generous completion status detection
+ * UPDATED: Passes currentSectionData to ModernChatInterface
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
   const {
     currentSection: currentSectionIdForChat,
+    currentSectionData,  // NEW: Get the section data from the hook
     userInputs,
     chatMessages,
     currentMessage,
@@ -232,7 +232,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         return null;
     }
     // Use activeSection which tracks the manually focused section
-    return localSectionContent.sections.find(s => s && s.id === activeSection) || null;
+    const sectionData = localSectionContent.sections.find(s => s && s.id === activeSection) || null;
+    return sectionData;
   };
 
   // Handle magic (formerly improving instructions)
@@ -315,7 +316,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-
   // Combine local reset logic with hook's reset logic
   const handleResetRequest = () => {
       hookResetProject(); // Call the hook's reset (clears storage, resets hook state)
@@ -371,8 +371,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     // Get completion status from explicit state or calculate it
     const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
 
-    //console.log(`Rendering section ${section.id} with status:`, completionStatus);
-
     return (
       <SectionCard
         key={section.id}
@@ -389,7 +387,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     );
   };
 
-
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="w-full pb-12">
@@ -402,7 +399,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           exportProject={exportProject} // From hook
           saveProject={saveProject} // From hook
           loadProject={loadProject} // From hook
-          importDocumentContent={importDocumentContent} // NEW: Pass document import function
+          importDocumentContent={importDocumentContent} // Pass document import function
           setShowExamplesDialog={setShowExamplesDialog} // Pass setter from hook to header
         />
 
@@ -455,18 +452,19 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           currentSection={sectionDataForPanel} // Pass data from local state based on *activeSection*
           improveInstructions={handleMagic} // Updated to handleMagic
           loading={improvingInstructions}
-          userInputs={userInputs} // NEW: Pass user inputs for analysis
+          userInputs={userInputs} // Pass user inputs for analysis
         />
 
-        {/* MODIFIED: Pass the current section's title */}
+        {/* MODIFIED: Pass current section data to chat interface */}
         <ModernChatInterface
-          currentSection={currentSectionIdForChat} // From hook (still needed for messages)
-          currentSectionTitle={sectionDataForPanel?.title} // NEW: Pass the title
+          currentSection={currentSectionIdForChat} // From hook (needed for messages)
+          currentSectionTitle={sectionDataForPanel?.title} // Pass the title
           chatMessages={chatMessages} // From hook
           currentMessage={currentMessage} // From hook
           setCurrentMessage={setCurrentMessage} // From hook
           handleSendMessage={handleSendMessage} // From hook
           loading={chatLoading} // From hook
+          currentSectionData={sectionDataForPanel} // NEW: Pass the full section data
         />
 
         <ConfirmDialog
