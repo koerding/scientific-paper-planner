@@ -93,9 +93,7 @@
   transition: opacity 300ms, transform 300ms;
 }
 
-/* Add these styles to PaperPlanner.css */
-
-/* Custom border styles for completion status */
+/* Custom border styles for completion status - SIMPLIFIED TO RED/GREEN ONLY */
 .border-3 {
   border-width: 3px !important;
 }
@@ -104,14 +102,9 @@
   border-width: 4px !important;
 }
 
-/* Status-based border colors */
+/* Status-based border colors - ONLY COMPLETE/UNSTARTED */
 .section-complete {
   border-color: #10B981 !important; /* Green-500 */
-  border-width: 4px !important;
-}
-
-.section-progress {
-  border-color: #FBBF24 !important; /* Yellow-400 */
   border-width: 4px !important;
 }
 
