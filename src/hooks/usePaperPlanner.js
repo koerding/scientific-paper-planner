@@ -120,12 +120,16 @@ const usePaperPlanner = () => {
     setCurrentSection(sectionId);
   }, []);
 
-  // MODIFIED: Passes chat history to callOpenAI
+  // MODIFIED: Passes chat history AND specific system prompt to callOpenAI
   const handleSendMessage = useCallback(async () => {
     if (!currentMessage.trim() || !currentSection) return;
+
+    // *** Define System Prompt for Chat (Socratic Professor) ***
+    const chatSystemPrompt = `You are an AI mentor guiding a student through the scientific project planning process. Adopt the persona of an experienced, encouraging professor. Foster critical thinking by asking insightful questions that prompt deeper reflection. Offer constructive feedback and suggestions, maintaining a respectful and slightly formal tone appropriate for mentorship. Maintain conversation context based on previous messages. Current section: ${currentSection}`;
+
     const newUserMessage = { role: 'user', content: currentMessage };
-    // Get the current history for the section *before* adding the new message
     const historyForApi = chatMessages[currentSection] || [];
+
     // Update UI state immediately
     setChatMessages(prevMessages => ({
         ...prevMessages,
@@ -134,21 +138,22 @@ const usePaperPlanner = () => {
     setLoading(true);
     const messageToSend = currentMessage;
     setCurrentMessage('');
+
     try {
       const sectionsForContext = sectionContent?.sections || [];
-      // *** Pass the historyForApi to callOpenAI ***
+      // *** Pass the specific chatSystemPrompt to callOpenAI ***
       const response = await callOpenAI(
-        messageToSend,
-        currentSection,
-        userInputs,
-        sectionsForContext,
-        {}, // options
-        historyForApi // Pass the history
+        messageToSend,        // The user's actual message/prompt
+        currentSection,       // Context type (section ID)
+        userInputs,           // All user inputs for broader context
+        sectionsForContext,   // Section definitions for context
+        {},                   // API options (e.g., temperature)
+        historyForApi,        // Chat history for the current section
+        chatSystemPrompt      // The specific system prompt for this call
       );
       const newAssistantMessage = { role: 'assistant', content: response };
        setChatMessages(prevMessages => ({
            ...prevMessages,
-           // Use the already updated historyForApi plus the new user message AND the assistant response
            [currentSection]: [...historyForApi, newUserMessage, newAssistantMessage]
        }));
     } catch (error) {
@@ -156,7 +161,6 @@ const usePaperPlanner = () => {
       const errorMessage = { role: 'assistant', content: `Sorry, there was an error processing your message. (${error.message})` };
        setChatMessages(prevMessages => ({
            ...prevMessages,
-           // Use the already updated historyForApi plus the new user message AND the error message
            [currentSection]: [...historyForApi, newUserMessage, errorMessage]
        }));
     } finally {
@@ -314,13 +318,13 @@ const usePaperPlanner = () => {
     setShowExamplesDialog,
     handleSectionChange,
     handleInputChange,
-    handleSendMessage,
+    handleSendMessage, // Chat uses specific system prompt internally now
     // handleFirstVersionFinished removed
     resetProject,
     exportProject,
     saveProject,
     loadProject,
-    importDocumentContent // NEW: Add document import function
+    importDocumentContent
   };
 };
 
