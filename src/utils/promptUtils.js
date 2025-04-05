@@ -159,19 +159,3 @@ export const generateMockResponse = (type, sectionId) => {
   
   return response;
 };
-
-/**
- * Get instruction task prompt for instruction improvement service
- * @returns {string} - The instruction task prompt
- */
-export const getInstructionTaskPrompt = () => {
-  return promptContent.instructionTaskPrompt;
-};
-
-/**
- * Get instruction output example for instruction improvement service
- * @returns {string} - The instruction output example
- */
-export const getInstructionOutputExample = () => {
-  return promptContent.instructionOutputExample;
-};
