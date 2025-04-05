@@ -164,50 +164,6 @@ const usePaperPlanner = () => {
     }
   }, [currentMessage, currentSection, userInputs, chatMessages]); // Add chatMessages dependency
 
-  // MODIFIED: Passes chat history to callOpenAI
-  const handleFirstVersionFinished = useCallback(async (sectionId) => {
-    const contentToReview = userInputs[sectionId];
-    const currentSectionObj = sectionContent?.sections?.find(s => s.id === sectionId);
-    const aiInstructions = currentSectionObj?.llmInstructions;
-    if (!contentToReview || !aiInstructions) return;
-    setLoading(true);
-    const reviewPrompt = aiInstructions;
-    const displayMessage = { role: 'user', content: `Requesting review for ${currentSectionObj.title}...` };
-    // Get history before adding display message
-    const historyForApi = chatMessages[sectionId] || [];
-    setChatMessages(prevMessages => ({
-        ...prevMessages,
-        [sectionId]: [...historyForApi, displayMessage]
-    }));
-    try {
-      const sectionsForContext = sectionContent?.sections || [];
-      // *** Pass historyForApi to callOpenAI ***
-      const response = await callOpenAI(
-        reviewPrompt,
-        sectionId,
-        userInputs,
-        sectionsForContext,
-        {}, // options
-        historyForApi // Pass the history
-      );
-      const newAssistantMessage = { role: 'assistant', content: response };
-      setChatMessages(prevMessages => ({
-          ...prevMessages,
-          [sectionId]: [...historyForApi, displayMessage, newAssistantMessage]
-      }));
-    } catch (error) {
-      console.error(`Error getting review for ${sectionId}:`, error);
-      const errorMessage = { role: 'assistant', content: `Sorry, there was an error reviewing the ${sectionId} section. (${error.message})` };
-      setChatMessages(prevMessages => ({
-          ...prevMessages,
-          [sectionId]: [...historyForApi, displayMessage, errorMessage]
-      }));
-    } finally {
-      setLoading(false);
-    }
-  }, [userInputs, chatMessages]); // Add chatMessages dependency
-
-
   // Reset project function - FIXED to correctly use fresh templates
   const resetProject = useCallback(() => {
     // Clear localStorage first
@@ -359,7 +315,7 @@ const usePaperPlanner = () => {
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
-    handleFirstVersionFinished,
+    // handleFirstVersionFinished removed
     resetProject,
     exportProject,
     saveProject,
