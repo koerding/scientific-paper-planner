@@ -6,7 +6,8 @@
  * REFACTORED: Uses centralized prompt content via promptUtils.
  */
 import { callOpenAI } from './openaiService';
-import { buildSystemPrompt, buildTaskPrompt, generateMockResponse } from '../utils/promptUtils'; // Added buildTaskPrompt and generateMockResponse
+// Import necessary prompt utility functions
+import { buildSystemPrompt, buildTaskPrompt, generateMockResponse } from '../utils/promptUtils';
 
 // --- Ensure Libraries are Installed ---
 // Run: npm install pdfjs-dist mammoth (or yarn add)
@@ -34,62 +35,62 @@ if (typeof window !== 'undefined' && 'Worker' in window) {
  * @param {File} file - The document file object
  * @returns {Promise<string>} - The extracted text (potentially truncated)
  */
-const extractTextFromDocument = async (file) => { //
+const extractTextFromDocument = async (file) => {
   console.log(`Attempting to extract text from: ${file.name}, type: ${file.type}`);
 
-  return new Promise((resolve, reject) => { // Rejects on error
-    const reader = new FileReader(); //
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
 
-    reader.onload = async (event) => { //
+    reader.onload = async (event) => {
       try {
-        const arrayBuffer = event.target.result; //
+        const arrayBuffer = event.target.result;
         let extractedText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n[Content Extraction Skipped - Library Error or Unsupported Type]`; // Default fallback
 
         // --- PDF Extraction Logic ---
-        if ((file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) && typeof pdfjsLib !== 'undefined' && pdfjsLib.GlobalWorkerOptions.workerSrc) { // Check workerSrc too
+        if ((file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) && typeof pdfjsLib !== 'undefined' && pdfjsLib.GlobalWorkerOptions.workerSrc) {
           console.log("Processing as PDF...");
             try {
-              const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer }); //
-              const pdf = await loadingTask.promise; //
+              const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+              const pdf = await loadingTask.promise;
               console.log(`PDF loaded: ${pdf.numPages} pages.`);
               let textContent = '';
               const maxPagesToProcess = Math.min(pdf.numPages, 20); // Limit pages
               console.log(`Processing up to ${maxPagesToProcess} pages...`);
 
-              for (let i = 1; i <= maxPagesToProcess; i++) { //
-                const page = await pdf.getPage(i); //
-                const textContentStream = await page.getTextContent(); //
-                textContent += textContentStream.items.map(item => item.str).join(' ') + '\n\n'; //
+              for (let i = 1; i <= maxPagesToProcess; i++) {
+                const page = await pdf.getPage(i);
+                const textContentStream = await page.getTextContent();
+                textContent += textContentStream.items.map(item => item.str).join(' ') + '\n\n';
                  if (textContent.length > 15000) { // Limit length
                      console.log("Truncating PDF text content due to length limit...");
-                     textContent = textContent.substring(0, 15000) + "... [TRUNCATED]"; //
+                     textContent = textContent.substring(0, 15000) + "... [TRUNCATED]";
                      break;
                  }
               }
-              extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${textContent}\n\n--- Extracted Text End ---`; //
+              extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${textContent}\n\n--- Extracted Text End ---`;
               console.log("PDF text extracted (potentially truncated). Length:", extractedText.length);
 
-            } catch (pdfError) { //
+            } catch (pdfError) {
               console.error('Error extracting PDF text:', pdfError);
-              reject(new Error(`Failed to extract text from PDF: ${pdfError.message || pdfError.toString()}`)); // Reject
+              reject(new Error(`Failed to extract text from PDF: ${pdfError.message || pdfError.toString()}`));
               return;
             }
         }
         // --- DOCX Extraction Logic ---
-        else if ((file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith('.docx')) && typeof mammoth !== 'undefined') { // Check mammoth
+        else if ((file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith('.docx')) && typeof mammoth !== 'undefined') {
           console.log("Processing as DOCX...");
            try {
-                const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer }); //
-                let docxText = result.value || ''; //
+                const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                let docxText = result.value || '';
                  if (docxText.length > 15000) { // Limit length
                      console.log("Truncating DOCX text content due to length limit...");
-                     docxText = docxText.substring(0, 15000) + "... [TRUNCATED]"; //
+                     docxText = docxText.substring(0, 15000) + "... [TRUNCATED]";
                  }
-                extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${docxText}\n\n--- Extracted Text End ---`; //
+                extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${docxText}\n\n--- Extracted Text End ---`;
                 console.log("DOCX text extracted (potentially truncated). Length:", extractedText.length);
-              } catch (docxError) { //
+              } catch (docxError) {
                 console.error('Error extracting DOCX text:', docxError);
-                reject(new Error(`Failed to extract text from DOCX: ${docxError.message || docxError.toString()}`)); // Reject
+                reject(new Error(`Failed to extract text from DOCX: ${docxError.message || docxError.toString()}`));
                 return;
               }
         }
@@ -100,25 +101,24 @@ const extractTextFromDocument = async (file) => { //
                                : `[Unsupported File Type: ${file.type || 'unknown'}]`;
 
             console.warn(`Content extraction skipped. ${libraryMessage}`);
-            // Reject for unsupported types or library issues if strict handling is needed
             reject(new Error(`Content extraction skipped: ${libraryMessage}`));
             return;
         }
 
         resolve(extractedText); // Resolve with the actual extracted text
 
-      } catch (error) { //
+      } catch (error) {
         console.error('Error processing document content:', error);
-        reject(new Error(`Failed to process document content: ${error.message}`)); // Reject on general processing error
+        reject(new Error(`Failed to process document content: ${error.message}`));
       }
     };
 
-    reader.onerror = (error) => { //
+    reader.onerror = (error) => {
       console.error('Error reading file:', error);
-      reject(new Error(`Failed to read file: ${error.message}`)); // Reject on read error
+      reject(new Error(`Failed to read file: ${error.message}`));
     };
 
-    reader.readAsArrayBuffer(file); //
+    reader.readAsArrayBuffer(file);
   });
 };
 
@@ -130,7 +130,7 @@ const extractTextFromDocument = async (file) => { //
  * @param {File} file - The document file object (used for filename in errors)
  * @returns {Promise<Object>} - The structured data for loading into the planner
  */
-export const importDocumentContent = async (file) => { //
+export const importDocumentContent = async (file) => {
   let documentText = ''; // Keep track of extracted text for error reporting
   try {
     // Step 1: Extract text from document
@@ -148,8 +148,13 @@ export const importDocumentContent = async (file) => { //
     // Step 3: Build the main task prompt using promptUtils
     // Pass the full extracted text as a parameter for the task prompt template
     const mainTaskPrompt = buildTaskPrompt('documentImport', {
-        documentText: documentText
+        documentText: documentText // Pass the extracted text here
     });
+
+    // Check if mainTaskPrompt generation failed
+    if (mainTaskPrompt.startsWith('System error:')) {
+        throw new Error(mainTaskPrompt); // Propagate error if prompt building failed
+    }
 
     // Use fallback if needed (check environment variable or API key status)
     const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
@@ -197,6 +202,7 @@ export const importDocumentContent = async (file) => { //
       // Ensure essential structure exists in the parsed data
       if (!parsedData.userInputs) parsedData.userInputs = {};
       if (!parsedData.timestamp) parsedData.timestamp = new Date().toISOString();
+      // Ensure version reflects fallback mode if used
       if (!parsedData.version) parsedData.version = `1.0-text-extraction${USE_FALLBACK ? '-mock' : ''}`;
       if (!parsedData.chatMessages) parsedData.chatMessages = {};
 
@@ -216,7 +222,7 @@ export const importDocumentContent = async (file) => { //
           abstract: `AI response parsing failed for ${file.name}. See details in Question section. Raw text in Hypothesis section.`,
         },
         chatMessages: {},
-        timestamp: new D ate().toISOString(),
+        timestamp: new Date().toISOString(),
         version: '1.0-text-parse-error',
       };
       return fallbackData;
