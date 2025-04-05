@@ -1,3 +1,5 @@
+// FILE: src/hooks/usePaperPlanner.js
+
 import { useState, useEffect, useCallback } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
