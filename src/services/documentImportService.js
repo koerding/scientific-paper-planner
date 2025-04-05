@@ -13,19 +13,12 @@ import { callOpenAI } from './openaiService'; //
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import mammoth from 'mammoth';
 
-// --- Configure PDF Worker using CDN ---
+// --- Configure PDF Worker using Local File ---
 if (typeof window !== 'undefined' && 'Worker' in window) {
-    // Find the installed version (run `npm list pdfjs-dist --depth=0`)
-    // Replace 'X.Y.Z' with the actual version number! (e.g., '5.1.91')
-    const pdfjsVersion = '5.1.91'; // <-- YOUR VERSION SET HERE
-
-    if (pdfjsVersion === 'X.Y.Z') { // Keep this check in case version needs updating later
-         console.warn("PDF.js version placeholder not replaced in documentImportService.js! PDF functionality might fail.");
-    }
-    const workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.js`;
+    // Reference the local worker file (with .mjs extension) copied to /public
     try {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
-        console.log("pdf.js workerSrc set to CDN:", pdfjsLib.GlobalWorkerOptions.workerSrc);
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'; // Use the correct .mjs extension
+        console.log("pdf.js workerSrc set to local:", pdfjsLib.GlobalWorkerOptions.workerSrc);
     } catch (e) {
          console.error("Error setting pdf.js workerSrc:", e);
     }
@@ -33,7 +26,6 @@ if (typeof window !== 'undefined' && 'Worker' in window) {
    console.warn("Web Workers not available. pdf.js might run slower.");
 }
 // --- End Configuration ---
-
 
 /**
  * Extracts text from a document file (PDF or Word)
