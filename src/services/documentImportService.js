@@ -17,9 +17,9 @@ import mammoth from 'mammoth';
 if (typeof window !== 'undefined' && 'Worker' in window) {
     // Find the installed version (run `npm list pdfjs-dist --depth=0`)
     // Replace 'X.Y.Z' with the actual version number! (e.g., '5.1.91')
-    const pdfjsVersion = '5.1.91'; // <-- SET YOUR VERSION HERE (e.g., '5.1.91')
+    const pdfjsVersion = '5.1.91'; // <-- YOUR VERSION SET HERE
 
-    if (pdfjsVersion === 'X.Y.Z') {
+    if (pdfjsVersion === 'X.Y.Z') { // Keep this check in case version needs updating later
          console.warn("PDF.js version placeholder not replaced in documentImportService.js! PDF functionality might fail.");
     }
     const workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.js`;
@@ -140,7 +140,7 @@ export const importDocumentContent = async (file) => { //
   try {
     // Step 1: Extract text from document
     console.log(`Starting text extraction for ${file.name}`);
-    documentText = await extractTextFromDocument(file); //
+    documentText = await extractTextFromDocument(file); // Will reject on extraction error
     console.log(`Extraction successful for ${file.name}. Text length: ${documentText.length}`);
 
     // Step 2: Prepare the prompt for OpenAI using extracted text
@@ -251,13 +251,13 @@ Based *only* on the text above, create the scientific paper structure in the spe
       console.error('Error parsing OpenAI response:', error);
       console.log('Raw OpenAI response on parse error:', response); // Log raw response
 
-      // *** MODIFIED PART: Error in 'question', Extracted Text in 'hypothesis' ***
+      // *** NEW ERROR HANDLING: Error in 'question', Extracted Text in 'hypothesis' ***
       const detailedErrorMessage = `AI Response Parsing Error for ${file.name}:\nType: ${error.name || 'Error'}\nMessage: ${error.message || 'Unknown parsing error'}\n\n--- Raw AI Response (Check Console Log) ---`;
       const fallbackData = { //
         userInputs: {
           question: `Research Question: Error after text extraction\n\nSignificance/Impact: ${detailedErrorMessage}`, // Detailed error here
           // Put the raw extracted text into the hypothesis field for debugging
-          hypothesis: `--- RAW EXTRACTED TEXT (for debugging AI failure) ---\n\n${documentText}`,
+          hypothesis: `--- RAW EXTRACTED TEXT (for debugging AI failure) ---\n\n${documentText}`, // documentText variable holds the successfully extracted text
           // Indicate failure in other key fields
           abstract: `AI response parsing failed for ${file.name}. See details in Question section. Raw text in Hypothesis section.`,
         },
@@ -266,24 +266,28 @@ Based *only* on the text above, create the scientific paper structure in the spe
         version: '1.0-text-parse-error', // Specific error version
       };
       return fallbackData; //
-      // *** END MODIFIED PART ***
+      // *** END NEW ERROR HANDLING ***
     }
-  } catch (error) { // Catch errors from text extraction or OpenAI call
+  } catch (error) { // Catch errors from text extraction (rejects from extractTextFromDocument) or OpenAI call
     console.error('Error during document import process:', error);
 
-    // *** MODIFIED PART: Error in 'question', Indicate no text in 'hypothesis' ***
+    // *** NEW ERROR HANDLING: Error in 'question', Indicate no text in 'hypothesis' ***
     const detailedErrorMessage = `Import Error for ${file.name} (Stage: ${documentText ? 'AI Call/Processing' : 'Text Extraction'}):\nType: ${error.name || 'Error'}\nMessage: ${error.message || 'Unknown import error'}\n\n--- Error Stack Trace (for debugging) ---\n${error.stack || 'No stack trace available'}`;
+    // documentText will be empty if the error came from extractTextFromDocument
+    const hypothesisTextOnError = documentText
+        ? `--- RAW EXTRACTED TEXT (for debugging AI failure) ---\n\n${documentText}`
+        : "Text extraction failed. See error details in Question section.";
+
     return { //
       userInputs: {
         question: `Research Question: Error during import\n\nSignificance/Impact: ${detailedErrorMessage}`, // Detailed error here
-        // Indicate extraction failure if documentText is empty
-        hypothesis: documentText ? `--- RAW EXTRACTED TEXT (for debugging AI failure) ---\n\n${documentText}` : "Text extraction failed. See error details.",
+        hypothesis: hypothesisTextOnError, // Show extracted text if available, otherwise indicate extraction failure
         abstract: `Document import failed for ${file.name}. See details in Question section.`,
       },
       chatMessages: {},
       timestamp: new Date().toISOString(),
       version: '1.0-text-import-error', // Specific error version
     };
-    // *** END MODIFIED PART ***
+    // *** END NEW ERROR HANDLING ***
   }
 };
