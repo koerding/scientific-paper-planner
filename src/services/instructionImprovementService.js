@@ -6,8 +6,12 @@
  * UPDATED: Separated AI response into 'editedInstructions' and 'feedback'
  * UPDATED: Enhanced to also determine completion status of sections
  * UPDATED: Made completion status detection much more generous
+ * MODIFIED: Defines and passes its own system prompt to callOpenAI.
  */
 import { callOpenAI } from './openaiService';
+
+// --- Helper functions (repairTruncatedJson, detectCompletionStatus, fixMarkdownFormatting) remain unchanged ---
+// (Include the existing code for these functions here)
 
 /**
  * Advanced JSON parser that handles truncated API responses
@@ -137,7 +141,7 @@ function detectCompletionStatus(instructionText, feedbackText) {
         /clear/i,
         /strong/i
     ];
-    
+
     // Check for phrases that indicate substantial problems
     const problemPatterns = [
         /completely missing/i,
@@ -162,39 +166,39 @@ function detectCompletionStatus(instructionText, feedbackText) {
         /somewhat/i,
         /partially/i
     ];
-    
+
     // Check content length - if there's substantive content, be generous
-    const hasSubstantiveContent = 
-        (instructionText && instructionText.length > 100) || 
+    const hasSubstantiveContent =
+        (instructionText && instructionText.length > 100) ||
         (feedbackText && feedbackText.length > 100);
-    
+
     // MUCH MORE GENEROUS CRITERIA:
     // If they've received any congratulatory feedback or substantive feedback, mark as 'complete'
-    const isComplete = congratsPatterns.some(pattern => 
+    const isComplete = congratsPatterns.some(pattern =>
         pattern.test(instructionText) || pattern.test(feedbackText)
     );
-    
+
     if (isComplete || (feedbackText && feedbackText.length > 20)) {
         return 'complete';
     }
-    
+
     // Only mark as 'unstarted' if there are explicit indicators of a major problem
-    const hasMajorProblems = problemPatterns.some(pattern => 
+    const hasMajorProblems = problemPatterns.some(pattern =>
         pattern.test(instructionText) || pattern.test(feedbackText)
     );
-    
+
     if (hasMajorProblems && !hasSubstantiveContent) {
         return 'unstarted';
     }
-    
+
     // By default, if they've written anything meaningful or have any feedback,
     // mark as 'progress' at minimum
-    if (hasSubstantiveContent || progressPatterns.some(pattern => 
+    if (hasSubstantiveContent || progressPatterns.some(pattern =>
         pattern.test(instructionText) || pattern.test(feedbackText)
     )) {
         return 'progress';
     }
-    
+
     // Default case - be generous and mark as progress
     return 'progress';
 }
@@ -238,29 +242,28 @@ function fixMarkdownFormatting(text) {
   return fixed;
 }
 
+
 /**
  * Improves instructions for multiple sections, now separating instructions and feedback.
  * Also adds completion status detection for each section.
  * @param {Array} currentSections - Array of section objects (full list)
  * @param {Object} userInputs - User inputs for all sections
  * @param {Object} sectionContent - The full section content object (used for original instructions)
- * @param {Function} apiCallFunction - Function to call the API
+ * @param {Function} apiCallFunction - Function to call the API (expected to be callOpenAI)
  * @returns {Promise<Object>} - Result with success flag and improved instructions/feedback
  */
 export const improveBatchInstructions = async (
   currentSections, // Use this for current (potentially already modified) instructions if needed for context
   userInputs,
   sectionContent, // Pass the original JSON for original instructions
-  apiCallFunction = callOpenAI
+  apiCallFunction = callOpenAI // Defaulting to callOpenAI
 ) => {
   try {
     // Identify sections with meaningful user content
     const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
         const content = userInputs[sectionId];
-        // Find the original placeholder
         const originalSection = sectionContent?.sections?.find(s => s.id === sectionId);
         const placeholder = originalSection?.placeholder || '';
-        // Check if content is a non-empty string and different from placeholder
         return typeof content === 'string' && content.trim() !== '' && content !== placeholder;
     });
 
@@ -292,9 +295,12 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No valid sections with progress to improve" };
     }
 
-    // *** Build the user-improved prompt for the AI ***
-    // UPDATED PROMPT for separate instructions and feedback
-    const prompt = `
+    // *** Define System Prompt for Instruction Editing (Meticulous, Careful) ***
+    const instructionEditSystemPrompt = `You are an AI assistant acting as a meticulous editor for a scientific planning tool. Carefully analyze the user's input against the provided original instructions. Generate precise feedback and edited instructions according to the specified format. Focus on accuracy, clarity, and adherence to the editing rules. Note any ambiguities or areas needing further user clarification.`;
+
+    // *** Build the main prompt for the AI ***
+    // (This remains largely the same, defining the task and JSON structure)
+    const mainPrompt = `
 Act as a helpful editor for a scientific paper planning tool for PhD students. You will receive sections the user has worked on.
 
 For each section PROVIDED BELOW, I'll provide:
@@ -341,12 +347,15 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
     console.log("[Instruction Improvement] Sending batch request to OpenAI for sections:", sectionsWithProgress.join(', '));
     const sectionsForContext = sectionContent?.sections || []; // Pass full structure for context if needed
 
+    // *** Call the API function (callOpenAI) passing the specific system prompt ***
     const response = await apiCallFunction(
-        prompt,
-        "improve_instructions_batch", // Context type for potential API-side logging/routing
-        userInputs, // Provide current user inputs for overall context
-        sectionsForContext, // Provide overall structure for context
-        { max_tokens: 2500 } // Adjusted token limit for potentially longer responses
+        mainPrompt,                 // The detailed task prompt
+        "improve_instructions_batch", // Context type
+        userInputs,                 // Provide current user inputs for overall context
+        sectionsForContext,         // Provide overall structure for context
+        { max_tokens: 2500 },       // Options
+        [],                         // No chat history needed for this specific task
+        instructionEditSystemPrompt // Pass the specific system prompt
     );
 
 
@@ -356,10 +365,9 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
         console.log("Raw response from API:", response);
         improvedInstructionsAndFeedback = repairTruncatedJson(response);
 
-        // Validate array structure
+        // Validate array structure (remains the same)
         if (!Array.isArray(improvedInstructionsAndFeedback)) {
-             // Attempt recovery if not an array (similar logic as before, adapted for new fields)
-            const jsonRegex = /(\[[\s\S]*\])/;
+             const jsonRegex = /(\[[\s\S]*\])/;
             const jsonMatch = response.match(jsonRegex);
             if (jsonMatch && jsonMatch[0]) {
                 try {
@@ -368,25 +376,22 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
                     console.warn("Failed to extract with regex during recovery:", err);
                 }
             }
-            // Further recovery attempts if needed...
-
             if (!Array.isArray(improvedInstructionsAndFeedback)) {
                 throw new Error("Parsed response is not an array and could not be recovered.");
             }
         }
 
-        // Validate object structure within the array
+        // Validate object structure within the array (remains the same)
         const isValid = improvedInstructionsAndFeedback.every(item =>
             item && typeof item.id === 'string' &&
-            typeof item.editedInstructions === 'string' && // Check for new field
-            typeof item.feedback === 'string' &&           // Check for new field
-            (typeof item.completionStatus === 'string' ||  // Check for completeness status
-             item.completionStatus === undefined)          // Allow undefined for backward compatibility
+            typeof item.editedInstructions === 'string' &&
+            typeof item.feedback === 'string' &&
+            (typeof item.completionStatus === 'string' ||
+             item.completionStatus === undefined)
         );
 
         if (!isValid) {
             console.warn("Parsed response contains items with missing id, editedInstructions, or feedback:", improvedInstructionsAndFeedback);
-            // Filter out invalid items
             improvedInstructionsAndFeedback = improvedInstructionsAndFeedback.filter(item =>
                  item && typeof item.id === 'string' &&
                  typeof item.editedInstructions === 'string' &&
@@ -399,7 +404,7 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
              console.warn("Proceeding with partially valid response:", improvedInstructionsAndFeedback);
         }
 
-        // If completionStatus is missing, add it based on the content
+        // Add completionStatus if missing (remains the same)
         improvedInstructionsAndFeedback.forEach(item => {
             if (!item.completionStatus) {
                 item.completionStatus = detectCompletionStatus(item.editedInstructions, item.feedback);
@@ -410,7 +415,7 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
 
     } catch (error) {
         console.error("Error parsing instruction improvement response:", error);
-        console.log("Raw response received:", response); // Log raw response on error
+        console.log("Raw response received:", response);
         return {
             success: false,
             message: `Failed to parse improved instructions/feedback: ${error.message}`
@@ -419,7 +424,7 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
 
     return {
         success: true,
-        improvedData: improvedInstructionsAndFeedback // Return the array containing objects with both fields
+        improvedData: improvedInstructionsAndFeedback
     };
   } catch (error) {
     console.error("Error improving batch instructions:", error);
@@ -437,6 +442,7 @@ Respond ONLY with the JSON array, starting with '[' and ending with ']'. Example
  * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback, completionStatus }
  * @returns {Object} - Updated section content object
  */
+// --- updateSectionWithImprovedInstructions function remains unchanged ---
 export const updateSectionWithImprovedInstructions = (sectionContent, improvedData) => {
     // Validate inputs upfront
     if (typeof sectionContent !== 'object' || sectionContent === null) {
@@ -495,7 +501,7 @@ export const updateSectionWithImprovedInstructions = (sectionContent, improvedDa
 
              updatedSectionsData.sections[sectionIndex].instructions.text = fixedInstructions;
              updatedSectionsData.sections[sectionIndex].instructions.feedback = fixedFeedback;
-             
+
              // Store completion status if available
              if (improvement.completionStatus) {
                  updatedSectionsData.sections[sectionIndex].completionStatus = improvement.completionStatus;
@@ -511,6 +517,7 @@ export const updateSectionWithImprovedInstructions = (sectionContent, improvedDa
 
     return updatedSectionsData;
 };
+
 
 // Ensure we export both functions
 export { repairTruncatedJson, fixMarkdownFormatting, detectCompletionStatus };
