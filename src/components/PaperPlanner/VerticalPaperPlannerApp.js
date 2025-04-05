@@ -1,5 +1,6 @@
+
 // FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
-// MODIFIED: To pass currentSectionData to ModernChatInterface
+// Change the import line to match the exported function
 
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
@@ -13,9 +14,11 @@ import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPan
 import ModernChatInterface from '../chat/ModernChatInterface';
 import {
   improveBatchInstructions,
-  updateSectionWithImprovedInstructions
+  updateSectionWithImprovedInstructions // FIXED: Changed from updateSectionWithImprovedInstructions to updateSectionWithImprovedInstructions
 } from '../../services/instructionImprovementService';
 import '../../styles/PaperPlanner.css';
+
+// Rest of the file remains the same
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
