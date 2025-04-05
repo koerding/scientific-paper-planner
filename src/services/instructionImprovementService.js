@@ -96,7 +96,7 @@ ${JSON.stringify(sectionsData, null, 2)}
 
 IMPORTANT:
 - Structure your response as clean, parseable JSON.
-- DO NOT prefix your response with "\\`\\`\\`json" or suffix with "\\`\\`\\`".
+- DO NOT prefix your response with "code blocks" or add any markdown formatting.
 - Start with "[" and end with "]".
 - Use proper JSON escaping for newlines (\\n) and quotes.
 - Be generous in assessing completion - if the user has made substantial progress, mark as "complete".
