@@ -1,3 +1,5 @@
+// FILE: src/data/sectionContent.json
+
 {
   "title": "Scientific Paper Planner Sections",
   "sections": [
@@ -9,10 +11,9 @@
       "inputPlaceholder": "Start writing your research question here...",
       "instructions": {
         "title": "Formulating Your Research Question",
-        "text": "A good research question drives your entire study and helps you focus your efforts. It's the foundation of scientific inquiry.\n\n---\n\n* Write the question.\n\n* If you ask a normative question, be clear about the objective. If you ask a correlation question, don't do it for a causal goal.\n\n* Explain why the question matters to the field.\n\n* Ensure your question is answerable with your anticipated resources."
+        "text": "A good research question drives your entire study and helps you focus your efforts. It's the foundation of scientific inquiry.\n\n---\n\n* Specify your question.\n\n* Be clear about the logic. Are you asking how something is? Why it is the way it is? What gives rise to something? How it got their over time? Ask yourself which conclusions are supported by what kinds of analyses.\n\n* Explain why the question matters to the field. How will science be different after your work?\n\n* Ensure your question is answerable with your anticipated resources."
       },
-      "placeholder": "Research Question:[Write it out] \n\nSignificance/Impact: [Why it matters]\n",
-      "llmInstructions": "Above, I wrote down my scientific question. I also wrote down why this question is important to me. I want you to check if the question feels like a good question for scientific inquiry. Please evaluate:\n\n1. Strengths and weaknesses of the question (including clarity and scope)\n2. How well the question matches my stated significance/objectives\n3. If it's a normative question, is the objective clear? If it's a correlation question, is it being asked for correlation (not causation)?\n\nPlease provide constructive feedback on how to strengthen the research question if needed."
+      "placeholder": "Research Question:[Write it out] \n\nSignificance/Impact: [Why it matters]\n"
     },
     {
       "id": "audience",
@@ -22,10 +23,9 @@
       "inputPlaceholder": "List the target audience for your research...",
       "instructions": {
         "title": "Identifying Your Target Audience",
-        "text": "Every research project needs an audience. Knowing who will read and care about your work helps you focus your approach and presentation style.\n\n---\n\n* Identify primary academic communities who would benefit most directly (e.g., computational neuroscience, motor control researchers).\n\n* For each community, note how your research might impact their work.\n\n* Then, specify 3-5 individual researchers or research groups representing your audience (specific labs or scientists)."
+        "text": "Every research project needs an audience. Knowing who will read and care about your work helps you focus your approach and presentation style.\n\n---\n\n* Identify primary academic communities who would benefit most directly (e.g., \"computational neuroscience\").\n\n* For each community, note how your research might impact their work.\n\n* Then, specify 3-5 individual researchers or research groups representing your audience (specific labs or scientists)."
       },
-      "placeholder": "Target Audience/Community (research fields/disciplines):\n1. \n2. \n3. \n\nSpecific Researchers/Labs (individual scientists or groups):\n1. \n2. \n3. ",
-      "llmInstructions": "I see you've identified potential audiences for your research. Let me help you evaluate these choices:\n\n1. How appropriate these audience selections are given your research question\n2. Whether there are additional important audiences you might have overlooked\n3. How clearly you've articulated why each audience would be interested\n\nI'll also suggest 3-5 additional specific researchers, labs, or communities who might be especially interested in this topic based on your research question and audiences identified."
+      "placeholder": "Target Audience/Community (research fields/disciplines):\n1. \n2. \n3. \n\nSpecific Researchers/Labs (individual scientists or groups):\n1. \n2. \n3. "
     },
     {
       "id": "hypothesis",
@@ -37,8 +37,7 @@
         "title": "Hypothesis-driven Research",
         "text": "Hypothesis-driven research tests specific predictions derived from theory. It's the classic approach where you make a clear, testable guess about how things work.\n\n---\n\n* Formulate at least two distinct, testable hypotheses.\n\n* Ensure each hypothesis is specific and clearly stated.\n\n* Your experiment must be able to differentiate between these hypotheses.\n\n* Explain why distinguishing between these hypotheses matters to the field.\n\n* Explain how data can help you decide between these hypotheses."
       },
-      "placeholder": "Hypothesis 1: [State the first specific, testable hypothesis.]\n\nHypothesis 2: [State the second specific, testable hypothesis, distinct from H1.]\n\nWhy distinguishing these hypotheses matters:\n- \n- ",
-      "llmInstructions": "I've reviewed your hypotheses. Let me provide feedback on:\n\n1. The strengths and weaknesses of each hypothesis, particularly regarding specificity and testability\n2. How well they align with your research question\n3. Whether distinguishing between them would be consequential for the field\n4. How clearly your key terms are defined\n5. Whether your hypotheses are appropriately distinct from each other\n\nI'll provide constructive suggestions for refining your hypotheses to make them more testable and meaningful."
+      "placeholder": "Hypothesis 1: [State the first specific, testable hypothesis.]\n\nHypothesis 2: [State the second specific, testable hypothesis, distinct from H1.]\n\nWhy distinguishing these hypotheses matters:\n- \n- "
     },
     {
       "id": "needsresearch",
@@ -50,8 +49,7 @@
         "title": "Needs-Based Research",
         "text": "Needs-based research aims to solve practical problems rather than test theories. It focuses on developing solutions that address specific real-world challenges faced by people or systems.\n\n---\n\n* Clearly identify who needs this research (patients, clinicians, engineers, policymakers).\n\n* Explain why they need it - what specific problem are you solving?\n\n* Describe the current options/solutions and their limitations.\n\n* Define concrete success criteria - how will you know if your solution works?\n\n* Explain what specific improvement or advance your solution offers over existing approaches."
       },
-      "placeholder": "Who needs this research:\n\nWhy they need it (specific problem to solve):\n\nCurrent approaches and their limitations:\n\nSuccess criteria (how will you measure if your solution works):\n\nAdvantages of your proposed approach:",
-      "llmInstructions": "I see you've outlined a needs-based approach. Let me help evaluate how well you've defined the problem and solution space:\n\n1. How clearly you've identified the specific stakeholders who need this research\n2. Whether you've articulated a concrete problem that needs solving\n3. How thoroughly you've assessed current approaches and their limitations\n4. Whether your success criteria are specific and measurable\n5. How convincing your case is that your approach offers meaningful advantages\n\nI'll provide constructive feedback on strengthening your needs-based framework and ensuring it addresses a genuine gap."
+      "placeholder": "Who needs this research:\n\nWhy they need it (specific problem to solve):\n\nCurrent approaches and their limitations:\n\nSuccess criteria (how will you measure if your solution works):\n\nAdvantages of your proposed approach:"
     },
     {
       "id": "exploratoryresearch",
@@ -63,8 +61,7 @@
         "title": "Exploratory Research",
         "text": "Exploratory research aims to discover patterns and generate hypotheses rather than testing them. It's about finding interesting connections in data without preconceived expectations about what you'll find.\n\n---\n\n* Describe the phenomena, dataset, or system you want to explore.\n\n* List 3-5 specific patterns, relationships, or discoveries your approach might reveal.\n\n* Explain what makes this exploration novel or valuable to your field.\n\n* Describe what tools or analytical approaches you'll use for discovery.\n\n* Outline how you'll distinguish meaningful patterns from random variation."
       },
-      "placeholder": "Phenomena/data/system to explore:\n\nPotential discoveries your approach might reveal:\n1. \n2. \n3. \n\nValue of this exploration to the field:\n\nAnalytical approaches for discovery:\n\nStrategy for validating findings:",
-      "llmInstructions": "I see you've outlined your exploratory approach. Let me help evaluate this framework:\n\n1. How clearly you've defined what you're exploring and why it's worth investigating\n2. How specific and interesting your potential discoveries seem to be\n3. Whether your analytical approaches are appropriate for the phenomena you're exploring\n4. How well you've considered validation and distinguishing signal from noise\n5. Whether this exploration could lead to valuable scientific insights\n\nI'll provide constructive feedback on strengthening your exploratory approach and ensuring it has scientific value beyond simple data mining."
+      "placeholder": "Phenomena/data/system to explore:\n\nPotential discoveries your approach might reveal:\n1. \n2. \n3. \n\nValue of this exploration to the field:\n\nAnalytical approaches for discovery:\n\nStrategy for validating findings:"
     },
     {
       "id": "relatedpapers",
@@ -76,8 +73,7 @@
         "title": "Identifying Relevant Literature",
         "text": "Every research project builds on existing work. Finding relevant papers helps you avoid reinventing the wheel and positions your work within the scientific conversation.\n\n---\n\n* List 5 papers that test similar hypotheses or address related questions.\n\n* Explain how each paper relates to your specific research question.\n\n* Identify what gap your research will fill that these papers don't address.\n\n* Consider papers with contrasting perspectives or results to yours."
       },
-      "placeholder": "Most similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
-      "llmInstructions": "I'll evaluate the papers you've listed as most relevant to your research:\n\n1. Based on the paper titles/authors you've provided, I'll assess how relevant they appear to be to your specific hypotheses\n2. I'll suggest what key aspects of these papers might be particularly important to consider for your work\n3. I'll suggest what types of additional papers might be valuable to include (e.g., methodological papers, contrasting perspectives)\n4. If you've included enough information, I'll highlight potential gaps in the literature that your work could address\n\nNote that I can only evaluate based on the information you've provided about these papers - I don't have the ability to search for or read the actual papers."
+      "placeholder": "Most similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. "
     },
     {
       "id": "experiment",
@@ -89,8 +85,7 @@
         "title": "Experiment",
         "text": "Your experiment is how you'll actually collect data to answer your research question. A well-designed experiment gives you the best chance of getting a clear answer.\n\n---\n\n* Define your key variables (independent, dependent, controlled).\n\n* Describe your sample and justify your sample size.\n\n* Outline your data collection procedures and control conditions.\n\n* State predicted results for each hypothesis.\n\n* Identify potential confounds and how you'll address them."
       },
-      "placeholder": "Key Variables:\n- Independent: \n- Dependent: \n- Controlled: \n\nSample & Size Justification: \n\nData Collection Methods: \n\nPredicted Results: \n\nPotential Confounds & Mitigations:",
-      "llmInstructions": "I'll review your experimental design and assess how well it tests your research question and hypotheses. Specifically, I'll evaluate:\n\n1. Whether your design directly tests your hypotheses\n2. If your predicted outcomes for each hypothesis are truly distinct and measurable\n3. Whether your sample characteristics and size are appropriate\n4. If your control conditions adequately rule out alternative explanations\n5. How well you've identified and planned to address potential confounds\n\nI'll provide specific, constructive suggestions to improve the rigor and clarity of your experimental design."
+      "placeholder": "Key Variables:\n- Independent: \n- Dependent: \n- Controlled: \n\nSample & Size Justification: \n\nData Collection Methods: \n\nPredicted Results: \n\nPotential Confounds & Mitigations:"
     },
     {
       "id": "existingdata",
@@ -102,8 +97,7 @@
         "title": "Using Pre-existing Datasets",
         "text": "Using existing datasets can save time and resources. However, it's crucial to understand where the data came from and its limitations before basing your research on it.\n\n---\n\n* Identify the specific dataset(s) and where/how you will access them.\n\n* Explain what the data was originally collected for and by whom.\n\n* Confirm you have legal rights to use the data for your purpose.\n\n* Describe what you know about data provenance and quality assurance.\n\n* Assess if the dataset contains the variables needed to answer your research question."
       },
-      "placeholder": "Dataset name and source:\n\nOriginal purpose of data collection:\n\nRights/permissions to use the data:\n\nData provenance and quality information:\n\nRelevant variables in the dataset:\n\nPotential limitations of using this dataset:",
-      "llmInstructions": "I see you're planning to use pre-existing data for your research. Let me evaluate how thoroughly you've considered the dataset's appropriateness:\n\n1. How clearly you've identified the specific dataset and its source\n2. Whether you understand what the data was originally collected for\n3. If you've addressed legal and ethical considerations for data reuse\n4. How well you understand the data's provenance and quality\n5. Whether the dataset actually contains the variables needed for your research question\n\nI'll highlight any potential concerns about using this dataset and suggest additional considerations to ensure the data is appropriate for your specific research goals."
+      "placeholder": "Dataset name and source:\n\nOriginal purpose of data collection:\n\nRights/permissions to use the data:\n\nData provenance and quality information:\n\nRelevant variables in the dataset:\n\nPotential limitations of using this dataset:"
     },
     {
       "id": "analysis",
@@ -115,8 +109,7 @@
         "title": "Data Analysis Plan",
         "text": "Your analysis plan describes exactly how you'll extract meaning from your data. Planning it in advance helps prevent p-hacking and increases the credibility of your findings.\n\n---\n\n* Define your data cleaning steps and exclusion criteria.\n\n* Specify your primary statistical method(s) or model(s).\n\n* Explain how your analysis will address your research question.\n\n* Describe how you'll quantify uncertainty in your results.\n\n* Outline how you'll handle any special cases (outliers, multiple comparisons, etc.)."
       },
-      "placeholder": "Data Cleaning & Exclusions:\n\nPrimary Analysis Method:\n\nHow Analysis Addresses Research Question:\n\nUncertainty Quantification:\n\nSpecial Cases Handling:",
-      "llmInstructions": "I'll review your data analysis plan to assess how well it addresses your research question and hypotheses. Specifically, I'll evaluate:\n\n1. Whether your analysis methods are appropriate for your research design and data type\n2. If your plan clearly specifies how you'll distinguish between hypotheses\n3. How well you've addressed data cleaning, outliers, and missing data\n4. Whether your approach to uncertainty quantification is appropriate\n5. If you've properly addressed potential issues like multiple comparisons\n\nI'll provide specific, constructive suggestions to improve the rigor and clarity of your analysis plan."
+      "placeholder": "Data Cleaning & Exclusions:\n\nPrimary Analysis Method:\n\nHow Analysis Addresses Research Question:\n\nUncertainty Quantification:\n\nSpecial Cases Handling:"
     },
     {
       "id": "process",
@@ -128,8 +121,7 @@
         "title": "Research Process",
         "text": "Research is a practical endeavor requiring specific skills, resources, and planning. This section helps you anticipate what you'll need to successfully complete your project.\n\n---\n\n* List essential skills needed and identify which ones you lack.\n\n* Name potential collaborators and their specific contributions.\n\n* Describe your plan for data/code sharing and documentation.\n\n* Outline a realistic timeline with key milestones and duration.\n\n* Identify major potential obstacles and specific contingency plans."
       },
-      "placeholder": "Skills Needed vs. Skills I Have:\n\nCollaborators & Their Roles:\n\nData/Code Sharing Plan:\n\nTimeline & Milestones:\n\nObstacles & Contingencies:",
-      "llmInstructions": "I'll review your research process plan to assess how realistic and thorough it is. Specifically, I'll evaluate:\n\n1. Whether you've identified all the critical skills needed and have reasonable plans to acquire missing ones\n2. If your collaboration plan is appropriate and comprehensive\n3. How well you've planned for data/code sharing and reproducibility\n4. Whether your timeline seems realistic given the scope of work\n5. How thoroughly you've anticipated potential obstacles\n\nI'll provide specific, constructive suggestions to improve the feasibility and completeness of your research process plan."
+      "placeholder": "Skills Needed vs. Skills I Have:\n\nCollaborators & Their Roles:\n\nData/Code Sharing Plan:\n\nTimeline & Milestones:\n\nObstacles & Contingencies:"
     },
     {
       "id": "abstract",
@@ -141,8 +133,7 @@
         "title": "Drafting an Abstract",
         "text": "An abstract is a mini-version of your entire paper. Writing it now helps you organize your thoughts and spot any inconsistencies in your research plan.\n\n---\n\n### Structure (Aim for 1-2 sentences per point):\n\n* **Background:** Briefly introduce the research area, identify the knowledge gap or problem, and state its significance.\n\n* **Objective/Question:** Clearly state the main research question, primary hypothesis being tested, exploration goal, or problem being solved.\n\n* **Methods:** Concisely summarize the core aspects of your experimental design, participants/sample, and key procedures or analytical techniques.\n\n* **(Expected) Results:** Briefly describe the main anticipated findings and, crucially, how they will address the objective or distinguish between hypotheses.\n\n* **Conclusion/Implications:** State the main takeaway message (even if speculative at this stage) and its potential broader impact on the field or application."
       },
-      "placeholder": "Background: [Introduce field, gap, significance. 1-2 sentences]\n\nObjective/Question: [State primary aim/question/hypothesis. 1 sentence]\n\nMethods: [Briefly describe design, participants, key procedures. 1-2 sentences]\n\n(Expected) Results: [Summarize anticipated main finding and how it addresses the objective. 1-2 sentences]\n\nConclusion/Implications: [State main conclusion and broader impact. 1-2 sentences]",
-      "llmInstructions": "I want you to check the resulting abstract. Does it logically follow from the previous sections (Question, Hypothesis, Experiment, Analysis)? Does it adhere to the requested structure (Background, Objective, Methods, Results, Conclusion)? Is it convincing and clearly written? Is the language precise? What specific changes (e.g., word choice, sentence structure) would make it more powerful or clear? Use a constructive, Socratic dialogue style. Help the user reflect on what they learned by going through this planning process. Ask what they might do differently next time they plan a study."
+      "placeholder": "Background: [Introduce field, gap, significance. 1-2 sentences]\n\nObjective/Question: [State primary aim/question/hypothesis. 1 sentence]\n\nMethods: [Briefly describe design, participants, key procedures. 1-2 sentences]\n\n(Expected) Results: [Summarize anticipated main finding and how it addresses the objective. 1-2 sentences]\n\nConclusion/Implications: [State main conclusion and broader impact. 1-2 sentences]"
     }
   ]
 }
