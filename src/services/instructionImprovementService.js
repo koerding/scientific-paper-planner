@@ -2,16 +2,17 @@
 
 /**
  * Service for improving instructions based on user progress
- * REFACTORED: Uses centralized prompt content via promptUtils.
- * SIMPLIFIED: Uses more lenient completion status with only red/green options.
+ * SIMPLIFIED: Uses more lenient completion status with only red/green options
  */
 import { callOpenAI } from './openaiService';
 import {
   isResearchApproachSection,
   buildSystemPrompt,
-  buildTaskPrompt, // Added buildTaskPrompt
-  generateMockResponse // Added generateMockResponse
+  buildTaskPrompt, // Ensure buildTaskPrompt is imported if used (added in previous step)
+  generateMockResponse // Ensure generateMockResponse is imported if used (added in previous step)
 } from '../utils/promptUtils';
+// Removed unused import of promptContent if buildTaskPrompt handles it
+// import promptContent from '../data/promptContent.json'; // Removed if not directly used
 
 /**
  * Improves instructions for multiple sections, separating instructions and feedback.
@@ -172,11 +173,12 @@ export const improveBatchInstructions = async (
 /**
  * Updates section content array with improved instructions AND feedback.
  * This function now takes the *current* sections array (from state) and updates it.
+ * REMOVED EXPORT as it doesn't seem to be used in usePaperPlanner hook.
  * @param {Array} currentSections - The current array of section objects from state.
  * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback, completionStatus } from the API.
  * @returns {Array} - A new array with updated section content. Returns the original array if inputs are invalid.
  */
-export const updateSectionsWithImprovedInstructions = (currentSections, improvedData) => {
+const updateSectionsWithImprovedInstructions = (currentSections, improvedData) => { // <--- REMOVED 'export'
   // Validate inputs
   if (!Array.isArray(currentSections)) {
     console.error("Invalid currentSections: Expected an array");
@@ -230,3 +232,6 @@ export const updateSectionsWithImprovedInstructions = (currentSections, improved
   // Return the new array with updated sections
   return updatedSections;
 };
+
+// Removed unused import if promptContent is only used via buildTaskPrompt
+// import promptContent from '../data/promptContent.json';
