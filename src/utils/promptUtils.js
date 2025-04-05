@@ -109,15 +109,23 @@ export const getRandomQuestionsForApproach = (sectionId, count = 2) => {
 
 /**
  * Generate a mock response for testing without API
- * @param {string} type - Response type (socraticPrompt, regularChat)
+ * @param {string} type - Response type (socraticPrompt, regularChat, instructionImprovement)
  * @param {string} sectionId - The section ID or approach type
  * @returns {string} - A formatted mock response
  */
 export const generateMockResponse = (type, sectionId) => {
-  // Determine the appropriate template
-  let responseType = type || 'regularChat';
-  let approachType = 'general';
+  // For instruction improvement, return the predefined mock response
+  if (type === 'improve_instructions_batch' || type === 'instructionImprovement') {
+    return promptContent.mockResponses.instructionImprovement;
+  }
   
+  // Determine the appropriate template for chat responses
+  let responseType = type || 'regularChat';
+  if (responseType === '__SOCRATIC_PROMPT__') {
+    responseType = 'socraticPrompt';
+  }
+  
+  let approachType = 'general';
   if (sectionId === 'hypothesis' || 
       sectionId === 'needsresearch' || 
       sectionId === 'exploratoryresearch') {
@@ -150,4 +158,20 @@ export const generateMockResponse = (type, sectionId) => {
   response = response.replace(/{{question\d+}}/g, '');
   
   return response;
+};
+
+/**
+ * Get instruction task prompt for instruction improvement service
+ * @returns {string} - The instruction task prompt
+ */
+export const getInstructionTaskPrompt = () => {
+  return promptContent.instructionTaskPrompt;
+};
+
+/**
+ * Get instruction output example for instruction improvement service
+ * @returns {string} - The instruction output example
+ */
+export const getInstructionOutputExample = () => {
+  return promptContent.instructionOutputExample;
 };
