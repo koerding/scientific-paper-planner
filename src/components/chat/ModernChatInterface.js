@@ -1,3 +1,5 @@
+// FILE: src/components/chat/ModernChatInterface.js
+
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import '../../styles/PaperPlanner.css';
@@ -98,8 +100,8 @@ const ModernChatInterface = ({
                 </div>
                 <h4 className="text-base font-medium text-gray-700 mb-1">Your AI Research Assistant</h4>
                 <p className="text-gray-500 text-base">
-                  I'll help you develop your research project. Ask questions or click "Mark Complete" in the instructions panel when you're ready for feedback!
-                </p>
+                  I'll help you develop your research project. Ask questions when you're ready for feedback!
+                </p> {/* Removed reference to Mark Complete */}
               </div>
             ) : (
               <div className="space-y-3">
