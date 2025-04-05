@@ -5,8 +5,9 @@
  * Uses OpenAI to extract structured information from scientific papers.
  * MODIFIED: Uses CDN for pdf.js worker.
  * MODIFIED: Puts detailed errors in 'question' field and extracted text in 'hypothesis' field on AI/parse failure.
+ * MODIFIED: Defines and passes its own system prompt to callOpenAI.
  */
-import { callOpenAI } from './openaiService'; //
+import { callOpenAI } from './openaiService';
 
 // --- Ensure Libraries are Installed ---
 // Run: npm install pdfjs-dist mammoth (or yarn add)
@@ -137,8 +138,12 @@ export const importDocumentContent = async (file) => { //
     documentText = await extractTextFromDocument(file); // Will reject on extraction error
     console.log(`Extraction successful for ${file.name}. Text length: ${documentText.length}`);
 
-    // Step 2: Prepare the prompt for OpenAI using extracted text
-    const prompt = `
+    // *** Define System Prompt for Document Import (Careful, Interpretative) ***
+    const importSystemPrompt = `You are an AI assistant tasked with carefully extracting structured information from potentially messy scientific document text. Interpret the text cautiously, adhering strictly to the requested JSON format. Prioritize accuracy and explicitly note fields where information is missing or ambiguous in the source text. Avoid making assumptions beyond the provided text.`;
+
+    // Step 2: Prepare the main prompt for OpenAI using extracted text
+    // (This remains largely the same, defining the task and JSON structure)
+    const mainPrompt = `
 # Scientific Paper Extraction - Strict Format
 
 ## Task Overview
@@ -156,7 +161,7 @@ Extract key components from the provided scientific paper text and format them i
 ## Research Approach Selection
 Determine which research approach the paper likely uses based *only* on the provided text:
 1. Hypothesis-driven (distinguish between hypotheses)
-2. Needs-based (solve a problem, e.g. engineering or medicine) 
+2. Needs-based (solve a problem, e.g. engineering or medicine)
 3. Exploratory (take data and see what is there)
 
 ## Data Collection Method Selection
@@ -193,7 +198,7 @@ Output valid JSON matching this exact structure:
 
 ## IMPORTANT:
 - Base extraction *solely* on the provided text, which might be messy or truncated.
-- If information for a field is not found, explicitly state 'Not found in text'. 
+- If information for a field is not found, explicitly state 'Not found in text'.
 - If educated guesses are needed, make sure to communicate the lack of clarity.
 - Include ONLY ONE research approach field.
 - Include ONLY ONE data collection field.
@@ -206,17 +211,19 @@ ${documentText}
 Based *only* on the text above, create the scientific paper structure in the specified JSON format.
 `;
 
-    // Step 3: Send prompt to OpenAI
+    // Step 3: Send prompt to OpenAI, passing the specific system prompt
     console.log('Sending extracted document text to OpenAI for processing...');
-    const response = await callOpenAI( //
-      prompt,
-      'document_import_text', // New context type
-      {}, // No user inputs needed
-      [], // No sections needed
-      { temperature: 0.2, max_tokens: 3000 } // Low temp, higher tokens
+    const response = await callOpenAI(
+      mainPrompt,                 // The detailed task prompt
+      'document_import_text',     // Context type
+      {},                         // No user inputs needed here
+      [],                         // No sections needed here
+      { temperature: 0.2, max_tokens: 3000 }, // Options
+      [],                         // No chat history needed here
+      importSystemPrompt          // Pass the specific system prompt
     );
 
-    // Step 4: Parse the response JSON
+    // Step 4: Parse the response JSON (remains the same)
     try {
       const cleanResponse = response.replace(/```json\s*|\s*```/g, ''); //
       let parsedData;
@@ -227,60 +234,51 @@ Based *only* on the text above, create the scientific paper structure in the spe
         if (jsonMatch) {
           parsedData = JSON.parse(jsonMatch[0]); //
         } else {
-          // Throw specific error for parsing failure
           throw new Error(`Could not extract valid JSON from AI response. Response started with: ${cleanResponse.substring(0, 100)}`); //
         }
       }
 
-      // Basic validation and default setting
       if (!parsedData.userInputs) parsedData.userInputs = {}; //
       if (!parsedData.timestamp) parsedData.timestamp = new Date().toISOString(); //
       if (!parsedData.version) parsedData.version = '1.0-text-extraction'; //
       if (!parsedData.chatMessages) parsedData.chatMessages = {}; //
 
       console.log('Successfully processed extracted text to structured data');
-      return parsedData; // Return success
-    } catch (error) { // Catch errors from AI response parsing
+      return parsedData;
+    } catch (error) {
       console.error('Error parsing OpenAI response:', error);
-      console.log('Raw OpenAI response on parse error:', response); // Log raw response
+      console.log('Raw OpenAI response on parse error:', response);
 
-      // *** NEW ERROR HANDLING: Error in 'question', Extracted Text in 'hypothesis' ***
       const detailedErrorMessage = `AI Response Parsing Error for ${file.name}:\nType: ${error.name || 'Error'}\nMessage: ${error.message || 'Unknown parsing error'}\n\n--- Raw AI Response (Check Console Log) ---`;
-      const fallbackData = { //
+      const fallbackData = {
         userInputs: {
-          question: `Research Question: Error after text extraction\n\nSignificance/Impact: ${detailedErrorMessage}`, // Detailed error here
-          // Put the raw extracted text into the hypothesis field for debugging
-          hypothesis: `--- RAW EXTRACTED TEXT (for debugging AI failure) ---\n\n${documentText}`, // documentText variable holds the successfully extracted text
-          // Indicate failure in other key fields
+          question: `Research Question: Error after text extraction\n\nSignificance/Impact: ${detailedErrorMessage}`,
+          hypothesis: `--- RAW EXTRACTED TEXT (for debugging AI failure) ---\n\n${documentText}`,
           abstract: `AI response parsing failed for ${file.name}. See details in Question section. Raw text in Hypothesis section.`,
         },
         chatMessages: {},
         timestamp: new Date().toISOString(),
-        version: '1.0-text-parse-error', // Specific error version
+        version: '1.0-text-parse-error',
       };
-      return fallbackData; //
-      // *** END NEW ERROR HANDLING ***
+      return fallbackData;
     }
-  } catch (error) { // Catch errors from text extraction (rejects from extractTextFromDocument) or OpenAI call
+  } catch (error) {
     console.error('Error during document import process:', error);
 
-    // *** NEW ERROR HANDLING: Error in 'question', Indicate no text in 'hypothesis' ***
     const detailedErrorMessage = `Import Error for ${file.name} (Stage: ${documentText ? 'AI Call/Processing' : 'Text Extraction'}):\nType: ${error.name || 'Error'}\nMessage: ${error.message || 'Unknown import error'}\n\n--- Error Stack Trace (for debugging) ---\n${error.stack || 'No stack trace available'}`;
-    // documentText will be empty if the error came from extractTextFromDocument
     const hypothesisTextOnError = documentText
         ? `--- RAW EXTRACTED TEXT (for debugging AI failure) ---\n\n${documentText}`
         : "Text extraction failed. See error details in Question section.";
 
-    return { //
+    return {
       userInputs: {
-        question: `Research Question: Error during import\n\nSignificance/Impact: ${detailedErrorMessage}`, // Detailed error here
-        hypothesis: hypothesisTextOnError, // Show extracted text if available, otherwise indicate extraction failure
+        question: `Research Question: Error during import\n\nSignificance/Impact: ${detailedErrorMessage}`,
+        hypothesis: hypothesisTextOnError,
         abstract: `Document import failed for ${file.name}. See details in Question section.`,
       },
       chatMessages: {},
       timestamp: new Date().toISOString(),
-      version: '1.0-text-import-error', // Specific error version
+      version: '1.0-text-import-error',
     };
-    // *** END NEW ERROR HANDLING ***
   }
 };
