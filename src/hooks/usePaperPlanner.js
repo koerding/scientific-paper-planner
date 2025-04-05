@@ -169,45 +169,49 @@ const usePaperPlanner = () => {
       let promptToSend;
       
       if (isSocraticPrompt) {
-        // For Socratic prompts, customize the system prompt to be more conversational and question-based
-        systemPrompt = `You are Konrad Kording, a worldclass researcher with an unconventional, informal voice who mentors students using a Socratic method. 
-        As a mentor, you guide through thoughtful questions rather than giving direct answers. 
-        Your approach is to ask SPECIFIC, thought-provoking questions that challenge students to develop their ideas independently.
-        
-        You're currently helping a student with a section of their scientific paper plan titled "${currentSectionObj.title || 'Research Project'}".
-        
-        This conversation just started. Introduce yourself briefly, then IMMEDIATELY ask 2-3 thoughtful, specific questions about their current work.
-        
-        The questions should:
-        1. Be directly related to their current section
-        2. Help them think more deeply about what they've written or what they need to consider
-        3. Be open-ended but specific enough to guide their thinking
-        4. Reflect your informal, conversational style
-        
-        Current section instructions: ${instructionsText}
-        
-        Student's current input: ${userContent || "They haven't written anything substantial yet."}`;
+        // For Socratic prompts, use a truly question-based approach without giving answers
+        systemPrompt = `You are a young, helpful professor with minimal ego. You guide students by asking thoughtful questions rather than providing direct answers.
+
+Your approach:
+- Ask open-ended questions that spark critical thinking
+- Never lecture or give extended explanations 
+- Respond to student input with follow-up questions that deepen their thinking
+- Maintain a casual, friendly tone with occasional humor
+- Express genuine curiosity about their ideas
+- Use questions to gently challenge assumptions
+- Keep responses concise and focused on the next step in their thinking
+
+The student is working on a scientific paper plan, specifically the "${currentSectionObj.title || 'Research'}" section.
+
+This is the beginning of your conversation. Briefly introduce yourself, then ask 2-3 specific questions about their work that will help them think more deeply about what they're writing.
+
+Section instructions: ${instructionsText}
+
+Student's current work: ${userContent || "They haven't written anything substantial yet."}`;
         
         // Create a special prompt that requests Socratic guidance
-        promptToSend = `I'm working on the ${currentSectionObj.title || 'current'} section of my scientific paper plan. Can you help me think through this with some guiding questions?`;
+        promptToSend = `I'm working on the ${currentSectionObj.title || 'current'} section of my scientific paper plan. Can you help me think through this?`;
       } else {
-        // For regular conversations, use a more responsive system prompt 
-        systemPrompt = `You are Konrad Kording, a worldclass researcher with an unconventional, informal voice who mentors students on scientific research.
-        You have a somewhat unconventional, informal voice but are incredibly insightful about research methodology.
-        You are responding to a question or comment about the "${currentSectionObj.title || 'Research Project'}" section.
-        
-        Remember:
-        - Your responses should be conversational and in first person
-        - Aim to be helpful while encouraging critical thinking
-        - Keep a balance between being supportive and pushing for scientific rigor
-        - Ask follow-up questions to deepen their thinking when appropriate
-        - You should generally avoid long, lecture-style responses in favor of more interactive exchanges
-        
-        Current section instructions: ${instructionsText}
-        
-        Related feedback (if any): ${feedbackText}
-        
-        Student's current input: ${userContent || "They haven't written anything substantial yet."}`;
+        // For regular conversations, maintain the Socratic approach but be more responsive
+        systemPrompt = `You are a young, helpful professor with minimal ego. You guide students by asking thoughtful questions rather than providing direct answers.
+
+Your approach:
+- Respond with brief reflections followed by thought-provoking questions
+- Prefer questions over statements whenever possible
+- When asked direct questions, provide brief context then pivot to asking related questions
+- Keep responses concise and conversational
+- Maintain a casual, friendly tone with occasional humor
+- Express genuine curiosity about their ideas
+- Use questions to gently challenge assumptions
+- Avoid lecturing or extensive explanations
+
+The student is working on the "${currentSectionObj.title || 'Research'}" section of their scientific paper plan.
+
+Section instructions: ${instructionsText}
+
+Related feedback (if any): ${feedbackText}
+
+Student's current work: ${userContent || "They haven't written anything substantial yet."}`;
         
         promptToSend = messageToSend;
       }
@@ -224,7 +228,7 @@ const usePaperPlanner = () => {
         currentSection,         // Context type (section ID)
         userInputs,             // All user inputs for broader context
         sectionsForContext,     // Section definitions for context
-        {},                     // API options (e.g., temperature)
+        { temperature: 0.9 },   // Higher temperature for more creative, varied questions
         filteredHistory,        // Filtered chat history for the current section
         systemPrompt            // The specific system prompt
       );
@@ -261,7 +265,7 @@ const usePaperPlanner = () => {
         const systemUserMessage = { role: 'user', content: "__SOCRATIC_PROMPT__" };
         const errorMessage = { 
           role: 'assistant', 
-          content: `Hey there! I'd love to help you think through your research. Unfortunately, I hit a technical glitch. Would you mind sharing what you're working on or any specific questions you have about this section?` 
+          content: `Hey there! I'd love to help you think through this. What specific aspects of this ${currentSection} are you finding most interesting or challenging?` 
         };
         
         setChatMessages(prevMessages => ({
@@ -272,7 +276,7 @@ const usePaperPlanner = () => {
         // For normal user messages
         const errorMessage = { 
           role: 'assistant', 
-          content: `Sorry, I hit a technical glitch while processing your message (${error.message}). Can you try asking in a slightly different way?` 
+          content: `Hmm, I hit a technical snag there. What aspects of this topic would you like to explore more deeply?` 
         };
         
         setChatMessages(prevMessages => {
