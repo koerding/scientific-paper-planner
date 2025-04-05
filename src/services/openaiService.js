@@ -2,6 +2,7 @@
 
 /**
  * Enhanced OpenAI service with better error reporting and fallback mode
+ * MODIFIED: Accepts systemPrompt parameter for context-specific personas.
  */
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
@@ -9,17 +10,16 @@ const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
 // Fallback flag for development without API key
 const USE_FALLBACK = !apiKey || process.env.REACT_APP_USE_FALLBACK === 'true';
 
-// Add this to your openaiService.js file to enable debug mode and fallbacks
-// MODIFIED: Added currentChatHistory parameter
-const buildMessages = (prompt, contextType, userInputs, sections, currentChatHistory = []) => {
-  // ** UPDATED SYSTEM MESSAGE (Option 2) **
-  const systemMessage = `You are an AI mentor guiding a student through the scientific project planning process. Adopt the persona of an experienced, encouraging professor. Foster critical thinking by asking insightful questions that prompt deeper reflection on their research question, design, and analysis. Offer constructive feedback and suggestions, maintaining a respectful and slightly formal tone appropriate for mentorship. Context type: ${contextType}. Maintain conversation context based on previous messages.`;
-  const messages = [{ role: 'system', content: systemMessage }];
+// MODIFIED: Added systemPrompt parameter, removed internal systemMessage definition.
+const buildMessages = (prompt, contextType, userInputs, sections, currentChatHistory = [], systemPrompt = null) => {
+  // Start with system prompt if provided
+  const messages = systemPrompt ? [{ role: 'system', content: systemPrompt }] : [];
 
   // Add section context safely using the new 'instructions.text'
+  // Note: Context might be less critical if the main prompt already contains it,
+  // but keeping it provides potentially useful background for the AI.
   if (Array.isArray(sections)) {
     sections.forEach((section, index) => {
-      // Strict check for valid section object
       if (!section || typeof section !== 'object' || !section.id || !section.title || !section.instructions || typeof section.instructions.text !== 'string') {
           console.warn(`[openaiService buildMessages] Skipping invalid section at index ${index}`);
           return;
@@ -29,8 +29,11 @@ const buildMessages = (prompt, contextType, userInputs, sections, currentChatHis
       const userInput = userInputs && section.id ? (userInputs[section.id] || '') : '';
       const safeUserInput = (typeof userInput === 'string' ? userInput : JSON.stringify(userInput)) || 'N/A';
 
+      // Avoid duplicating system role message if systemPrompt wasn't provided initially
+      const roleForContext = messages.length > 0 ? 'user' : 'system';
+
       messages.push({
-          role: 'user', // Or adjust role based on how you structure context
+          role: roleForContext, // Use system if no system prompt, otherwise user for context
           content: `Context for Section "${section.title}" (ID: ${section.id}):
 Instructions: ${instructionText || 'N/A'}
 Current User Input: ${safeUserInput}`
@@ -40,10 +43,9 @@ Current User Input: ${safeUserInput}`
        console.error("[openaiService buildMessages] 'sections' is not an array:", sections);
   }
 
-  // *** NEW: Prepend chat history ***
+  // Prepend chat history (if any exists)
   if (Array.isArray(currentChatHistory)) {
     currentChatHistory.forEach(msg => {
-      // Basic validation of message structure
       if (msg && (msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string') {
         messages.push({ role: msg.role, content: msg.content });
       } else {
@@ -58,7 +60,7 @@ Current User Input: ${safeUserInput}`
 };
 
 
-// Mock response function for when no API key is available
+// Mock response function (remains unchanged)
 const mockResponse = (contextType, prompt) => {
   if (contextType === 'improve_instructions_batch') {
     return `
@@ -89,15 +91,16 @@ For a real application, I would respond to your prompt about "${contextType}" wi
 For testing purposes, you can continue using the application with this mock mode.`;
 };
 
-// Main function to call the OpenAI API with improved error handling
-// MODIFIED: Added chatHistory parameter
+// Main function to call the OpenAI API
+// MODIFIED: Added systemPrompt parameter
 export const callOpenAI = async (
     prompt,
     contextType = "general",
     userInputs = {},
     sections = [],
     options = {},
-    chatHistory = [] // Accept chat history
+    chatHistory = [],
+    systemPrompt = null // NEW: Optional system prompt for specific persona
  ) => {
 
   console.log(`[openaiService] API Call Request - Context: ${contextType}`, {
@@ -107,21 +110,20 @@ export const callOpenAI = async (
     promptLength: prompt.length,
     userInputsCount: Object.keys(userInputs).length,
     sectionsCount: Array.isArray(sections) ? sections.length : 'Not an array',
-    // MODIFIED: Log history length
-    chatHistoryLength: Array.isArray(chatHistory) ? chatHistory.length : 'Not an array'
+    chatHistoryLength: Array.isArray(chatHistory) ? chatHistory.length : 'Not an array',
+    hasSystemPrompt: !!systemPrompt
   });
 
   // If no API key is configured, use mock responses
   if (USE_FALLBACK) {
     console.warn("[openaiService] Using FALLBACK mode because API key is missing");
-    // Wait to simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     return mockResponse(contextType, prompt);
   }
 
   const apiUrl = "https://api.openai.com/v1/chat/completions";
-  // MODIFIED: Pass history to buildMessages
-  const messages = buildMessages(prompt, contextType, userInputs, sections, chatHistory);
+  // Pass systemPrompt to buildMessages
+  const messages = buildMessages(prompt, contextType, userInputs, sections, chatHistory, systemPrompt);
 
   const body = JSON.stringify({
     model: model,
@@ -168,12 +170,10 @@ export const callOpenAI = async (
   } catch (error) {
     console.error("Error calling OpenAI API:", error);
 
-    // If the error is due to network connectivity, provide a clear message
     if (error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
       throw new Error("Network error: Unable to connect to OpenAI API. Please check your internet connection.");
     }
 
-    // Return a more user-friendly error
     throw new Error(`OpenAI API Error: ${error.message || 'Unknown error'}`);
   }
 };
