@@ -464,7 +464,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           setCurrentMessage={setCurrentMessage} // From hook
           handleSendMessage={handleSendMessage} // From hook
           loading={chatLoading} // From hook
-          currentSectionData={sectionDataForPanel} // NEW: Pass the full section data
+          currentSectionData={sectionDataForPanel} // NEW: Pass the full section data including AI-edited instructions
         />
 
         <ConfirmDialog
