@@ -131,7 +131,7 @@ const FullHeightInstructionsPanel = ({
   // FIXED: Set style to ensure consistent positioning with header (100px) and footer (44px)
   return (
     <div
-      className="bg-blue-50 border-2 border-blue-500 rounded-lg overflow-y-auto"
+      className="bg-blue-50 border-4 border-blue-500 rounded-lg overflow-y-auto"
       style={{
         position: 'fixed',
         top: '10%', // Positioned right below header
