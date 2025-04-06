@@ -1,5 +1,4 @@
 // FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
-// Change the import line to match the exported function
 
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
@@ -11,6 +10,7 @@ import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
 import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
+import FloatingMagicButton from '../buttons/FloatingMagicButton';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -19,14 +19,15 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
- * UPDATED: Passes currentSectionData to ModernChatInterface
- * UPDATED: Made chat fully user-initiated
+ * UPDATED: Fixes for panel positioning and styling
+ * UPDATED: Added floating Magic button near chat
+ * UPDATED: Made import example button more prominent
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
   const {
     currentSection: currentSectionIdForChat,
-    currentSectionData,  // NEW: Get the section data from the hook
+    currentSectionData,
     userInputs,
     chatMessages,
     currentMessage,
@@ -50,6 +51,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [activeApproach, setActiveApproach] = useState('hypothesis');
   const [activeDataMethod, setActiveDataMethod] = useState('experiment');
   const [sectionCompletionStatus, setSectionCompletionStatus] = useState({});
+  const [improvingInstructions, setImprovingInstructions] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0); // For onboarding highlights
   const sectionRefs = useRef({});
 
   // Use local state for instructions potentially modified by AI
@@ -62,7 +65,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           return { sections: [] }; // Fallback
       }
   });
-  const [improvingInstructions, setImprovingInstructions] = useState(false);
 
   // Effect to map refs
   useEffect(() => {
@@ -248,7 +250,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       );
 
       if (result.success && result.improvedData && result.improvedData.length > 0) {
-        // Update the instruction content
+        // Update the instruction content - preserve formatting
         const updatedSections = updateSectionWithImprovedInstructions(
           localSectionContent, // Update based on current local state
           result.improvedData
@@ -456,6 +458,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           userInputs={userInputs} // Pass user inputs for analysis
         />
 
+        {/* Floating Magic Button placed near chat */}
+        <FloatingMagicButton
+          handleMagicClick={handleMagic}
+          loading={improvingInstructions}
+          onboardingStep={onboardingStep}
+        />
+
         {/* Using ModernChatInterface - updated to be user-initiated only */}
         <ModernChatInterface
           currentSection={currentSectionIdForChat} // From hook (needed for messages)
@@ -466,6 +475,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           handleSendMessage={handleSendMessage} // From hook
           loading={chatLoading} // From hook
           currentSectionData={sectionDataForPanel} // Pass the full section data including AI-edited instructions
+          onboardingStep={onboardingStep} // Pass onboarding step for highlighting
         />
 
         <ConfirmDialog
@@ -484,5 +494,3 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     </div>
   );
 };
-
-export default VerticalPaperPlannerApp;
