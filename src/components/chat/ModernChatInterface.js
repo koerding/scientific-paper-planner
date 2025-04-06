@@ -83,7 +83,7 @@ const ModernChatInterface = ({
 
       {/* Expanded chat interface - fixed positioning and transitions */}
       <div
-        className={`fixed z-30 shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`fixed z-50 shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
           isMinimized ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'
         }`}
         style={{
