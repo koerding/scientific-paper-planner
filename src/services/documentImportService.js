@@ -15,13 +15,19 @@ import mammoth from 'mammoth';
 // Configure PDF Worker
 if (typeof window !== 'undefined' && 'Worker' in window) {
     try {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-        console.log("pdf.js workerSrc set to local:", pdfjsLib.GlobalWorkerOptions.workerSrc);
+        // More explicit worker source setting
+        pdfjsLib.GlobalWorkerOptions.workerSrc = window.location.origin + '/pdf.worker.min.mjs';
+        console.log("Attempting to set pdf.js workerSrc to:", pdfjsLib.GlobalWorkerOptions.workerSrc);
     } catch (e) {
-         console.error("Error setting pdf.js workerSrc:", e);
+        console.error("Detailed error setting pdf.js workerSrc:", e);
+        console.log("window:", window);
+        console.log("pdfjsLib:", pdfjsLib);
     }
 } else {
-   console.warn("Web Workers not available. pdf.js might run slower.");
+   console.warn("Web Workers not fully available. Detailed diagnostics:", {
+     windowDefined: typeof window !== 'undefined',
+     workerInWindow: 'Worker' in window
+   });
 }
 
 /**
