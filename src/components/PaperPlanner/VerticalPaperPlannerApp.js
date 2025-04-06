@@ -480,7 +480,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         <AppHeader />
 
         {/* Main content area */}
-        <div style={{ paddingTop: '50px' }}>
+        <div style={{ paddingTop: '40px' }}>
           <div className="flex">
             <div className="w-half px-6 py-3" style={{ marginRight: '50%' }}>
               {/* Display first two sections: Question and Audience */}
