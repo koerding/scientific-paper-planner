@@ -479,8 +479,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         {/* Render inline AppHeader to avoid react-router-dom dependency */}
         <AppHeader />
 
-        {/* Provide space for fixed header */}
-        <div style={{ paddingTop: '100px' }}> {/* FIXED: Added padding to accommodate fixed header */}
+        {/* Main content area */}
+        <div style={{ paddingTop: '100px' }}>
           <div className="flex">
             <div className="w-1/2 px-6 py-3" style={{ marginRight: '50%' }}>
               {/* Display first two sections: Question and Audience */}
@@ -522,7 +522,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             </div>
           </div>
 
-          {/* Fixed-height footer with consistent spacing */}
+          {/* Fixed-height footer */}
           <div className="text-center text-gray-500 text-sm mt-8 border-t border-gray-200 pt-4 pb-4 bg-white">
             <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
           </div>
@@ -535,14 +535,14 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           userInputs={userInputs}
         />
 
-        {/* Floating Magic Button placed near chat */}
+        {/* Floating Magic Button */}
         <FloatingMagicButton
           handleMagicClick={handleMagic}
           loading={improvingInstructions}
           onboardingStep={onboardingStep}
         />
 
-        {/* Using ModernChatInterface */}
+        {/* Chat Interface */}
         <ModernChatInterface
           currentSection={currentSectionIdForChat}
           currentSectionTitle={sectionDataForPanel?.title}
@@ -555,13 +555,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           onboardingStep={onboardingStep}
         />
 
+        {/* Dialogs */}
         <ConfirmDialog
           showConfirmDialog={showConfirmDialog}
           setShowConfirmDialog={setShowConfirmDialog}
           resetProject={handleResetRequest}
         />
 
-        {/* Render ExamplesDialog */}
         <ExamplesDialog
           showExamplesDialog={showExamplesDialog}
           setShowExamplesDialog={setShowExamplesDialog}
@@ -570,3 +570,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       </div>
     </div>
   );
+};
+
+export default VerticalPaperPlannerApp;
