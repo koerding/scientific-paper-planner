@@ -6,8 +6,9 @@ import ReactMarkdown from 'react-markdown';
  * UPDATED: Fixed positioning to be below header and above footer
  * UPDATED: Added rounded corners for consistency with left side cards
  * UPDATED: Removed Magic button (will be added as floating button)
- * UPDATED: Fixed header and footer issues
  * UPDATED: Reduced padding and whitespace
+ * FIXED: Proper alignment with left panel content
+ * FIXED: Ensures panel ends where footer begins
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -258,15 +259,17 @@ const FullHeightInstructionsPanel = ({
   // Get the appropriate instructions text (with fallback if needed)
   const instructionsText = getInstructionsText();
 
+  // FIXED: Set style to ensure consistent footer alignment with left panel
+  // Using fixed height calculation to ensure it aligns with footer
   return (
     <div
       className="bg-blue-50 border-l-4 border-blue-500 rounded-tl-lg rounded-bl-lg overflow-y-auto"
       style={{
         position: 'fixed',
-        top: '100px', // Positioned right below header (reduced from 118px)
+        top: '100px', // Positioned right below header
         right: '0',
         width: '50%',
-        bottom: '32px', // Less space for footer (reduced from 2rem)
+        bottom: '44px', // FIXED: Align with footer perfectly (was 32px)
         zIndex: 10 // Ensure it's below header buttons if they overlap
       }}
     >
