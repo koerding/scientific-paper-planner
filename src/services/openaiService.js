@@ -4,6 +4,7 @@
  * Modernized OpenAI service using JSON mode for structured responses
  * Uses OpenAI's native JSON mode for reliable parsing
  * UPDATED: Added timeout for API fetch requests.
+ * FIXED: Corrected scope for timeoutId variable.
  */
 import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
 
@@ -87,12 +88,16 @@ export const callOpenAI = async (
     requestBody.response_format = { type: "json_object" };
   }
 
+  // Declare timeoutId outside the try block so it's accessible in catch/finally
+  let timeoutId;
+
   try {
     console.log(`[openaiService] Sending request to OpenAI API (Timeout: ${API_TIMEOUT_MS / 1000}s)...`);
 
     // --- Timeout Implementation ---
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
+    // Assign to the outer timeoutId variable
+    timeoutId = setTimeout(() => {
         console.warn(`[openaiService] API call timed out after ${API_TIMEOUT_MS / 1000} seconds.`);
         controller.abort();
     }, API_TIMEOUT_MS);
@@ -107,8 +112,6 @@ export const callOpenAI = async (
       signal: controller.signal // Link fetch to abort controller
     });
 
-    // Race the fetch against the timeout (though abort controller handles it now)
-    // We still await the fetchPromise directly, but the signal will cause it to abort on timeout.
     const response = await fetchPromise;
 
     // Clear the timeout timer if the fetch completes or fails before the timeout
@@ -163,9 +166,10 @@ export const callOpenAI = async (
     return responseContent;
 
   } catch (error) {
-    // Clear timeout in case error happened before fetch completed but after timeout started
-    // Note: timeoutId might not be defined if error happened before setTimeout
-    if (typeof timeoutId !== 'undefined') clearTimeout(timeoutId);
+    // Clear timeout in the catch block as well, checking if timeoutId was assigned
+    if (timeoutId) {
+        clearTimeout(timeoutId);
+    }
 
     console.error("Error calling OpenAI API:", error);
 
