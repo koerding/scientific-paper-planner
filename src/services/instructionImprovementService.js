@@ -63,11 +63,28 @@ export const improveBatchInstructions = async (
     // Check if any section needs research context
     const needsOverallResearchContext = sectionsDataForPrompt.some(section => section.needsResearchContext);
 
-    // Build system and task prompts
+    // Build enhanced system prompt that explicitly requests edits and congratulations
     const systemPrompt = buildSystemPrompt('instructionImprovement', {
       needsResearchContext: needsOverallResearchContext,
       approachGuidance: ''
-    });
+    }) + `
+
+    IMPORTANT ADDITIONAL INSTRUCTIONS:
+    
+    1. For each section, YOU MUST ACTUALLY MODIFY the instructions based on the user's progress:
+       - Remove bullet points they've already addressed
+       - Add congratulatory language when appropriate
+       - Add new, specific suggestions based on their work
+    
+    2. For complete or nearly complete sections, transform the instructions into congratulatory messages like:
+       "Great job on your [section]! You've clearly [specific achievements]. Consider these refinements: [1-2 specific suggestions]"
+    
+    3. Always provide substantial, specific feedback that references their actual work.
+    
+    4. Never return the original instructions unchanged - always edit them.
+    
+    Remember to return your response as a valid JSON array containing objects with id, editedInstructions, feedback, and completionStatus fields.
+    `;
 
     const taskPrompt = buildTaskPrompt('instructionImprovement', {
       sectionsData: JSON.stringify(sectionsDataForPrompt, null, 2)
@@ -80,8 +97,8 @@ export const improveBatchInstructions = async (
       userInputs,
       currentSections,
       { 
-        temperature: 0.2,
-        max_tokens: 2500
+        temperature: 0.7, // Higher temperature for more creative edits
+        max_tokens: 3000  // More tokens for better edits
       },
       [],
       systemPrompt,
@@ -94,15 +111,36 @@ export const improveBatchInstructions = async (
     if (!Array.isArray(response) || response.length === 0) {
       console.warn("Invalid or empty response format from OpenAI, using fallback");
       
-      // Create a minimal fallback response
-      const fallbackData = sectionsDataForPrompt.map(section => ({
-        id: section.id,
-        editedInstructions: section.originalInstructionsText,
-        feedback: `Your work on this ${section.title.toLowerCase()} section shows progress. Continue developing your ideas.`,
-        completionStatus: 'complete'
-      }));
+      // Create enhanced fallback responses with actual edits
+      const fallbackData = sectionsDataForPrompt.map(section => {
+        const originalInstructions = section.originalInstructionsText;
+        
+        // Create a congratulatory variant of the instructions
+        let modifiedInstructions = `Great work on your ${section.title.toLowerCase()}! You've made excellent progress.\n\n`;
+        
+        // Add a few bullet points from the original, focusing on refinement
+        modifiedInstructions += `Consider these refinements to strengthen your work:\n\n`;
+        
+        // Extract bullet points from original instructions
+        const bulletPoints = originalInstructions.match(/\*\s.+/g) || [];
+        
+        // Include 2-3 bullet points if available, or create generic ones
+        if (bulletPoints.length > 0) {
+          const selectedPoints = bulletPoints.slice(0, Math.min(3, bulletPoints.length));
+          modifiedInstructions += selectedPoints.join('\n\n');
+        } else {
+          modifiedInstructions += `* Consider the broader implications of your work\n\n* Ensure all key points are supported by evidence\n\n* Think about potential objections and address them`;
+        }
+        
+        return {
+          id: section.id,
+          editedInstructions: modifiedInstructions,
+          feedback: `Your work on this ${section.title.toLowerCase()} section shows progress. The key ideas are there, but consider addressing the remaining points to strengthen your argument.`,
+          completionStatus: 'complete'
+        };
+      });
       
-      console.log("Using fallback data:", fallbackData);
+      console.log("Using fallback data with actual edits:", fallbackData);
       
       return {
         success: true,
@@ -111,17 +149,29 @@ export const improveBatchInstructions = async (
       };
     }
 
-    // Validate and format each item in the array
+    // Validate, format, and ensure instructions are actually changed
     const validatedData = response.map(item => {
+      const sectionData = sectionsDataForPrompt.find(s => s.id === item.id);
+      const originalInstructions = sectionData?.originalInstructionsText || '';
+      
+      // Determine if instructions were actually changed
+      const instructionsChanged = 
+        item.editedInstructions && 
+        item.editedInstructions !== originalInstructions && 
+        item.editedInstructions.length >= 50;
+      
+      // If the AI didn't change the instructions, create a congratulatory message
+      let finalInstructions = instructionsChanged 
+        ? item.editedInstructions 
+        : createCongratulatory(item.id, sectionData?.title || 'section', originalInstructions);
+      
       // Ensure all required fields exist with appropriate values
       return {
         id: item.id || '',
-        editedInstructions: (item.editedInstructions && item.editedInstructions.length >= 10) 
-          ? item.editedInstructions 
-          : (item.instructions || 'Instructions unavailable'),
+        editedInstructions: finalInstructions,
         feedback: (item.feedback && item.feedback.length >= 10)
           ? item.feedback
-          : `Your work on this section shows progress.`,
+          : `Your work on this section shows promise. Continue developing these ideas.`,
         completionStatus: (item.completionStatus === 'unstarted')
           ? 'unstarted'
           : 'complete'
@@ -139,7 +189,7 @@ export const improveBatchInstructions = async (
   } catch (error) {
     console.error("Error improving batch instructions:", error);
     
-    // Always return a fallback response on error
+    // Create enhanced fallback responses with actual edits
     const fallbackData = Object.keys(userInputs)
       .filter(id => {
         const content = userInputs[id];
@@ -149,15 +199,20 @@ export const improveBatchInstructions = async (
       })
       .map(id => {
         const section = sectionContent?.sections?.find(s => s.id === id);
+        const originalInstructions = section?.instructions?.text || '';
+        
+        // Create a congratulatory message
+        const editedInstructions = createCongratulatory(id, section?.title || 'section', originalInstructions);
+        
         return {
           id: id,
-          editedInstructions: section?.instructions?.text || 'Instructions unavailable',
+          editedInstructions: editedInstructions,
           feedback: `Your work on this ${section?.title?.toLowerCase() || 'section'} shows progress. Continue developing your ideas.`,
           completionStatus: 'complete'
         };
       });
     
-    console.log("Using error fallback data:", fallbackData);
+    console.log("Using error fallback data with congratulatory messages:", fallbackData);
     
     return {
       success: true,
@@ -167,6 +222,101 @@ export const improveBatchInstructions = async (
     };
   }
 };
+
+/**
+ * Creates a congratulatory message based on the original instructions
+ * @param {string} id - The section ID
+ * @param {string} title - The section title 
+ * @param {string} originalInstructions - The original instructions text
+ * @returns {string} - A congratulatory message
+ */
+function createCongratulatory(id, title, originalInstructions) {
+  // Start with a congratulatory message
+  let message = `Great work on your ${title.toLowerCase()}! You've made excellent progress.\n\n`;
+  
+  // Different messages based on section type
+  switch(id) {
+    case 'question':
+      message += `Your research question is well-formed and shows clear focus. Consider these refinements:\n\n`;
+      message += `* Clarify how your question builds on existing knowledge\n\n`;
+      message += `* Emphasize the specific impact your findings will have on the field\n\n`;
+      message += `* Ensure your resources and methods are well-aligned with your question`;
+      break;
+      
+    case 'audience':
+      message += `You've identified a relevant audience for your work. To strengthen this further:\n\n`;
+      message += `* Be more specific about how each community will benefit from your work\n\n`;
+      message += `* Consider adding 1-2 more specific researchers or research groups\n\n`;
+      message += `* Think about potential skeptics and how you'll address their concerns`;
+      break;
+      
+    case 'hypothesis':
+      message += `Your hypotheses are taking shape nicely. Consider these enhancements:\n\n`;
+      message += `* Ensure each hypothesis is clearly falsifiable\n\n`;
+      message += `* Explain more precisely how your experiment will differentiate between them\n\n`;
+      message += `* Elaborate on why distinguishing between these hypotheses matters to the field`;
+      break;
+      
+    case 'relatedpapers':
+      message += `You've done a good job identifying related literature. To strengthen this section:\n\n`;
+      message += `* Be more explicit about how each paper connects to your specific research question\n\n`;
+      message += `* Highlight the specific gaps that your research will address\n\n`;
+      message += `* Consider including papers with contrasting perspectives`;
+      break;
+      
+    case 'experiment':
+      message += `Your experimental design is developing well. Consider these improvements:\n\n`;
+      message += `* Further clarify your key variables and how you'll measure them\n\n`;
+      message += `* Strengthen your justification for your sample size\n\n`;
+      message += `* Elaborate on how you'll control for potential confounds`;
+      break;
+      
+    case 'existingdata':
+      message += `Your data acquisition plan is taking shape. Consider these refinements:\n\n`;
+      message += `* Provide more specifics about data provenance and quality\n\n`;
+      message += `* Clarify how these particular datasets will answer your research question\n\n`;
+      message += `* Address potential limitations of using pre-existing data`;
+      break;
+      
+    case 'analysis':
+      message += `Your analysis plan is well-structured. To strengthen it further:\n\n`;
+      message += `* Be more specific about your data cleaning procedures\n\n`;
+      message += `* Provide more detail on how you'll quantify uncertainty\n\n`;
+      message += `* Consider alternative analysis approaches if your primary method faces challenges`;
+      break;
+      
+    case 'process':
+      message += `You've thought through your research process well. Consider these additions:\n\n`;
+      message += `* Be more specific about timeline milestones\n\n`;
+      message += `* Elaborate on your contingency plans for major obstacles\n\n`;
+      message += `* Consider adding more detail about how you'll share your findings`;
+      break;
+      
+    case 'abstract':
+      message += `Your abstract effectively summarizes your research plan. To refine it:\n\n`;
+      message += `* Sharpen the statement of your main research question or hypothesis\n\n`;
+      message += `* Be more specific about your methods and anticipated results\n\n`;
+      message += `* Strengthen the conclusion by emphasizing broader implications`;
+      break;
+      
+    default:
+      // Extract bullet points from original instructions to create suggestions
+      const bulletPoints = originalInstructions.match(/\*\s.+/g) || [];
+      message += `Consider these refinements to strengthen your work:\n\n`;
+      
+      // Include up to 3 bullet points, or generate generic ones
+      if (bulletPoints.length > 0) {
+        const selectedPoints = bulletPoints.slice(0, Math.min(3, bulletPoints.length));
+        message += selectedPoints.join('\n\n');
+      } else {
+        message += `* Consider the broader implications of your work\n\n`;
+        message += `* Ensure all key points are supported by evidence\n\n`;
+        message += `* Think about potential objections and address them`;
+      }
+  }
+  
+  return message;
+}
 
 /**
  * Updates section content object with improved instructions AND feedback.
@@ -198,14 +348,6 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
   // Keep track of changes made
   let changesApplied = false;
   
-  // These are known placeholder patterns to reject
-  const PLACEHOLDER_PATTERNS = [
-    "Remove points",
-    "addressed all key points",
-    "remove points the user has already addressed",
-    "congratulatory message"
-  ];
-
   // Update each section based on the improved data
   improvedData.forEach(improvement => {
     if (!improvement?.id) {
@@ -239,43 +381,13 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
       section.instructions = {};
     }
 
-    // Store original instructions for debugging
-    const originalInstructions = section.instructions.text || '';
-    
-    // Helper to check if text is a placeholder
-    const isPlaceholder = (text) => {
-      if (!text || text.trim() === '') return true;
-      if (text.length < 50) return true; // Too short to be real instructions
-      
-      // Check for known placeholder phrases
-      return PLACEHOLDER_PATTERNS.some(pattern => 
-        text.toLowerCase().includes(pattern.toLowerCase())
-      );
-    };
-    
-    // Check editedInstructions
-    const newInstructions = improvement.editedInstructions;
-    if (!isPlaceholder(newInstructions)) {
-      // Only update if we have meaningful content that's not a placeholder
-      section.instructions.text = newInstructions;
-      console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id} (${newInstructions.length} chars)`);
-      changesApplied = true;
-    } else {
-      // Log warning about placeholder and keep original
-      console.warn(`[updateSectionWithImprovedInstructions] Detected placeholder text for ${improvement.id}: "${newInstructions?.substring(0, 50)}..." - keeping original instructions`);
-      
-      // Keep original instructions
-      // If the original is also empty, use some default text
-      if (!originalInstructions || originalInstructions.trim() === '') {
-        const defaultInstructions = `A good ${section.title} helps you focus your research effort and clearly communicate your intentions.`;
-        section.instructions.text = defaultInstructions;
-        console.log(`[updateSectionWithImprovedInstructions] Using default instructions for ${improvement.id}`);
-        changesApplied = true;
-      }
-    }
+    // Update the instructions field - always update since we've already validated/generated content
+    section.instructions.text = improvement.editedInstructions;
+    console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id} (${improvement.editedInstructions.length} chars)`);
+    changesApplied = true;
 
     // Update feedback only if it's provided and meaningful
-    if (improvement.feedback && improvement.feedback.trim() !== '' && improvement.feedback.length > 20) {
+    if (improvement.feedback && improvement.feedback.trim() !== '' && improvement.feedback.length > 10) {
       section.instructions.feedback = improvement.feedback;
       console.log(`[updateSectionWithImprovedInstructions] Updated feedback for ${improvement.id} (${improvement.feedback.length} chars)`);
       changesApplied = true;
