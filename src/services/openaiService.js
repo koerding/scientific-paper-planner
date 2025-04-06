@@ -72,7 +72,7 @@ export const callOpenAI = async (
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Use our utility to generate appropriate mock responses
-    return generateMockResponse('regularChat', contextType);
+    return generateMockResponse('chat', contextType);
   }
 
   const apiUrl = "https://api.openai.com/v1/chat/completions";
