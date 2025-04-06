@@ -524,7 +524,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
           {/* Fixed-height footer */}
           <div className="text-center text-gray-500 text-sm mt-8 border-t border-gray-200 pt-4 pb-4 bg-white">
-            <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
+            <p>Scientific Paper Planner • Designed with Love for Researchers by Konrad @Kordinglab • {new Date().getFullYear()}</p>
           </div>
         </div>
 
