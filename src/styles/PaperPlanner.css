@@ -328,8 +328,8 @@ header.bg-white.shadow-sm .container {
 /* Fix for instructions panel */
 .bg-blue-50.border-l-4.border-blue-500 {
   height: calc(100vh - 144px);
-  top: 100px !important;
-  bottom: 44px !important;
+  top: 140px !important;
+  bottom: 100px !important;
 }
 
 /* Ensure consistent section spacing */
