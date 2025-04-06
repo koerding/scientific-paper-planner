@@ -169,25 +169,12 @@ export const generateMockResponse = (type, sectionId) => {
   if (type === 'instructionImprovement') {
     return promptContent.mockResponses.instructionImprovement;
   }
+  
   if (type === 'documentImport') {
-    // Return a simplified mock structure for document import
-    const mockTimestamp = new Date().toISOString();
-    return JSON.stringify({
-      userInputs: {
-        question: `Research Question: Mock question from ${sectionId || 'imported doc'}\n\nSignificance/Impact: Mock significance`,
-        hypothesis: `Hypothesis 1: Mock hypothesis A\n\nHypothesis 2: Mock hypothesis B\n\nWhy distinguishing matters:\n- Mock reason 1\n- Mock reason 2`,
-        relatedpapers: "1. Mock Paper 1\n2. Mock Paper 2",
-        experiment: "Key Variables:\n- Independent: Mock IV\n- Dependent: Mock DV\nSample & Size: Mock sample\nData Collection: Mock methods",
-        analysis: "Primary Analysis: Mock analysis",
-        abstract: `Background: Mock background\nObjective: Mock objective\nMethods: Mock methods\nResults: Mock results\nConclusion: Mock conclusion.`
-      },
-      chatMessages: {},
-      timestamp: mockTimestamp,
-      version: "1.0-mock-extraction"
-    });
+    return promptContent.mockResponses.documentImport;
   }
 
-  // Determine the appropriate template for chat responses
+  // For chat responses, determine the approach type
   let approachTypeKey = 'general'; // Default
   if (sectionId === 'hypothesis') {
     approachTypeKey = 'hypothesis';
