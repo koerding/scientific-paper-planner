@@ -63,7 +63,7 @@ const ModernChatInterface = ({
       {isMinimized && (
         <div
           ref={chatIconRef}
-          className={`fixed bottom-6 right-6 z-50 cursor-pointer ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`}
+          className={`fixed bottom-6 right-6 z-30 cursor-pointer ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`}
           onClick={toggleChat}
           style={{ transform: 'translateZ(0)' }}
         >
@@ -83,7 +83,7 @@ const ModernChatInterface = ({
 
       {/* Expanded chat interface - fixed positioning and transitions */}
       <div
-        className={`fixed z-50 shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`fixed z-30 shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
           isMinimized ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'
         }`}
         style={{
