@@ -117,12 +117,41 @@ const ModernChatInterface = ({
          <div className="flex flex-col h-full" style={{ height: 'calc(100% - 56px)' }}> {/* Adjusted height calc if header padding changes */}
           <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
             {/* ... message rendering logic ... */}
-             {!currentSection || !chatMessages[currentSection] || chatMessages[currentSection].length === 0 ? ( <>{/* Empty state */}...</> ) : ( <div className="space-y-3">{/* Messages */}...<div ref={messagesEndRef} /></div> )}
+             {!currentSection || !chatMessages[currentSection] || chatMessages[currentSection].length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  <p className="text-lg">No messages yet</p>
+                  <p className="text-sm">Ask a question about your {currentSectionTitle || 'research'}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {chatMessages[currentSection].map((msg, index) => (
+                    <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-2`}>
+                      <div className={`message-bubble ${msg.role === 'user' ? 'user-message' : 'ai-message'} max-w-3xl`}>
+                        <div className="text-sm mb-1 opacity-75">
+                          {msg.role === 'user' ? 'You' : 'AI Assistant'} • {formatTime()}
+                        </div>
+                        <div className={`message-content ${msg.role === 'user' ? 'text-white' : 'text-gray-800'}`}>
+                          {msg.role === 'user' ? (
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                          ) : (
+                            <div className="prose prose-sm max-w-none">
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
           </div>
 
           {/* Chat input */}
           <div className="p-3 border-t border-gray-200 bg-white">
-             {/* ... input field and send button ... */}
              <div className="flex">
               <input
                 type="text"
@@ -135,9 +164,22 @@ const ModernChatInterface = ({
               <button
                 onClick={handleSendMessage}
                 disabled={loading || currentMessage.trim() === ''}
-                className={`px-3 py-2 rounded-r-lg ${ /* Conditional classes */ loading || currentMessage.trim() === '' ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700 transition-colors' }`}
+                className={`px-3 py-2 rounded-r-lg ${
+                  loading || currentMessage.trim() === '' 
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700 transition-colors'
+                }`}
               >
-                {loading ? ( <>{/* Loading spinner */}...</> ) : ( <>{/* Send icon */}...</> )}
+                {loading ? (
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
