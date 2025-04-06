@@ -4,6 +4,8 @@ import React, { useRef, useState, useEffect } from 'react';
  * Application header with absolute positioning to ensure buttons are visible
  * UPDATED: Improved document import feature for PDF and Word files
  * UPDATED: Made import document button more prominent
+ * UPDATED: Reduced whitespace around header
+ * UPDATED: More compact layout overall
  */
 const AppHeader = ({
   activeSection,
@@ -180,8 +182,8 @@ const AppHeader = ({
     <header style={{
       position: 'relative',
       width: '100%',
-      padding: '1rem 0',
-      marginBottom: '2rem',
+      padding: '0.5rem 0', // Reduced padding (from 1rem)
+      marginBottom: '1rem', // Reduced margin (from 2rem)
       borderBottom: '1px solid #e5e7eb',
       backgroundColor: 'white',
       zIndex: 1000
@@ -192,37 +194,37 @@ const AppHeader = ({
         alignItems: 'center',
         maxWidth: '1280px',
         margin: '0 auto',
-        padding: '0 1rem'
+        padding: '0 0.5rem' // Reduced padding (from 1rem)
       }}>
-        {/* App title and logo */}
+        {/* App title and logo - more compact */}
         <div className="flex items-center">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold mr-3 text-lg">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold mr-2 text-base">
             SP
           </div>
           <div>
-            <h1 className="text-3xl font-bold m-0 text-gray-900">
+            <h1 className="text-2xl font-bold m-0 text-gray-900">
               Scientific Paper Planner
             </h1>
-            <p className="text-lg text-gray-600 m-0">
+            <p className="text-base text-gray-600 m-0">
               Design a scientific project step-by-step
             </p>
           </div>
         </div>
 
-        {/* Floating action buttons */}
+        {/* Floating action buttons - more compact layout */}
         <div style={{
            position: 'absolute',
            top: '50%',
-           right: '1rem',
+           right: '0.5rem', // Reduced margin (from 1rem)
            transform: 'translateY(-50%)',
            display: 'flex',
-           gap: '0.5rem',
+           gap: '0.4rem', // Reduced gap (from 0.5rem)
            zIndex: 1001
         }}>
           {/* New Button */}
           <button
             onClick={() => { if(typeof resetProject === 'function') resetProject(); }}
-            className="flex items-center px-3 py-1.5 border border-red-500 text-red-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-red-50 transition-colors"
+            className="flex items-center px-2 py-1 border border-red-500 text-red-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-red-50 transition-colors"
             title="Start a new project"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -236,7 +238,7 @@ const AppHeader = ({
             <button
               onClick={handleDocumentImportClick}
               disabled={isImporting}
-              className={`flex items-center px-3 py-1.5 border rounded text-sm font-medium transition-colors shadow-sm ${
+              className={`flex items-center px-2 py-1 border rounded text-sm font-medium transition-colors shadow-sm ${
                 isImporting
                   ? 'bg-gray-100 text-gray-400 border-gray-400 cursor-wait'
                   : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
@@ -273,7 +275,7 @@ const AppHeader = ({
           <button
             onClick={handleSaveClick}
             disabled={isSaving}
-            className={`flex items-center px-3 py-1.5 border border-indigo-500 rounded text-sm font-medium transition-colors ${
+            className={`flex items-center px-2 py-1 border border-indigo-500 rounded text-sm font-medium transition-colors ${
               isSaving 
                 ? 'bg-indigo-100 text-indigo-400 cursor-wait' 
                 : 'bg-white text-indigo-600 hover:bg-indigo-50'
@@ -302,7 +304,7 @@ const AppHeader = ({
           <div className="relative">
             <button
               onClick={handleLoadClick}
-              className="flex items-center px-3 py-1.5 border border-blue-500 text-blue-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-blue-50 transition-colors"
+              className="flex items-center px-2 py-1 border border-blue-500 text-blue-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-blue-50 transition-colors"
               title="Load a saved project"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -322,7 +324,7 @@ const AppHeader = ({
           {/* Examples Button */}
           <button
             onClick={handleExamplesClick}
-            className="flex items-center px-3 py-1.5 border border-orange-500 text-orange-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-orange-50 transition-colors"
+            className="flex items-center px-2 py-1 border border-orange-500 text-orange-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-orange-50 transition-colors"
             title="Load an example project"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -334,7 +336,7 @@ const AppHeader = ({
           {/* Export Button */}
           <button
             onClick={() => { if(typeof exportProject === 'function') exportProject(); }}
-            className="flex items-center px-3 py-1.5 border border-green-500 text-green-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-green-50 transition-colors"
+            className="flex items-center px-2 py-1 border border-green-500 text-green-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-green-50 transition-colors"
             title="Export your project as a markdown file"
           >
              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -348,4 +350,41 @@ const AppHeader = ({
   );
 };
 
-export default AppHeader;
+export default AppHeader; 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  Make Example from PDF/Doc
+                </>
+              )}
+            </button>
+            <input
+              ref={documentInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleDocumentChange}
+              style={{ display: 'none' }}
+            />
+          </div>
+
+          {/* Save Button */}
+          <button
+            onClick={handleSaveClick}
+            disabled={isSaving}
+            className={`flex items-center px-2 py-1 border border-indigo-500 rounded text-sm font-medium transition-colors ${
+              isSaving 
+                ? 'bg-indigo-100 text-indigo-400 cursor-wait' 
+                : 'bg-white text-indigo-600 hover:bg-indigo-50'
+            } shadow-sm`}
+            title="Save your project (Ctrl+S)"
+          >
+            {isSaving ? (
+              <>
+                <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0
