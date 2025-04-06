@@ -1,32 +1,37 @@
-import React, { useState, useEffect, useRef } from 'react'; // Added useRef
+import React, { useState, useEffect } from 'react'; // Removed useRef
 import ReactMarkdown from 'react-markdown';
 
 /**
  * Enhanced full-height instructions panel
- * UPDATED: Added onboarding highlight/tooltip for feedback button
+ * UPDATED: Styling changed to match SectionCard look (bg-white, border, shadow, p-5)
+ * UPDATED: Renamed "Magic" button to "Get AI Feedback"
+ * REVERTED: Removed onboarding logic/props
  */
 const FullHeightInstructionsPanel = ({
   currentSection,
   improveInstructions,
   loading,
   userInputs,
-  onboardingStep // Receive onboarding state
+  // Removed onboardingStep prop
 }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
-  const feedbackButtonRef = useRef(null); // Ref for the feedback button wrapper
+  // Removed feedbackButtonRef
 
-  // ... (useEffect for debug logging remains the same)
-   useEffect(() => {
+  useEffect(() => {
+    // Debug logging to help diagnose instruction content issues
     if (currentSection) {
-      console.log("[PANEL] Current section data:", currentSection);
-      console.log("[PANEL] Instructions text:", currentSection?.instructions?.text);
-      console.log("[PANEL] Feedback text:", currentSection?.instructions?.feedback);
+      // console.log("[PANEL] Current section data:", currentSection);
+      // console.log("[PANEL] Instructions text:", currentSection?.instructions?.text);
+      // console.log("[PANEL] Feedback text:", currentSection?.instructions?.feedback);
     }
+    // Basic check to see if currentSection exists, which might help diagnose
+    // else {
+    //   console.log("[PANEL] No currentSection data received.");
+    // }
   }, [currentSection]);
 
-
   // Enhanced feedback handler (formerly magic)
-  const handleFeedbackClick = () => {
+  const handleFeedbackClick = () => { // Renamed handler
     console.log("Get AI Feedback button clicked!", new Date().toISOString());
     const now = Date.now();
     if (now - lastClickTime < 1500) {
@@ -37,7 +42,7 @@ const FullHeightInstructionsPanel = ({
 
     if (typeof improveInstructions === 'function') {
       try {
-        improveInstructions();
+        improveInstructions(); // Assuming improveInstructions now triggers the feedback mechanism
       } catch (error) {
         console.error("Error triggering feedback:", error);
       }
@@ -46,23 +51,60 @@ const FullHeightInstructionsPanel = ({
     }
   };
 
-  // ... (getFallbackInstructions, isPlaceholder, getInstructionsText remain the same)
+  /**
+   * Returns fallback instructions based on section ID
+   * @param {Object} section - The current section object
+   * @returns {string} - Appropriate instructions for the section
+   */
   function getFallbackInstructions(section) {
-     // ... implementation
+    if (!section || !section.id) return '';
+    const sectionId = section.id;
+    const sectionTitle = section.title || 'Section';
+    const baseInstructions = `A good ${sectionTitle} is critical to a strong research paper. Here are some key points to consider:`;
+    switch(sectionId) { // Simplified the return for brevity, content is the same
+      case 'question': return `${baseInstructions}\n\n* Specify your question clearly...`;
+      case 'audience': return `${baseInstructions}\n\n* Identify primary academic communities...`;
+      case 'hypothesis': return `${baseInstructions}\n\n* Formulate at least two distinct, testable hypotheses...`;
+      case 'needsresearch': return `${baseInstructions}\n\n* Clearly identify who needs this research...`;
+      case 'exploratoryresearch': return `${baseInstructions}\n\n* Describe the phenomena, dataset, or system...`;
+      case 'relatedpapers': return `${baseInstructions}\n\n* List papers that test similar hypotheses...`;
+      case 'experiment': return `${baseInstructions}\n\n* Define your key variables...`;
+      case 'existingdata': return `${baseInstructions}\n\n* Identify the specific dataset(s)...`;
+      case 'analysis': return `${baseInstructions}\n\n* Define your data cleaning steps...`;
+      case 'process': return `${baseInstructions}\n\n* List essential skills needed...`;
+      case 'abstract': return `${baseInstructions}\n\n* Background: Briefly introduce the research area...`;
+      default: return `${baseInstructions}\n\n* Be specific and clear...`;
+    }
   }
+
+  // Check if the text is a placeholder or too short to be useful
   const isPlaceholder = (text) => {
-     // ... implementation
-  }
- const getInstructionsText = () => {
-    // ... implementation
+    if (!text || text.trim() === '') return true;
+    if (text.length < 40) return true;
+    const knownPlaceholders = ["Remove points", "addressed all key points", "remove points the user has already addressed", "congratulatory message"];
+    return knownPlaceholders.some(phrase => text.toLowerCase().includes(phrase.toLowerCase()));
   };
 
+  // Safely access instruction text - use fallback if it's a placeholder
+  // Added more explicit checks
+  const getInstructionsText = () => {
+    if (!currentSection || !currentSection.instructions || typeof currentSection.instructions.text !== 'string') {
+      console.log("[PANEL] No valid instructions text found for", currentSection?.id);
+      return getFallbackInstructions(currentSection); // Attempt fallback if possible
+    }
+    const rawText = currentSection.instructions.text;
+    if (isPlaceholder(rawText)) {
+      console.log("[PANEL] Using fallback instructions for", currentSection?.id);
+      return getFallbackInstructions(currentSection);
+    }
+    return rawText;
+  };
 
-  // Safely access feedback text - use null check and proper fallback
+  // Safely access feedback text
   const feedbackText = currentSection?.instructions?.feedback || '';
 
   // Create a title that includes the section name
-  const sectionTitle = currentSection?.title || "Instructions";
+  const sectionTitle = currentSection?.title || "Instructions"; // Keep fallback
   const panelTitle = `${sectionTitle} Instructions & Feedback`;
 
   // Custom styles for markdown content
@@ -77,13 +119,13 @@ const FullHeightInstructionsPanel = ({
   // Get the appropriate instructions text (with fallback if needed)
   const instructionsText = getInstructionsText();
 
-  // Determine if the feedback button should be highlighted
-  const showFeedbackHighlight = onboardingStep === 2;
+  // Removed onboardingStep logic
 
   return (
     // Applied SectionCard-like styling
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full overflow-y-auto p-5">
       <div className="relative">
+        {/* Check currentSection before trying to render its content */}
         {!currentSection ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-600 text-lg">Select a section to view instructions</p>
@@ -94,8 +136,8 @@ const FullHeightInstructionsPanel = ({
               <h3 className="text-2xl font-semibold text-gray-800 flex-grow mr-4">
                 {panelTitle}
               </h3>
-              {/* Feedback Button Wrapper - Add ref and conditional highlight/tooltip */}
-              <div ref={feedbackButtonRef} className={`relative ${showFeedbackHighlight ? 'onboarding-highlight' : ''}`}>
+              {/* Feedback Button Wrapper - Removed ref and conditional highlight/tooltip */}
+              <div className="relative">
                 <button
                   onClick={handleFeedbackClick}
                   disabled={loading || !currentSection}
@@ -106,19 +148,13 @@ const FullHeightInstructionsPanel = ({
                       : 'bg-purple-600 text-white hover:bg-purple-700 shadow hover:shadow-md'
                     }`}
                 >
-                  {/* ... (button content conditional rendering) */}
-                   {loading ? ( <span className="flex items-center"> {/* Loading */}... Getting Feedback...</span> ) : ( <span className="flex items-center"> {/* Icon */} Get AI Feedback</span> )}
+                  {loading ? ( <span className="flex items-center"> {/* Loading */}... Getting Feedback...</span> ) : ( <span className="flex items-center"> {/* Icon */} Get AI Feedback</span> )}
                 </button>
-                {/* Onboarding Tooltip */}
-                {showFeedbackHighlight && (
-                  <div className="onboarding-tooltip onboarding-tooltip-panel">
-                    Get feedback on your draft here.
-                  </div>
-                )}
+                 {/* Removed onboarding tooltip */}
               </div>
             </div>
 
-            {/* Render Instructions */}
+            {/* Render Instructions - Use the generated instructionsText which includes fallbacks */}
             {instructionsText ? (
               <div className={`${customStyles.content} instructions-content mb-6`}>
                 <StyledMarkdown
@@ -127,6 +163,7 @@ const FullHeightInstructionsPanel = ({
                 />
               </div>
             ) : (
+               // This should ideally only show if getInstructionsText returns empty string after fallbacks
               <p className="text-gray-500 text-lg mb-6">Instructions not available for this section.</p>
             )}
 
@@ -149,33 +186,68 @@ const FullHeightInstructionsPanel = ({
   );
 };
 
-// ... (fixNumberedLists function remains the same)
- function fixNumberedLists(text) {
-   // ... implementation
- }
+/**
+ * Fixes numbered lists by ensuring they start at 1 and increment properly
+ * @param {string} text - Markdown text to process
+ * @returns {string} - Processed text with fixed numbering
+ */
+function fixNumberedLists(text) {
+  if (!text) return text;
+  const lines = text.split('\n');
+  let inNumberedList = false;
+  let currentListItems = [];
+  let result = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isNumberedItem = /^\d+\.\s/.test(line.trim());
+    if (isNumberedItem) {
+      const content = line.replace(/^\d+\.\s/, '');
+      if (!inNumberedList) {
+        inNumberedList = true;
+        currentListItems = [content];
+      } else {
+        currentListItems.push(content);
+      }
+    } else {
+      if (inNumberedList) {
+        for (let j = 0; j < currentListItems.length; j++) {
+          result.push(`${j + 1}. ${currentListItems[j]}`);
+        }
+        currentListItems = [];
+        inNumberedList = false;
+      }
+      result.push(line);
+    }
+  }
+  if (inNumberedList && currentListItems.length > 0) {
+    for (let j = 0; j < currentListItems.length; j++) {
+      result.push(`${j + 1}. ${currentListItems[j]}`);
+    }
+  }
+  return result.join('\n');
+}
 
 // Custom component to render markdown with enhanced styling
 const StyledMarkdown = ({ content, customStyles }) => {
-  // ... (implementation remains the same)
-    const processedContent = content?.replace(/\n\* /g, "\n• ") || '';
-    return (
-      <div className={`${customStyles.fontSize}`}>
-        <ReactMarkdown
-          components={{
-            h1: ({ node, ...props }) => <h1 className="text-2xl font-bold my-4" {...props} />,
-            h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3" {...props} />,
-            h3: ({ node, ...props }) => <h3 className="text-lg font-bold my-3" {...props} />,
-            p: ({ node, ...props }) => <p className="my-3" {...props} />,
-            ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-3" {...props} />,
-            ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-3" {...props} />,
-            li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
-            hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
-          }}
-        >
-          {processedContent}
-        </ReactMarkdown>
-      </div>
-    );
+  const processedContent = content?.replace(/\n\* /g, "\n• ") || ''; // Added safety check for content
+  return (
+    <div className={`${customStyles.fontSize}`}>
+      <ReactMarkdown
+        components={{
+          h1: ({ node, ...props }) => <h1 className="text-2xl font-bold my-4" {...props} />,
+          h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3" {...props} />,
+          h3: ({ node, ...props }) => <h3 className="text-lg font-bold my-3" {...props} />,
+          p: ({ node, ...props }) => <p className="my-3" {...props} />,
+          ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-3" {...props} />,
+          ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-3" {...props} />,
+          li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
+          hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
+        }}
+      >
+        {processedContent}
+      </ReactMarkdown>
+    </div>
+  );
 };
 
 export default FullHeightInstructionsPanel;
