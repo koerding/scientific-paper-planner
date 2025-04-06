@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect } from 'react';
 /**
  * Application header with absolute positioning to ensure buttons are visible
  * UPDATED: Improved document import feature for PDF and Word files
+ * UPDATED: Made "Make Example from PDF/Doc" button more salient
  */
 const AppHeader = ({
   activeSection,
@@ -19,7 +20,7 @@ const AppHeader = ({
   // Use refs for file inputs
   const fileInputRef = useRef(null);
   const documentInputRef = useRef(null);
-  
+
   // States for visual feedback
   const [isSaving, setIsSaving] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -76,12 +77,12 @@ const AppHeader = ({
     }
 
     // Check file type (PDF or Word)
-    if (!file.type.includes('pdf') && 
-        !file.type.includes('word') && 
-        !file.type.includes('docx') && 
+    if (!file.type.includes('pdf') &&
+        !file.type.includes('word') &&
+        !file.type.includes('docx') &&
         !file.type.includes('doc') &&
-        !file.name.endsWith('.pdf') && 
-        !file.name.endsWith('.docx') && 
+        !file.name.endsWith('.pdf') &&
+        !file.name.endsWith('.docx') &&
         !file.name.endsWith('.doc')) {
       alert("Please select a PDF or Word document");
       return;
@@ -134,14 +135,14 @@ const AppHeader = ({
   const handleSaveClick = () => {
     if (typeof saveProject === 'function') {
       setIsSaving(true);
-      
+
       // Ask for file name
       const fileName = prompt("Enter a name for your project file:", "my-research-project");
-      
+
       if (fileName) {
         try {
           saveProject(fileName);
-          
+
           // Show saving indicator then hide after delay
           setTimeout(() => {
             setIsSaving(false);
@@ -168,12 +169,12 @@ const AppHeader = ({
         handleSaveClick();
       }
     };
-    
+
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, []); // Empty dependency array means this effect runs once on mount
 
   return (
     <header style={{
@@ -235,8 +236,8 @@ const AppHeader = ({
             onClick={handleSaveClick}
             disabled={isSaving}
             className={`flex items-center px-3 py-1.5 border border-indigo-500 rounded text-sm font-medium transition-colors ${
-              isSaving 
-                ? 'bg-indigo-100 text-indigo-400 cursor-wait' 
+              isSaving
+                ? 'bg-indigo-100 text-indigo-400 cursor-wait'
                 : 'bg-white text-indigo-600 hover:bg-indigo-50'
             } shadow-sm`}
             title="Save your project (Ctrl+S)"
@@ -280,7 +281,7 @@ const AppHeader = ({
             />
           </div>
 
-          {/* Document Import Button - RENAMED */}
+          {/* Make Example from PDF/Doc Button - Updated Styling */}
           <div className="relative">
             <button
               onClick={handleDocumentImportClick}
@@ -288,7 +289,7 @@ const AppHeader = ({
               className={`flex items-center px-3 py-1.5 border rounded text-sm font-medium transition-colors shadow-sm ${
                 isImporting
                   ? 'bg-gray-100 text-gray-400 border-gray-400 cursor-wait'
-                  : 'bg-white text-orange-600 border-orange-500 hover:bg-orange-50'
+                  : 'bg-green-600 text-white border-green-600 hover:bg-green-700' // Changed fill color
               }`}
               title="Create example project from a scientific paper (PDF or Word)"
             >
