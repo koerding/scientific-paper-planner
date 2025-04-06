@@ -3,7 +3,9 @@ import ReactMarkdown from 'react-markdown';
 
 /**
  * Enhanced full-height instructions panel
- * UPDATED: Fixed numbered lists in feedback and improved debugging
+ * UPDATED: Fixed positioning to be below header and above footer
+ * UPDATED: Added rounded corners for consistency with left side cards
+ * UPDATED: Removed Magic button (will be added as floating button)
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -22,7 +24,7 @@ const FullHeightInstructionsPanel = ({
     }
   }, [currentSection]);
 
-  // Enhanced magic handler
+  // Enhanced magic handler - retained for external use
   const handleMagicClick = () => {
     console.log("Magic button clicked!", new Date().toISOString());
     const now = Date.now();
@@ -37,7 +39,6 @@ const FullHeightInstructionsPanel = ({
         improveInstructions();
       } catch (error) {
         console.error("Error triggering magic:", error);
-        // Optionally show an error message to the user here
       }
     } else {
       console.error("improveInstructions is not a function");
@@ -257,14 +258,13 @@ const FullHeightInstructionsPanel = ({
 
   return (
     <div
-      className="bg-blue-50 border-l-4 border-blue-500 h-full overflow-y-auto"
+      className="bg-blue-50 border-l-4 border-blue-500 rounded-tl-lg rounded-bl-lg overflow-y-auto"
       style={{
         position: 'fixed',
-        top: 0,
-        right: 0,
+        top: '118px', // Positioned below header (adjusted for height)
+        right: '0',
         width: '50%',
-        paddingTop: '120px', // Adjusted for header height
-        paddingBottom: '2rem',
+        bottom: '2rem', // Space for footer
         zIndex: 10 // Ensure it's below header buttons if they overlap
       }}
     >
@@ -279,32 +279,7 @@ const FullHeightInstructionsPanel = ({
               <h3 className="text-3xl font-semibold text-blue-800 flex-grow mr-4">
                 {panelTitle}
               </h3>
-              <button
-                onClick={handleMagicClick}
-                disabled={loading || !currentSection}
-                className={`px-4 py-2 rounded-lg text-base font-medium transition-all flex-shrink-0 ${ // Prevent button shrinking
-                  loading || !currentSection
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-purple-600 text-white hover:bg-purple-700 shadow hover:shadow-md'
-                  }`}
-              >
-                {loading ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Magic in progress...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                    </svg>
-                    Magic
-                  </span>
-                )}
-              </button>
+              {/* Magic button removed from here */}
             </div>
 
             {/* Render Instructions with improved styling - fallback handling is done in getInstructionsText() */}
@@ -400,7 +375,7 @@ function fixNumberedLists(text) {
 
 // Custom component to render markdown with enhanced styling
 const StyledMarkdown = ({ content, customStyles }) => {
-  // Process content to enhance list item styling
+  // Process content to enhance list item styling - preserve formatting like line breaks
   const processedContent = content
     // Replace asterisks with bullet points for consistency
     .replace(/\n\* /g, "\n• ");
