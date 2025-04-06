@@ -3,14 +3,13 @@
 /**
  * Modernized OpenAI service using JSON mode for structured responses
  * Uses OpenAI's native JSON mode for reliable parsing
- * UPDATED: Added timeout for API fetch requests.
- * FIXED: Corrected scope for timeoutId variable.
+ * UPDATED: Increased API timeout to 180 seconds.
  */
 import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
 
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4-turbo";
-const API_TIMEOUT_MS = 60000; // 60 seconds timeout for API calls
+const API_TIMEOUT_MS = 180000; // Increased timeout to 180 seconds (3 minutes)
 
 /**
  * Build messages for API call with context and history
@@ -75,7 +74,7 @@ export const callOpenAI = async (
   const messages = buildMessages(prompt, contextType, chatHistory, systemPrompt);
   const isResearchSectionType = isResearchApproachSection(contextType);
   const temperature = isResearchSectionType ? 0.9 : (options.temperature ?? 0.7);
-  const max_tokens = options.max_tokens ?? 1024;
+  const max_tokens = options.max_tokens ?? 1024; // Consider increasing if responses might be long
 
   const requestBody = {
     model: model,
@@ -88,19 +87,18 @@ export const callOpenAI = async (
     requestBody.response_format = { type: "json_object" };
   }
 
-  // Declare timeoutId outside the try block so it's accessible in catch/finally
+  // Declare timeoutId outside the try block
   let timeoutId;
 
   try {
-    console.log(`[openaiService] Sending request to OpenAI API (Timeout: ${API_TIMEOUT_MS / 1000}s)...`);
+    console.log(`[openaiService] Sending request to OpenAI API (Timeout: ${API_TIMEOUT_MS / 1000}s)...`); // Updated log message
 
     // --- Timeout Implementation ---
     const controller = new AbortController();
-    // Assign to the outer timeoutId variable
     timeoutId = setTimeout(() => {
         console.warn(`[openaiService] API call timed out after ${API_TIMEOUT_MS / 1000} seconds.`);
         controller.abort();
-    }, API_TIMEOUT_MS);
+    }, API_TIMEOUT_MS); // Use updated timeout value
 
     const fetchPromise = fetch(apiUrl, {
       method: "POST",
@@ -109,13 +107,12 @@ export const callOpenAI = async (
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(requestBody),
-      signal: controller.signal // Link fetch to abort controller
+      signal: controller.signal
     });
 
     const response = await fetchPromise;
 
-    // Clear the timeout timer if the fetch completes or fails before the timeout
-    clearTimeout(timeoutId);
+    clearTimeout(timeoutId); // Clear timeout if fetch completes
     // --- End Timeout Implementation ---
 
 
@@ -125,10 +122,7 @@ export const callOpenAI = async (
         const errorBody = await response.json();
         console.error("OpenAI API Error:", response.status, errorBody);
         errorMessage += `: ${errorBody?.error?.message || response.statusText}`;
-      } catch (parseError) {
-        console.error("Error parsing error response:", parseError);
-        errorMessage += ` (could not parse error details)`;
-      }
+      } catch (parseError) { /* Handle parsing error */ }
       throw new Error(errorMessage);
     }
 
@@ -137,50 +131,41 @@ export const callOpenAI = async (
 
     const responseContent = data.choices?.[0]?.message?.content?.trim();
     if (!responseContent) {
-        console.error("No response content found in API data:", data);
         throw new Error("Received empty or invalid response content from API.");
     }
 
     // Parse JSON response if needed
     if (useJsonMode) {
       try {
-        // Special handling for improve_instructions_batch context
         if (contextType === "improve_instructions_batch") {
           console.log("Raw JSON response:", responseContent);
           if (responseContent.trim().startsWith('[') && responseContent.trim().endsWith(']')) { return JSON.parse(responseContent); }
           const jsonObj = JSON.parse(responseContent);
           if (Array.isArray(jsonObj)) { return jsonObj; }
           for (const key in jsonObj) { if (Array.isArray(jsonObj[key])) { return jsonObj[key]; } }
-          return [jsonObj]; // Fallback: wrap in array
+          return [jsonObj];
         }
-        // Standard JSON parsing
         return JSON.parse(responseContent);
       } catch (error) {
         console.error("Error parsing JSON response:", error, "Raw:", responseContent);
-        if (contextType === "improve_instructions_batch") { return []; } // Fallback for batch
+        if (contextType === "improve_instructions_batch") { return []; }
         throw new Error(`Failed to parse JSON response: ${error.message}`);
       }
     }
 
-    // Return raw string for chat contexts
-    return responseContent;
+    return responseContent; // Return raw string for chat
 
   } catch (error) {
-    // Clear timeout in the catch block as well, checking if timeoutId was assigned
-    if (timeoutId) {
-        clearTimeout(timeoutId);
-    }
+    if (timeoutId) { clearTimeout(timeoutId); } // Clear timeout in catch block
 
     console.error("Error calling OpenAI API:", error);
 
-    // Handle specific error types
     if (error.name === 'AbortError') {
-         throw new Error(`OpenAI API request timed out after ${API_TIMEOUT_MS / 1000} seconds.`);
+         throw new Error(`OpenAI API request timed out after ${API_TIMEOUT_MS / 1000} seconds.`); // Updated timeout in message
     } else if (error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
       throw new Error("Network error: Unable to connect to OpenAI API. Please check your internet connection.");
     }
 
-    // Rethrow other errors
     throw new Error(`OpenAI API Error: ${error.message || 'Unknown error'}`);
   }
 };
