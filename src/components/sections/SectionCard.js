@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Modified SectionCard with only red/green status indicators
+/**
+ * Section card component for the paper planner
+ * UPDATED: Changed "empty" status label to "incomplete" for better clarity
+ */
 const SectionCard = ({
   section,
   isCurrentSection,
@@ -65,7 +68,7 @@ const SectionCard = ({
           {section.title}
         </h2>
         
-        {/* Status Indicator - Simplified to just red/green */}
+        {/* Status Indicator - Changed "empty" to "incomplete" */}
         <div className="text-xs inline-block px-2 py-1 rounded" 
              style={{
                backgroundColor: 
@@ -73,7 +76,7 @@ const SectionCard = ({
                color: 
                  completionStatus === 'complete' ? '#065f46' : '#b91c1c'
              }}>
-          {completionStatus === 'complete' ? 'complete' : 'empty'}
+          {completionStatus === 'complete' ? 'complete' : 'incomplete'}
         </div>
       </div>
 
