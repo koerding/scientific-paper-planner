@@ -9,7 +9,7 @@
       "inputPlaceholder": "Start writing your research question here...",
       "instructions": {
         "title": "Formulating Your Research Question",
-        "text": "A good research question drives your entire study and helps you focus your efforts. It's the foundation of scientific inquiry.\n\n---\n\n* Specify your question.\n\n* Be clear about the logic. Are you asking how something is? Why it is the way it is? What gives rise to something? How it got their over time? Ask yourself which conclusions are supported by what kinds of analyses.\n\n* Explain why the question matters to the field. How will science be different after your work?\n\n* REMARK: A lot of students feel lost at this point. If so, take a paper that you admire that is similar to what you want to do it and use the **Make example from pdf/doc** to get an example close to what you want to do."
+        "text": "A good research question drives your entire study and helps you focus your efforts. It's the foundation of scientific inquiry.\n\n---\n\n* Specify your question clearly.\n\n* Be clear about the logic. Are you asking how something is? Why it is the way it is? What gives rise to something? How it got their over time? Ask yourself which conclusions are supported by what kinds of analyses.\n\n* Explain why the question matters to the field. How will science be different after your work?\n\n* REMARK: A lot of students feel lost at this point. If so, take a paper that you admire that is similar to what you want to do it and use the **Make example from pdf/doc** to get an example close to what you want to do."
       },
       "placeholder": "Research Question:[Write it out] \n\nSignificance/Impact: [Why it matters]\n"
     },
@@ -129,4 +129,9 @@
       "inputPlaceholder": "Draft your abstract here...",
       "instructions": {
         "title": "Drafting an Abstract",
-        "text": "An abstract is a mini-version of your entire paper. Writing it now helps you organize your thoughts and spot any inconsistencies in your research plan.\n\n---\n\n### Structure (Aim for 1-2 sentences per point):\n\n* **Background:** Briefly introduce the research area, identify the knowledge gap or problem, and state its significance.\n\n* **Objective/Question:** Clearly state the main research question, primary hypothesis being tested, exploration goal, or problem being solved.\n\n* **Methods:** Conc*
+        "text": "An abstract is a mini-version of your entire paper. Writing it now helps you organize your thoughts and spot any inconsistencies in your research plan.\n\n---\n\n### Structure (Aim for 1-2 sentences per point):\n\n* **Background:** Briefly introduce the research area, identify the knowledge gap or problem, and state its significance.\n\n* **Objective/Question:** Clearly state the main research question, primary hypothesis being tested, exploration goal, or problem being solved.\n\n* **Methods:** Concisely summarize your experimental design and key procedures.\n\n* **Expected Results:** Briefly describe the anticipated findings or outcomes.\n\n* **Conclusion/Implications:** State the main takeaway message and the potential impact of your work on the field."
+      },
+      "placeholder": "Background: \n\nObjective/Question: \n\nMethods: \n\n(Expected) Results: \n\nConclusion/Implications: "
+    }
+  ]
+}
