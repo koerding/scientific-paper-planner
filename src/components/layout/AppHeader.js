@@ -1,12 +1,13 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 /**
- * Application header with absolute positioning to ensure buttons are visible
- * UPDATED: Improved document import feature for PDF and Word files
- * UPDATED: Made import document button more prominent
- * UPDATED: Reduced whitespace around header
- * UPDATED: More compact layout overall
- * FIXED: Removed octal literal that was causing build error
+ * Improved header component with consistent spacing and alignment
+ * FIXES:
+ * - Consistent spacing between header elements
+ * - Proper vertical alignment
+ * - Responsive button layout
+ * - Fixed z-index issues
  */
 const AppHeader = ({
   activeSection,
@@ -17,334 +18,122 @@ const AppHeader = ({
   exportProject,
   saveProject,
   loadProject,
-  importDocumentContent, // Renamed from importPdfContent to reflect broader support
+  importDocumentContent,
   setShowExamplesDialog
 }) => {
-  // Use refs for file inputs
-  const fileInputRef = useRef(null);
-  const documentInputRef = useRef(null);
-  
-  // States for visual feedback
-  const [isSaving, setIsSaving] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-
-  // Handle JSON file input change
-  const handleFileChange = (event) => {
+  // Handle file import for PDF/Word docs
+  const handleFileImport = (event) => {
     const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    // Check file type
-    if (!file.name.endsWith('.json')) {
-      alert("Please select a JSON file (ending in .json)");
-      return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      try {
-        const content = e.target.result;
-        const data = JSON.parse(content);
-
-        if (typeof loadProject === 'function') {
-          loadProject(data);
-        } else {
-          alert("Loading functionality is not available");
-        }
-      } catch (error) {
-        console.error("Error parsing loaded file:", error);
-        alert("Error loading file. Please make sure it's a valid project file.");
+    if (file) {
+      if (importDocumentContent) {
+        importDocumentContent(file);
       }
-    };
-
-    reader.onerror = (error) => {
-      console.error("Error reading file:", error);
-      alert("Error reading file. Please try again.");
-    };
-
-    reader.readAsText(file);
-
-    // Reset file input so the same file can be selected again
-    event.target.value = null;
+    }
+    // Reset the input so the same file can be selected again if needed
+    event.target.value = '';
   };
 
-  // Handle document file input change (PDF or Word)
-  const handleDocumentChange = async (event) => {
+  // Function to handle file selection for project loading
+  const handleFileSelection = (event) => {
     const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    // Check file type (PDF or Word)
-    if (!file.type.includes('pdf') && 
-        !file.type.includes('word') && 
-        !file.type.includes('docx') && 
-        !file.type.includes('doc') &&
-        !file.name.endsWith('.pdf') && 
-        !file.name.endsWith('.docx') && 
-        !file.name.endsWith('.doc')) {
-      alert("Please select a PDF or Word document");
-      return;
-    }
-
-    setIsImporting(true);
-
-    try {
-      // Call the importDocumentContent function with the file
-      if (typeof importDocumentContent === 'function') {
-        await importDocumentContent(file);
-      } else {
-        alert("Document import functionality is not available");
-      }
-    } catch (error) {
-      console.error("Error importing document:", error);
-      // More user-friendly error message
-      alert("We had some trouble processing this document. You might want to try a different file or format.");
-    } finally {
-      setIsImporting(false);
-      // Reset file input so the same file can be selected again
-      event.target.value = null;
-    }
-  };
-
-  // Handle load button click
-  const handleLoadClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  // Handle document import button click
-  const handleDocumentImportClick = () => {
-    if (documentInputRef.current) {
-      documentInputRef.current.click();
-    }
-  };
-
-  // Handle examples button click
-  const handleExamplesClick = () => {
-    if (typeof setShowExamplesDialog === 'function') {
-      setShowExamplesDialog(true);
-    } else {
-        console.error("setShowExamplesDialog function is not provided to AppHeader");
-    }
-  };
-
-  // Handle save button click with visual indicator
-  const handleSaveClick = () => {
-    if (typeof saveProject === 'function') {
-      setIsSaving(true);
-      
-      // Ask for file name
-      const fileName = prompt("Enter a name for your project file:", "my-research-project");
-      
-      if (fileName) {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
         try {
-          saveProject(fileName);
-          
-          // Show saving indicator then hide after delay
-          setTimeout(() => {
-            setIsSaving(false);
-          }, 1000);
+          const data = JSON.parse(e.target.result);
+          if (loadProject) {
+            loadProject(data);
+          }
         } catch (error) {
-          console.error("Error saving project:", error);
-          alert("Error saving project: " + error.message);
-          setIsSaving(false);
+          console.error('Error parsing project file:', error);
+          alert('Invalid project file format. Please select a valid JSON file.');
         }
-      } else {
-        // User cancelled the prompt
-        setIsSaving(false);
-      }
-    } else {
-      console.error("saveProject function is not provided to AppHeader");
+      };
+      reader.readAsText(file);
     }
+    // Reset the input so the same file can be selected again if needed
+    event.target.value = '';
   };
-
-  // Effect to capture Ctrl+S keyboard shortcut
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault(); // Prevent browser's save dialog
-        handleSaveClick();
-      }
-    };
-    
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   return (
-    <header style={{
-      position: 'relative',
-      width: '100%',
-      padding: '0.5rem 0', // Reduced padding (from 1rem)
-      marginBottom: '1rem', // Reduced margin (from 2rem)
-      borderBottom: '1px solid #e5e7eb',
-      backgroundColor: 'white',
-      zIndex: 1000
-    }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        maxWidth: '1280px',
-        margin: '0 auto',
-        padding: '0 0.5rem' // Reduced padding (from 1rem)
-      }}>
-        {/* App title and logo - more compact */}
-        <div className="flex items-center">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold mr-2 text-base">
-            SP
+    <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex flex-wrap items-center justify-between">
+          {/* Logo and title - fixed spacing */}
+          <div className="flex items-center mb-2 md:mb-0">
+            <div className="w-10 h-10 bg-purple-600 text-white rounded-md flex items-center justify-center mr-3">
+              <span className="font-bold text-xl">SP</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Scientific Paper Planner</h1>
+              <p className="text-sm text-gray-600">Design a scientific project step-by-step</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold m-0 text-gray-900">
-              Scientific Paper Planner
-            </h1>
-            <p className="text-base text-gray-600 m-0">
-              Design a scientific project step-by-step
-            </p>
-          </div>
-        </div>
 
-        {/* Floating action buttons - more compact layout */}
-        <div style={{
-           position: 'absolute',
-           top: '50%',
-           right: '0.5rem', // Reduced margin (from 1rem)
-           transform: 'translateY(-50%)',
-           display: 'flex',
-           gap: '0.4rem', // Reduced gap (from 0.5rem)
-           zIndex: 1001
-        }}>
-          {/* New Button */}
-          <button
-            onClick={() => { if(typeof resetProject === 'function') resetProject(); }}
-            className="flex items-center px-2 py-1 border border-red-500 text-red-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-red-50 transition-colors"
-            title="Start a new project"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            New
-          </button>
-          
-          {/* Document Import Button - Made more prominent */}
-          <div className="relative">
+          {/* Action buttons - improved wrap behavior */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* New Project button */}
             <button
-              onClick={handleDocumentImportClick}
-              disabled={isImporting}
-              className={`flex items-center px-2 py-1 border rounded text-sm font-medium transition-colors shadow-sm ${
-                isImporting
-                  ? 'bg-gray-100 text-gray-400 border-gray-400 cursor-wait'
-                  : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
-              }`}
-              title="Create example project from a scientific paper (PDF or Word)"
+              onClick={resetProject}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
-              {isImporting ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  Make Example from PDF/Doc
-                </>
-              )}
+              <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              New
             </button>
-            <input
-              ref={documentInputRef}
-              type="file"
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              onChange={handleDocumentChange}
-              style={{ display: 'none' }}
-            />
-          </div>
 
-          {/* Save Button */}
-          <button
-            onClick={handleSaveClick}
-            disabled={isSaving}
-            className={`flex items-center px-2 py-1 border border-indigo-500 rounded text-sm font-medium transition-colors ${
-              isSaving 
-                ? 'bg-indigo-100 text-indigo-400 cursor-wait' 
-                : 'bg-white text-indigo-600 hover:bg-indigo-50'
-            } shadow-sm`}
-            title="Save your project (Ctrl+S)"
-          >
-            {isSaving ? (
-              <>
-                <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-              </>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                </svg>
-                Save
-              </>
-            )}
-          </button>
+            {/* Make Example from PDF/Doc button */}
+            <label className="inline-flex items-center px-3 py-2 border border-indigo-500 rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+              <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Make Example from PDF/Doc
+              <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={handleFileImport} />
+            </label>
 
-          {/* Load Button - Triggers hidden file input */}
-          <div className="relative">
+            {/* Save button */}
             <button
-              onClick={handleLoadClick}
-              className="flex items-center px-2 py-1 border border-blue-500 text-blue-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-blue-50 transition-colors"
-              title="Load a saved project"
+              onClick={saveProject}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              Save
+            </button>
+
+            {/* Load button */}
+            <label className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer">
+              <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
               Load
+              <input type="file" className="hidden" accept=".json" onChange={handleFileSelection} />
+            </label>
+
+            {/* Examples button */}
+            <button
+              onClick={() => setShowExamplesDialog(true)}
+              className="inline-flex items-center px-3 py-2 border border-blue-500 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              Examples
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
+
+            {/* Export button */}
+            <button
+              onClick={exportProject}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export
+            </button>
           </div>
-
-          {/* Examples Button */}
-          <button
-            onClick={handleExamplesClick}
-            className="flex items-center px-2 py-1 border border-orange-500 text-orange-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-orange-50 transition-colors"
-            title="Load an example project"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-            Examples
-          </button>
-
-          {/* Export Button */}
-          <button
-            onClick={() => { if(typeof exportProject === 'function') exportProject(); }}
-            className="flex items-center px-2 py-1 border border-green-500 text-green-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-green-50 transition-colors"
-            title="Export your project as a markdown file"
-          >
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-             </svg>
-            Export
-          </button>
         </div>
       </div>
     </header>
