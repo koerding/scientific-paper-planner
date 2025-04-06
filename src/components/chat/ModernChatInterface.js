@@ -89,7 +89,7 @@ const ModernChatInterface = ({
         style={{
           bottom: '0',
           right: '0',
-          width: 'min(550px, 95vw)',
+          width: 'min(950px, 95vw)',
           height: 'min(600px, 75vh)',
           transform: isMinimized ? 'translateZ(0) translateY(20px)' : 'translateZ(0)',
           maxHeight: 'calc(100vh - 48px)'
