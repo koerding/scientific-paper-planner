@@ -9,7 +9,7 @@
       "inputPlaceholder": "Start writing your research question here...",
       "instructions": {
         "title": "Formulating Your Research Question",
-        "text": "A good research question drives your entire study and helps you focus your efforts. It's the foundation of scientific inquiry.\n\n---\n\n* Specify your question.\n\n* Be clear about the logic. Are you asking how something is? Why it is the way it is? What gives rise to something? How it got their over time? Ask yourself which conclusions are supported by what kinds of analyses.\n\n* Explain why the question matters to the field. How will science be different after your work?\n\n* Ensure your question is answerable with your anticipated resources."
+        "text": "A good research question drives your entire study and helps you focus your efforts. It's the foundation of scientific inquiry.\n\n---\n\n* Specify your question.\n\n* Be clear about the logic. Are you asking how something is? Why it is the way it is? What gives rise to something? How it got their over time? Ask yourself which conclusions are supported by what kinds of analyses.\n\n* Explain why the question matters to the field. How will science be different after your work?\n\n* REMARK: A lot of students feel lost at this point. If so, take a paper that you admire that is similar to what you want to do it and use the Make example from pdf/doc to get an example close to what you want to do."
       },
       "placeholder": "Research Question:[Write it out] \n\nSignificance/Impact: [Why it matters]\n"
     },
