@@ -293,7 +293,7 @@ header.bg-white.shadow-sm .container {
 
 /* Ensure content has proper spacing below header */
 .min-h-screen > .w-full {
-  padding-top: 40px;
+  padding-top: 90px;
   box-sizing: border-box;
 }
 
