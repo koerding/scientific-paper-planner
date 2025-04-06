@@ -17,13 +17,13 @@ import '../../styles/PaperPlanner.css'; // Ensure CSS is imported
 
 /**
  * Enhanced Paper Planner
- * UPDATED: Corrected positioning for floating feedback button.
+ * UPDATED: Corrected hover text for feedback button.
+ * UPDATED: Added console logging to debug stuck feedback button state.
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Hook destructuring
   const {
     currentSection: currentSectionIdForChat,
-    // currentSectionData, // Removed as potentially stale, get fresh below
     userInputs,
     chatMessages,
     currentMessage,
@@ -55,7 +55,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   });
   const [improvingInstructions, setImprovingInstructions] = useState(false); // State for feedback loading
 
-  // --- Effects --- (Remain unchanged from previous versions)
+  // --- Effects --- (Remain unchanged)
   useEffect(() => { // Map refs
     if (localSectionContent?.sections) {
       localSectionContent.sections.forEach(section => {
@@ -87,10 +87,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     else setActiveDataMethod('experiment');
   }, [userInputs, localSectionContent.sections]);
 
-  // --- Handlers --- (Remain unchanged from previous versions)
+  // --- Handlers ---
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
-    handleSectionChange(sectionId); // Ensure hook's current section is updated
+    handleSectionChange(sectionId);
   };
 
   const getSectionCompletionStatus = (sectionId) => {
@@ -116,27 +116,34 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     return sectionData || null;
   };
 
+  // Handler for the feedback request - Added Console Logs
   const handleFeedbackRequest = async () => {
-    if (improvingInstructions || !activeSection) return;
-    console.log("Requesting feedback for section:", activeSection);
+    if (improvingInstructions || !activeSection) return; // Still prevent if no active section selected, needed for context? Although service takes all. Might remove !activeSection later.
+
+    console.log(`[FEEDBACK_HANDLER] Requesting feedback... (Active section: ${activeSection})`); // Log Start
     setImprovingInstructions(true);
     try {
+      console.log("[FEEDBACK_HANDLER] Calling improveBatchInstructions..."); // Log Before Async
       const result = await improveBatchInstructions(localSectionContent.sections, userInputs, sectionContent);
+      console.log("[FEEDBACK_HANDLER] improveBatchInstructions returned:", result); // Log Result
+
       if (result.success && result.improvedData && result.improvedData.length > 0) {
+        console.log("[FEEDBACK_HANDLER] Processing successful result..."); // Log Success Path
         const updatedSections = updateSectionWithImprovedInstructions(localSectionContent, result.improvedData);
         setLocalSectionContent(updatedSections);
         const newCompletionStatuses = {};
         result.improvedData.forEach(item => { if (item.completionStatus) newCompletionStatuses[item.id] = item.completionStatus; });
         setSectionCompletionStatus(prevStatus => ({...prevStatus, ...newCompletionStatuses }));
-         console.log("Feedback received and content updated for section:", activeSection);
+         console.log("[FEEDBACK_HANDLER] State updated successfully.");
       } else {
-        console.error("[handleFeedbackRequest] Failed:", result.message || "No improved instructions.");
+        console.error("[FEEDBACK_HANDLER] Failed:", result.message || "No improved instructions returned.");
          alert("Sorry, couldn't get feedback at this time.");
       }
     } catch (error) {
-      console.error("[handleFeedbackRequest] Error:", error);
+      console.error("[FEEDBACK_HANDLER] Error caught:", error); // Log Error
        alert("An error occurred while getting feedback.");
     } finally {
+      console.log("[FEEDBACK_HANDLER] Finally block reached. Setting loading to false."); // Log Finally
       setImprovingInstructions(false);
     }
   };
@@ -174,7 +181,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     );
   };
 
-  const sectionDataForPanel = getCurrentSectionDataForPanel(); // Get data for the panel
+  const sectionDataForPanel = getCurrentSectionDataForPanel();
 
   return (
     // Main container div
@@ -215,18 +222,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       </div>
 
       {/* --- Floating Action Buttons --- */}
-      {/* Render buttons directly, positioned independently */}
 
-      {/* Floating Feedback Button - Positioned above the chat button */}
+      {/* Floating Feedback Button - Corrected Title */}
       <button
           onClick={handleFeedbackRequest}
-          disabled={improvingInstructions || !activeSection}
-          className={`fixed bottom-24 right-6 z-[51] w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 ease-in-out ${ // Added z-index 51
+          disabled={improvingInstructions} // Removed !activeSection check maybe? Test if feedback works without specific section focus.
+          className={`fixed bottom-24 right-6 z-[51] w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 ease-in-out ${
               improvingInstructions
-                  ? 'bg-gray-400 cursor-not-allowed scale-95' // Added scale effect when disabled
-                  : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105' // Added hover scale
+                  ? 'bg-gray-400 cursor-not-allowed scale-95'
+                  : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'
           }`}
-          title={activeSection ? `Get AI Feedback for ${activeSection}` : "Select a section first"}
+          title="Get AI Feedback for all sections with content" // Corrected hover text
       >
           {improvingInstructions ? (
                <svg className="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -241,22 +247,22 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           )}
       </button>
 
-      {/* Chat Interface (Renders its own floating button when minimized at z-50) */}
+      {/* Chat Interface */}
       <ModernChatInterface
           currentSection={currentSectionIdForChat}
-          currentSectionTitle={sectionDataForPanel?.title}
+          currentSectionTitle={sectionDataForPanel?.title} // Use data from panel getter
           chatMessages={chatMessages}
           currentMessage={currentMessage}
           setCurrentMessage={setCurrentMessage}
           handleSendMessage={handleSendMessage}
           loading={chatLoading}
-          currentSectionData={sectionDataForPanel}
+          currentSectionData={sectionDataForPanel} // Use data from panel getter
       />
 
       {/* Dialogs */}
       <ConfirmDialog showConfirmDialog={showConfirmDialog} setShowConfirmDialog={setShowConfirmDialog} resetProject={handleResetRequest} />
       <ExamplesDialog showExamplesDialog={showExamplesDialog} setShowExamplesDialog={setShowExamplesDialog} loadProject={loadProject} />
-    </div> // End of main component return div
+    </div>
   );
 };
 
