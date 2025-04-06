@@ -44,8 +44,197 @@ const FullHeightInstructionsPanel = ({
     }
   };
 
-  // Safely access instruction text - use null check and proper fallback
-  const instructionsText = currentSection?.instructions?.text || '';
+  /**
+   * Returns fallback instructions based on section ID
+   * @param {Object} section - The current section object
+   * @returns {string} - Appropriate instructions for the section
+   */
+  function getFallbackInstructions(section) {
+    if (!section || !section.id) return '';
+    
+    const sectionId = section.id;
+    const sectionTitle = section.title || 'Section';
+    
+    // Common base instructions for all sections
+    const baseInstructions = `A good ${sectionTitle} is critical to a strong research paper. Here are some key points to consider:`;
+    
+    // Section-specific instructions
+    switch(sectionId) {
+      case 'question':
+        return `${baseInstructions}
+
+* Specify your question clearly.
+
+* Be clear about the logic. Are you asking how something is? Why it is the way it is? What gives rise to something? How it got their over time?
+
+* Explain why the question matters to the field. How will science be different after your work?
+
+* Ensure your question is answerable with your anticipated resources.`;
+      
+      case 'audience':
+        return `${baseInstructions}
+
+* Identify primary academic communities who would benefit most directly.
+
+* For each community, note how your research might impact their work.
+
+* Then, specify 3-5 individual researchers or research groups representing your audience.`;
+      
+      case 'hypothesis':
+        return `${baseInstructions}
+
+* Formulate at least two distinct, testable hypotheses.
+
+* Ensure each hypothesis is specific and clearly stated.
+
+* Your experiment must be able to differentiate between these hypotheses.
+
+* Explain why distinguishing between these hypotheses matters to the field.
+
+* Explain how data can help you decide between these hypotheses.`;
+
+      case 'needsresearch':
+        return `${baseInstructions}
+
+* Clearly identify who needs this research (patients, clinicians, engineers, policymakers).
+
+* Explain why they need it - what specific problem are you solving?
+
+* Describe the current options/solutions and their limitations.
+
+* Define concrete success criteria - how will you know if your solution works?
+
+* Explain what specific improvement your solution offers over existing approaches.`;
+
+      case 'exploratoryresearch':
+        return `${baseInstructions}
+
+* Describe the phenomena, dataset, or system you want to explore.
+
+* List specific patterns, relationships, or discoveries your approach might reveal.
+
+* Explain what makes this exploration novel or valuable to your field.
+
+* Describe what tools or analytical approaches you'll use for discovery.
+
+* Outline how you'll distinguish meaningful patterns from random variation.`;
+
+      case 'relatedpapers':
+        return `${baseInstructions}
+
+* List papers that test similar hypotheses or address related questions.
+
+* Explain how each paper relates to your specific research question.
+
+* Identify what gap your research will fill that these papers don't address.
+
+* Consider papers with contrasting perspectives or results to yours.`;
+
+      case 'experiment':
+        return `${baseInstructions}
+
+* Define your key variables (independent, dependent, controlled).
+
+* Describe your sample and justify your sample size.
+
+* Outline your data collection procedures and control conditions.
+
+* State predicted results for each hypothesis.
+
+* Identify potential confounds and how you'll address them.`;
+
+      case 'existingdata':
+        return `${baseInstructions}
+
+* Identify the specific dataset(s) and where/how you will access them.
+
+* Explain what the data was originally collected for and by whom.
+
+* Confirm you have legal rights to use the data for your purpose.
+
+* Describe what you know about data provenance and quality assurance.
+
+* Assess if the dataset contains the variables needed to answer your research question.`;
+
+      case 'analysis':
+        return `${baseInstructions}
+
+* Define your data cleaning steps and exclusion criteria.
+
+* Specify your primary statistical method(s) or model(s).
+
+* Explain how your analysis will address your research question.
+
+* Describe how you'll quantify uncertainty in your results.
+
+* Outline how you'll handle any special cases (outliers, multiple comparisons, etc.).`;
+
+      case 'process':
+        return `${baseInstructions}
+
+* List essential skills needed and identify which ones you lack.
+
+* Name potential collaborators and their specific contributions.
+
+* Describe your plan for data/code sharing and documentation.
+
+* Outline a realistic timeline with key milestones and duration.
+
+* Identify major potential obstacles and specific contingency plans.`;
+
+      case 'abstract':
+        return `${baseInstructions}
+
+* Background: Briefly introduce the research area, identify the knowledge gap, and state its significance.
+
+* Objective/Question: Clearly state the main research question, primary hypothesis, or goal.
+
+* Methods: Concisely summarize your experimental design and key procedures.
+
+* (Expected) Results: Briefly describe the main anticipated findings.
+
+* Conclusion/Implications: State the main takeaway message and its potential impact.`;
+      
+      default:
+        return `${baseInstructions}
+
+* Be specific and clear in your writing.
+
+* Consider how this section connects to your overall research goals.
+
+* Ensure this section addresses the key requirements for your project.`;
+    }
+  }
+
+  // Check if the text is a placeholder or too short to be useful
+  const isPlaceholder = (text) => {
+    if (!text || text.trim() === '') return true;
+    if (text.length < 40) return true; // Too short to be real instructions
+    
+    const knownPlaceholders = [
+      "Remove points",
+      "addressed all key points",
+      "remove points the user has already addressed",
+      "congratulatory message"
+    ];
+    
+    return knownPlaceholders.some(phrase => 
+      text.toLowerCase().includes(phrase.toLowerCase())
+    );
+  };
+
+  // Safely access instruction text - use fallback if it's a placeholder
+  const getInstructionsText = () => {
+    const rawText = currentSection?.instructions?.text || '';
+    
+    if (isPlaceholder(rawText)) {
+      // Use fallback instructions
+      console.log("[PANEL] Using fallback instructions for", currentSection?.id);
+      return getFallbackInstructions(currentSection);
+    }
+    
+    return rawText;
+  };
   
   // Safely access feedback text - use null check and proper fallback
   const feedbackText = currentSection?.instructions?.feedback || '';
@@ -62,6 +251,9 @@ const FullHeightInstructionsPanel = ({
     divider: 'border-t border-blue-200 my-6', // Style for dividers (---)
     listItem: 'my-3', // Add more space between list items
   };
+
+  // Get the appropriate instructions text (with fallback if needed)
+  const instructionsText = getInstructionsText();
 
   return (
     <div
@@ -115,8 +307,8 @@ const FullHeightInstructionsPanel = ({
               </button>
             </div>
 
-            {/* Render Instructions with improved styling - ensure content exists and is not just "Remove points already addressed" */}
-            {instructionsText && instructionsText.length > 30 ? (
+            {/* Render Instructions with improved styling - fallback handling is done in getInstructionsText() */}
+            {instructionsText ? (
               <div className={`${customStyles.content} instructions-content mb-6`}>
                 {/* Using custom component to render markdown with better styling */}
                 <StyledMarkdown 
@@ -124,18 +316,12 @@ const FullHeightInstructionsPanel = ({
                   customStyles={customStyles}
                 />
               </div>
-            ) : instructionsText && instructionsText.length > 0 ? (
-              <div className={`${customStyles.content} instructions-content mb-6`}>
-                <p className="text-blue-600">
-                  {instructionsText}
-                </p>
-              </div>
             ) : (
               <p className="text-blue-600 text-xl mb-6">Instructions not available for this section.</p>
             )}
 
-            {/* Render Feedback Section if it exists */}
-            {feedbackText && feedbackText.length > 0 && (
+            {/* Render Feedback Section if it exists and is meaningful */}
+            {feedbackText && feedbackText.length > 5 && (
               <div className="mt-6 pt-4 border-t border-blue-300">
                 {/* Use h3 or h4 for semantic structure */}
                 <h4 className="text-2xl font-semibold text-blue-700 mb-3">Feedback</h4>
