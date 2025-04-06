@@ -18,7 +18,7 @@ const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
         disabled={loading}
         className={`
           flex items-center justify-center 
-          px-4 py-2 
+          px-4 py-4 
           rounded-full 
           shadow-lg 
           transition-colors 
