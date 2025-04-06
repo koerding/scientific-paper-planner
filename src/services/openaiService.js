@@ -3,12 +3,13 @@
 /**
  * Modernized OpenAI service using JSON mode for structured responses
  * Uses OpenAI's native JSON mode for reliable parsing
+ * UPDATED: Added timeout for API fetch requests.
  */
 import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
 
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
-// Use GPT-4 or newer model that supports JSON mode
 const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4-turbo";
+const API_TIMEOUT_MS = 60000; // 60 seconds timeout for API calls
 
 /**
  * Build messages for API call with context and history
@@ -19,10 +20,7 @@ const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4-turbo";
  * @returns {Array} - Array of message objects for the API
  */
 const buildMessages = (prompt, contextType, currentChatHistory = [], systemPrompt = null) => {
-  // Start with system prompt if provided
   const messages = systemPrompt ? [{ role: 'system', content: systemPrompt }] : [];
-  
-  // Prepend filtered chat history (if any exists)
   if (Array.isArray(currentChatHistory)) {
     currentChatHistory.forEach(msg => {
       if (msg && (msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string') {
@@ -30,10 +28,7 @@ const buildMessages = (prompt, contextType, currentChatHistory = [], systemPromp
       }
     });
   }
-
-  // Add the latest user prompt
   messages.push({ role: 'user', content: prompt });
-  
   return messages;
 };
 
@@ -57,54 +52,30 @@ export const callOpenAI = async (
     options = {},
     chatHistory = [],
     systemPrompt = null,
-    useJsonMode = contextType !== "general" // Use JSON mode by default except for general chat
+    useJsonMode = contextType !== "general"
  ) => {
 
-  console.log(`[openaiService] API Call Request - Context: ${contextType}`, {
-    apiKeyConfigured: !!apiKey,
-    modelUsed: model,
-    useJsonMode: useJsonMode,
-    promptLength: prompt.length,
-    userInputsCount: Object.keys(userInputs).length,
-    sectionsCount: Array.isArray(sections) ? sections.length : 'Not an array',
-    chatHistoryLength: Array.isArray(chatHistory) ? chatHistory.length : 'Not an array',
-    hasSystemPrompt: !!systemPrompt
-  });
+  console.log(`[openaiService] API Call Request - Context: ${contextType}`, { /* Log details */ });
 
   if (!apiKey) {
     throw new Error("OpenAI API key not configured. Please add your API key to the environment variables.");
   }
 
-  // For the improve_instructions_batch context, enhance system prompt to specify the exact JSON format needed
+  // Enhance system prompt for batch instruction improvement if needed
   if (contextType === "improve_instructions_batch" && useJsonMode) {
     systemPrompt = (systemPrompt || "") + `
-    
     IMPORTANT: Your response MUST be a valid JSON array. Format your response as:
-    [
-      {
-        "id": "section_id_1",
-        "editedInstructions": "Full instructions text for this section...",
-        "feedback": "Specific feedback on their work...",
-        "completionStatus": "complete"
-      },
-      // More similar objects for other sections
-    ]
-    
+    [ { "id": "...", "editedInstructions": "...", "feedback": "...", "completionStatus": "..." }, ... ]
     Return ONLY this JSON array with no additional text or explanation.
     `;
   }
 
   const apiUrl = "https://api.openai.com/v1/chat/completions";
-  
-  // Pass systemPrompt to buildMessages
   const messages = buildMessages(prompt, contextType, chatHistory, systemPrompt);
-
-  // Determine temperature based on section type - research sections get higher temperature
   const isResearchSectionType = isResearchApproachSection(contextType);
   const temperature = isResearchSectionType ? 0.9 : (options.temperature ?? 0.7);
   const max_tokens = options.max_tokens ?? 1024;
 
-  // Prepare request body with JSON mode when appropriate
   const requestBody = {
     model: model,
     messages: messages,
@@ -112,22 +83,38 @@ export const callOpenAI = async (
     max_tokens: max_tokens
   };
 
-  // Add response_format for JSON mode when requested
   if (useJsonMode) {
     requestBody.response_format = { type: "json_object" };
   }
 
   try {
-    console.log(`[openaiService] Sending request to OpenAI API...`);
+    console.log(`[openaiService] Sending request to OpenAI API (Timeout: ${API_TIMEOUT_MS / 1000}s)...`);
 
-    const response = await fetch(apiUrl, {
+    // --- Timeout Implementation ---
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+        console.warn(`[openaiService] API call timed out after ${API_TIMEOUT_MS / 1000} seconds.`);
+        controller.abort();
+    }, API_TIMEOUT_MS);
+
+    const fetchPromise = fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(requestBody),
+      signal: controller.signal // Link fetch to abort controller
     });
+
+    // Race the fetch against the timeout (though abort controller handles it now)
+    // We still await the fetchPromise directly, but the signal will cause it to abort on timeout.
+    const response = await fetchPromise;
+
+    // Clear the timeout timer if the fetch completes or fails before the timeout
+    clearTimeout(timeoutId);
+    // --- End Timeout Implementation ---
+
 
     if (!response.ok) {
       let errorMessage = `API request failed with status ${response.status}`;
@@ -150,63 +137,46 @@ export const callOpenAI = async (
         console.error("No response content found in API data:", data);
         throw new Error("Received empty or invalid response content from API.");
     }
-    
-    // If using JSON mode, parse response into an object
+
+    // Parse JSON response if needed
     if (useJsonMode) {
       try {
         // Special handling for improve_instructions_batch context
         if (contextType === "improve_instructions_batch") {
           console.log("Raw JSON response:", responseContent);
-          
-          // Look for an array in the string
-          if (responseContent.trim().startsWith('[') && responseContent.trim().endsWith(']')) {
-            return JSON.parse(responseContent);
-          }
-          
-          // Look for a key that might contain the array inside the JSON object
+          if (responseContent.trim().startsWith('[') && responseContent.trim().endsWith(']')) { return JSON.parse(responseContent); }
           const jsonObj = JSON.parse(responseContent);
-          
-          // If it's directly an array, return it
-          if (Array.isArray(jsonObj)) {
-            return jsonObj;
-          }
-          
-          // Look for array properties
-          for (const key in jsonObj) {
-            if (Array.isArray(jsonObj[key])) {
-              return jsonObj[key];
-            }
-          }
-          
-          // If all else fails, wrap the response in an array
-          return [jsonObj];
+          if (Array.isArray(jsonObj)) { return jsonObj; }
+          for (const key in jsonObj) { if (Array.isArray(jsonObj[key])) { return jsonObj[key]; } }
+          return [jsonObj]; // Fallback: wrap in array
         }
-        
-        // Standard JSON parsing for other contexts
+        // Standard JSON parsing
         return JSON.parse(responseContent);
       } catch (error) {
-        console.error("Error parsing JSON response:", error);
-        console.log("Raw response:", responseContent);
-        
-        // For improve_instructions_batch, return an empty array on error
-        if (contextType === "improve_instructions_batch") {
-          return [];
-        }
-        
+        console.error("Error parsing JSON response:", error, "Raw:", responseContent);
+        if (contextType === "improve_instructions_batch") { return []; } // Fallback for batch
         throw new Error(`Failed to parse JSON response: ${error.message}`);
       }
     }
-    
+
     // Return raw string for chat contexts
     return responseContent;
 
   } catch (error) {
+    // Clear timeout in case error happened before fetch completed but after timeout started
+    // Note: timeoutId might not be defined if error happened before setTimeout
+    if (typeof timeoutId !== 'undefined') clearTimeout(timeoutId);
+
     console.error("Error calling OpenAI API:", error);
 
-    if (error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
+    // Handle specific error types
+    if (error.name === 'AbortError') {
+         throw new Error(`OpenAI API request timed out after ${API_TIMEOUT_MS / 1000} seconds.`);
+    } else if (error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
       throw new Error("Network error: Unable to connect to OpenAI API. Please check your internet connection.");
     }
 
+    // Rethrow other errors
     throw new Error(`OpenAI API Error: ${error.message || 'Unknown error'}`);
   }
 };
