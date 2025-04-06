@@ -7,7 +7,7 @@ import AppHeader from '../layout/AppHeader';
 import SectionCard from '../sections/SectionCard';
 import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
 import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
-import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel'; // Using reverted fixed panel
+import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
 import {
   improveBatchInstructions,
@@ -17,9 +17,9 @@ import '../../styles/PaperPlanner.css'; // Ensure CSS is imported
 
 /**
  * Enhanced Paper Planner
- * UPDATED: Reverted right panel to fixed positioning using original component logic.
- * UPDATED: Adjusted main layout to accommodate fixed panel.
- * UPDATED: Correctly placed floating feedback button.
+ * REVERTED: Layout back to stable Flexbox side-by-side columns.
+ * KEPT: Floating feedback button (independent positioning), salient PDF button, placeholder text, footer text.
+ * FIXED: SVG Syntax error.
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Hook destructuring
@@ -44,20 +44,47 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [improvingInstructions, setImprovingInstructions] = useState(false); // State for feedback loading
 
   // --- Effects ---
-   useEffect(() => { /* Map refs */ }, [localSectionContent.sections]);
-   useEffect(() => { /* Initial active section */ }, [currentSectionIdForChat]);
-   useEffect(() => { /* Update approach/data method */ }, [userInputs, localSectionContent.sections]);
+   useEffect(() => { /* Map refs */
+     if (localSectionContent?.sections) {
+       localSectionContent.sections.forEach(section => {
+         if (section?.id) sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
+       });
+     }
+   }, [localSectionContent.sections]);
+   useEffect(() => { /* Initial active section */
+        setActiveSection(currentSectionIdForChat);
+   }, [currentSectionIdForChat]);
+   useEffect(() => { /* Update approach/data method */
+      const placeholders = {};
+      if (localSectionContent?.sections) { localSectionContent.sections.forEach(s => { if (s?.id) placeholders[s.id] = s.placeholder || ''; }); }
+      const isModified = (sectionId) => { const content = userInputs[sectionId]; return typeof content === 'string' && content.trim() !== '' && content !== placeholders[sectionId]; };
+      if (isModified('hypothesis')) setActiveApproach('hypothesis');
+      else if (isModified('needsresearch')) setActiveApproach('needsresearch');
+      else if (isModified('exploratoryresearch')) setActiveApproach('exploratoryresearch');
+      else setActiveApproach('hypothesis');
+      if (isModified('experiment')) setActiveDataMethod('experiment');
+      else if (isModified('existingdata')) setActiveDataMethod('existingdata');
+      else setActiveDataMethod('experiment');
+   }, [userInputs, localSectionContent.sections]);
 
   // --- Handlers ---
   const setActiveSectionWithManualFlag = (sectionId) => { setActiveSection(sectionId); handleSectionChange(sectionId); };
-  const getSectionCompletionStatus = (sectionId) => { /* ... */ };
-  const scrollToSection = (sectionId) => { /* ... */ };
+  const getSectionCompletionStatus = (sectionId) => {
+     if (sectionCompletionStatus[sectionId]) return sectionCompletionStatus[sectionId];
+     const content = userInputs[sectionId];
+     if (!content || content.trim() === '') return 'unstarted';
+     const section = localSectionContent.sections.find(s => s?.id === sectionId);
+     const placeholder = section?.placeholder || '';
+     if (content === placeholder) return 'unstarted';
+     if (content.length > (placeholder.length * 1.1) || content.length > 50) return 'complete';
+     return 'progress';
+   };
+  const scrollToSection = (sectionId) => { if (sectionRefs.current[sectionId]?.current) sectionRefs.current[sectionId].current.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   const getCurrentSectionDataForPanel = () => {
-      if (!localSectionContent || !Array.isArray(localSectionContent.sections)) return null;
-      const sectionData = localSectionContent.sections.find(s => s && s.id === activeSection);
-      // if (!sectionData) { console.warn(`[getCurrentSectionDataForPanel] No section data found for activeSection: ${activeSection}`); }
-      return sectionData || null;
-  };
+     if (!localSectionContent || !Array.isArray(localSectionContent.sections)) return null;
+     const sectionData = localSectionContent.sections.find(s => s && s.id === activeSection);
+     return sectionData || null;
+   };
   const handleFeedbackRequest = async () => { /* ... includes console logs ... */
       if (improvingInstructions) return;
       console.log(`[FEEDBACK_HANDLER] Requesting feedback... (Active section: ${activeSection})`);
@@ -69,7 +96,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         if (result.success && result.improvedData && result.improvedData.length > 0) {
           console.log("[FEEDBACK_HANDLER] Processing successful result...");
           const updatedSections = updateSectionWithImprovedInstructions(localSectionContent, result.improvedData);
-          setLocalSectionContent(updatedSections);
+          setLocalSectionContent(updatedSections); // Update state
           const newCompletionStatuses = {};
           result.improvedData.forEach(item => { if (item.completionStatus) newCompletionStatuses[item.id] = item.completionStatus; });
           setSectionCompletionStatus(prevStatus => ({...prevStatus, ...newCompletionStatuses }));
@@ -81,57 +108,80 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         setImprovingInstructions(false);
       }
    };
-  const handleResetRequest = () => { /* ... */ };
-  const shouldDisplaySection = (sectionId) => { /* ... */ };
-  const handleApproachToggle = (approach) => { /* ... */ };
-  const handleDataMethodToggle = (method) => { /* ... */ };
+  const handleResetRequest = () => {
+      hookResetProject();
+      try { setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent))); }
+      catch(e) { console.error("Failed to reset local section content:", e); setLocalSectionContent({ sections: [] }); }
+      setActiveSection(sectionContent?.sections?.[0]?.id || 'question');
+      setActiveApproach('hypothesis');
+      setActiveDataMethod('experiment');
+      setSectionCompletionStatus({});
+   };
+  const shouldDisplaySection = (sectionId) => {
+      if (['hypothesis', 'needsresearch', 'exploratoryresearch'].includes(sectionId)) return sectionId === activeApproach;
+      if (['experiment', 'existingdata'].includes(sectionId)) return sectionId === activeDataMethod;
+      return true;
+   };
+  const handleApproachToggle = (approach) => { setActiveApproach(approach); setActiveSectionWithManualFlag(approach); };
+  const handleDataMethodToggle = (method) => { setActiveDataMethod(method); setActiveSectionWithManualFlag(method); };
 
   // --- Render Logic ---
   const renderSection = (section) => {
       if (!section || !section.id || !shouldDisplaySection(section.id)) return null;
       const isCurrentActive = activeSection === section.id;
       const completionStatus = getSectionCompletionStatus(section.id);
-      return ( <SectionCard key={section.id} section={section} /* ...props... */ /> );
+      return (
+        <SectionCard
+          key={section.id} section={section} isCurrentSection={isCurrentActive} completionStatus={completionStatus}
+          userInputs={userInputs} handleInputChange={handleInputChange} loading={false}
+          sectionRef={sectionRefs.current[section.id]} onClick={() => setActiveSectionWithManualFlag(section.id)} useLargerFonts={true}
+        />
+      );
    };
   const sectionDataForPanel = getCurrentSectionDataForPanel();
 
   return (
-    // Main container allows scrolling
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    // Main flex column layout
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
       {/* Header */}
-      <AppHeader /* ...props... */ />
+      <AppHeader
+        activeSection={activeSection} setActiveSection={setActiveSectionWithManualFlag} handleSectionChange={handleSectionChange}
+        scrollToSection={scrollToSection} resetProject={() => setShowConfirmDialog(true)} exportProject={exportProject}
+        saveProject={saveProject} loadProject={loadProject} importDocumentContent={importDocumentContent}
+        setShowExamplesDialog={setShowExamplesDialog}
+      />
 
-      {/* Main Content Wrapper - Provides right padding for fixed panel */}
-      <div className={`w-full mx-auto pr-[50%]`}> {/* Padding = right panel width */}
-          {/* Left Column Content */}
-          <div className={`px-8 py-6`}> {/* Takes remaining width */}
-              {/* Sections rendering logic */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.filter(s => s?.id === 'question' || s?.id === 'audience').map(renderSection)}
-              <ResearchApproachToggle activeApproach={activeApproach} setActiveApproach={handleApproachToggle} />
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.filter(s => ['hypothesis', 'needsresearch', 'exploratoryresearch'].includes(s?.id)).map(renderSection)}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.filter(s => s?.id === 'relatedpapers').map(renderSection)}
-              <DataAcquisitionToggle activeMethod={activeDataMethod} setActiveMethod={handleDataMethodToggle} />
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.filter(s => ['experiment', 'existingdata'].includes(s?.id)).map(renderSection)}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.filter(s => ['analysis', 'process', 'abstract'].includes(s?.id)).map(renderSection)}
-          </div>
+      {/* Middle Content Area using Flexbox side-by-side */}
+      <div className="flex flex-grow w-full">
+        {/* Left Side Sections */}
+        <div className="w-1/2 px-8 py-6 overflow-y-auto">
+             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.filter(s => s?.id === 'question' || s?.id === 'audience').map(renderSection)}
+             <ResearchApproachToggle activeApproach={activeApproach} setActiveApproach={handleApproachToggle} />
+             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.filter(s => ['hypothesis', 'needsresearch', 'exploratoryresearch'].includes(s?.id)).map(renderSection)}
+             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.filter(s => s?.id === 'relatedpapers').map(renderSection)}
+             <DataAcquisitionToggle activeMethod={activeDataMethod} setActiveMethod={handleDataMethodToggle} />
+             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.filter(s => ['experiment', 'existingdata'].includes(s?.id)).map(renderSection)}
+             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections.filter(s => ['analysis', 'process', 'abstract'].includes(s?.id)).map(renderSection)}
+        </div>
+
+        {/* Right Side Instructions Panel Container */}
+        <div className="w-1/2 py-6 pl-4 pr-8 overflow-hidden">
+             {/* Panel itself is NOT fixed/sticky here */}
+            <FullHeightInstructionsPanel
+              currentSection={sectionDataForPanel}
+              userInputs={userInputs}
+              // Feedback button related props removed from here
+            />
+        </div>
       </div>
 
-
-      {/* Right Panel - Uses its own fixed positioning now */}
-      <FullHeightInstructionsPanel
-            currentSection={sectionDataForPanel}
-            userInputs={userInputs}
-            // No width/offset props needed as it uses its internal style
-       />
-
-
-      {/* Footer - Placed after content, add right padding */}
-      <div className={`w-full text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6 pb-6 pr-[50%]`}> {/* Padding = right panel width */}
+      {/* Footer */}
+      <div className="w-full text-center text-gray-500 text-base mt-auto border-t border-gray-200 pt-6 pb-6">
         <p>Scientific Paper Planner • Designed with Love for Researchers by Konrad (@kordinglab)• 2025</p>
       </div>
 
       {/* --- Floating Action Buttons --- */}
-      {/* Placed outside the main flow, positioned independently */}
+      {/* Rendered independently at bottom right */}
       <button
           onClick={handleFeedbackRequest}
           disabled={improvingInstructions}
@@ -147,7 +197,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           )}
       </button>
 
-      {/* Chat Interface (Manages its own floating button) */}
+      {/* Chat Interface */}
       <ModernChatInterface
           currentSection={currentSectionIdForChat} currentSectionTitle={sectionDataForPanel?.title} chatMessages={chatMessages}
           currentMessage={currentMessage} setCurrentMessage={setCurrentMessage} handleSendMessage={handleSendMessage}
