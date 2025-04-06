@@ -8,7 +8,7 @@ import promptContent from '../data/promptContent.json';
  * @returns {boolean} - True if the section is related to research approaches
  */
 export const isResearchApproachSection = (sectionId, sectionObj = null) => {
-  // Direct match for known research approach sections
+  // Direct match for only the 3 research approach sections
   if (sectionId === 'hypothesis' ||
       sectionId === 'needsresearch' ||
       sectionId === 'exploratoryresearch') {
@@ -28,23 +28,20 @@ export const isResearchApproachSection = (sectionId, sectionObj = null) => {
  * @param {string} sectionId - The section ID to get guidance for
  * @returns {string} - The guidance text or empty string if not applicable
  */
-export const getApproachGuidanceText = (sectionId) => {
+export const getApproachGuidance = (sectionId) => {
   // If the section is directly related to a research approach, get its specific guidance
-  if (sectionId === 'hypothesis' ||
-      sectionId === 'needsresearch' ||
-      sectionId === 'exploratoryresearch') {
-    return promptContent.researchApproaches.approachGuidance[sectionId] || '';
+  if (sectionId === 'hypothesis') {
+    return promptContent.researchApproaches.approachGuidance.hypothesis || '';
+  }
+  if (sectionId === 'needsresearch') {
+    return promptContent.researchApproaches.approachGuidance.needsresearch || '';
+  }
+  if (sectionId === 'exploratoryresearch') {
+    return promptContent.researchApproaches.approachGuidance.exploratory || '';
   }
 
   return '';
 };
-
-/**
- * Alias for getApproachGuidanceText to maintain compatibility with existing code
- * @param {string} sectionId - The section ID to get guidance for
- * @returns {string} - The guidance text or empty string if not applicable
- */
-export const getApproachGuidance = getApproachGuidanceText;
 
 /**
  * Replaces placeholders in a string with values from a parameters object.
@@ -71,7 +68,7 @@ const replacePlaceholders = (template, params = {}) => {
  * Build a system prompt for the chat AI based on the type and parameters.
  * This focuses specifically on the 'system' role message content.
  * @param {string} promptType - The type of system prompt to build (e.g., 'chat', 'documentImport').
- * @param {object} params - Parameters to insert into the prompt template (e.g., needsResearchContext, sectionTitle).
+ * @param {object} params - Parameters to insert into the prompt template.
  * @returns {string} - The formatted system prompt string.
  */
 export const buildSystemPrompt = (promptType, params = {}) => {
@@ -89,33 +86,27 @@ export const buildSystemPrompt = (promptType, params = {}) => {
     contextText = promptContent.researchApproaches.context || '';
   }
 
-  // Get approach guidance if applicable (e.g., for chat)
-  const approachGuidanceText = params.sectionId ? getApproachGuidanceText(params.sectionId) : '';
-
-  // Add the context and guidance to the parameters for replacement
+  // Add the context and other params for replacement
   const allParams = {
     ...params,
     researchApproachContext: contextText,
-    approachGuidance: approachGuidanceText,
     // Ensure potentially missing params have default values for replacement
     sectionTitle: params.sectionTitle || '',
     instructionsText: params.instructionsText || '',
     feedbackText: params.feedbackText || '',
     userContent: params.userContent || '',
-    documentTextSnippet: (params.documentText || '').substring(0, 500) // Add snippet for context
+    documentTextSnippet: params.documentText ? params.documentText.substring(0, 500) : ''
   };
 
   // Replace placeholders in the base template
-  let finalPrompt = replacePlaceholders(basePromptTemplate, allParams);
-
-  return finalPrompt;
+  return replacePlaceholders(basePromptTemplate, allParams);
 };
 
 /**
  * Build a main task prompt (for the 'user' role) based on the type and parameters.
  * Used for complex tasks like document import or instruction improvement.
  * @param {string} taskType - The type of task prompt (e.g., 'documentImport', 'instructionImprovement').
- * @param {object} params - Parameters to insert into the prompt template (e.g., documentText, sectionsData).
+ * @param {object} params - Parameters to insert into the prompt template.
  * @returns {string} - The formatted task prompt string.
  */
 export const buildTaskPrompt = (taskType, params = {}) => {
@@ -130,15 +121,11 @@ export const buildTaskPrompt = (taskType, params = {}) => {
   const allParams = {
     ...params,
     isoTimestamp: new Date().toISOString()
-    // Add other common dynamic params if needed
   };
 
   // Replace placeholders
-  let finalPrompt = replacePlaceholders(basePromptTemplate, allParams);
-
-  return finalPrompt;
+  return replacePlaceholders(basePromptTemplate, allParams);
 };
-
 
 /**
  * Get random questions for a specific research approach or section
@@ -147,12 +134,15 @@ export const buildTaskPrompt = (taskType, params = {}) => {
  * @returns {Array<string>} - Array of randomly selected questions
  */
 export const getRandomQuestionsForApproach = (sectionId, count = 2) => {
-  // Determine the question set to use
+  // Map section IDs to question sets (just 3 approaches plus general)
   let questionSetKey = 'general'; // Default
-  if (sectionId === 'hypothesis' ||
-      sectionId === 'needsresearch' ||
-      sectionId === 'exploratoryresearch') {
-    questionSetKey = sectionId;
+  
+  if (sectionId === 'hypothesis') {
+    questionSetKey = 'hypothesis';
+  } else if (sectionId === 'needsresearch') {
+    questionSetKey = 'needsresearch';
+  } else if (sectionId === 'exploratoryresearch') {
+    questionSetKey = 'exploratory';
   }
 
   const questionSet = promptContent.researchApproaches.questions[questionSetKey];
@@ -170,7 +160,7 @@ export const getRandomQuestionsForApproach = (sectionId, count = 2) => {
 
 /**
  * Generate a mock response for testing without API
- * @param {string} type - Response type ('socraticPrompt', 'regularChat', 'instructionImprovement', 'documentImport')
+ * @param {string} type - Response type ('regularChat', 'instructionImprovement', 'documentImport')
  * @param {string} sectionId - The section ID or approach type for context
  * @returns {string} - A formatted mock response string
  */
@@ -198,30 +188,25 @@ export const generateMockResponse = (type, sectionId) => {
   }
 
   // Determine the appropriate template for chat responses
-  let responseTypeKey = 'regularChat'; // Default
-  if (type === 'socraticPrompt' || type === '__SOCRATIC_PROMPT__') {
-     responseTypeKey = 'socraticPrompt';
-  }
-
   let approachTypeKey = 'general'; // Default
-  if (sectionId === 'hypothesis' ||
-      sectionId === 'needsresearch' ||
-      sectionId === 'exploratoryresearch') {
-    approachTypeKey = sectionId;
+  if (sectionId === 'hypothesis') {
+    approachTypeKey = 'hypothesis';
+  } else if (sectionId === 'needsresearch') {
+    approachTypeKey = 'needsresearch';
+  } else if (sectionId === 'exploratoryresearch') {
+    approachTypeKey = 'exploratory';
   }
 
   // Get the response template
   let template;
-  if (promptContent.mockResponses[responseTypeKey] && promptContent.mockResponses[responseTypeKey][approachTypeKey]) {
-     template = promptContent.mockResponses[responseTypeKey][approachTypeKey];
+  if (promptContent.mockResponses.regularChat && promptContent.mockResponses.regularChat[approachTypeKey]) {
+     template = promptContent.mockResponses.regularChat[approachTypeKey];
   } else {
      // Fallback if specific template missing
-     console.warn(`Mock response template missing for type: ${responseTypeKey}, approach: ${approachTypeKey}. Using general fallback.`);
-     template = promptContent.mockResponses[responseTypeKey]?.general ||
-                promptContent.mockResponses.socraticPrompt?.general || // Further fallback
+     console.warn(`Mock response template missing for approach: ${approachTypeKey}. Using general fallback.`);
+     template = promptContent.mockResponses.regularChat?.general ||
                 `Let's discuss ${sectionId || 'your work'}. What's on your mind?`; // Absolute fallback
   }
-
 
   // Get random questions for this approach if needed by the template
   if (template.includes('{{question')) {
@@ -234,7 +219,7 @@ export const generateMockResponse = (type, sectionId) => {
     template = replacePlaceholders(template, questionParams);
   }
 
-  // Add other simple replacements if needed by templates (example)
+  // Add other simple replacements if needed by templates
   template = replacePlaceholders(template, {
       hypothesis_aspect: 'aspect A',
       alternative_aspect: 'aspect B',
