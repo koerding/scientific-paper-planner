@@ -199,12 +199,12 @@ export const generateMockResponse = (type, sectionId) => {
 
   // Get the response template
   let template;
-  if (promptContent.mockResponses.regularChat && promptContent.mockResponses.regularChat[approachTypeKey]) {
-     template = promptContent.mockResponses.regularChat[approachTypeKey];
+  if (promptContent.mockResponses.chat && promptContent.mockResponses.chat[approachTypeKey]) {
+     template = promptContent.mockResponses.chat[approachTypeKey];
   } else {
      // Fallback if specific template missing
      console.warn(`Mock response template missing for approach: ${approachTypeKey}. Using general fallback.`);
-     template = promptContent.mockResponses.regularChat?.general ||
+     template = promptContent.mockResponses.chat?.general ||
                 `Let's discuss ${sectionId || 'your work'}. What's on your mind?`; // Absolute fallback
   }
 
