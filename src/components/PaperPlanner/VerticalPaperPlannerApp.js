@@ -22,8 +22,8 @@ import '../../styles/PaperPlanner.css';
  * UPDATED: Fixes for panel positioning and styling
  * UPDATED: Added floating Magic button near chat
  * UPDATED: Made import example button more prominent
- * UPDATED: Reduced left whitespace and removed character counts
- * UPDATED: Tighter overall layout with better spacing
+ * FIXED: Restored proper width on the left side
+ * FIXED: Improved alignment between panels
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
@@ -409,8 +409,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         />
 
         <div className="flex">
-          {/* Reduced left padding from px-8 to px-4 for less whitespace */}
-          <div className="w-48 px-4 py-3" style={{ marginRight: '50%' }}>
+          {/* FIXED: Restored proper width by replacing the fixed narrow width (w-48) with a wider container */}
+          <div className="w-1/2 px-6 py-3" style={{ marginRight: '50%' }}>
             {/* Display first two sections: Question and Audience */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => section?.id === 'question' || section?.id === 'audience')
