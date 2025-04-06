@@ -11,11 +11,110 @@ const FullHeightInstructionsPanel = ({
   loading,
   userInputs
 }) => {
-  // ... (useState, useEffect, handleMagicClick, getFallbackInstructions, isPlaceholder, etc. remain the same)
+  const [lastClickTime, setLastClickTime] = useState(0);
+
+  useEffect(() => {
+    // Debug logging to help diagnose instruction content issues
+    if (currentSection) {
+      console.log("[PANEL] Current section data:", currentSection);
+      console.log("[PANEL] Instructions text:", currentSection?.instructions?.text);
+      console.log("[PANEL] Feedback text:", currentSection?.instructions?.feedback);
+    }
+  }, [currentSection]);
+
+  // Enhanced magic handler
+  const handleMagicClick = () => {
+    console.log("Magic button clicked!", new Date().toISOString());
+    const now = Date.now();
+    if (now - lastClickTime < 1500) { // Increase debounce slightly
+      console.log("Prevented rapid double-click");
+      return;
+    }
+    setLastClickTime(now);
+
+    if (typeof improveInstructions === 'function') {
+      try {
+        improveInstructions();
+      } catch (error) {
+        console.error("Error triggering magic:", error);
+        // Optionally show an error message to the user here
+      }
+    } else {
+      console.error("improveInstructions is not a function");
+    }
+  };
+
+  /**
+   * Returns fallback instructions based on section ID
+   * @param {Object} section - The current section object
+   * @returns {string} - Appropriate instructions for the section
+   */
+  function getFallbackInstructions(section) {
+    if (!section || !section.id) return '';
+
+    const sectionId = section.id;
+    const sectionTitle = section.title || 'Section';
+
+    // Common base instructions for all sections
+    const baseInstructions = `A good ${sectionTitle} is critical to a strong research paper. Here are some key points to consider:`;
+
+    // Section-specific instructions
+    switch(sectionId) {
+      case 'question':
+        return `${baseInstructions}\n\n* Specify your question clearly.\n* Be clear about the logic. Are you asking how something is? Why it is the way it is? What gives rise to something? How it got their over time?\n* Explain why the question matters to the field. How will science be different after your work?\n* Ensure your question is answerable with your anticipated resources.`;
+      case 'audience':
+        return `${baseInstructions}\n\n* Identify primary academic communities who would benefit most directly.\n* For each community, note how your research might impact their work.\n* Then, specify 3-5 individual researchers or research groups representing your audience.`;
+      case 'hypothesis':
+        return `${baseInstructions}\n\n* Formulate at least two distinct, testable hypotheses.\n* Ensure each hypothesis is specific and clearly stated.\n* Your experiment must be able to differentiate between these hypotheses.\n* Explain why distinguishing between these hypotheses matters to the field.\n* Explain how data can help you decide between these hypotheses.`;
+      case 'needsresearch':
+        return `${baseInstructions}\n\n* Clearly identify who needs this research (patients, clinicians, engineers, policymakers).\n* Explain why they need it - what specific problem are you solving?\n* Describe the current options/solutions and their limitations.\n* Define concrete success criteria - how will you know if your solution works?\n* Explain what specific improvement your solution offers over existing approaches.`;
+      case 'exploratoryresearch':
+        return `${baseInstructions}\n\n* Describe the phenomena, dataset, or system you want to explore.\n* List specific patterns, relationships, or discoveries your approach might reveal.\n* Explain what makes this exploration novel or valuable to your field.\n* Describe what tools or analytical approaches you'll use for discovery.\n* Outline how you'll distinguish meaningful patterns from random variation.`;
+      case 'relatedpapers':
+        return `${baseInstructions}\n\n* List papers that test similar hypotheses or address related questions.\n* Explain how each paper relates to your specific research question.\n* Identify what gap your research will fill that these papers don't address.\n* Consider papers with contrasting perspectives or results to yours.`;
+      case 'experiment':
+        return `${baseInstructions}\n\n* Define your key variables (independent, dependent, controlled).\n* Describe your sample and justify your sample size.\n* Outline your data collection procedures and control conditions.\n* State predicted results for each hypothesis.\n* Identify potential confounds and how you'll address them.`;
+      case 'existingdata':
+        return `${baseInstructions}\n\n* Identify the specific dataset(s) and where/how you will access them.\n* Explain what the data was originally collected for and by whom.\n* Confirm you have legal rights to use the data for your purpose.\n* Describe what you know about data provenance and quality assurance.\n* Assess if the dataset contains the variables needed to answer your research question.`;
+      case 'analysis':
+        return `${baseInstructions}\n\n* Define your data cleaning steps and exclusion criteria.\n* Specify your primary statistical method(s) or model(s).\n* Explain how your analysis will address your research question.\n* Describe how you'll quantify uncertainty in your results.\n* Outline how you'll handle any special cases (outliers, multiple comparisons, etc.).`;
+      case 'process':
+        return `${baseInstructions}\n\n* List essential skills needed and identify which ones you lack.\n* Name potential collaborators and their specific contributions.\n* Describe your plan for data/code sharing and documentation.\n* Outline a realistic timeline with key milestones and duration.\n* Identify major potential obstacles and specific contingency plans.`;
+      case 'abstract':
+        return `${baseInstructions}\n\n* Background: Briefly introduce the research area, identify the knowledge gap, and state its significance.\n* Objective/Question: Clearly state the main research question, primary hypothesis, or goal.\n* Methods: Concisely summarize your experimental design and key procedures.\n* (Expected) Results: Briefly describe the main anticipated findings.\n* Conclusion/Implications: State the main takeaway message and its potential impact.`;
+      default:
+        return `${baseInstructions}\n\n* Be specific and clear in your writing.\n* Consider how this section connects to your overall research goals.\n* Ensure this section addresses the key requirements for your project.`;
+    }
+  }
+
+  // Check if the text is a placeholder or too short to be useful
+  const isPlaceholder = (text) => {
+    if (!text || text.trim() === '') return true;
+    if (text.length < 40) return true; // Too short to be real instructions
+
+    const knownPlaceholders = [
+      "Remove points",
+      "addressed all key points",
+      "remove points the user has already addressed",
+      "congratulatory message"
+    ];
+
+    return knownPlaceholders.some(phrase =>
+      text.toLowerCase().includes(phrase.toLowerCase())
+    );
+  };
 
   // Safely access instruction text - use fallback if it's a placeholder
   const getInstructionsText = () => {
-    // ... (implementation remains the same)
+    const rawText = currentSection?.instructions?.text || '';
+
+    if (isPlaceholder(rawText)) {
+      // Use fallback instructions
+      console.log("[PANEL] Using fallback instructions for", currentSection?.id);
+      return getFallbackInstructions(currentSection);
+    }
+
+    return rawText;
   };
 
   // Safely access feedback text - use null check and proper fallback
@@ -65,7 +164,6 @@ const FullHeightInstructionsPanel = ({
                     : 'bg-purple-600 text-white hover:bg-purple-700 shadow hover:shadow-md'
                   }`}
               >
-                {/* ... (button content remains the same) */}
                  {loading ? (
                   <span className="flex items-center">
                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -117,11 +215,66 @@ const FullHeightInstructionsPanel = ({
   );
 };
 
-// ... (fixNumberedLists function remains the same)
+/**
+ * Fixes numbered lists by ensuring they start at 1 and increment properly
+ * @param {string} text - Markdown text to process
+ * @returns {string} - Processed text with fixed numbering
+ */
+function fixNumberedLists(text) {
+  if (!text) return text;
+
+  // Split text into lines
+  const lines = text.split('\n');
+
+  // Find and group numbered list items
+  let inNumberedList = false;
+  let currentListItems = [];
+  let result = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isNumberedItem = /^\d+\.\s/.test(line.trim());
+
+    if (isNumberedItem) {
+      // Extract the content after the number
+      const content = line.replace(/^\d+\.\s/, '');
+
+      if (!inNumberedList) {
+        // Starting a new list
+        inNumberedList = true;
+        currentListItems = [content];
+      } else {
+        // Continuing the current list
+        currentListItems.push(content);
+      }
+    } else {
+      // Not a numbered item
+      if (inNumberedList) {
+        // End of a list, add renumbered items to result
+        for (let j = 0; j < currentListItems.length; j++) {
+          result.push(`${j + 1}. ${currentListItems[j]}`);
+        }
+        currentListItems = [];
+        inNumberedList = false;
+      }
+
+      // Add the current non-list line
+      result.push(line);
+    }
+  }
+
+  // Add any remaining list items
+  if (inNumberedList && currentListItems.length > 0) {
+    for (let j = 0; j < currentListItems.length; j++) {
+      result.push(`${j + 1}. ${currentListItems[j]}`);
+    }
+  }
+
+  return result.join('\n');
+}
 
 // Custom component to render markdown with enhanced styling
 const StyledMarkdown = ({ content, customStyles }) => {
- // ... (implementation remains the same, styles are now passed via customStyles prop)
   const processedContent = content
     .replace(/\n\* /g, "\n• ");
 
@@ -149,6 +302,5 @@ const StyledMarkdown = ({ content, customStyles }) => {
     </div>
   );
 };
-
 
 export default FullHeightInstructionsPanel;
