@@ -9,8 +9,8 @@ import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
 import { 
   isResearchApproachSection, 
-  buildSystemPrompt, 
-  getApproachGuidance 
+  buildSystemPrompt,
+  getApproachGuidance
 } from '../utils/promptUtils';
 
 // Helper function to create the initial state, corrected to prioritize templates
@@ -136,21 +136,18 @@ const usePaperPlanner = () => {
     setCurrentSection(sectionId);
   }, []);
 
-  // MODIFIED: Always uses Socratic style, whether for initial prompt or regular messages
-  const handleSendMessage = useCallback(async (overrideMessage, isInitialPrompt = false) => {
+  // Unified handler for all messages using Socratic approach
+  const handleSendMessage = useCallback(async (overrideMessage = null, isInitialPrompt = false) => {
     const messageToSend = overrideMessage || currentMessage;
     
     if ((!messageToSend.trim() || !currentSection) && !isInitialPrompt) return;
 
-    // For standard user messages (not initial prompts)
+    // For standard user messages (not initial prompts), update the UI immediately
     if (!isInitialPrompt) {
       const newUserMessage = { role: 'user', content: messageToSend };
-      const historyForApi = chatMessages[currentSection] || [];
-
-      // Update UI state immediately
       setChatMessages(prevMessages => ({
           ...prevMessages,
-          [currentSection]: [...historyForApi, newUserMessage]
+          [currentSection]: [...(prevMessages[currentSection] || []), newUserMessage]
       }));
       setCurrentMessage('');
     }
@@ -162,7 +159,7 @@ const usePaperPlanner = () => {
       const sectionsForContext = sectionContent?.sections || [];
       const currentSectionObj = sectionsForContext.find(s => s && s.id === currentSection) || {};
       
-      // Get instructions text - try to get the most updated version (which might be edited by AI)
+      // Get instructions text
       const instructionsText = currentSectionObj.instructions?.text || '';
       const feedbackText = currentSectionObj.instructions?.feedback || '';
       
@@ -172,52 +169,46 @@ const usePaperPlanner = () => {
       // Determine if we need research approach context based on the section
       const needsResearchContext = isResearchApproachSection(currentSection, currentSectionObj);
       
-      // Get approach-specific guidance if needed
-      const approachGuidance = needsResearchContext ? getApproachGuidance(currentSection) : '';
-      
-      // Generate Socratic system prompt - we use the same style for all messages now
+      // Generate Socratic system prompt using centralized prompt builder
       const systemPrompt = buildSystemPrompt('chat', {
         needsResearchContext,
         sectionTitle: currentSectionObj.title || 'Research',
-        approachGuidance: approachGuidance,
+        approachGuidance: needsResearchContext ? getApproachGuidance(currentSection) : '',
         instructionsText,
         feedbackText,
         userContent: userContent || "They haven't written anything substantial yet."
       });
       
-      // Get chat history, but filter out any system-initiated prompts
+      // Get chat history
       const historyForApi = chatMessages[currentSection] || [];
-      const filteredHistory = historyForApi.filter(msg => 
-        !(msg.role === 'user' && msg.content === "__SOCRATIC_PROMPT__")
-      );
-
-      // For initial prompts, we use a special message
+      
+      // For initial prompts, we use a standard intro message
       const promptToSend = isInitialPrompt 
         ? `I'm working on the ${currentSectionObj.title || 'current'} section of my scientific paper plan. Can you help me think through this?` 
         : messageToSend;
 
       // Call OpenAI with the appropriate prompts and context
       const response = await callOpenAI(
-        promptToSend,           // The message/prompt to send
-        currentSection,         // Context type (section ID)
-        userInputs,             // All user inputs for broader context
-        sectionsForContext,     // Section definitions for context
-        { temperature: 0.9 },   // Higher temperature for more creative, varied questions
-        filteredHistory,        // Filtered chat history for the current section
-        systemPrompt            // The specific system prompt
+        promptToSend,             // The message to send
+        currentSection,           // Context type (section ID)
+        userInputs,               // All user inputs for broader context
+        sectionsForContext,       // Section definitions for context
+        { temperature: 0.9 },     // Higher temperature for more creative questions
+        historyForApi,            // Chat history for the current section
+        systemPrompt              // The system prompt built with promptUtils
       );
       
-      // For initial prompts, we need to add both the system prompt and the response
+      // For initial prompts, we need to add both the initial message and the response
       if (isInitialPrompt) {
-        // Add a hidden user message (will be filtered out in display)
-        const systemUserMessage = { role: 'user', content: "__SOCRATIC_PROMPT__" };
+        // Add the user's initial prompt
+        const initialUserMessage = { role: 'user', content: promptToSend };
         
         // Add the assistant's response
         const newAssistantMessage = { role: 'assistant', content: response };
         
         setChatMessages(prevMessages => ({
           ...prevMessages,
-          [currentSection]: [...(prevMessages[currentSection] || []), systemUserMessage, newAssistantMessage]
+          [currentSection]: [...(prevMessages[currentSection] || []), initialUserMessage, newAssistantMessage]
         }));
       } else {
         // For regular messages, just add the assistant's response
@@ -234,17 +225,17 @@ const usePaperPlanner = () => {
     } catch (error) {
       console.error("Error sending message:", error);
       
-      // For initial prompts, we need to add the system prompt first
+      // Handle error gracefully
       if (isInitialPrompt) {
-        const systemUserMessage = { role: 'user', content: "__SOCRATIC_PROMPT__" };
+        const initialUserMessage = { role: 'user', content: promptToSend };
         const errorMessage = { 
           role: 'assistant', 
-          content: `Hey there! I'd love to help you think through this. What specific aspects of this ${currentSection} are you finding most interesting or challenging?` 
+          content: `Hey there! I'd love to help you think through this. What specific aspects of this ${currentSectionData?.title || 'section'} are you finding most interesting or challenging?` 
         };
         
         setChatMessages(prevMessages => ({
           ...prevMessages,
-          [currentSection]: [...(prevMessages[currentSection] || []), systemUserMessage, errorMessage]
+          [currentSection]: [...(prevMessages[currentSection] || []), initialUserMessage, errorMessage]
         }));
       } else {
         // For normal user messages
@@ -264,166 +255,3 @@ const usePaperPlanner = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentMessage, currentSection, userInputs, chatMessages]);
-
-  // Reset project function - FIXED to correctly use fresh templates
-  const resetProject = useCallback(() => {
-    // Clear localStorage first
-    clearStorage();
-
-    // Create fresh copies of the templates
-    const freshInputs = JSON.parse(JSON.stringify(initialTemplates));
-    const freshChat = {};
-    sectionContent?.sections?.forEach(section => {
-      if (section && section.id) {
-        freshChat[section.id] = [];
-      }
-    });
-
-    // Set the state to fresh templates
-    setUserInputs(freshInputs);
-    setChatMessages(freshChat);
-    setCurrentSection(sectionContent?.sections?.[0]?.id || 'question');
-    setShowConfirmDialog(false);
-  }, [initialTemplates]);
-
-  const exportProject = useCallback(() => {
-    exportProjectFunction(userInputs, chatMessages, sectionContent);
-  }, [userInputs, chatMessages]);
-
-  // Save project function that only saves JSON for loading later
-  const saveProject = useCallback((fileName = 'scientific-paper-plan') => {
-    // Ensure the fileName has .json extension
-    const safeFileName = fileName.endsWith('.json')
-      ? fileName
-      : `${fileName}.json`;
-
-    const jsonData = {
-      userInputs,
-      chatMessages,
-      timestamp: new Date().toISOString(),
-      version: "1.0"
-    };
-
-    const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
-    const jsonUrl = URL.createObjectURL(jsonBlob);
-
-    // Create a link and trigger download of JSON
-    const jsonLink = document.createElement('a');
-    jsonLink.href = jsonUrl;
-    jsonLink.download = safeFileName;
-    document.body.appendChild(jsonLink);
-    jsonLink.click();
-
-    // Clean up JSON file link
-    document.body.removeChild(jsonLink);
-    URL.revokeObjectURL(jsonUrl);
-
-    return true;
-  }, [userInputs, chatMessages]);
-
-  // Function to load project from imported JSON file
-  const loadProject = useCallback((data) => {
-    if (!validateProjectData(data)) {
-      alert("Invalid project file format. Please select a valid project file.");
-      return;
-    }
-
-    // Confirm before loading (optional, but good practice)
-    if (window.confirm("Loading this project will replace your current work. Are you sure you want to continue?")) {
-      try {
-        // Load user inputs, ensuring we keep template values for any missing sections
-        const mergedInputs = {...initialTemplates}; // Use initialTemplates from state
-        Object.keys(data.userInputs || {}).forEach(sectionId => {
-            // Check if the sectionId actually exists in our current template structure
-            if (mergedInputs.hasOwnProperty(sectionId)) {
-                const loadedValue = data.userInputs[sectionId];
-                // Only load if it's a non-empty string
-                if (loadedValue && typeof loadedValue === 'string' && loadedValue.trim() !== '') {
-                    mergedInputs[sectionId] = loadedValue;
-                }
-            }
-        });
-        setUserInputs(mergedInputs);
-
-        // Load chat messages, ensuring we have empty arrays for any missing sections
-        const mergedChat = {};
-        (sectionContent?.sections || []).forEach(section => {
-          if (section && section.id) {
-            mergedChat[section.id] = (data.chatMessages && Array.isArray(data.chatMessages[section.id]))
-                                    ? data.chatMessages[section.id]
-                                    : [];
-          }
-        });
-        setChatMessages(mergedChat);
-
-        // Explicitly save to storage after loading
-        saveToStorage(mergedInputs, mergedChat);
-
-        setCurrentSection(sectionContent?.sections?.[0]?.id || 'question'); // Reset to first section safely
-
-        alert("Project loaded successfully!");
-      } catch (error) {
-        console.error("Error loading project:", error);
-        alert("Error loading project. Please try again.");
-      }
-    }
-  }, [initialTemplates]);
-
-  // Import document content
-  const importDocumentContent = useCallback(async (file) => {
-    setLoading(true);
-
-    try {
-      // First, ask for confirmation
-      if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
-        setLoading(false);
-        return;
-      }
-
-      // Call the document import service - Use the imported function from documentImportService
-      const importedData = await importDocumentFromFile(file);
-
-      // Use the loadProject function to handle the imported data
-      loadProject(importedData);
-
-      return true;
-    } catch (error) {
-      console.error("Error importing document content:", error);
-
-      // More user-friendly error message
-      alert("We had some trouble processing this document. You might want to try a different file format.");
-
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [loadProject]);
-
-  // Return all state and handlers needed by the components
-  return {
-    userInputs,
-    chatMessages,
-    currentSection,
-    currentMessage,
-    loading,
-    showConfirmDialog,
-    showExamplesDialog,
-    currentSectionData,  // Provides section data to chat
-    setChatMessages,
-    setUserInputs,
-    setCurrentMessage,
-    setShowConfirmDialog,
-    setShowExamplesDialog,
-    handleSectionChange,
-    handleInputChange,
-    handleSendMessage,
-    resetProject,
-    exportProject,
-    saveProject,
-    loadProject,
-    importDocumentContent
-  };
-};
-
-export default usePaperPlanner;
