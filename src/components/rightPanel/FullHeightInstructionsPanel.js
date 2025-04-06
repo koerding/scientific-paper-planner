@@ -4,104 +4,88 @@ import ReactMarkdown from 'react-markdown';
 
 /**
  * Enhanced full-height instructions panel
- * UPDATED: Added console logging to debug instruction rendering.
+ * UPDATED: Added guard clause for missing initial currentSection prop.
  */
 const FullHeightInstructionsPanel = ({
   currentSection,
   userInputs,
 }) => {
 
+  // Original fixed positioning logic (constants can be defined outside if preferred)
+  const topOffset = '120px'; // Matching original style
+  const bottomOffset = '2rem';
+  const panelWidth = '50%';
+  const calculatedHeight = `calc(100vh - ${topOffset} - ${bottomOffset})`;
+  const panelStyle = {
+      position: 'fixed', top: 0, right: 0, width: panelWidth,
+      paddingTop: topOffset, paddingBottom: bottomOffset,
+      zIndex: 10, height: '100vh' // Use 100vh for parent, internal div scrolls
+  };
+   const innerMinHeight = `calc(100vh - ${topOffset} - ${bottomOffset} - 4rem)`; // Estimate padding for centering placeholder
+
+  // --- GUARD CLAUSE ---
+  // If currentSection is not available on initial render, show placeholder
+  if (!currentSection || !currentSection.id) {
+    console.log("[PANEL GUARD] No currentSection or currentSection.id yet, showing placeholder.");
+    return (
+      <div
+        className="bg-blue-50 border-l-4 border-blue-500 overflow-y-auto" // Keep styling consistent
+        style={panelStyle}
+      >
+         {/* Inner padding applied manually now */}
+         <div className="px-6 py-4 relative flex items-center justify-center" style={{minHeight: innerMinHeight}}>
+           <p className="text-blue-600 text-xl">Select a section to view instructions</p>
+         </div>
+      </div>
+    );
+  }
+  // --- END GUARD CLAUSE ---
+
+
+  // If we get here, currentSection should be valid
   useEffect(() => {
-    // Optional: Log when the prop *changes*
-    // console.log(`[PANEL PROP CHANGE] Received new currentSection prop with ID: ${currentSection?.id}`);
+    // Debug logging (optional)
+    // console.log(`[PANEL RENDER] Rendering for section ID: ${currentSection?.id}`);
   }, [currentSection]);
 
-  /**
-   * Returns fallback instructions based on section ID
-   */
-  function getFallbackInstructions(section) {
-    if (!section || !section.id) return 'Fallback instructions could not be determined (no section).'; // More informative fallback
-    const sectionId = section.id;
-    const sectionTitle = section.title || 'Section';
-    const baseInstructions = `A good ${sectionTitle} is critical...`; // Truncated
-    switch(sectionId) {
-       // ... cases ...
-       default: return `${baseInstructions}\n\n* Be specific...`;
-     }
-  }
 
-  // Check if the text is a placeholder
-  const isPlaceholder = (text) => {
-     if (!text || text.trim() === '') return true;
-     if (text.length < 40) return true;
-     const knownPlaceholders = ["Remove points", "addressed all key points", /* ... */ ];
-     return knownPlaceholders.some(phrase => text.toLowerCase().includes(phrase.toLowerCase()));
-  };
+  function getFallbackInstructions(section) { /* ... */ }
+  const isPlaceholder = (text) => { /* ... */ };
 
-  // Safely access instruction text
+  // Safely access instruction text - less complex now due to guard clause
   const getInstructionsText = () => {
-    // Add logging inside this function too
-    if (!currentSection) {
-        console.log("[getInstructionsText] No currentSection provided.");
-        return getFallbackInstructions(null);
-    }
-    if (!currentSection.instructions) {
-        console.log(`[getInstructionsText] currentSection (ID: ${currentSection.id}) has no 'instructions' object.`);
-        return getFallbackInstructions(currentSection);
-    }
-     if (typeof currentSection.instructions.text !== 'string') {
-         console.log(`[getInstructionsText] currentSection (ID: ${currentSection.id}) instructions.text is not a string.`);
-         return getFallbackInstructions(currentSection);
-     }
-
-    const rawText = currentSection.instructions.text;
-    if (isPlaceholder(rawText)) {
-      console.log(`[getInstructionsText] Text for ${currentSection.id} identified as placeholder, using fallback.`);
+    // currentSection is guaranteed to exist here
+    if (!currentSection.instructions || typeof currentSection.instructions.text !== 'string') {
+      console.warn(`[getInstructionsText] Instructions text missing/invalid for ${currentSection.id}, using fallback.`);
       return getFallbackInstructions(currentSection);
     }
-    // console.log(`[getInstructionsText] Returning raw text for ${currentSection.id}, length: ${rawText.length}`);
+    const rawText = currentSection.instructions.text;
+    if (isPlaceholder(rawText)) {
+      console.log(`[getInstructionsText] Text for ${currentSection.id} is placeholder, using fallback.`);
+      return getFallbackInstructions(currentSection);
+    }
     return rawText;
   };
 
-  // Safely access feedback text
   const feedbackText = currentSection?.instructions?.feedback || '';
-
-  // Create panel title
-  const sectionTitle = currentSection?.title || "Instructions";
+  const sectionTitle = currentSection.title; // Can access directly now
   const panelTitle = `${sectionTitle} Instructions & Feedback`;
-
-  // Custom styles for markdown
   const customStyles = { /* ... */ };
+  const instructionsText = getInstructionsText();
 
-  // *** Add Logging Here ***
-  const instructionsText = getInstructionsText(); // Call it once
-  console.log(`[PANEL RENDER LOG] Active Section ID: ${currentSection?.id}`);
-  console.log(`[PANEL RENDER LOG] Prop 'currentSection' object:`, currentSection); // Log the whole object
-  console.log(`[PANEL RENDER LOG] Does prop have instructions object?`, !!(currentSection?.instructions));
-  console.log(`[PANEL RENDER LOG] Does prop have instructions.text?`, !!(currentSection?.instructions?.text));
-  console.log(`[PANEL RENDER LOG] Length of instructions.text:`, currentSection?.instructions?.text?.length ?? 'N/A');
-  console.log(`[PANEL RENDER LOG] Result of getInstructionsText() length:`, instructionsText?.length ?? 'N/A');
-  console.log(`[PANEL RENDER LOG] Does prop have feedback text?`, !!feedbackText);
-  console.log(`[PANEL RENDER LOG] Length of feedback text:`, feedbackText?.length ?? 'N/A');
-  // *** End Logging ***
-
-  // Original fixed positioning logic from the initial fetch
-  const panelStyle = {
-      position: 'fixed', top: 0, right: 0, width: '50%',
-      paddingTop: '120px', paddingBottom: '2rem', zIndex: 10, height: '100vh'
-  };
+  // Logging from previous step (can be removed if issue is resolved)
+  // console.log(`[PANEL RENDER LOG] Active Section ID: ${currentSection?.id}`);
+  // console.log(`[PANEL RENDER LOG] Prop 'currentSection' object:`, currentSection);
+  // console.log(`[PANEL RENDER LOG] Result of getInstructionsText() length:`, instructionsText?.length ?? 'N/A');
 
   return (
     <div
       className="bg-blue-50 border-l-4 border-blue-500 overflow-y-auto"
       style={panelStyle}
     >
+      {/* Inner padding applied manually now */}
       <div className="px-6 py-4 relative">
-        {!currentSection ? (
-           <div className="flex items-center justify-center h-full" style={{minHeight: 'calc(100vh - 120px - 4rem)'}}>
-            <p className="text-blue-600 text-xl">Select a section to view instructions</p>
-          </div>
-        ) : (
+        {/* No need for !currentSection check here due to guard clause */}
           <>
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-3xl font-semibold text-blue-800 flex-grow mr-4">
@@ -109,8 +93,8 @@ const FullHeightInstructionsPanel = ({
               </h3>
             </div>
 
-            {/* Render Instructions - Use the variable that includes fallback logic */}
-            {instructionsText && instructionsText !== 'Fallback instructions could not be determined (no section).' ? ( // Check if we have valid text
+            {/* Render Instructions */}
+            {instructionsText && instructionsText.length > 10 ? ( // Basic check for non-empty/non-trivial instructions
               <div className={`${customStyles.content} instructions-content mb-6`}>
                 <StyledMarkdown
                   content={instructionsText}
@@ -118,7 +102,6 @@ const FullHeightInstructionsPanel = ({
                 />
               </div>
             ) : (
-               // Show this specific message if instructionsText is empty or fallback failed
               <p className="text-blue-600 text-xl mb-6">Instructions not available for this section.</p>
             )}
 
@@ -135,7 +118,6 @@ const FullHeightInstructionsPanel = ({
               </div>
             )}
           </>
-        )}
       </div>
     </div>
   );
