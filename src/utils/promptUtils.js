@@ -160,7 +160,7 @@ export const getRandomQuestionsForApproach = (sectionId, count = 2) => {
 
 /**
  * Generate a mock response for testing without API
- * @param {string} type - Response type ('regularChat', 'instructionImprovement', 'documentImport')
+ * @param {string} type - Response type ('chat', 'instructionImprovement', 'documentImport')
  * @param {string} sectionId - The section ID or approach type for context
  * @returns {string} - A formatted mock response string
  */
