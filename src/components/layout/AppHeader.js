@@ -6,6 +6,7 @@ import React, { useRef, useState, useEffect } from 'react';
  * UPDATED: Made import document button more prominent
  * UPDATED: Reduced whitespace around header
  * UPDATED: More compact layout overall
+ * FIXED: Removed octal literal that was causing build error
  */
 const AppHeader = ({
   activeSection,
@@ -285,8 +286,8 @@ const AppHeader = ({
             {isSaving ? (
               <>
                 <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
                 Saving...
               </>
@@ -350,41 +351,4 @@ const AppHeader = ({
   );
 };
 
-export default AppHeader; 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  Make Example from PDF/Doc
-                </>
-              )}
-            </button>
-            <input
-              ref={documentInputRef}
-              type="file"
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              onChange={handleDocumentChange}
-              style={{ display: 'none' }}
-            />
-          </div>
-
-          {/* Save Button */}
-          <button
-            onClick={handleSaveClick}
-            disabled={isSaving}
-            className={`flex items-center px-2 py-1 border border-indigo-500 rounded text-sm font-medium transition-colors ${
-              isSaving 
-                ? 'bg-indigo-100 text-indigo-400 cursor-wait' 
-                : 'bg-white text-indigo-600 hover:bg-indigo-50'
-            } shadow-sm`}
-            title="Save your project (Ctrl+S)"
-          >
-            {isSaving ? (
-              <>
-                <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0
+export default AppHeader;
