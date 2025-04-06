@@ -7,6 +7,8 @@ import '../../styles/PaperPlanner.css'; // Ensure CSS is imported
 /**
  * Modernized chat interface that can be minimized to a floating button
  * UPDATED: Added onboarding highlight/tooltip for chat icon
+ * UPDATED: Added dynamic section title to header
+ * UPDATED: Increased width for better readability
  */
 const ModernChatInterface = ({
   currentSection,
@@ -82,10 +84,10 @@ const ModernChatInterface = ({
           isMinimized ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
         style={{
-          // Adjusted width and height slightly
+          // Increased width for better readability
           bottom: '0',
           right: '0',
-          width: 'min(450px, 90vw)', // Max width, responsive
+          width: 'min(550px, 95vw)', // Increased from 450px to 550px
           height: 'min(600px, 75vh)' // Max height, responsive
         }}
       >
@@ -97,7 +99,7 @@ const ModernChatInterface = ({
                AI
              </div>
              <h3 className="font-medium text-lg truncate pr-2">
-               {currentSectionTitle ? `AI Research Assistant` : 'AI Research Assistant'}
+               {currentSectionTitle ? `AI Research Assistant - Talk about ${currentSectionTitle}` : 'AI Research Assistant'}
              </h3>
            </div>
            <button
