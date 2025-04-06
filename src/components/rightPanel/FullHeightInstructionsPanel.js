@@ -134,7 +134,7 @@ const FullHeightInstructionsPanel = ({
       className="bg-blue-50 border-l-4 border-blue-500 rounded-tl-lg rounded-bl-lg overflow-y-auto"
       style={{
         position: 'fixed',
-        top: '100px', // Positioned right below header
+        top: '140px', // Positioned right below header
         right: '0',
         width: '50%',
         bottom: '44px', // Align with footer
