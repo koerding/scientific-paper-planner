@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 /**
  * Enhanced full-height instructions panel
- * UPDATED: Fixed numbered lists in feedback
+ * UPDATED: Fixed numbered lists in feedback and improved debugging
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -12,6 +12,15 @@ const FullHeightInstructionsPanel = ({
   userInputs
 }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
+
+  useEffect(() => {
+    // Debug logging to help diagnose instruction content issues
+    if (currentSection) {
+      console.log("[PANEL] Current section data:", currentSection);
+      console.log("[PANEL] Instructions text:", currentSection?.instructions?.text);
+      console.log("[PANEL] Feedback text:", currentSection?.instructions?.feedback);
+    }
+  }, [currentSection]);
 
   // Enhanced magic handler
   const handleMagicClick = () => {
@@ -35,8 +44,11 @@ const FullHeightInstructionsPanel = ({
     }
   };
 
-  const instructionsText = currentSection?.instructions?.text;
-  const feedbackText = currentSection?.instructions?.feedback; // Get potential feedback
+  // Safely access instruction text - use null check and proper fallback
+  const instructionsText = currentSection?.instructions?.text || '';
+  
+  // Safely access feedback text - use null check and proper fallback
+  const feedbackText = currentSection?.instructions?.feedback || '';
 
   // Create a title that includes the section name
   const sectionTitle = currentSection?.title || "Instructions";
@@ -103,8 +115,8 @@ const FullHeightInstructionsPanel = ({
               </button>
             </div>
 
-            {/* Render Instructions with improved styling */}
-            {instructionsText ? (
+            {/* Render Instructions with improved styling - ensure content exists and is not just "Remove points already addressed" */}
+            {instructionsText && instructionsText.length > 30 ? (
               <div className={`${customStyles.content} instructions-content mb-6`}>
                 {/* Using custom component to render markdown with better styling */}
                 <StyledMarkdown 
@@ -112,12 +124,18 @@ const FullHeightInstructionsPanel = ({
                   customStyles={customStyles}
                 />
               </div>
+            ) : instructionsText && instructionsText.length > 0 ? (
+              <div className={`${customStyles.content} instructions-content mb-6`}>
+                <p className="text-blue-600">
+                  {instructionsText}
+                </p>
+              </div>
             ) : (
               <p className="text-blue-600 text-xl mb-6">Instructions not available for this section.</p>
             )}
 
             {/* Render Feedback Section if it exists */}
-            {feedbackText && (
+            {feedbackText && feedbackText.length > 0 && (
               <div className="mt-6 pt-4 border-t border-blue-300">
                 {/* Use h3 or h4 for semantic structure */}
                 <h4 className="text-2xl font-semibold text-blue-700 mb-3">Feedback</h4>
