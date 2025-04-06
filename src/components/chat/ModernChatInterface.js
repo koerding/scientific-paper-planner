@@ -63,7 +63,7 @@ const ModernChatInterface = ({
       {isMinimized && (
         <div
           ref={chatIconRef}
-          className={`fixed bottom-6 right-6 z-30 cursor-pointer ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`}
+          className={`fixed bottom-6 right-6 z-50 cursor-pointer ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`}
           onClick={toggleChat}
           style={{ transform: 'translateZ(0)' }}
         >
