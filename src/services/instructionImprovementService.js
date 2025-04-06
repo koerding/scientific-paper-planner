@@ -80,13 +80,11 @@ export const improveBatchInstructions = async (
       approachGuidance: ''
     });
 
-
     // Build the main task prompt using promptUtils
     // Pass the prepared section data as a JSON string parameter
     const mainTaskPrompt = buildTaskPrompt('instructionImprovement', {
         sectionsData: JSON.stringify(sectionsDataForPrompt, null, 2) // Pretty print for readability if needed by AI
     });
-
 
     // Use fallback if needed (check environment variable or API key status)
     const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
@@ -117,10 +115,13 @@ export const improveBatchInstructions = async (
         );
     }
 
-
     // Parse the response - with simplified error handling
     let improvedData;
     try {
+      // Log the raw response for debugging
+      console.log("[Instruction Improvement] Raw response length:", response?.length || 0);
+      console.log("[Instruction Improvement] Response sample:", response?.substring(0, 200) + "...");
+      
       // Clean any potential markdown formatting that might remain
       const cleanResponse = response.replace(/```json\s*|\s*```/g, '').trim();
       improvedData = JSON.parse(cleanResponse);
@@ -142,7 +143,13 @@ export const improveBatchInstructions = async (
       });
 
       // Optional: Filter out items that didn't parse correctly or miss fields
-      improvedData = improvedData.filter(item => item.id && typeof item.editedInstructions === 'string' && typeof item.feedback === 'string');
+      improvedData = improvedData.filter(item => {
+        const isValid = item.id && typeof item.editedInstructions === 'string' && typeof item.feedback === 'string';
+        if (!isValid) {
+          console.warn("[Instruction Improvement] Filtering out invalid item:", item);
+        }
+        return isValid;
+      });
 
       console.log(`[Instruction Improvement] Successfully parsed ${improvedData.length} improved sections`);
     } catch (error) {
@@ -197,7 +204,17 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
 
   // Update each section based on the improved data
   improvedData.forEach(improvement => {
-    if (!improvement?.id) return; // Skip if improvement object is invalid
+    if (!improvement?.id) {
+      console.warn("Missing ID in improvement data, skipping", improvement);
+      return; // Skip if improvement object is invalid
+    }
+
+    // Always log the improvement data for debugging
+    console.log(`[updateSectionWithImprovedInstructions] Processing improvement for ${improvement.id}:`, {
+      editedInstructions: improvement.editedInstructions?.substring(0, 50) + '...',
+      feedback: improvement.feedback?.substring(0, 50) + '...',
+      completionStatus: improvement.completionStatus
+    });
 
     // Check if sections is an array (original code assumed it was)
     if (Array.isArray(updatedSections.sections)) {
@@ -210,16 +227,33 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
       }
 
       const section = updatedSections.sections[sectionIndex];
-      if (!section) return; // Should not happen if findIndex worked, but safety check
+      if (!section) {
+        console.warn(`Section at index ${sectionIndex} is null or undefined, skipping.`);
+        return; // Should not happen if findIndex worked, but safety check
+      }
 
       // Initialize instructions object if it doesn't exist
       if (!section.instructions) {
         section.instructions = {};
       }
 
-      // Update the instruction text, feedback, and completion status
-      section.instructions.text = improvement.editedInstructions || section.instructions.text || '';
-      section.instructions.feedback = improvement.feedback || ''; // Store feedback
+      // Make sure editedInstructions isn't empty or just "Remove points already addressed."
+      if (!improvement.editedInstructions || 
+          improvement.editedInstructions.trim() === '' || 
+          improvement.editedInstructions === 'Remove points already addressed.') {
+        console.warn(`Empty or placeholder instructions for ${improvement.id}, keeping existing instructions.`);
+        // Keep existing instructions if the new ones are empty or just the placeholder
+      } else {
+        // Update the instruction text with the improved version
+        section.instructions.text = improvement.editedInstructions;
+        console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id}`);
+      }
+
+      // Update feedback only if it's provided and not empty
+      if (improvement.feedback && improvement.feedback.trim() !== '') {
+        section.instructions.feedback = improvement.feedback;
+        console.log(`[updateSectionWithImprovedInstructions] Updated feedback for ${improvement.id}`);
+      }
     }
     // If updatedSections is not what we expect, log error
     else {
