@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-// Correct the import path and case here:
 import { loadExamples } from '../../utils/ExampleUtils.js';
 
 /**
  * Dialog for loading example projects
+ * FIXES:
+ * - Fixed import path case sensitivity (ExampleUtils.js)
+ * - Improved error handling
+ * - Better loading state handling
  */
 const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject }) => {
   const [examples, setExamples] = useState([]);
@@ -17,16 +20,23 @@ const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject
       setLoading(true);
       setError(null);
 
-      loadExamples()
-        .then(exampleData => {
-          setExamples(exampleData);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error('Error loading examples:', err);
-          setError('Failed to load examples. Please try again.');
-          setLoading(false);
-        });
+      try {
+        // Load examples with proper error handling
+        loadExamples()
+          .then(exampleData => {
+            setExamples(exampleData || []);
+            setLoading(false);
+          })
+          .catch(err => {
+            console.error('Error loading examples:', err);
+            setError('Failed to load examples. Please try again.');
+            setLoading(false);
+          });
+      } catch (error) {
+        console.error('Error in loadExamples:', error);
+        setError('Failed to load examples. Please try again.');
+        setLoading(false);
+      }
     }
   }, [showExamplesDialog]);
 
@@ -39,7 +49,7 @@ const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject
   const handleLoadExample = () => {
     if (!selectedExample) return;
 
-    const example = examples.find(ex => ex.id === selectedExample);
+    const example = examples.find(ex => ex?.id === selectedExample);
     if (example && example.data) {
       loadProject(example.data);
       setShowExamplesDialog(false);
