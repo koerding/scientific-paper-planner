@@ -177,6 +177,7 @@ export const improveBatchInstructions = async (
 
 /**
  * Updates section content object with improved instructions AND feedback.
+ * This version forces keeping original instructions if AI returns simplified placeholders.
  * @param {Object} currentSections - The current sections object from state.
  * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback, completionStatus } from the API.
  * @returns {Object} - A new object with updated section content.
@@ -202,6 +203,17 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
     return {...currentSections}; // Return shallow copy on error
   }
 
+  // Keep track of changes made
+  let changesApplied = false;
+  
+  // These are known placeholder patterns to reject
+  const PLACEHOLDER_PATTERNS = [
+    "Remove points",
+    "addressed all key points",
+    "remove points the user has already addressed",
+    "congratulatory message"
+  ];
+
   // Update each section based on the improved data
   improvedData.forEach(improvement => {
     if (!improvement?.id) {
@@ -209,57 +221,81 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
       return; // Skip if improvement object is invalid
     }
 
-    // Always log the improvement data for debugging
-    console.log(`[updateSectionWithImprovedInstructions] Processing improvement for ${improvement.id}:`, {
-      editedInstructions: improvement.editedInstructions?.substring(0, 50) + '...',
-      feedback: improvement.feedback?.substring(0, 50) + '...',
-      completionStatus: improvement.completionStatus
-    });
-
-    // Check if sections is an array (original code assumed it was)
+    // Get section from updated sections
+    let section = null;
+    let sectionIndex = -1;
+    
     if (Array.isArray(updatedSections.sections)) {
-      // Find the section in our deep copy
-      const sectionIndex = updatedSections.sections.findIndex(s => s?.id === improvement.id);
-
+      sectionIndex = updatedSections.sections.findIndex(s => s?.id === improvement.id);
       if (sectionIndex === -1) {
         console.warn(`Section not found in current state: ${improvement.id}. Cannot apply improvement.`);
         return; // Skip if section doesn't exist in the current state
       }
+      section = updatedSections.sections[sectionIndex];
+    } else {
+      console.error("Invalid sections structure:", updatedSections);
+      return; // Skip this improvement
+    }
+    
+    if (!section) {
+      console.warn(`Section at index ${sectionIndex} is null or undefined, skipping.`);
+      return; // Safety check
+    }
 
-      const section = updatedSections.sections[sectionIndex];
-      if (!section) {
-        console.warn(`Section at index ${sectionIndex} is null or undefined, skipping.`);
-        return; // Should not happen if findIndex worked, but safety check
-      }
+    // Initialize instructions object if it doesn't exist
+    if (!section.instructions) {
+      section.instructions = {};
+    }
 
-      // Initialize instructions object if it doesn't exist
-      if (!section.instructions) {
-        section.instructions = {};
-      }
-
-      // Make sure editedInstructions isn't empty or just "Remove points already addressed."
-      if (!improvement.editedInstructions || 
-          improvement.editedInstructions.trim() === '' || 
-          improvement.editedInstructions === 'Remove points already addressed.') {
-        console.warn(`Empty or placeholder instructions for ${improvement.id}, keeping existing instructions.`);
-        // Keep existing instructions if the new ones are empty or just the placeholder
-      } else {
-        // Update the instruction text with the improved version
-        section.instructions.text = improvement.editedInstructions;
-        console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id}`);
-      }
-
-      // Update feedback only if it's provided and not empty
-      if (improvement.feedback && improvement.feedback.trim() !== '') {
-        section.instructions.feedback = improvement.feedback;
-        console.log(`[updateSectionWithImprovedInstructions] Updated feedback for ${improvement.id}`);
+    // Store original instructions for debugging
+    const originalInstructions = section.instructions.text || '';
+    console.log(`[updateSectionWithImprovedInstructions] Original instructions for ${improvement.id} (${originalInstructions.length} chars)`);
+    
+    // Helper to check if text is a placeholder
+    const isPlaceholder = (text) => {
+      if (!text || text.trim() === '') return true;
+      if (text.length < 50) return true; // Too short to be real instructions
+      
+      // Check for known placeholder phrases
+      return PLACEHOLDER_PATTERNS.some(pattern => 
+        text.toLowerCase().includes(pattern.toLowerCase())
+      );
+    };
+    
+    // Check editedInstructions
+    const newInstructions = improvement.editedInstructions;
+    if (!isPlaceholder(newInstructions)) {
+      // Only update if we have meaningful content that's not a placeholder
+      section.instructions.text = newInstructions;
+      console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id} (${newInstructions.length} chars)`);
+      changesApplied = true;
+    } else {
+      // Log warning about placeholder and keep original
+      console.warn(`[updateSectionWithImprovedInstructions] Detected placeholder text for ${improvement.id}: "${newInstructions?.substring(0, 50)}..." - keeping original instructions`);
+      
+      // Keep original instructions
+      // If the original is also empty, use some default text
+      if (!originalInstructions || originalInstructions.trim() === '') {
+        const defaultInstructions = `A good ${section.title} helps you focus your research effort and clearly communicate your intentions.`;
+        section.instructions.text = defaultInstructions;
+        console.log(`[updateSectionWithImprovedInstructions] Using default instructions for ${improvement.id}`);
+        changesApplied = true;
       }
     }
-    // If updatedSections is not what we expect, log error
-    else {
-      console.error("Invalid sections structure:", updatedSections);
+
+    // Update feedback only if it's provided and meaningful
+    if (improvement.feedback && improvement.feedback.trim() !== '' && improvement.feedback.length > 20) {
+      section.instructions.feedback = improvement.feedback;
+      console.log(`[updateSectionWithImprovedInstructions] Updated feedback for ${improvement.id} (${improvement.feedback.length} chars)`);
+      changesApplied = true;
+    } else {
+      console.warn(`[updateSectionWithImprovedInstructions] Empty or short feedback for ${improvement.id}, skipping feedback update`);
     }
   });
+
+  if (!changesApplied) {
+    console.warn("[updateSectionWithImprovedInstructions] No meaningful changes were applied to any section");
+  }
 
   // Return the new object with updated sections
   return updatedSections;
