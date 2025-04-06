@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect } from 'react';
 /**
  * Application header with absolute positioning to ensure buttons are visible
  * UPDATED: Improved document import feature for PDF and Word files
+ * UPDATED: Made import document button more prominent
  */
 const AppHeader = ({
   activeSection,
@@ -229,6 +230,44 @@ const AppHeader = ({
             </svg>
             New
           </button>
+          
+          {/* Document Import Button - Made more prominent */}
+          <div className="relative">
+            <button
+              onClick={handleDocumentImportClick}
+              disabled={isImporting}
+              className={`flex items-center px-3 py-1.5 border rounded text-sm font-medium transition-colors shadow-sm ${
+                isImporting
+                  ? 'bg-gray-100 text-gray-400 border-gray-400 cursor-wait'
+                  : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
+              }`}
+              title="Create example project from a scientific paper (PDF or Word)"
+            >
+              {isImporting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  Make Example from PDF/Doc
+                </>
+              )}
+            </button>
+            <input
+              ref={documentInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleDocumentChange}
+              style={{ display: 'none' }}
+            />
+          </div>
 
           {/* Save Button */}
           <button
@@ -280,48 +319,10 @@ const AppHeader = ({
             />
           </div>
 
-          {/* Document Import Button - RENAMED */}
-          <div className="relative">
-            <button
-              onClick={handleDocumentImportClick}
-              disabled={isImporting}
-              className={`flex items-center px-3 py-1.5 border rounded text-sm font-medium transition-colors shadow-sm ${
-                isImporting
-                  ? 'bg-gray-100 text-gray-400 border-gray-400 cursor-wait'
-                  : 'bg-white text-orange-600 border-orange-500 hover:bg-orange-50'
-              }`}
-              title="Create example project from a scientific paper (PDF or Word)"
-            >
-              {isImporting ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  Make Example from PDF/Doc
-                </>
-              )}
-            </button>
-            <input
-              ref={documentInputRef}
-              type="file"
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              onChange={handleDocumentChange}
-              style={{ display: 'none' }}
-            />
-          </div>
-
           {/* Examples Button */}
           <button
             onClick={handleExamplesClick}
-            className="flex items-center px-3 py-1.5 border border-purple-500 text-purple-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-purple-50 transition-colors"
+            className="flex items-center px-3 py-1.5 border border-orange-500 text-orange-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-orange-50 transition-colors"
             title="Load an example project"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
