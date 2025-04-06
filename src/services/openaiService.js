@@ -1,11 +1,12 @@
 // FILE: src/services/openaiService.js
 
 /**
- * Enhanced OpenAI service with better error reporting and fallback mode
- * REFACTORED: To use centralized prompt content and utilities
+ * Enhanced OpenAI service with centralized prompts
+ * REFACTORED: Uses unified prompt system for all interactions
  */
 import { 
   isResearchApproachSection, 
+  buildSystemPrompt,
   generateMockResponse
 } from '../utils/promptUtils';
 
@@ -15,73 +16,35 @@ const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
 // Fallback flag for development without API key
 const USE_FALLBACK = !apiKey || process.env.REACT_APP_USE_FALLBACK === 'true';
 
-// ENHANCED: Added support for special instructionsFeedback field and improved context handling
-const buildMessages = (prompt, contextType, userInputs, sections, currentChatHistory = [], systemPrompt = null) => {
+/**
+ * Build messages for API call with context and history
+ * REFACTORED: Simplified to rely on system prompt for context
+ * @param {string} prompt - The user prompt
+ * @param {string} contextType - The section ID or context type
+ * @param {Array} currentChatHistory - Previous chat messages
+ * @param {string} systemPrompt - The system prompt with all context
+ * @returns {Array} - Array of message objects for the API
+ */
+const buildMessages = (prompt, contextType, currentChatHistory = [], systemPrompt = null) => {
   // Start with system prompt if provided
   const messages = systemPrompt ? [{ role: 'system', content: systemPrompt }] : [];
-
-  // If it's a Socratic prompt indicator, we don't need to add section context 
-  // since it's already included in the system prompt
-  if (prompt === "__SOCRATIC_PROMPT__" && systemPrompt) {
-    // For Socratic prompts, we rely on the custom system prompt that already has context
-    return messages;
-  }
-
-  // For regular messages, add section context (if not already in system prompt)
-  if (!systemPrompt || !systemPrompt.includes("Section instructions:")) {
-    // Find the specific section for the current context if available
-    const currentSectionObj = Array.isArray(sections) ? 
-      sections.find(s => s && s.id === contextType) : null;
-    
-    if (currentSectionObj) {
-      const sectionTitle = currentSectionObj.title || 'Unknown Section';
-      const instructionText = currentSectionObj.instructions?.text || 'No instructions available';
-      const feedbackText = currentSectionObj.instructions?.feedback || '';
-      const userInput = userInputs && currentSectionObj.id ? (userInputs[currentSectionObj.id] || '') : '';
-      
-      messages.push({
-        role: 'system',
-        content: `Context for Section "${sectionTitle}" (ID: ${currentSectionObj.id}):
-Instructions: ${instructionText}
-${feedbackText ? `Recent Feedback: ${feedbackText}\n` : ''}
-Current User Input: ${userInput || 'No content yet'}`
-      });
-    }
-    else if (Array.isArray(sections)) {
-      // If specific section not found, provide minimal context about all sections
-      messages.push({
-        role: 'system',
-        content: `Working on a scientific paper plan with multiple sections.
-Current section: ${contextType || 'general'}`
-      });
-    }
-  }
-
-  // Prepend chat history (if any exists)
+  
+  // Prepend filtered chat history (if any exists)
   if (Array.isArray(currentChatHistory)) {
-    // Filter out any special prompt markers from history
-    const filteredHistory = currentChatHistory.filter(msg => 
-      !(msg.role === 'user' && msg.content === "__SOCRATIC_PROMPT__")
-    );
-    
-    filteredHistory.forEach(msg => {
+    currentChatHistory.forEach(msg => {
       if (msg && (msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string') {
         messages.push({ role: msg.role, content: msg.content });
-      } else {
-        console.warn("Skipping invalid message in chat history:", msg);
       }
     });
   }
 
-  // Add the latest user prompt (unless it's a special prompt marker)
-  if (prompt !== "__SOCRATIC_PROMPT__") {
-    messages.push({ role: 'user', content: prompt });
-  }
+  // Add the latest user prompt
+  messages.push({ role: 'user', content: prompt });
   
   return messages;
 };
 
-// Main function to call the OpenAI API - enhanced with special handling for research approaches
+// Main function to call the OpenAI API - using centralized prompts
 export const callOpenAI = async (
     prompt,
     contextType = "general",
@@ -92,22 +55,16 @@ export const callOpenAI = async (
     systemPrompt = null
  ) => {
 
-  // Special handling for Socratic prompt
-  const isSocraticPrompt = prompt === "__SOCRATIC_PROMPT__";
-  if (isSocraticPrompt) {
-    console.log(`[openaiService] Socratic Prompt Request - Context: ${contextType}`);
-  } else {
-    console.log(`[openaiService] API Call Request - Context: ${contextType}`, {
-      apiKeyConfigured: !!apiKey,
-      modelUsed: model,
-      useFallback: USE_FALLBACK,
-      promptLength: prompt.length,
-      userInputsCount: Object.keys(userInputs).length,
-      sectionsCount: Array.isArray(sections) ? sections.length : 'Not an array',
-      chatHistoryLength: Array.isArray(chatHistory) ? chatHistory.length : 'Not an array',
-      hasSystemPrompt: !!systemPrompt
-    });
-  }
+  console.log(`[openaiService] API Call Request - Context: ${contextType}`, {
+    apiKeyConfigured: !!apiKey,
+    modelUsed: model,
+    useFallback: USE_FALLBACK,
+    promptLength: prompt.length,
+    userInputsCount: Object.keys(userInputs).length,
+    sectionsCount: Array.isArray(sections) ? sections.length : 'Not an array',
+    chatHistoryLength: Array.isArray(chatHistory) ? chatHistory.length : 'Not an array',
+    hasSystemPrompt: !!systemPrompt
+  });
 
   // If no API key is configured, use mock responses
   if (USE_FALLBACK) {
@@ -115,18 +72,17 @@ export const callOpenAI = async (
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Use our utility to generate appropriate mock responses
-    const mockType = isSocraticPrompt ? 'socraticPrompt' : 'regularChat';
-    return generateMockResponse(mockType, contextType);
+    return generateMockResponse('regularChat', contextType);
   }
 
   const apiUrl = "https://api.openai.com/v1/chat/completions";
   
-  // Pass systemPrompt to buildMessages
-  const messages = buildMessages(prompt, contextType, userInputs, sections, chatHistory, systemPrompt);
+  // Pass systemPrompt to buildMessages - simplified as we no longer distinguish prompt types
+  const messages = buildMessages(prompt, contextType, chatHistory, systemPrompt);
 
-  // If it's a Socratic prompt or related to research approaches, use higher temperature
+  // Determine temperature based on section type - research sections get higher temperature
   const isResearchSectionType = isResearchApproachSection(contextType);
-  const temperature = (isSocraticPrompt || isResearchSectionType) ? 0.9 : (options.temperature ?? 0.7);
+  const temperature = isResearchSectionType ? 0.9 : (options.temperature ?? 0.7);
   const max_tokens = options.max_tokens ?? 1024;
 
   const body = JSON.stringify({
@@ -182,5 +138,5 @@ export const callOpenAI = async (
   }
 };
 
-// Export the helper functions for testing
+// Export the helper function for testing
 export { buildMessages };
