@@ -1,7 +1,7 @@
 // FILE: src/hooks/usePaperPlanner.js
 
 import { useState, useEffect, useCallback } from 'react';
-import { saveToStorage, loadFromStorage, clearStorage } from '../services/storageService';
+import { saveToStorage, loadFromStorage, clearStorage, isStorageAvailable } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
 import { importDocumentContent as importDocumentFromFile } from '../services/documentImportService';
 import sectionContent from '../data/sectionContent.json';
@@ -39,6 +39,7 @@ const getInitialState = () => {
   }
 
   // --- Check localStorage but DON'T automatically merge with templates ---
+  // Use our safe storage access
   const { loadedInputs, loadedChat } = loadFromStorage();
 
   // Important: We'll set this flag to determine if we should use localStorage data or templates
@@ -50,7 +51,8 @@ const getInitialState = () => {
     initialTemplates: initialContent,
     storedInputs: loadedInputs,  // Store but don't automatically use
     storedChat: loadedChat,
-    hasStoredData // Flag to know if we have stored data
+    hasStoredData, // Flag to know if we have stored data
+    storageAvailable: isStorageAvailable() // Add flag to check storage availability
   };
 };
 
@@ -65,7 +67,8 @@ const usePaperPlanner = () => {
     initialTemplates,
     storedInputs,
     storedChat,
-    hasStoredData
+    hasStoredData,
+    storageAvailable
   } = initialState;
 
   // Start with template values, not stored values
@@ -88,7 +91,8 @@ const usePaperPlanner = () => {
 
   // On first mount, check if there's stored data and prompt to use it
   useEffect(() => {
-    if (hasStoredData && !hasPromptedAboutStorage) {
+    // Only prompt if storage is available and we have stored data
+    if (storageAvailable && hasStoredData && !hasPromptedAboutStorage) {
       const useStoredData = window.confirm(
         "We found a previously saved project. Would you like to load it? Click 'Cancel' to start with a fresh template."
       );
@@ -100,12 +104,11 @@ const usePaperPlanner = () => {
       }
 
       setHasPromptedAboutStorage(true);
-      setIsInitialLoadComplete(true);
-    } else {
-      // No stored data or already prompted
-      setIsInitialLoadComplete(true);
     }
-  }, [hasStoredData, hasPromptedAboutStorage, storedInputs, storedChat]);
+    
+    // Always mark initial load as complete, regardless of storage availability
+    setIsInitialLoadComplete(true);
+  }, [hasStoredData, hasPromptedAboutStorage, storedInputs, storedChat, storageAvailable]);
 
   // Update currentSectionData when currentSection changes
   useEffect(() => {
@@ -118,11 +121,12 @@ const usePaperPlanner = () => {
   }, [currentSection]);
 
   // Save progress whenever userInputs or chatMessages change, *after* initial load
+  // Only attempt to save if storage is available
   useEffect(() => {
-    if (isInitialLoadComplete) {
+    if (isInitialLoadComplete && storageAvailable) {
       saveToStorage(userInputs, chatMessages);
     }
-  }, [userInputs, chatMessages, isInitialLoadComplete]);
+  }, [userInputs, chatMessages, isInitialLoadComplete, storageAvailable]);
 
   // --- Handlers ---
   const handleInputChange = useCallback((sectionId, value) => {
@@ -228,8 +232,10 @@ const usePaperPlanner = () => {
 
   // Reset project function - FIXED to correctly use fresh templates
   const resetProject = useCallback(() => {
-    // Clear localStorage first
-    clearStorage();
+    // Clear localStorage first, if available
+    if (storageAvailable) {
+      clearStorage();
+    }
 
     // Create fresh copies of the templates
     const freshInputs = JSON.parse(JSON.stringify(initialTemplates));
@@ -245,7 +251,7 @@ const usePaperPlanner = () => {
     setChatMessages(freshChat);
     setCurrentSection(sectionContent?.sections?.[0]?.id || 'question');
     setShowConfirmDialog(false);
-  }, [initialTemplates]);
+  }, [initialTemplates, storageAvailable]);
 
   const exportProject = useCallback(() => {
     exportProjectFunction(userInputs, chatMessages, sectionContent);
@@ -317,8 +323,10 @@ const usePaperPlanner = () => {
         });
         setChatMessages(mergedChat);
 
-        // Explicitly save to storage after loading
-        saveToStorage(mergedInputs, mergedChat);
+        // Explicitly save to storage after loading, if available
+        if (storageAvailable) {
+          saveToStorage(mergedInputs, mergedChat);
+        }
 
         setCurrentSection(sectionContent?.sections?.[0]?.id || 'question'); // Reset to first section safely
 
@@ -328,7 +336,7 @@ const usePaperPlanner = () => {
         alert("Error loading project. Please try again.");
       }
     }
-  }, [initialTemplates]);
+  }, [initialTemplates, storageAvailable]);
 
   // Import document content using the modernized service
   const importDocumentContent = useCallback(async (file) => {
