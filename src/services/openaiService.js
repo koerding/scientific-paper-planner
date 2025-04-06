@@ -17,6 +17,31 @@ const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
 const USE_FALLBACK = !apiKey || process.env.REACT_APP_USE_FALLBACK === 'true';
 
 /**
+ * Determine the appropriate response type based on context
+ * @param {string} contextType - The context/section identifier
+ * @returns {string} The response type to use for mocks
+ */
+const getResponseType = (contextType) => {
+  // The main chat interactions should use "chat" type (Socratic style)
+  if (contextType.match(/^(question|audience|hypothesis|needsresearch|exploratoryresearch|relatedpapers|experiment|existingdata|analysis|process|abstract)$/)) {
+    return 'chat';
+  }
+  
+  // Document import uses its own style
+  if (contextType === 'document_import_task') {
+    return 'documentImport';
+  }
+  
+  // Instruction improvement uses its own style
+  if (contextType === 'improve_instructions_batch') {
+    return 'instructionImprovement';
+  }
+  
+  // Default to chat for unknown types
+  return 'chat';
+};
+
+/**
  * Build messages for API call with context and history
  * REFACTORED: Simplified to rely on system prompt for context
  * @param {string} prompt - The user prompt
@@ -71,8 +96,9 @@ export const callOpenAI = async (
     console.warn("[openaiService] Using FALLBACK mode because API key is missing");
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Use our utility to generate appropriate mock responses
-    return generateMockResponse('chat', contextType);
+    // Determine the appropriate mock response type based on context
+    const responseType = getResponseType(contextType);
+    return generateMockResponse(responseType, contextType);
   }
 
   const apiUrl = "https://api.openai.com/v1/chat/completions";
