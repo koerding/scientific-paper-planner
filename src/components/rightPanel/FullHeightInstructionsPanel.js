@@ -135,8 +135,8 @@ const FullHeightInstructionsPanel = ({
       style={{
         position: 'fixed',
         top: '10%', // Positioned right below header
-        right: '0',
-        width: '50%',
+        right: '1rem',
+        width: 'calc(50% - 1rem)',
         bottom: '440px', // Align with footer
         zIndex: 10,
 //        boxShadow: '0 0 10px rgba(0, 0, 0, 0.05)' // Subtle shadow for depth
