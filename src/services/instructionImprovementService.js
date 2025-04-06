@@ -2,28 +2,32 @@
 
 /**
  * Modern service for improving instructions based on user progress
- * Uses LangChain and Zod for reliable parsing and validation
+ * Uses OpenAI's native JSON mode for reliable parsing
  */
-import { z } from 'zod';
-import { LangChain, ChatOpenAI, StructuredOutputParser } from 'langchain/chat_models';
-import { PromptTemplate } from 'langchain/prompts';
 import { callOpenAI } from './openaiService';
-import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
+import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
 
-// Define the Zod schema for instruction improvement items
-const ImprovedInstructionItemSchema = z.object({
-  id: z.string(),
-  editedInstructions: z.string().min(50), 
-  feedback: z.string().min(10),
-  completionStatus: z.enum(["complete", "unstarted"])
-});
-
-// Schema for the entire array response
-const ImprovedInstructionsArraySchema = z.array(ImprovedInstructionItemSchema);
+// Basic validation for improved instructions
+const validateImprovedInstructions = (data) => {
+  if (!Array.isArray(data)) return false;
+  
+  return data.every(item => {
+    return (
+      item &&
+      typeof item === 'object' &&
+      typeof item.id === 'string' &&
+      typeof item.editedInstructions === 'string' && 
+      item.editedInstructions.length >= 50 &&
+      typeof item.feedback === 'string' && 
+      item.feedback.length >= 10 &&
+      (item.completionStatus === 'complete' || item.completionStatus === 'unstarted')
+    );
+  });
+};
 
 /**
  * Improves instructions for multiple sections, separating instructions and feedback.
- * Uses LangChain and Zod for reliable parsing and validation.
+ * Uses OpenAI's native JSON mode for reliable parsing.
  * @param {Array} currentSections - Array of section objects from the main state
  * @param {Object} userInputs - User inputs for all sections
  * @param {Object} sectionContent - The full, original section content definition object
@@ -77,144 +81,54 @@ export const improveBatchInstructions = async (
     // Check if any section needs research context
     const needsOverallResearchContext = sectionsDataForPrompt.some(section => section.needsResearchContext);
 
-    // Step 1: Create a parser with our Zod schema
-    const parser = StructuredOutputParser.fromZodSchema(ImprovedInstructionsArraySchema);
-    
-    // Get the format instructions
-    const formatInstructions = parser.getFormatInstructions();
-
-    // Step 2: Build system prompt
+    // Build system and task prompts
     const systemPrompt = buildSystemPrompt('instructionImprovement', {
       needsResearchContext: needsOverallResearchContext,
       approachGuidance: ''
     });
 
-    // Step 3: Create prompt template
-    const promptTemplate = new PromptTemplate({
-      template: `
-        You are providing feedback on a student's scientific paper plan, with expertise in formatting precise, valid JSON.
-        
-        Your response MUST match this format exactly:
-        {format_instructions}
-        
-        For each section, provide:
-        1. Edited Instructions: Remove points the user has already addressed. If they've addressed all key points, provide a congratulatory message.
-        2. Feedback: Brief, constructive feedback noting strengths, weaknesses, and suggestions.
-        3. Completion Status: ONLY use "complete" or "unstarted" as values.
-        
-        Here are the sections to improve:
-        {sections_data}
-      `,
-      inputVariables: ["sections_data"],
-      partialVariables: { format_instructions: formatInstructions }
+    const taskPrompt = buildTaskPrompt('instructionImprovement', {
+      sectionsData: JSON.stringify(sectionsDataForPrompt, null, 2)
     });
 
-    // Step 4: Create ChatOpenAI instance
-    const model = new ChatOpenAI({
-      modelName: "gpt-4-turbo",
-      temperature: 0.2,
-    });
-
-    // Step 5: Create and invoke the chain
-    const chain = promptTemplate.pipe(model).pipe(parser);
+    // Call OpenAI with JSON mode
+    const response = await callOpenAI(
+      taskPrompt,
+      "improve_instructions_batch",
+      userInputs,
+      currentSections,
+      { 
+        temperature: 0.2,
+        max_tokens: 2500
+      },
+      [],
+      systemPrompt,
+      true // Use JSON mode
+    );
     
-    const improvedData = await chain.invoke({
-      sections_data: JSON.stringify(sectionsDataForPrompt, null, 2)
-    });
+    // Validate the response
+    if (!validateImprovedInstructions(response)) {
+      console.error("Invalid response format from OpenAI:", response);
+      return { 
+        success: false, 
+        message: "Received invalid instruction improvement format from AI" 
+      };
+    }
 
-    console.log(`[Instruction Improvement] Successfully parsed ${improvedData.length} improved sections with LangChain and Zod`);
+    console.log(`[Instruction Improvement] Successfully processed ${response.length} improved sections`);
 
     // Return success with the validated data
     return {
       success: true,
-      improvedData
+      improvedData: response
     };
     
   } catch (error) {
     console.error("Error improving batch instructions:", error);
-    
-    // Alternative approach using direct OpenAI JSON mode if LangChain fails
-    try {
-      console.log("[Instruction Improvement] Falling back to direct OpenAI JSON mode...");
-      
-      // Identify sections with meaningful user content
-      const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
-        const content = userInputs[sectionId];
-        const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
-        const placeholder = originalSectionDef?.placeholder || '';
-        
-        return typeof content === 'string' && content.trim() !== '' && content !== placeholder;
-      });
-      
-      if (sectionsWithProgress.length === 0) {
-        return { success: false, message: "No sections with progress to improve" };
-      }
-      
-      // Prepare data for analysis
-      const sectionsDataForPrompt = sectionsWithProgress.map(sectionId => {
-        const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
-        if (!originalSectionDef || !originalSectionDef.instructions?.text) {
-          return null;
-        }
-        
-        return {
-          id: sectionId,
-          title: originalSectionDef.title,
-          originalInstructionsText: originalSectionDef.instructions.text,
-          userContent: userInputs[sectionId] || ''
-        };
-      }).filter(data => data !== null);
-      
-      // Call OpenAI directly with JSON mode
-      const systemPrompt = `
-        You are providing feedback on a student's scientific paper plan.
-        You MUST respond with a valid JSON array of objects.
-        Each object MUST have these fields:
-        - "id": string - The section ID
-        - "editedInstructions": string - Edited instructions (min 50 chars)
-        - "feedback": string - Constructive feedback (min 10 chars)
-        - "completionStatus": string - ONLY "complete" or "unstarted"
-      `;
-      
-      const prompt = `
-        For each section, provide:
-        1. Edited Instructions: Remove points the user has already addressed or provide a congratulatory message.
-        2. Feedback: Brief, constructive feedback noting strengths, weaknesses, and suggestions.
-        3. Completion Status: "complete" or "unstarted" based on quality.
-        
-        Sections to improve: ${JSON.stringify(sectionsDataForPrompt, null, 2)}
-      `;
-      
-      const response = await callOpenAI(
-        prompt,
-        "improve_instructions_batch",
-        userInputs,
-        currentSections,
-        { temperature: 0.2 },
-        [],
-        systemPrompt,
-        true // Use JSON mode
-      );
-      
-      // Validate response
-      const validation = ImprovedInstructionsArraySchema.safeParse(response);
-      if (!validation.success) {
-        console.error("JSON validation failed:", validation.error);
-        return { success: false, message: "Failed to validate API response structure" };
-      }
-      
-      return {
-        success: true,
-        improvedData: validation.data
-      };
-      
-    } catch (fallbackError) {
-      console.error("Fallback approach also failed:", fallbackError);
-      return {
-        success: false,
-        message: error.message || "An error occurred while improving instructions"
-      };
-    }
+    return {
+      success: false,
+      message: error.message || "An error occurred while improving instructions"
+    };
   }
 };
 
