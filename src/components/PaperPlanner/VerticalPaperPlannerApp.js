@@ -20,7 +20,7 @@ import '../../styles/PaperPlanner.css';
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
  * UPDATED: Passes currentSectionData to ModernChatInterface
- * UPDATED: Simplified to use uniform Socratic approach
+ * UPDATED: Made chat fully user-initiated
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
@@ -456,7 +456,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           userInputs={userInputs} // Pass user inputs for analysis
         />
 
-        {/* Using ModernChatInterface with Socratic approach */}
+        {/* Using ModernChatInterface - updated to be user-initiated only */}
         <ModernChatInterface
           currentSection={currentSectionIdForChat} // From hook (needed for messages)
           currentSectionTitle={sectionDataForPanel?.title} // Pass the title
