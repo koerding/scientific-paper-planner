@@ -9,7 +9,8 @@ import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
 import { 
   isResearchApproachSection, 
-  buildSystemPrompt
+  buildSystemPrompt,
+  getApproachGuidance
 } from '../utils/promptUtils';
 
 // Helper function to create the initial state, corrected to prioritize templates
@@ -166,11 +167,14 @@ const usePaperPlanner = () => {
       // Determine if we need research approach context based on the section
       const needsResearchContext = isResearchApproachSection(currentSection, currentSectionObj);
       
+      // Get approach guidance if needed
+      const approachGuidance = needsResearchContext ? getApproachGuidance(currentSection) : '';
+      
       // Generate system prompt
       const systemPrompt = buildSystemPrompt('chat', {
         needsResearchContext,
         sectionTitle: currentSectionObj.title || 'Research',
-        approachGuidance: needsResearchContext ? getApproachGuidance(currentSection) : '',
+        approachGuidance,
         instructionsText,
         feedbackText,
         userContent: userContent || "They haven't written anything substantial yet."
