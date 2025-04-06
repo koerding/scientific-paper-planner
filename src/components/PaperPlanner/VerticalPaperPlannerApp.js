@@ -17,12 +17,12 @@ import '../../styles/PaperPlanner.css'; // Ensure CSS is imported
 
 /**
  * Enhanced Paper Planner
- * UPDATED: Added safer initialization for activeSection state.
+ * FIXED: Corrected SVG syntax error in floating feedback button AGAIN.
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Hook destructuring
   const {
-    currentSection: currentSectionIdFromHook, // Renamed to avoid conflict
+    currentSection: currentSectionIdFromHook,
     userInputs, chatMessages, currentMessage, loading: chatLoading,
     showConfirmDialog, showExamplesDialog, setCurrentMessage, setShowConfirmDialog,
     setShowExamplesDialog, handleSectionChange, handleInputChange, handleSendMessage,
@@ -37,24 +37,20 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Determine a safe initial active section ID
   const getInitialSectionId = () => {
-      // Prioritize ID from hook if available
       if (currentSectionIdFromHook) return currentSectionIdFromHook;
-      // Otherwise, try the first section from the static JSON data
       if (sectionContent?.sections?.length > 0 && sectionContent.sections[0].id) {
           return sectionContent.sections[0].id;
       }
-      // Fallback if JSON is weirdly structured or empty
-      return 'question';
+      return 'question'; // Fallback
   };
 
   // Component State using safer initialization
-  const [activeSection, setActiveSection] = useState(getInitialSectionId()); // Use the helper function
+  const [activeSection, setActiveSection] = useState(getInitialSectionId());
   const [activeApproach, setActiveApproach] = useState('hypothesis');
   const [activeDataMethod, setActiveDataMethod] = useState('experiment');
   const [sectionCompletionStatus, setSectionCompletionStatus] = useState({});
   const sectionRefs = useRef({});
-  const [improvingInstructions, setImprovingInstructions] = useState(false); // State for feedback loading
-
+  const [improvingInstructions, setImprovingInstructions] = useState(false);
 
   // --- Effects ---
    useEffect(() => { /* Map refs */
@@ -64,14 +60,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
          });
        }
    }, [localSectionContent.sections]);
-
-   // Effect to sync activeSection with hook potentially changing *after* initial load
-    useEffect(() => {
+   useEffect(() => { /* Sync activeSection with hook */
         if (currentSectionIdFromHook && currentSectionIdFromHook !== activeSection) {
             setActiveSection(currentSectionIdFromHook);
         }
-   }, [currentSectionIdFromHook, activeSection]); // Depend on both
-
+   }, [currentSectionIdFromHook, activeSection]);
    useEffect(() => { /* Update approach/data method */
       const placeholders = {};
       if (localSectionContent?.sections) { localSectionContent.sections.forEach(s => { if (s?.id) placeholders[s.id] = s.placeholder || ''; }); }
@@ -86,23 +79,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
    }, [userInputs, localSectionContent.sections]);
 
   // --- Handlers ---
-  const setActiveSectionWithManualFlag = (sectionId) => {
-      // Don't set if it's already active? Optional optimization.
-      // if (sectionId === activeSection) return;
-      setActiveSection(sectionId);
-      // Also call the hook's handler if needed, ensures consistency if hook manages external state
-      if (typeof handleSectionChange === 'function') {
-        handleSectionChange(sectionId);
-      }
-  };
+  const setActiveSectionWithManualFlag = (sectionId) => { setActiveSection(sectionId); if (typeof handleSectionChange === 'function') { handleSectionChange(sectionId); } };
   const getSectionCompletionStatus = (sectionId) => { /* ... */ };
   const scrollToSection = (sectionId) => { /* ... */ };
   const getCurrentSectionDataForPanel = () => {
-      if (!localSectionContent || !Array.isArray(localSectionContent.sections)) return null;
-      // Ensure activeSection has a value before trying to find
-      if (!activeSection) return null;
-      const sectionData = localSectionContent.sections.find(s => s && s.id === activeSection);
-      return sectionData || null;
+       if (!localSectionContent || !Array.isArray(localSectionContent.sections) || !activeSection) return null;
+       const sectionData = localSectionContent.sections.find(s => s && s.id === activeSection);
+       return sectionData || null;
    };
   const handleFeedbackRequest = async () => { /* ... includes console logs ... */
        if (improvingInstructions) return;
@@ -131,20 +114,19 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // --- Render Logic ---
   const renderSection = (section) => {
-      if (!section || !section.id || !shouldDisplaySection(section.id)) return null;
-      const isCurrentActive = activeSection === section.id;
-      const completionStatus = getSectionCompletionStatus(section.id);
-      return ( <SectionCard key={section.id} section={section} /* ...props... */ /> );
+       if (!section || !section.id || !shouldDisplaySection(section.id)) return null;
+       const isCurrentActive = activeSection === section.id;
+       const completionStatus = getSectionCompletionStatus(section.id);
+       return ( <SectionCard key={section.id} section={section} /* ...props... */ /> );
    };
   const sectionDataForPanel = getCurrentSectionDataForPanel();
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
       {/* Header */}
       <AppHeader /* ...props... */ />
 
       {/* Main Content Wrapper */}
-      {/* Using padding-right again to accommodate fixed panel */}
       <div className={`w-full mx-auto pr-[50%]`}>
           {/* Left Column Content */}
           <div className={`px-8 py-6`}>
@@ -163,7 +145,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       <FullHeightInstructionsPanel
             currentSection={sectionDataForPanel}
             userInputs={userInputs}
-            // Panel uses its internal fixed positioning logic
        />
 
       {/* Footer */}
@@ -172,14 +153,43 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       </div>
 
       {/* --- Floating Action Buttons --- */}
-      <button onClick={handleFeedbackRequest} disabled={improvingInstructions} className={`fixed bottom-24 right-6 z-[51] ...`} title="Get AI Feedback...">
-          {improvingInstructions ? ( <svg className="animate-spin ..." /> ) : ( <svg ... /> )}
+      {/* Floating Feedback Button - Corrected SVG Syntax */}
+      <button
+          onClick={handleFeedbackRequest}
+          disabled={improvingInstructions}
+          className={`fixed bottom-24 right-6 z-[51] w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 ease-in-out ${
+              improvingInstructions ? 'bg-gray-400 cursor-not-allowed scale-95' : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'
+          }`}
+          title="Get AI Feedback for all sections with content"
+      >
+          {improvingInstructions ? (
+               <svg className="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+          ) : (
+              // Lightbulb Icon
+              <svg className="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+          )}
       </button>
-      <ModernChatInterface /* ...props... */ />
+
+      {/* Chat Interface */}
+      <ModernChatInterface
+          currentSection={currentSectionIdFromHook} // Pass ID from hook
+          currentSectionTitle={sectionDataForPanel?.title} // Get title from panel data
+          chatMessages={chatMessages}
+          currentMessage={currentMessage}
+          setCurrentMessage={setCurrentMessage}
+          handleSendMessage={handleSendMessage}
+          loading={chatLoading}
+          currentSectionData={sectionDataForPanel} // Pass panel data
+      />
 
       {/* Dialogs */}
-      <ConfirmDialog /* ...props... */ />
-      <ExamplesDialog /* ...props... */ />
+      <ConfirmDialog showConfirmDialog={showConfirmDialog} setShowConfirmDialog={setShowConfirmDialog} resetProject={handleResetRequest} />
+      <ExamplesDialog showExamplesDialog={showExamplesDialog} setShowExamplesDialog={setShowExamplesDialog} loadProject={loadProject} />
     </div>
   );
 };
