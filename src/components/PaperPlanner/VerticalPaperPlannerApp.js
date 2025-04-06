@@ -482,7 +482,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         {/* Main content area */}
         <div style={{ paddingTop: '100px' }}>
           <div className="flex">
-            <div className="w-1/2 px-6 py-3" style={{ marginRight: '50%' }}>
+            <div className="w-half px-6 py-3" style={{ marginRight: '50%' }}>
               {/* Display first two sections: Question and Audience */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => section?.id === 'question' || section?.id === 'audience')
