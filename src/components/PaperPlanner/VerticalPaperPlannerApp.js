@@ -494,3 +494,5 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     </div>
   );
 };
+
+export default VerticalPaperPlannerApp;
