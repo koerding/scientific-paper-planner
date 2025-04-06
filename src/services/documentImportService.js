@@ -15,21 +15,53 @@ import mammoth from 'mammoth';
 // Configure PDF Worker
 if (typeof window !== 'undefined' && 'Worker' in window) {
     try {
-        // More explicit worker source setting
-        pdfjsLib.GlobalWorkerOptions.workerSrc = window.location.origin + '/pdf.worker.min.mjs';
-        console.log("Attempting to set pdf.js workerSrc to:", pdfjsLib.GlobalWorkerOptions.workerSrc);
+        // Import the worker directly
+        import('pdfjs-dist/build/pdf.worker.mjs').then(worker => {
+            pdfjsLib.GlobalWorkerOptions.workerPort = new worker.PDFWorkerCore();
+            console.log("Successfully configured pdf.js worker using direct import");
+        }).catch(err => {
+            console.error("Error importing PDF worker:", err);
+            
+            // Fallback method 1: Try CDN approach
+            const workerUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+            console.log("Attempting to set pdf.js workerSrc to CDN:", workerUrl);
+            
+            // Fallback method 2: Try to create a "blob worker"
+            try {
+                // Create a fallback for older browsers or environments
+                // that don't support direct module imports
+                const workerBlob = new Blob([
+                    `importScripts('${workerUrl}');`
+                ], { type: 'application/javascript' });
+                const workerBlobUrl = URL.createObjectURL(workerBlob);
+                console.log("Created blob worker URL as last resort");
+                
+                // Only use this if primary method fails
+                window.setTimeout(() => {
+                    if (!pdfjsLib.GlobalWorkerOptions.workerPort) {
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = workerBlobUrl;
+                        console.log("Using blob worker as fallback");
+                    }
+                }, 1000);
+            } catch (blobError) {
+                console.error("Error creating blob worker:", blobError);
+            }
+        });
     } catch (e) {
-        console.error("Detailed error setting pdf.js workerSrc:", e);
-        console.log("window:", window);
-        console.log("pdfjsLib:", pdfjsLib);
+        console.error("Detailed error setting up pdf.js worker:", e);
+        console.log("Environment details:", {
+            windowDefined: typeof window !== 'undefined',
+            workerInWindow: 'Worker' in window,
+            pdfjsLibDefined: typeof pdfjsLib !== 'undefined'
+        });
     }
 } else {
-   console.warn("Web Workers not fully available. Detailed diagnostics:", {
-     windowDefined: typeof window !== 'undefined',
-     workerInWindow: 'Worker' in window
-   });
+    console.warn("Web Workers not fully available. Environment details:", {
+        windowDefined: typeof window !== 'undefined',
+        workerInWindow: typeof window !== 'undefined' ? 'Worker' in window : false
+    });
 }
-
 /**
  * Extracts text from a document file (PDF or Word)
  * @param {File} file - The document file object
