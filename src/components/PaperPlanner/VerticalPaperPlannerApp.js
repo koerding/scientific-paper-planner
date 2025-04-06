@@ -21,6 +21,7 @@ import '../../styles/PaperPlanner.css';
  * Enhanced Paper Planner with research approach and data acquisition toggles
  * UPDATED: Passes currentSectionData to ModernChatInterface
  * UPDATED: Made chat fully user-initiated
+ * UPDATED: Fixed right panel overlapping footer using Flexbox layout
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
@@ -389,98 +390,104 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="w-full pb-12">
-        <AppHeader
-          activeSection={activeSection} // Pass the locally tracked active section
-          setActiveSection={setActiveSectionWithManualFlag}
-          handleSectionChange={handleSectionChange}
-          scrollToSection={scrollToSection}
-          resetProject={() => setShowConfirmDialog(true)} // Trigger dialog from hook state
-          exportProject={exportProject} // From hook
-          saveProject={saveProject} // From hook
-          loadProject={loadProject} // From hook
-          importDocumentContent={importDocumentContent} // Pass document import function
-          setShowExamplesDialog={setShowExamplesDialog} // Pass setter from hook to header
-        />
+    // Use Flexbox for overall page structure
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
+      {/* Header */}
+      <AppHeader
+        activeSection={activeSection} // Pass the locally tracked active section
+        setActiveSection={setActiveSectionWithManualFlag}
+        handleSectionChange={handleSectionChange}
+        scrollToSection={scrollToSection}
+        resetProject={() => setShowConfirmDialog(true)} // Trigger dialog from hook state
+        exportProject={exportProject} // From hook
+        saveProject={saveProject} // From hook
+        loadProject={loadProject} // From hook
+        importDocumentContent={importDocumentContent} // Pass document import function
+        setShowExamplesDialog={setShowExamplesDialog} // Pass setter from hook to header
+      />
 
-        <div className="flex">
-          <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
-            {/* Display first two sections: Question and Audience */}
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-              .filter(section => section?.id === 'question' || section?.id === 'audience')
-              .map(section => renderSection(section))}
+      {/* Main Content Area (Flex Grow) */}
+      <div className="flex flex-grow w-full"> {/* Make this row take remaining space */}
+        {/* Left Side Sections (Scrollable if needed) */}
+        <div className="w-1/2 px-8 py-6 overflow-y-auto"> {/* Add overflow-y-auto */}
+          {/* Display first two sections: Question and Audience */}
+          {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+            .filter(section => section?.id === 'question' || section?.id === 'audience')
+            .map(section => renderSection(section))}
 
-            {/* Research Approach Toggle */}
-            <ResearchApproachToggle
-              activeApproach={activeApproach}
-              setActiveApproach={handleApproachToggle}
-            />
+          {/* Research Approach Toggle */}
+          <ResearchApproachToggle
+            activeApproach={activeApproach}
+            setActiveApproach={handleApproachToggle}
+          />
 
-            {/* Display active approach section */}
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-              .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
-              .map(section => renderSection(section))}
+          {/* Display active approach section */}
+          {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+            .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
+            .map(section => renderSection(section))}
 
-            {/* Related Papers Section */}
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-              .filter(section => section?.id === 'relatedpapers')
-              .map(section => renderSection(section))}
+          {/* Related Papers Section */}
+          {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+            .filter(section => section?.id === 'relatedpapers')
+            .map(section => renderSection(section))}
 
-            {/* Data Acquisition Toggle */}
-            <DataAcquisitionToggle
-              activeMethod={activeDataMethod}
-              setActiveMethod={handleDataMethodToggle}
-            />
+          {/* Data Acquisition Toggle */}
+          <DataAcquisitionToggle
+            activeMethod={activeDataMethod}
+            setActiveMethod={handleDataMethodToggle}
+          />
 
-            {/* Display active data acquisition section */}
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-              .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
-              .map(section => renderSection(section))}
+          {/* Display active data acquisition section */}
+          {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+            .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
+            .map(section => renderSection(section))}
 
-            {/* Display remaining sections: Analysis, Process, Abstract */}
-            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-              .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
-              .map(section => renderSection(section))}
-          </div>
+          {/* Display remaining sections: Analysis, Process, Abstract */}
+          {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+            .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
+            .map(section => renderSection(section))}
         </div>
 
-        <div className="text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6">
-          <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
+        {/* Right Side Instructions Panel */}
+        <div className="w-1/2 border-l border-gray-200"> {/* Container for the right panel */}
+            <FullHeightInstructionsPanel
+              currentSection={sectionDataForPanel} // Pass data from local state based on *activeSection*
+              improveInstructions={handleMagic} // Updated to handleMagic
+              loading={improvingInstructions}
+              userInputs={userInputs} // Pass user inputs for analysis
+            />
         </div>
-
-        <FullHeightInstructionsPanel
-          currentSection={sectionDataForPanel} // Pass data from local state based on *activeSection*
-          improveInstructions={handleMagic} // Updated to handleMagic
-          loading={improvingInstructions}
-          userInputs={userInputs} // Pass user inputs for analysis
-        />
-
-        {/* Using ModernChatInterface - updated to be user-initiated only */}
-        <ModernChatInterface
-          currentSection={currentSectionIdForChat} // From hook (needed for messages)
-          currentSectionTitle={sectionDataForPanel?.title} // Pass the title
-          chatMessages={chatMessages} // From hook
-          currentMessage={currentMessage} // From hook
-          setCurrentMessage={setCurrentMessage} // From hook
-          handleSendMessage={handleSendMessage} // From hook
-          loading={chatLoading} // From hook
-          currentSectionData={sectionDataForPanel} // Pass the full section data including AI-edited instructions
-        />
-
-        <ConfirmDialog
-          showConfirmDialog={showConfirmDialog} // From hook
-          setShowConfirmDialog={setShowConfirmDialog} // From hook
-          resetProject={handleResetRequest} // Use combined reset handler
-        />
-
-        {/* Render ExamplesDialog, passing props from hook */}
-        <ExamplesDialog
-            showExamplesDialog={showExamplesDialog}
-            setShowExamplesDialog={setShowExamplesDialog}
-            loadProject={loadProject}
-        />
       </div>
+
+      {/* Footer (Now outside the flex-grow area) */}
+      <div className="w-full text-center text-gray-500 text-base mt-auto border-t border-gray-200 pt-6 pb-6"> {/* Use mt-auto to push footer down */}
+        <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
+      </div>
+
+      {/* Chat Interface (Positioned Fixed or Absolute as needed) */}
+      {/* Note: ModernChatInterface might need its own positioning adjustments */}
+      <ModernChatInterface
+        currentSection={currentSectionIdForChat} // From hook (needed for messages)
+        currentSectionTitle={sectionDataForPanel?.title} // Pass the title
+        chatMessages={chatMessages} // From hook
+        currentMessage={currentMessage} // From hook
+        setCurrentMessage={setCurrentMessage} // From hook
+        handleSendMessage={handleSendMessage} // From hook
+        loading={chatLoading} // From hook
+        currentSectionData={sectionDataForPanel} // Pass the full section data including AI-edited instructions
+      />
+
+      {/* Dialogs */}
+      <ConfirmDialog
+        showConfirmDialog={showConfirmDialog} // From hook
+        setShowConfirmDialog={setShowConfirmDialog} // From hook
+        resetProject={handleResetRequest} // Use combined reset handler
+      />
+      <ExamplesDialog
+          showExamplesDialog={showExamplesDialog}
+          setShowExamplesDialog={setShowExamplesDialog}
+          loadProject={loadProject}
+      />
     </div>
   );
 };
