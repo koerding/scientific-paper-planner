@@ -3,6 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 /**
  * Section card component for the paper planner
  * UPDATED: Changed "empty" status label to "incomplete" for better clarity
+ * UPDATED: Removed character counts
+ * UPDATED: Reduced whitespace for a tighter layout
+ * UPDATED: Simplified box design by removing gray box background
  */
 const SectionCard = ({
   section,
@@ -45,11 +48,10 @@ const SectionCard = ({
   // Combine all the classes
   const sectionClasses = `
     section-card 
-    bg-white 
     rounded-lg 
     shadow-sm 
-    p-5 
-    mb-6 
+    p-4 
+    mb-4 
     transition-all 
     duration-300 
     ease-in-out 
@@ -63,8 +65,8 @@ const SectionCard = ({
       onClick={onClick}
     >
       {/* Header with Title */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className={`font-semibold ${useLargerFonts ? 'text-3xl' : 'text-2xl'} text-gray-800 mr-4`}>
+      <div className="flex justify-between items-center mb-3">
+        <h2 className={`font-semibold ${useLargerFonts ? 'text-2xl' : 'text-xl'} text-gray-800 mr-4`}>
           {section.title}
         </h2>
         
@@ -81,20 +83,16 @@ const SectionCard = ({
       </div>
 
       {/* Input Area */}
-      <div className="mb-4">
+      <div className="mb-2">
         <textarea
           ref={textareaRef}
-          className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-400 outline-none resize-none overflow-hidden ${useLargerFonts ? 'text-xl leading-relaxed' : 'text-base'} ${isCurrentSection ? 'bg-blue-50' : 'bg-white'}`}
+          className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-400 outline-none resize-none overflow-hidden ${useLargerFonts ? 'text-lg leading-relaxed' : 'text-base'} ${isCurrentSection ? 'bg-blue-50' : 'bg-white'}`}
           value={textValue}
           onChange={(e) => handleInputChange(section.id, e.target.value)}
           rows="1"
           maxLength={section.maxLength}
         />
-        {section.maxLength && (
-          <p className="text-right text-xs text-gray-500 mt-1 pr-1">
-            {textValue.length} / {section.maxLength}
-          </p>
-        )}
+        {/* Removed character count display */}
       </div>
     </div>
   );
