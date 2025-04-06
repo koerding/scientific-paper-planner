@@ -327,8 +327,8 @@ header.bg-white.shadow-sm .container {
 
 /* Fix for instructions panel, this is where the dimensions of the panel are actually set */
 .bg-blue-50.border-l-4.border-blue-500 {
-  height: calc(100vh - 184px);
-  top: 145px !important;
+  height: calc(100vh - 254px);
+  top: 150px !important;
   bottom: 200px !important;
 }
 
