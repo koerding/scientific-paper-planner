@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import '../../styles/PaperPlanner.css'; // Ensure CSS is imported
+import '../../styles/PaperPlanner.css';
 
 /**
- * Modernized chat interface that can be minimized to a floating button
- * UPDATED: Added onboarding highlight/tooltip for chat icon
- * UPDATED: Added dynamic section title to header
- * UPDATED: Increased width for better readability
+ * Modernized chat interface with fixed layout issues
+ * FIXES:
+ * - Consistent positioning relative to footer
+ * - Improved z-index handling
+ * - Fixed transition issues
+ * - Better handling of magic button overlap
  */
 const ModernChatInterface = ({
   currentSection,
@@ -19,26 +21,26 @@ const ModernChatInterface = ({
   handleSendMessage,
   loading,
   currentSectionData,
-  onboardingStep // Receive onboarding state
+  onboardingStep
 }) => {
   const [isMinimized, setIsMinimized] = useState(true);
   const messagesEndRef = useRef(null);
   const previousSectionRef = useRef(null);
-  const chatIconRef = useRef(null); // Ref for the chat icon wrapper
+  const chatIconRef = useRef(null);
 
-  // ... (useEffect hooks for scrolling and previousSectionRef remain the same)
+  // Scroll to bottom when messages change or chat is opened
   useEffect(() => {
     if (!isMinimized && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatMessages, isMinimized, currentSection]);
 
+  // Track section changes
   useEffect(() => {
     if (currentSection && currentSection !== previousSectionRef.current) {
       previousSectionRef.current = currentSection;
     }
   }, [currentSection]);
-
 
   // Format timestamp for messages
   const formatTime = () => {
@@ -56,109 +58,108 @@ const ModernChatInterface = ({
 
   return (
     <>
-      {/* Minimized chat icon - Add ref and conditional highlight/tooltip */}
+      {/* Minimized chat icon - improved positioning */}
       {isMinimized && (
         <div
-          ref={chatIconRef} // Add ref here
-          className={`fixed bottom-6 right-6 z-50 cursor-pointer ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`} // Apply highlight class conditionally
+          ref={chatIconRef}
+          className={`fixed bottom-6 right-6 z-50 cursor-pointer ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`}
           onClick={toggleChat}
+          style={{ transform: 'translateZ(0)' }} {/* Force hardware acceleration for smoother animations */}
         >
           <div className="w-16 h-16 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
             </svg>
           </div>
-           {/* Onboarding Tooltip */}
-           {showChatHighlight && (
+          {/* Onboarding Tooltip - improved positioning */}
+          {showChatHighlight && (
             <div className="onboarding-tooltip onboarding-tooltip-chat">
               Stuck? Ask AI for help anytime.
             </div>
-           )}
+          )}
         </div>
       )}
 
-      {/* Expanded chat interface */}
-      {/* Styling and structure remain mostly the same */}
+      {/* Expanded chat interface - fixed positioning and transitions */}
       <div
         className={`fixed z-40 shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
-          isMinimized ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          isMinimized ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'
         }`}
         style={{
-          // Increased width for better readability
           bottom: '0',
           right: '0',
-          width: 'min(550px, 95vw)', // Increased from 450px to 550px
-          height: 'min(600px, 75vh)' // Max height, responsive
+          width: 'min(550px, 95vw)',
+          height: 'min(600px, 75vh)',
+          transform: isMinimized ? 'translateZ(0) translateY(20px)' : 'translateZ(0)', // Smoother transitions with hardware acceleration
+          maxHeight: 'calc(100vh - 48px)' // Ensure it doesn't overflow the viewport
         }}
       >
-        {/* Chat header */}
-         <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center">
-           {/* ... header content */}
-           <div className="flex items-center">
-             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3">
-               AI
-             </div>
-             <h3 className="font-medium text-lg truncate pr-2">
-               {currentSectionTitle ? `AI Research Assistant - Talk about ${currentSectionTitle}` : 'AI Research Assistant'}
-             </h3>
-           </div>
-           <button
-             onClick={toggleChat}
-             className="text-white hover:text-gray-200 focus:outline-none"
-           >
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-             </svg>
-           </button>
-         </div>
+        {/* Chat header - consistent styling */}
+        <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3">
+              AI
+            </div>
+            <h3 className="font-medium text-lg truncate pr-2">
+              {currentSectionTitle ? `AI Research Assistant - Talk about ${currentSectionTitle}` : 'AI Research Assistant'}
+            </h3>
+          </div>
+          <button
+            onClick={toggleChat}
+            className="text-white hover:text-gray-200 focus:outline-none"
+            aria-label="Minimize chat"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
 
-
-        {/* Chat messages */}
-         <div className="flex flex-col h-full" style={{ height: 'calc(100% - 56px)' }}> {/* Adjusted height calc if header padding changes */}
+        {/* Chat messages - fixed height calculation */}
+        <div className="flex flex-col h-full" style={{ height: 'calc(100% - 56px)' }}>
           <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
-            {/* ... message rendering logic ... */}
-             {!currentSection || !chatMessages[currentSection] || chatMessages[currentSection].length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                  </svg>
-                  <p className="text-lg">No messages yet</p>
-                  <p className="text-sm">Ask a question about your {currentSectionTitle || 'research'}</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {chatMessages[currentSection].map((msg, index) => (
-                    <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-2`}>
-                      <div className={`message-bubble ${msg.role === 'user' ? 'user-message' : 'ai-message'} max-w-3xl`}>
-                        <div className="text-sm mb-1 opacity-75">
-                          {msg.role === 'user' ? 'You' : 'AI Assistant'} • {formatTime()}
-                        </div>
-                        <div className={`message-content ${msg.role === 'user' ? 'text-white' : 'text-gray-800'}`}>
-                          {msg.role === 'user' ? (
-                            <p className="whitespace-pre-wrap">{msg.content}</p>
-                          ) : (
-                            <div className="prose prose-sm max-w-none">
-                              <ReactMarkdown>{msg.content}</ReactMarkdown>
-                            </div>
-                          )}
-                        </div>
+            {!currentSection || !chatMessages[currentSection] || chatMessages[currentSection].length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <p className="text-lg">No messages yet</p>
+                <p className="text-sm">Ask a question about your {currentSectionTitle || 'research'}</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {chatMessages[currentSection].map((msg, index) => (
+                  <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-2`}>
+                    <div className={`message-bubble ${msg.role === 'user' ? 'user-message' : 'ai-message'} max-w-3xl`}>
+                      <div className="text-sm mb-1 opacity-75">
+                        {msg.role === 'user' ? 'You' : 'AI Assistant'} • {formatTime()}
+                      </div>
+                      <div className={`message-content ${msg.role === 'user' ? 'text-white' : 'text-gray-800'}`}>
+                        {msg.role === 'user' ? (
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        ) : (
+                          <div className="prose prose-sm max-w-none">
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
           </div>
 
-          {/* Chat input */}
+          {/* Chat input - improved focus handling */}
           <div className="p-3 border-t border-gray-200 bg-white">
-             <div className="flex">
+            <div className="flex">
               <input
                 type="text"
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Ask a question..." // Simplified placeholder
+                placeholder="Ask a question..."
                 onKeyPress={(e) => e.key === 'Enter' && !loading && currentMessage.trim() !== '' && handleSendMessage()}
               />
               <button
@@ -169,6 +170,7 @@ const ModernChatInterface = ({
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                     : 'bg-indigo-600 text-white hover:bg-indigo-700 transition-colors'
                 }`}
+                aria-label="Send message"
               >
                 {loading ? (
                   <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -183,7 +185,7 @@ const ModernChatInterface = ({
               </button>
             </div>
           </div>
-         </div>
+        </div>
       </div>
     </>
   );
