@@ -31,6 +31,16 @@
         "What analytical approaches will help you discover unexpected patterns?",
         "How will you validate whether the patterns you find are meaningful?",
         "What might you discover that would warrant a shift to hypothesis-testing in future work?"
+      ],
+      "general": [
+        "What aspects of this topic do you find most interesting?",
+        "What questions do you have about this section?",
+        "What's the most challenging part of this section for you?",
+        "How does this connect to your overall research goals?",
+        "What progress have you made so far in this area?",
+        "What would make this section stronger in your view?",
+        "What feedback have you received from others about this part?",
+        "How might someone critique this aspect of your research?"
       ]
     },
     "approachGuidance": {
@@ -56,8 +66,8 @@
       "general": "Hey there! Let's think about this section. I'm wondering:\n\n• {{question1}}\n• {{question2}}\n{{question3}}"
     },
     "regularChat": {
-      "hypothesis": "Interesting point. Following up on your idea, how might you test whether {{hypothesis_aspect}} is the key factor compared to {{alternative_aspect}}?",
-      "needsresearch": "That makes sense. Considering the needs of {{stakeholder}}, what would be the most critical feature for them in a solution like the one you're proposing?",
+      "hypothesis": "Interesting point. I'm curious - how might you test whether {{hypothesis_aspect}} is the key factor compared to {{alternative_aspect}}?",
+      "needsresearch": "That makes sense. I wonder - considering the needs of {{stakeholder}}, what would be the most critical feature for them in a solution like the one you're proposing?",
       "exploratory": "Fascinating pattern! What other related variables could you examine to see if this connection holds true under different conditions?",
       "general": "That's a thoughtful way to put it. What assumptions are underlying that idea, and how could you verify them?"
     },
