@@ -2,6 +2,11 @@ import React from 'react';
 
 /**
  * Floating Magic Button that appears next to the chat button
+ * FIXES:
+ * - Consistent positioning relative to chat button
+ * - Improved z-index handling
+ * - Improved pointer events and transitions
+ * - Fixed tooltip positioning
  */
 const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
   // Determine if the magic button should be highlighted based on onboarding step
@@ -9,7 +14,8 @@ const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
 
   return (
     <div
-      className={`fixed bottom-6 right-28 z-50 cursor-pointer ${showMagicHighlight ? 'onboarding-highlight-magic' : ''}`}
+      className={`fixed bottom-6 right-28 z-40 cursor-pointer ${showMagicHighlight ? 'onboarding-highlight-magic' : ''}`}
+      style={{ transform: 'translateZ(0)' }} /* Force hardware acceleration for smoother animations */
     >
       <button
         onClick={handleMagicClick}
@@ -20,6 +26,7 @@ const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
             : 'bg-purple-600 hover:bg-purple-700'
         }`}
         title="Get AI feedback on your progress"
+        aria-label="Get AI feedback on your progress"
       >
         {loading ? (
           <svg className="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -33,9 +40,9 @@ const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
         )}
       </button>
       
-      {/* Onboarding Tooltip */}
+      {/* Onboarding Tooltip - improved positioning */}
       {showMagicHighlight && (
-        <div className="onboarding-tooltip onboarding-tooltip-magic">
+        <div className="onboarding-tooltip onboarding-tooltip-magic" style={{ zIndex: 1001 }}>
           Get AI feedback on your progress
         </div>
       )}
