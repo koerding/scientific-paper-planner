@@ -1,6 +1,4 @@
 // FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
-// Change the import line to match the exported function
-
 import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
@@ -19,9 +17,8 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
- * UPDATED: Passes currentSectionData to ModernChatInterface
- * UPDATED: Made chat fully user-initiated
  * UPDATED: Fixed right panel overlapping footer using Flexbox layout
+ * UPDATED: Aligned right panel top/bottom with left cards via container padding
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
@@ -409,58 +406,63 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       {/* Main Content Area (Flex Grow) */}
       <div className="flex flex-grow w-full"> {/* Make this row take remaining space */}
         {/* Left Side Sections (Scrollable if needed) */}
-        <div className="w-1/2 px-8 py-6 overflow-y-auto"> {/* Add overflow-y-auto */}
-          {/* Display first two sections: Question and Audience */}
-          {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-            .filter(section => section?.id === 'question' || section?.id === 'audience')
-            .map(section => renderSection(section))}
+        {/* Container has px-8 and py-6 */}
+        <div className="w-1/2 px-8 py-6 overflow-y-auto">
+            {/* Display first two sections: Question and Audience */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'question' || section?.id === 'audience')
+              .map(section => renderSection(section))}
 
-          {/* Research Approach Toggle */}
-          <ResearchApproachToggle
-            activeApproach={activeApproach}
-            setActiveApproach={handleApproachToggle}
-          />
+            {/* Research Approach Toggle */}
+            <ResearchApproachToggle
+              activeApproach={activeApproach}
+              setActiveApproach={handleApproachToggle}
+            />
 
-          {/* Display active approach section */}
-          {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-            .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
-            .map(section => renderSection(section))}
+            {/* Display active approach section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
+              .map(section => renderSection(section))}
 
-          {/* Related Papers Section */}
-          {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-            .filter(section => section?.id === 'relatedpapers')
-            .map(section => renderSection(section))}
+            {/* Related Papers Section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'relatedpapers')
+              .map(section => renderSection(section))}
 
-          {/* Data Acquisition Toggle */}
-          <DataAcquisitionToggle
-            activeMethod={activeDataMethod}
-            setActiveMethod={handleDataMethodToggle}
-          />
+            {/* Data Acquisition Toggle */}
+            <DataAcquisitionToggle
+              activeMethod={activeDataMethod}
+              setActiveMethod={handleDataMethodToggle}
+            />
 
-          {/* Display active data acquisition section */}
-          {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-            .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
-            .map(section => renderSection(section))}
+            {/* Display active data acquisition section */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
+              .map(section => renderSection(section))}
 
-          {/* Display remaining sections: Analysis, Process, Abstract */}
-          {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-            .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
-            .map(section => renderSection(section))}
+            {/* Display remaining sections: Analysis, Process, Abstract */}
+            {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+              .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
+              .map(section => renderSection(section))}
         </div>
 
-        {/* Right Side Instructions Panel */}
-        <div className="w-1/2 border-l border-gray-200"> {/* Container for the right panel */}
+        {/* Right Side Instructions Panel Container */}
+        {/* Added matching py-6 for vertical alignment */}
+        {/* Adjusted horizontal padding (pl-4 pr-8) */}
+        {/* Removed border-l (panel itself will have border) */}
+        {/* Added overflow-hidden */}
+        <div className="w-1/2 py-6 pl-4 pr-8 overflow-hidden">
             <FullHeightInstructionsPanel
-              currentSection={sectionDataForPanel} // Pass data from local state based on *activeSection*
-              improveInstructions={handleMagic} // Updated to handleMagic
+              currentSection={sectionDataForPanel}
+              improveInstructions={handleMagic}
               loading={improvingInstructions}
-              userInputs={userInputs} // Pass user inputs for analysis
+              userInputs={userInputs}
             />
         </div>
       </div>
 
-      {/* Footer (Now outside the flex-grow area) */}
-      <div className="w-full text-center text-gray-500 text-base mt-auto border-t border-gray-200 pt-6 pb-6"> {/* Use mt-auto to push footer down */}
+      {/* Footer */}
+      <div className="w-full text-center text-gray-500 text-base mt-auto border-t border-gray-200 pt-6 pb-6">
         <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
       </div>
 
