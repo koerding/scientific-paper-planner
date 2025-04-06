@@ -255,3 +255,166 @@ const usePaperPlanner = () => {
     } finally {
       setLoading(false);
     }
+  }, [currentMessage, currentSection, currentSectionData, userInputs, chatMessages]);
+
+  // Reset project function - FIXED to correctly use fresh templates
+  const resetProject = useCallback(() => {
+    // Clear localStorage first
+    clearStorage();
+
+    // Create fresh copies of the templates
+    const freshInputs = JSON.parse(JSON.stringify(initialTemplates));
+    const freshChat = {};
+    sectionContent?.sections?.forEach(section => {
+      if (section && section.id) {
+        freshChat[section.id] = [];
+      }
+    });
+
+    // Set the state to fresh templates
+    setUserInputs(freshInputs);
+    setChatMessages(freshChat);
+    setCurrentSection(sectionContent?.sections?.[0]?.id || 'question');
+    setShowConfirmDialog(false);
+  }, [initialTemplates]);
+
+  const exportProject = useCallback(() => {
+    exportProjectFunction(userInputs, chatMessages, sectionContent);
+  }, [userInputs, chatMessages]);
+
+  // Save project function that only saves JSON for loading later
+  const saveProject = useCallback((fileName = 'scientific-paper-plan') => {
+    // Ensure the fileName has .json extension
+    const safeFileName = fileName.endsWith('.json')
+      ? fileName
+      : `${fileName}.json`;
+
+    const jsonData = {
+      userInputs,
+      chatMessages,
+      timestamp: new Date().toISOString(),
+      version: "1.0"
+    };
+
+    const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+
+    // Create a link and trigger download of JSON
+    const jsonLink = document.createElement('a');
+    jsonLink.href = jsonUrl;
+    jsonLink.download = safeFileName;
+    document.body.appendChild(jsonLink);
+    jsonLink.click();
+
+    // Clean up JSON file link
+    document.body.removeChild(jsonLink);
+    URL.revokeObjectURL(jsonUrl);
+
+    return true;
+  }, [userInputs, chatMessages]);
+
+  // Function to load project from imported JSON file
+  const loadProject = useCallback((data) => {
+    if (!validateProjectData(data)) {
+      alert("Invalid project file format. Please select a valid project file.");
+      return;
+    }
+
+    // Confirm before loading (optional, but good practice)
+    if (window.confirm("Loading this project will replace your current work. Are you sure you want to continue?")) {
+      try {
+        // Load user inputs, ensuring we keep template values for any missing sections
+        const mergedInputs = {...initialTemplates}; // Use initialTemplates from state
+        Object.keys(data.userInputs || {}).forEach(sectionId => {
+            // Check if the sectionId actually exists in our current template structure
+            if (mergedInputs.hasOwnProperty(sectionId)) {
+                const loadedValue = data.userInputs[sectionId];
+                // Only load if it's a non-empty string
+                if (loadedValue && typeof loadedValue === 'string' && loadedValue.trim() !== '') {
+                    mergedInputs[sectionId] = loadedValue;
+                }
+            }
+        });
+        setUserInputs(mergedInputs);
+
+        // Load chat messages, ensuring we have empty arrays for any missing sections
+        const mergedChat = {};
+        (sectionContent?.sections || []).forEach(section => {
+          if (section && section.id) {
+            mergedChat[section.id] = (data.chatMessages && Array.isArray(data.chatMessages[section.id]))
+                                    ? data.chatMessages[section.id]
+                                    : [];
+          }
+        });
+        setChatMessages(mergedChat);
+
+        // Explicitly save to storage after loading
+        saveToStorage(mergedInputs, mergedChat);
+
+        setCurrentSection(sectionContent?.sections?.[0]?.id || 'question'); // Reset to first section safely
+
+        alert("Project loaded successfully!");
+      } catch (error) {
+        console.error("Error loading project:", error);
+        alert("Error loading project. Please try again.");
+      }
+    }
+  }, [initialTemplates]);
+
+  // Import document content
+  const importDocumentContent = useCallback(async (file) => {
+    setLoading(true);
+
+    try {
+      // First, ask for confirmation
+      if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
+        setLoading(false);
+        return;
+      }
+
+      // Call the document import service - Use the imported function from documentImportService
+      const importedData = await importDocumentFromFile(file);
+
+      // Use the loadProject function to handle the imported data
+      loadProject(importedData);
+
+      return true;
+    } catch (error) {
+      console.error("Error importing document content:", error);
+
+      // More user-friendly error message
+      alert("We had some trouble processing this document. You might want to try a different file format.");
+
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [loadProject]);
+
+  // Return all state and handlers needed by the components
+  return {
+    userInputs,
+    chatMessages,
+    currentSection,
+    currentMessage,
+    loading,
+    showConfirmDialog,
+    showExamplesDialog,
+    currentSectionData,  // Provides section data to chat
+    setChatMessages,
+    setUserInputs,
+    setCurrentMessage,
+    setShowConfirmDialog,
+    setShowExamplesDialog,
+    handleSectionChange,
+    handleInputChange,
+    handleSendMessage,
+    resetProject,
+    exportProject,
+    saveProject,
+    loadProject,
+    importDocumentContent
+  };
+};
+
+export default usePaperPlanner;
