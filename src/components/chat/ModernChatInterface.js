@@ -7,6 +7,7 @@ import '../../styles/PaperPlanner.css';
 /**
  * Modernized chat interface with fixed layout issues
  * FIXES:
+ * - Fixed syntax error on line 67
  * - Consistent positioning relative to footer
  * - Improved z-index handling
  * - Fixed transition issues
@@ -64,7 +65,7 @@ const ModernChatInterface = ({
           ref={chatIconRef}
           className={`fixed bottom-6 right-6 z-50 cursor-pointer ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`}
           onClick={toggleChat}
-          style={{ transform: 'translateZ(0)' }} {/* Force hardware acceleration for smoother animations */}
+          style={{ transform: 'translateZ(0)' }}
         >
           <div className="w-16 h-16 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -90,8 +91,8 @@ const ModernChatInterface = ({
           right: '0',
           width: 'min(550px, 95vw)',
           height: 'min(600px, 75vh)',
-          transform: isMinimized ? 'translateZ(0) translateY(20px)' : 'translateZ(0)', // Smoother transitions with hardware acceleration
-          maxHeight: 'calc(100vh - 48px)' // Ensure it doesn't overflow the viewport
+          transform: isMinimized ? 'translateZ(0) translateY(20px)' : 'translateZ(0)',
+          maxHeight: 'calc(100vh - 48px)'
         }}
       >
         {/* Chat header - consistent styling */}
