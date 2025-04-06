@@ -1,3 +1,57 @@
+/* Add these styles to your PaperPlanner.css file */
+
+/* Better chat styling fixes */
+.prose-sm img {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Fix for AI badge and header styling */
+.chat-header {
+  background-color: #4f46e5;
+  color: white;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+.ai-avatar {
+  width: 2rem;
+  height: 2rem;
+  background-color: white;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #4f46e5;
+  margin-right: 0.75rem;
+}
+
+/* Clean message bubbles */
+.message-bubble {
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  display: inline-block;
+  max-width: 80%;
+}
+
+.user-message {
+  background-color: #4f46e5;
+  color: white;
+  border-top-right-radius: 0;
+}
+
+.ai-message {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-top-left-radius: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
 /* Research Approach and Data Acquisition Toggles */
 .approach-toggle, .data-toggle {
   background: linear-gradient(to bottom, #ffffff, #f9fafb);
@@ -93,7 +147,7 @@
   transition: opacity 300ms, transform 300ms;
 }
 
-/* Custom border styles for completion status - SIMPLIFIED TO RED/GREEN ONLY */
+/* Custom border styles for completion status - IMPROVED RED/GREEN CONTRAST */
 .border-3 {
   border-width: 3px !important;
 }
@@ -102,7 +156,7 @@
   border-width: 4px !important;
 }
 
-/* Status-based border colors - ONLY COMPLETE/UNSTARTED */
+/* Status-based border colors */
 .section-complete {
   border-color: #10B981 !important; /* Green-500 */
   border-width: 4px !important;
