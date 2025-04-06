@@ -463,7 +463,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
       {/* Footer */}
       <div className="w-full text-center text-gray-500 text-base mt-auto border-t border-gray-200 pt-6 pb-6">
-        <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
+        <p>Scientific Paper Planner • Designed with Love for Researchers by Konrad (@kordinglab)• {new Date().getFullYear()}</p>
       </div>
 
       {/* Chat Interface (Positioned Fixed or Absolute as needed) */}
