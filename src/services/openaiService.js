@@ -1,49 +1,17 @@
 // FILE: src/services/openaiService.js
 
 /**
- * Enhanced OpenAI service with centralized prompts
- * REFACTORED: Uses unified prompt system for all interactions
+ * Modernized OpenAI service using JSON mode for structured responses
+ * Uses OpenAI's native JSON mode for reliable parsing
  */
-import { 
-  isResearchApproachSection, 
-  buildSystemPrompt,
-  generateMockResponse
-} from '../utils/promptUtils';
+import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
 
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
-const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo";
-
-// Fallback flag for development without API key
-const USE_FALLBACK = !apiKey || process.env.REACT_APP_USE_FALLBACK === 'true';
-
-/**
- * Determine the appropriate response type based on context
- * @param {string} contextType - The context/section identifier
- * @returns {string} The response type to use for mocks
- */
-const getResponseType = (contextType) => {
-  // The main chat interactions should use "chat" type (Socratic style)
-  if (contextType.match(/^(question|audience|hypothesis|needsresearch|exploratoryresearch|relatedpapers|experiment|existingdata|analysis|process|abstract)$/)) {
-    return 'chat';
-  }
-  
-  // Document import uses its own style
-  if (contextType === 'document_import_task') {
-    return 'documentImport';
-  }
-  
-  // Instruction improvement uses its own style
-  if (contextType === 'improve_instructions_batch') {
-    return 'instructionImprovement';
-  }
-  
-  // Default to chat for unknown types
-  return 'chat';
-};
+// Use GPT-4 or newer model that supports JSON mode
+const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4-turbo";
 
 /**
  * Build messages for API call with context and history
- * REFACTORED: Simplified to rely on system prompt for context
  * @param {string} prompt - The user prompt
  * @param {string} contextType - The section ID or context type
  * @param {Array} currentChatHistory - Previous chat messages
@@ -69,7 +37,18 @@ const buildMessages = (prompt, contextType, currentChatHistory = [], systemPromp
   return messages;
 };
 
-// Main function to call the OpenAI API - using centralized prompts
+/**
+ * Call OpenAI API with JSON mode for structured responses
+ * @param {string} prompt - The user's prompt or task description
+ * @param {string} contextType - Context identifier (section ID or task type)
+ * @param {Object} userInputs - Current user inputs (for context)
+ * @param {Array} sections - Section definitions (for context)
+ * @param {Object} options - Request options (temperature, etc)
+ * @param {Array} chatHistory - Previous messages in the conversation
+ * @param {string} systemPrompt - System prompt with context
+ * @param {boolean} useJsonMode - Whether to use JSON mode (default true)
+ * @returns {Object|string} - JSON response object or string for chat
+ */
 export const callOpenAI = async (
     prompt,
     contextType = "general",
@@ -77,13 +56,14 @@ export const callOpenAI = async (
     sections = [],
     options = {},
     chatHistory = [],
-    systemPrompt = null
+    systemPrompt = null,
+    useJsonMode = contextType !== "general" // Use JSON mode by default except for general chat
  ) => {
 
   console.log(`[openaiService] API Call Request - Context: ${contextType}`, {
     apiKeyConfigured: !!apiKey,
     modelUsed: model,
-    useFallback: USE_FALLBACK,
+    useJsonMode: useJsonMode,
     promptLength: prompt.length,
     userInputsCount: Object.keys(userInputs).length,
     sectionsCount: Array.isArray(sections) ? sections.length : 'Not an array',
@@ -91,19 +71,13 @@ export const callOpenAI = async (
     hasSystemPrompt: !!systemPrompt
   });
 
-  // If no API key is configured, use mock responses
-  if (USE_FALLBACK) {
-    console.warn("[openaiService] Using FALLBACK mode because API key is missing");
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Determine the appropriate mock response type based on context
-    const responseType = getResponseType(contextType);
-    return generateMockResponse(responseType, contextType);
+  if (!apiKey) {
+    throw new Error("OpenAI API key not configured. Please add your API key to the environment variables.");
   }
 
   const apiUrl = "https://api.openai.com/v1/chat/completions";
   
-  // Pass systemPrompt to buildMessages - simplified as we no longer distinguish prompt types
+  // Pass systemPrompt to buildMessages
   const messages = buildMessages(prompt, contextType, chatHistory, systemPrompt);
 
   // Determine temperature based on section type - research sections get higher temperature
@@ -111,12 +85,18 @@ export const callOpenAI = async (
   const temperature = isResearchSectionType ? 0.9 : (options.temperature ?? 0.7);
   const max_tokens = options.max_tokens ?? 1024;
 
-  const body = JSON.stringify({
+  // Prepare request body with JSON mode when appropriate
+  const requestBody = {
     model: model,
     messages: messages,
     temperature: temperature,
-    max_tokens: max_tokens,
-  });
+    max_tokens: max_tokens
+  };
+
+  // Add response_format for JSON mode when requested
+  if (useJsonMode) {
+    requestBody.response_format = { type: "json_object" };
+  }
 
   try {
     console.log(`[openaiService] Sending request to OpenAI API...`);
@@ -127,7 +107,7 @@ export const callOpenAI = async (
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: body,
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -151,6 +131,19 @@ export const callOpenAI = async (
         console.error("No response content found in API data:", data);
         throw new Error("Received empty or invalid response content from API.");
     }
+    
+    // If using JSON mode, parse response into an object
+    if (useJsonMode) {
+      try {
+        return JSON.parse(responseContent);
+      } catch (error) {
+        console.error("Error parsing JSON response:", error);
+        console.log("Raw response:", responseContent);
+        throw new Error(`Failed to parse JSON response: ${error.message}`);
+      }
+    }
+    
+    // Return raw string for chat contexts
     return responseContent;
 
   } catch (error) {
