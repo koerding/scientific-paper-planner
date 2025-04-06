@@ -6,6 +6,8 @@ import ReactMarkdown from 'react-markdown';
  * UPDATED: Fixed positioning to be below header and above footer
  * UPDATED: Added rounded corners for consistency with left side cards
  * UPDATED: Removed Magic button (will be added as floating button)
+ * UPDATED: Fixed header and footer issues
+ * UPDATED: Reduced padding and whitespace
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -246,11 +248,11 @@ const FullHeightInstructionsPanel = ({
 
   // Custom styles for markdown content to match left side fonts
   const customStyles = {
-    fontSize: 'text-xl leading-relaxed', // Larger font to match left side
-    content: 'prose-xl prose-blue max-w-none', // Increase prose size
-    heading: 'text-2xl font-semibold my-4', // Larger headings
-    divider: 'border-t border-blue-200 my-6', // Style for dividers (---)
-    listItem: 'my-3', // Add more space between list items
+    fontSize: 'text-lg leading-relaxed', // Slightly reduced font size
+    content: 'prose-lg prose-blue max-w-none', // Smaller prose size
+    heading: 'text-xl font-semibold my-3', // Smaller headings
+    divider: 'border-t border-blue-200 my-4', // Style for dividers (---)
+    listItem: 'my-2', // Less space between list items
   };
 
   // Get the appropriate instructions text (with fallback if needed)
@@ -261,22 +263,22 @@ const FullHeightInstructionsPanel = ({
       className="bg-blue-50 border-l-4 border-blue-500 rounded-tl-lg rounded-bl-lg overflow-y-auto"
       style={{
         position: 'fixed',
-        top: '118px', // Positioned below header (adjusted for height)
+        top: '100px', // Positioned right below header (reduced from 118px)
         right: '0',
         width: '50%',
-        bottom: '2rem', // Space for footer
+        bottom: '32px', // Less space for footer (reduced from 2rem)
         zIndex: 10 // Ensure it's below header buttons if they overlap
       }}
     >
-      <div className="px-6 py-4 relative">
+      <div className="px-4 py-3 relative">
         {!currentSection ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-blue-600 text-xl">Select a section to view instructions</p>
+            <p className="text-blue-600 text-lg">Select a section to view instructions</p>
           </div>
         ) : (
           <>
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-3xl font-semibold text-blue-800 flex-grow mr-4">
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-2xl font-semibold text-blue-800 flex-grow mr-3">
                 {panelTitle}
               </h3>
               {/* Magic button removed from here */}
@@ -284,7 +286,7 @@ const FullHeightInstructionsPanel = ({
 
             {/* Render Instructions with improved styling - fallback handling is done in getInstructionsText() */}
             {instructionsText ? (
-              <div className={`${customStyles.content} instructions-content mb-6`}>
+              <div className={`${customStyles.content} instructions-content mb-4`}>
                 {/* Using custom component to render markdown with better styling */}
                 <StyledMarkdown 
                   content={instructionsText} 
@@ -292,14 +294,14 @@ const FullHeightInstructionsPanel = ({
                 />
               </div>
             ) : (
-              <p className="text-blue-600 text-xl mb-6">Instructions not available for this section.</p>
+              <p className="text-blue-600 text-lg mb-4">Instructions not available for this section.</p>
             )}
 
             {/* Render Feedback Section if it exists and is meaningful */}
             {feedbackText && feedbackText.length > 5 && (
-              <div className="mt-6 pt-4 border-t border-blue-300">
+              <div className="mt-4 pt-3 border-t border-blue-300">
                 {/* Use h3 or h4 for semantic structure */}
-                <h4 className="text-2xl font-semibold text-blue-700 mb-3">Feedback</h4>
+                <h4 className="text-xl font-semibold text-blue-700 mb-2">Feedback</h4>
                 <div className={`${customStyles.content} feedback-content`}>
                   <StyledMarkdown 
                     content={fixNumberedLists(feedbackText)} 
@@ -385,14 +387,14 @@ const StyledMarkdown = ({ content, customStyles }) => {
       <ReactMarkdown
         components={{
           // Customize heading styles
-          h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
-          h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
-          h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
+          h1: ({ node, ...props }) => <h1 className="text-2xl font-bold my-3" {...props} />,
+          h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-2" {...props} />,
+          h3: ({ node, ...props }) => <h3 className="text-lg font-bold my-2" {...props} />,
           
           // Style paragraphs and lists
-          p: ({ node, ...props }) => <p className="my-4" {...props} />,
-          ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
-          ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
+          p: ({ node, ...props }) => <p className="my-2" {...props} />,
+          ul: ({ node, ...props }) => <ul className="list-disc pl-4 my-2" {...props} />,
+          ol: ({ node, ...props }) => <ol className="list-decimal pl-4 my-2" {...props} />,
           li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
           
           // Style horizontal rules as dividers
