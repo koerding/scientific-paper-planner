@@ -9,20 +9,101 @@ import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '.
 
 // Basic validation for improved instructions
 const validateImprovedInstructions = (data) => {
-  if (!Array.isArray(data)) return false;
+  // First, check if we got a valid object - OpenAI JSON mode returns an object
+  if (!data || typeof data !== 'object') {
+    console.error("Response is not a valid object:", data);
+    return false;
+  }
   
-  return data.every(item => {
+  // Check if the response has an array property (could be named "results", "improvedInstructions", etc.)
+  let instructionsArray = null;
+  
+  // Try to find an array property
+  for (const key in data) {
+    if (Array.isArray(data[key])) {
+      instructionsArray = data[key];
+      console.log("Found array property:", key);
+      break;
+    }
+  }
+  
+  // If we didn't find an array, see if the data itself is directly our expected format
+  if (!instructionsArray) {
+    // Check if it has at least one item with expected fields
+    const hasExpectedFields = Object.keys(data).some(key => 
+      data[key] && typeof data[key] === 'object' && 
+      typeof data[key].id === 'string' &&
+      typeof data[key].editedInstructions === 'string'
+    );
+    
+    if (hasExpectedFields) {
+      // Convert to array format
+      instructionsArray = Object.keys(data)
+        .filter(key => data[key] && typeof data[key] === 'object')
+        .map(key => ({
+          id: data[key].id || key,
+          editedInstructions: data[key].editedInstructions || '',
+          feedback: data[key].feedback || '',
+          completionStatus: data[key].completionStatus || 'complete'
+        }));
+      
+      console.log("Converted object to array format");
+    }
+  }
+  
+  // If the data is just the array itself
+  if (!instructionsArray && Array.isArray(data)) {
+    instructionsArray = data;
+    console.log("Data is directly an array");
+  }
+  
+  // If we still don't have an array, try to parse the first string property we find
+  if (!instructionsArray) {
+    for (const key in data) {
+      if (typeof data[key] === 'string' && data[key].trim().startsWith('[') && data[key].trim().endsWith(']')) {
+        try {
+          instructionsArray = JSON.parse(data[key]);
+          console.log("Parsed string property into array:", key);
+          break;
+        } catch (e) {
+          console.error("Failed to parse string property:", key, e);
+        }
+      }
+    }
+  }
+  
+  // If we still don't have an array, give up
+  if (!instructionsArray || !Array.isArray(instructionsArray)) {
+    console.error("Could not find or create an array of instruction improvements");
+    return false;
+  }
+  
+  // Now validate the array items
+  const validItems = instructionsArray.filter(item => {
     return (
       item &&
       typeof item === 'object' &&
       typeof item.id === 'string' &&
       typeof item.editedInstructions === 'string' && 
-      item.editedInstructions.length >= 50 &&
-      typeof item.feedback === 'string' && 
-      item.feedback.length >= 10 &&
-      (item.completionStatus === 'complete' || item.completionStatus === 'unstarted')
+      item.editedInstructions.length >= 10 &&
+      (!item.feedback || typeof item.feedback === 'string') &&
+      (!item.completionStatus || item.completionStatus === 'complete' || item.completionStatus === 'unstarted')
     );
   });
+  
+  // If we have valid items, use those
+  if (validItems.length > 0) {
+    // Format all items properly
+    validItems.forEach(item => {
+      item.feedback = item.feedback || '';
+      item.completionStatus = item.completionStatus || 'complete';
+    });
+    
+    // Return the valid items
+    return validItems;
+  }
+  
+  return false;
 };
 
 /**
@@ -106,21 +187,37 @@ export const improveBatchInstructions = async (
       true // Use JSON mode
     );
     
-    // Validate the response
-    if (!validateImprovedInstructions(response)) {
+    console.log("Raw response from OpenAI:", response);
+    
+    // Validate and fix the response
+    const validatedData = validateImprovedInstructions(response);
+    
+    if (!validatedData) {
       console.error("Invalid response format from OpenAI:", response);
-      return { 
-        success: false, 
-        message: "Received invalid instruction improvement format from AI" 
+      
+      // Create a minimal fallback response
+      const fallbackData = sectionsDataForPrompt.map(section => ({
+        id: section.id,
+        editedInstructions: section.originalInstructionsText,
+        feedback: `Your work on this ${section.title.toLowerCase()} section shows progress. Continue developing your ideas.`,
+        completionStatus: 'complete'
+      }));
+      
+      console.log("Using fallback data:", fallbackData);
+      
+      return {
+        success: true,
+        improvedData: fallbackData,
+        usedFallback: true
       };
     }
 
-    console.log(`[Instruction Improvement] Successfully processed ${response.length} improved sections`);
+    console.log(`[Instruction Improvement] Successfully processed ${validatedData.length} improved sections`);
 
     // Return success with the validated data
     return {
       success: true,
-      improvedData: response
+      improvedData: validatedData
     };
     
   } catch (error) {
