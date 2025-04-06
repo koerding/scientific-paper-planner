@@ -1,40 +1,46 @@
 // FILE: src/services/instructionImprovementService.js
 
 /**
- * Service for improving instructions based on user progress
- * SIMPLIFIED: Uses more lenient completion status with only red/green options
+ * Modern service for improving instructions based on user progress
+ * Uses LangChain and Zod for reliable parsing and validation
  */
+import { z } from 'zod';
+import { LangChain, ChatOpenAI, StructuredOutputParser } from 'langchain/chat_models';
+import { PromptTemplate } from 'langchain/prompts';
 import { callOpenAI } from './openaiService';
-import {
-  isResearchApproachSection,
-  buildSystemPrompt,
-  buildTaskPrompt,
-  generateMockResponse
-} from '../utils/promptUtils';
+import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
+
+// Define the Zod schema for instruction improvement items
+const ImprovedInstructionItemSchema = z.object({
+  id: z.string(),
+  editedInstructions: z.string().min(50), 
+  feedback: z.string().min(10),
+  completionStatus: z.enum(["complete", "unstarted"])
+});
+
+// Schema for the entire array response
+const ImprovedInstructionsArraySchema = z.array(ImprovedInstructionItemSchema);
 
 /**
  * Improves instructions for multiple sections, separating instructions and feedback.
- * Uses a simplified approach with more lenient completion assessment.
+ * Uses LangChain and Zod for reliable parsing and validation.
  * @param {Array} currentSections - Array of section objects from the main state
  * @param {Object} userInputs - User inputs for all sections
  * @param {Object} sectionContent - The full, original section content definition object
- * @param {Function} apiCallFunction - Function to call the API
  * @returns {Promise<Object>} - Result with success flag and improved instructions/feedback
  */
 export const improveBatchInstructions = async (
-  currentSections, // These are the sections from the main state, potentially already modified
+  currentSections,
   userInputs,
-  sectionContent, // This is the static definition, used to get original instructions
-  apiCallFunction = callOpenAI
+  sectionContent
 ) => {
   try {
-    // Identify sections with meaningful user content based on userInputs
+    // Identify sections with meaningful user content
     const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
       const content = userInputs[sectionId];
-      // Find the original placeholder from the static sectionContent definitions
       const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
       const placeholder = originalSectionDef?.placeholder || '';
-      // Check if content exists, is a string, is not empty, and is different from the placeholder
+      
       return typeof content === 'string' && content.trim() !== '' && content !== placeholder;
     });
 
@@ -43,143 +49,179 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No sections with progress to improve" };
     }
 
-    // Prepare data using original instructions from static sectionContent definitions
+    // Prepare data for analysis
     const sectionsDataForPrompt = sectionsWithProgress.map(sectionId => {
-      // Get the original section definition from the static content
       const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
       if (!originalSectionDef || !originalSectionDef.instructions?.text) {
-        console.warn(`Original section definition or instructions text missing for ID ${sectionId}. Skipping.`);
-        return null; // Skip if original definition is missing
+        console.warn(`Original section definition or instructions missing for ID ${sectionId}. Skipping.`);
+        return null;
       }
-      const userContent = userInputs[sectionId] || ''; // Get current user input
-
-      // Determine if this section needs research approach context
+      
+      const userContent = userInputs[sectionId] || '';
       const needsResearchContext = isResearchApproachSection(sectionId, originalSectionDef);
 
       return {
         id: sectionId,
-        title: originalSectionDef.title, // Use original title
-        originalInstructionsText: originalSectionDef.instructions.text, // Use original instructions
-        userContent, // Current user content
-        needsResearchContext // Flag for prompt building
+        title: originalSectionDef.title,
+        originalInstructionsText: originalSectionDef.instructions.text,
+        userContent,
+        needsResearchContext
       };
-    }).filter(data => data !== null); // Filter out any nulls from skipped sections
+    }).filter(data => data !== null);
 
     if (sectionsDataForPrompt.length === 0) {
       console.log("[Instruction Improvement] No valid sections found with user progress after filtering.");
       return { success: false, message: "No valid sections with progress to improve" };
     }
 
-    // Determine if any section needs the research context for the system prompt
+    // Check if any section needs research context
     const needsOverallResearchContext = sectionsDataForPrompt.some(section => section.needsResearchContext);
 
-    // Build the system prompt using promptUtils
+    // Step 1: Create a parser with our Zod schema
+    const parser = StructuredOutputParser.fromZodSchema(ImprovedInstructionsArraySchema);
+    
+    // Get the format instructions
+    const formatInstructions = parser.getFormatInstructions();
+
+    // Step 2: Build system prompt
     const systemPrompt = buildSystemPrompt('instructionImprovement', {
       needsResearchContext: needsOverallResearchContext,
-      // No section-specific guidance needed at the system level for batch processing
       approachGuidance: ''
     });
 
-    // Build the main task prompt using promptUtils
-    // Pass the prepared section data as a JSON string parameter
-    const mainTaskPrompt = buildTaskPrompt('instructionImprovement', {
-        sectionsData: JSON.stringify(sectionsDataForPrompt, null, 2) // Pretty print for readability if needed by AI
+    // Step 3: Create prompt template
+    const promptTemplate = new PromptTemplate({
+      template: `
+        You are providing feedback on a student's scientific paper plan, with expertise in formatting precise, valid JSON.
+        
+        Your response MUST match this format exactly:
+        {format_instructions}
+        
+        For each section, provide:
+        1. Edited Instructions: Remove points the user has already addressed. If they've addressed all key points, provide a congratulatory message.
+        2. Feedback: Brief, constructive feedback noting strengths, weaknesses, and suggestions.
+        3. Completion Status: ONLY use "complete" or "unstarted" as values.
+        
+        Here are the sections to improve:
+        {sections_data}
+      `,
+      inputVariables: ["sections_data"],
+      partialVariables: { format_instructions: formatInstructions }
     });
 
-    // Use fallback if needed (check environment variable or API key status)
-    const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
-    const USE_FALLBACK = !apiKey || process.env.REACT_APP_USE_FALLBACK === 'true';
+    // Step 4: Create ChatOpenAI instance
+    const model = new ChatOpenAI({
+      modelName: "gpt-4-turbo",
+      temperature: 0.2,
+    });
 
-    let response;
-    if (USE_FALLBACK) {
-        console.warn("[Instruction Improvement] Using FALLBACK mode.");
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
-        response = generateMockResponse('instructionImprovement'); // Get mock JSON array string
-    } else {
-        console.log("[Instruction Improvement] Sending batch request to OpenAI");
-        // Use the currentSections from state for context if the API call needs it (though maybe not necessary now)
-        const sectionsForApiContext = currentSections || [];
+    // Step 5: Create and invoke the chain
+    const chain = promptTemplate.pipe(model).pipe(parser);
+    
+    const improvedData = await chain.invoke({
+      sections_data: JSON.stringify(sectionsDataForPrompt, null, 2)
+    });
 
-        // Call the API with our prompts generated by promptUtils
-        response = await apiCallFunction(
-          mainTaskPrompt,             // The detailed task prompt from promptUtils
-          "improve_instructions_batch",// Context type
-          userInputs,                 // Pass current user inputs for potential context
-          sectionsForApiContext,      // Pass current sections state if needed by API call logic
-          {
-            max_tokens: 2500,
-            temperature: 0.2 // Lower temperature for more consistent formatting
-          },
-          [],                         // No chat history needed for this task
-          systemPrompt                // The system prompt from promptUtils
-        );
-    }
+    console.log(`[Instruction Improvement] Successfully parsed ${improvedData.length} improved sections with LangChain and Zod`);
 
-    // Parse the response - with simplified error handling
-    let improvedData;
-    try {
-      // Log the raw response for debugging
-      console.log("[Instruction Improvement] Raw response length:", response?.length || 0);
-      console.log("[Instruction Improvement] Response sample:", response?.substring(0, 200) + "...");
-      
-      // Clean any potential markdown formatting that might remain
-      const cleanResponse = response.replace(/```json\s*|\s*```/g, '').trim();
-      improvedData = JSON.parse(cleanResponse);
-
-      if (!Array.isArray(improvedData)) {
-        throw new Error("Response is not a JSON array");
-      }
-
-      // Validate and sanitize the completion status (very lenient)
-      improvedData.forEach(item => {
-        if (item.completionStatus !== "unstarted") {
-          item.completionStatus = "complete"; // Default to complete if not explicitly unstarted
-        }
-        // Ensure required fields exist
-        if (!item.id || typeof item.editedInstructions === 'undefined' || typeof item.feedback === 'undefined') {
-            console.warn("Received incomplete item from AI:", item);
-            // Decide how to handle incomplete items, e.g., filter them out or mark as error
-        }
-      });
-
-      // Optional: Filter out items that didn't parse correctly or miss fields
-      improvedData = improvedData.filter(item => {
-        const isValid = item.id && typeof item.editedInstructions === 'string' && typeof item.feedback === 'string';
-        if (!isValid) {
-          console.warn("[Instruction Improvement] Filtering out invalid item:", item);
-        }
-        return isValid;
-      });
-
-      console.log(`[Instruction Improvement] Successfully parsed ${improvedData.length} improved sections`);
-    } catch (error) {
-      console.error("Error parsing instruction improvement response:", error);
-      console.log("Raw response:", response); // Log raw response on error
-      return {
-        success: false,
-        message: `Failed to parse response: ${error.message}`
-      };
-    }
-
-    // Return success with the parsed and validated data
+    // Return success with the validated data
     return {
       success: true,
-      improvedData // This is the array of { id, editedInstructions, feedback, completionStatus }
+      improvedData
     };
+    
   } catch (error) {
     console.error("Error improving batch instructions:", error);
-    return {
-      success: false,
-      message: error.message || "An error occurred while improving instructions"
-    };
+    
+    // Alternative approach using direct OpenAI JSON mode if LangChain fails
+    try {
+      console.log("[Instruction Improvement] Falling back to direct OpenAI JSON mode...");
+      
+      // Identify sections with meaningful user content
+      const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
+        const content = userInputs[sectionId];
+        const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
+        const placeholder = originalSectionDef?.placeholder || '';
+        
+        return typeof content === 'string' && content.trim() !== '' && content !== placeholder;
+      });
+      
+      if (sectionsWithProgress.length === 0) {
+        return { success: false, message: "No sections with progress to improve" };
+      }
+      
+      // Prepare data for analysis
+      const sectionsDataForPrompt = sectionsWithProgress.map(sectionId => {
+        const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
+        if (!originalSectionDef || !originalSectionDef.instructions?.text) {
+          return null;
+        }
+        
+        return {
+          id: sectionId,
+          title: originalSectionDef.title,
+          originalInstructionsText: originalSectionDef.instructions.text,
+          userContent: userInputs[sectionId] || ''
+        };
+      }).filter(data => data !== null);
+      
+      // Call OpenAI directly with JSON mode
+      const systemPrompt = `
+        You are providing feedback on a student's scientific paper plan.
+        You MUST respond with a valid JSON array of objects.
+        Each object MUST have these fields:
+        - "id": string - The section ID
+        - "editedInstructions": string - Edited instructions (min 50 chars)
+        - "feedback": string - Constructive feedback (min 10 chars)
+        - "completionStatus": string - ONLY "complete" or "unstarted"
+      `;
+      
+      const prompt = `
+        For each section, provide:
+        1. Edited Instructions: Remove points the user has already addressed or provide a congratulatory message.
+        2. Feedback: Brief, constructive feedback noting strengths, weaknesses, and suggestions.
+        3. Completion Status: "complete" or "unstarted" based on quality.
+        
+        Sections to improve: ${JSON.stringify(sectionsDataForPrompt, null, 2)}
+      `;
+      
+      const response = await callOpenAI(
+        prompt,
+        "improve_instructions_batch",
+        userInputs,
+        currentSections,
+        { temperature: 0.2 },
+        [],
+        systemPrompt,
+        true // Use JSON mode
+      );
+      
+      // Validate response
+      const validation = ImprovedInstructionsArraySchema.safeParse(response);
+      if (!validation.success) {
+        console.error("JSON validation failed:", validation.error);
+        return { success: false, message: "Failed to validate API response structure" };
+      }
+      
+      return {
+        success: true,
+        improvedData: validation.data
+      };
+      
+    } catch (fallbackError) {
+      console.error("Fallback approach also failed:", fallbackError);
+      return {
+        success: false,
+        message: error.message || "An error occurred while improving instructions"
+      };
+    }
   }
 };
 
 /**
  * Updates section content object with improved instructions AND feedback.
- * This version forces keeping original instructions if AI returns simplified placeholders.
  * @param {Object} currentSections - The current sections object from state.
- * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback, completionStatus } from the API.
+ * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback, completionStatus }.
  * @returns {Object} - A new object with updated section content.
  */
 export const updateSectionWithImprovedInstructions = (currentSections, improvedData) => {
@@ -218,7 +260,7 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
   improvedData.forEach(improvement => {
     if (!improvement?.id) {
       console.warn("Missing ID in improvement data, skipping", improvement);
-      return; // Skip if improvement object is invalid
+      return;
     }
 
     // Get section from updated sections
@@ -229,17 +271,17 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
       sectionIndex = updatedSections.sections.findIndex(s => s?.id === improvement.id);
       if (sectionIndex === -1) {
         console.warn(`Section not found in current state: ${improvement.id}. Cannot apply improvement.`);
-        return; // Skip if section doesn't exist in the current state
+        return;
       }
       section = updatedSections.sections[sectionIndex];
     } else {
       console.error("Invalid sections structure:", updatedSections);
-      return; // Skip this improvement
+      return;
     }
     
     if (!section) {
       console.warn(`Section at index ${sectionIndex} is null or undefined, skipping.`);
-      return; // Safety check
+      return;
     }
 
     // Initialize instructions object if it doesn't exist
@@ -249,7 +291,6 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
 
     // Store original instructions for debugging
     const originalInstructions = section.instructions.text || '';
-    console.log(`[updateSectionWithImprovedInstructions] Original instructions for ${improvement.id} (${originalInstructions.length} chars)`);
     
     // Helper to check if text is a placeholder
     const isPlaceholder = (text) => {
