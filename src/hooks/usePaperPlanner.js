@@ -71,9 +71,13 @@ const usePaperPlanner = () => {
     storageAvailable
   } = initialState;
 
-  // Start with template values, not stored values
-  const [userInputs, setUserInputs] = useState(initialUserInputs);
-  const [chatMessages, setChatMessages] = useState(initialChatMessages);
+  // MODIFIED: If there's stored data, use it automatically instead of asking
+  const [userInputs, setUserInputs] = useState(
+    hasStoredData ? storedInputs : initialUserInputs
+  );
+  const [chatMessages, setChatMessages] = useState(
+    hasStoredData ? storedChat : initialChatMessages
+  );
 
   // Other states
   const [currentSection, setCurrentSection] = useState(sectionContent?.sections?.[0]?.id || 'question');
@@ -84,31 +88,9 @@ const usePaperPlanner = () => {
   const [currentSectionData, setCurrentSectionData] = useState(null);
 
   // Add state to track if we've loaded from storage
-  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(hasStoredData);
 
-  // Add state to track if we've prompted about stored data
-  const [hasPromptedAboutStorage, setHasPromptedAboutStorage] = useState(false);
-
-  // On first mount, check if there's stored data and prompt to use it
-  useEffect(() => {
-    // Only prompt if storage is available and we have stored data
-    if (storageAvailable && hasStoredData && !hasPromptedAboutStorage) {
-      const useStoredData = window.confirm(
-        "We found a previously saved project. Would you like to load it? Click 'Cancel' to start with a fresh template."
-      );
-
-      if (useStoredData) {
-        // User wants to use stored data
-        setUserInputs(storedInputs);
-        setChatMessages(storedChat);
-      }
-
-      setHasPromptedAboutStorage(true);
-    }
-    
-    // Always mark initial load as complete, regardless of storage availability
-    setIsInitialLoadComplete(true);
-  }, [hasStoredData, hasPromptedAboutStorage, storedInputs, storedChat, storageAvailable]);
+  // REMOVED: The prompt for using stored data, since we now use it automatically
 
   // Update currentSectionData when currentSection changes
   useEffect(() => {
@@ -288,53 +270,67 @@ const usePaperPlanner = () => {
     return true;
   }, [userInputs, chatMessages]);
 
-  // Function to load project from imported JSON file
+  // Function to load project from imported JSON file - SIMPLIFIED VERSION
   const loadProject = useCallback((data) => {
     if (!validateProjectData(data)) {
       alert("Invalid project file format. Please select a valid project file.");
       return;
     }
-
-    // Confirm before loading (optional, but good practice)
-    if (window.confirm("Loading this project will replace your current work. Are you sure you want to continue?")) {
-      try {
-        // Load user inputs, ensuring we keep template values for any missing sections
-        const mergedInputs = {...initialTemplates}; // Use initialTemplates from state
-        Object.keys(data.userInputs || {}).forEach(sectionId => {
-            // Check if the sectionId actually exists in our current template structure
-            if (mergedInputs.hasOwnProperty(sectionId)) {
-                const loadedValue = data.userInputs[sectionId];
-                // Only load if it's a non-empty string
-                if (loadedValue && typeof loadedValue === 'string' && loadedValue.trim() !== '') {
-                    mergedInputs[sectionId] = loadedValue;
-                }
-            }
-        });
-        setUserInputs(mergedInputs);
-
-        // Load chat messages, ensuring we have empty arrays for any missing sections
-        const mergedChat = {};
-        (sectionContent?.sections || []).forEach(section => {
-          if (section && section.id) {
-            mergedChat[section.id] = (data.chatMessages && Array.isArray(data.chatMessages[section.id]))
-                                    ? data.chatMessages[section.id]
-                                    : [];
+    
+    // MODIFIED: Removed confirmation dialog for loading project
+    try {
+      // Create template values using sectionContent
+      const templateValues = {};
+      sectionContent.sections.forEach(section => {
+        if (section && section.id) {
+          templateValues[section.id] = section.placeholder || '';
+        }
+      });
+      
+      // Merge with loaded data
+      const mergedInputs = {...templateValues};
+      Object.keys(data.userInputs).forEach(sectionId => {
+        if (data.userInputs[sectionId] && typeof data.userInputs[sectionId] === 'string' && 
+            data.userInputs[sectionId].trim() !== '') {
+          mergedInputs[sectionId] = data.userInputs[sectionId];
+        }
+      });
+      
+      // Update user inputs state
+      setUserInputs(mergedInputs);
+      
+      // Create empty chat messages
+      const emptyChat = {};
+      sectionContent.sections.forEach(section => {
+        if (section && section.id) {
+          emptyChat[section.id] = [];
+        }
+      });
+      
+      // Merge with loaded chat messages if they exist
+      const mergedChat = {...emptyChat};
+      if (data.chatMessages) {
+        Object.keys(data.chatMessages).forEach(sectionId => {
+          if (Array.isArray(data.chatMessages[sectionId])) {
+            mergedChat[sectionId] = data.chatMessages[sectionId];
           }
         });
-        setChatMessages(mergedChat);
-
-        // Explicitly save to storage after loading, if available
-        if (storageAvailable) {
-          saveToStorage(mergedInputs, mergedChat);
-        }
-
-        setCurrentSection(sectionContent?.sections?.[0]?.id || 'question'); // Reset to first section safely
-
-        alert("Project loaded successfully!");
-      } catch (error) {
-        console.error("Error loading project:", error);
-        alert("Error loading project. Please try again.");
       }
+      
+      // Update chat messages state
+      setChatMessages(mergedChat);
+      
+      // Save to localStorage
+      if (storageAvailable) {
+        saveToStorage(mergedInputs, mergedChat);
+      }
+      
+      // Set to first section
+      setCurrentSection(sectionContent.sections[0].id);
+      
+      // MODIFIED: Removed success alert - no need to tell user what they already know
+    } catch (error) {
+      alert("Error loading project: " + (error.message || "Unknown error"));
     }
   }, [initialTemplates, storageAvailable]);
 
@@ -343,7 +339,7 @@ const usePaperPlanner = () => {
     setLoading(true);
 
     try {
-      // First, ask for confirmation
+      // MODIFIED: Only ask once for confirmation
       if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
         setLoading(false);
         return;
