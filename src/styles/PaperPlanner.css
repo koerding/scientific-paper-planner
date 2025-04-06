@@ -101,7 +101,6 @@
   /* Removed ::after underline */
 }
 
-
 /* Responsive styles */
 @media (max-width: 640px) {
   .approach-toggle .flex, .data-toggle .flex {
@@ -188,6 +187,15 @@
    border-radius: 9999px; /* Make glow circular */
 }
 
+/* Specific adjustments for magic button highlight */
+.onboarding-highlight-magic {
+  position: relative;
+  z-index: 1100;
+}
+.onboarding-highlight-magic > button { /* Target the inner button */
+  animation: pulse-glow 2s infinite;
+  border-radius: 9999px; /* Make glow circular */
+}
 
 .onboarding-tooltip {
   position: absolute;
@@ -232,32 +240,22 @@
   border-color: transparent transparent transparent #2d3748; /* Point right */
 }
 
+/* Adjust tooltip position for magic button (left of chat) */
+.onboarding-tooltip-magic {
+  bottom: auto;
+  top: 50%;
+  left: auto;
+  right: 100%; /* Position left of the element */
+  transform: translateY(-50%) translateX(-12px); /* Center vertically, add space */
+}
+
+.onboarding-tooltip-magic::after {
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  border-color: transparent transparent transparent #2d3748; /* Point right */
+}
+
 /* Adjust tooltip position for header buttons (top right) */
 .onboarding-tooltip-header {
    bottom: 100%;
-   left: auto;
-   right: 0; /* Align near the right edge */
-   transform: translateX(0%) translateY(-8px); /* Adjust horizontal */
-}
-
-.onboarding-tooltip-header::after {
-   left: auto;
-   right: 15px; /* Position arrow near the right */
-   transform: translateX(0%);
-}
-
-/* Adjust tooltip position for right panel button */
-.onboarding-tooltip-panel {
-  bottom: auto;
-  top: 0;
-  left: auto;
-  right: 100%; /* Position left of the element */
-  transform: translateY(0%) translateX(-12px); /* Align top, add space */
-}
-
-.onboarding-tooltip-panel::after {
-  top: 10px; /* Align arrow vertically */
-  left: 100%;
-  transform: translateY(0%);
-  border-color: transparent transparent transparent #2d3748; /* Point right */
-}
