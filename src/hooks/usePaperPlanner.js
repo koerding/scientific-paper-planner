@@ -201,7 +201,8 @@ const usePaperPlanner = () => {
       // For initial prompts, we need to add both the initial message and the response
       if (isInitialPrompt) {
         // Add the user's initial prompt
-        const initialUserMessage = { role: 'user', content: promptToSend };
+        const defaultPrompt = `I'm working on the ${currentSectionData?.title || 'current'} section of my scientific paper plan. Can you help me think through this?`;
+        const initialUserMessage = { role: 'user', content: defaultPrompt };
         
         // Add the assistant's response
         const newAssistantMessage = { role: 'assistant', content: response };
