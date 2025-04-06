@@ -75,6 +75,25 @@ export const callOpenAI = async (
     throw new Error("OpenAI API key not configured. Please add your API key to the environment variables.");
   }
 
+  // For the improve_instructions_batch context, enhance system prompt to specify the exact JSON format needed
+  if (contextType === "improve_instructions_batch" && useJsonMode) {
+    systemPrompt = (systemPrompt || "") + `
+    
+    IMPORTANT: Your response MUST be a valid JSON array. Format your response as:
+    [
+      {
+        "id": "section_id_1",
+        "editedInstructions": "Full instructions text for this section...",
+        "feedback": "Specific feedback on their work...",
+        "completionStatus": "complete"
+      },
+      // More similar objects for other sections
+    ]
+    
+    Return ONLY this JSON array with no additional text or explanation.
+    `;
+  }
+
   const apiUrl = "https://api.openai.com/v1/chat/completions";
   
   // Pass systemPrompt to buildMessages
@@ -135,10 +154,45 @@ export const callOpenAI = async (
     // If using JSON mode, parse response into an object
     if (useJsonMode) {
       try {
+        // Special handling for improve_instructions_batch context
+        if (contextType === "improve_instructions_batch") {
+          console.log("Raw JSON response:", responseContent);
+          
+          // Look for an array in the string
+          if (responseContent.trim().startsWith('[') && responseContent.trim().endsWith(']')) {
+            return JSON.parse(responseContent);
+          }
+          
+          // Look for a key that might contain the array inside the JSON object
+          const jsonObj = JSON.parse(responseContent);
+          
+          // If it's directly an array, return it
+          if (Array.isArray(jsonObj)) {
+            return jsonObj;
+          }
+          
+          // Look for array properties
+          for (const key in jsonObj) {
+            if (Array.isArray(jsonObj[key])) {
+              return jsonObj[key];
+            }
+          }
+          
+          // If all else fails, wrap the response in an array
+          return [jsonObj];
+        }
+        
+        // Standard JSON parsing for other contexts
         return JSON.parse(responseContent);
       } catch (error) {
         console.error("Error parsing JSON response:", error);
         console.log("Raw response:", responseContent);
+        
+        // For improve_instructions_batch, return an empty array on error
+        if (contextType === "improve_instructions_batch") {
+          return [];
+        }
+        
         throw new Error(`Failed to parse JSON response: ${error.message}`);
       }
     }
