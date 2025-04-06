@@ -2,12 +2,11 @@
 
 /**
  * Modernized service for importing content from PDF and Word documents
- * Uses LangChain and Zod for reliable parsing and validation
+ * Uses OpenAI's native JSON mode for reliable parsing
  */
 import { z } from 'zod';
-import { LangChain, ChatOpenAI, StructuredOutputParser } from 'langchain/chat_models';
-import { PromptTemplate } from 'langchain/prompts';
-import { buildSystemPrompt } from '../utils/promptUtils';
+import { callOpenAI } from './openaiService';
+import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
 
 // Import necessary libraries for document processing
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
@@ -121,31 +120,39 @@ const extractTextFromDocument = async (file) => {
   });
 };
 
-// Define the Zod schema for the extracted paper structure
-const ResearchPaperSchema = z.object({
-  userInputs: z.object({
-    question: z.string().min(10),
-    audience: z.string().min(10),
-    // Only one of the research approaches will be filled
-    hypothesis: z.string().optional(),
-    needsresearch: z.string().optional(),
-    exploratoryresearch: z.string().optional(),
-    relatedpapers: z.string().min(10),
-    // Only one of the data collection methods will be filled
-    experiment: z.string().optional(),
-    existingdata: z.string().optional(),
-    analysis: z.string().min(10),
-    process: z.string().optional(),
-    abstract: z.string().min(10)
-  }),
-  chatMessages: z.record(z.array(z.any())).default({}),
-  timestamp: z.string().datetime(),
-  version: z.string()
-});
+// We'll use a simple validation function instead of Zod
+function validateResearchPaper(paper) {
+  // Basic validation
+  if (!paper || typeof paper !== 'object') return false;
+  if (!paper.userInputs || typeof paper.userInputs !== 'object') return false;
+  
+  // Check essential fields
+  const requiredFields = ['question', 'audience', 'abstract'];
+  for (const field of requiredFields) {
+    if (typeof paper.userInputs[field] !== 'string' || paper.userInputs[field].length < 10) {
+      return false;
+    }
+  }
+  
+  // Check research approach (at least one should be present)
+  const approachFields = ['hypothesis', 'needsresearch', 'exploratoryresearch'];
+  const hasApproach = approachFields.some(field => 
+    paper.userInputs[field] && typeof paper.userInputs[field] === 'string' && paper.userInputs[field].length > 0
+  );
+  if (!hasApproach) return false;
+  
+  // Check data collection method (at least one should be present)
+  const dataFields = ['experiment', 'existingdata'];
+  const hasDataMethod = dataFields.some(field => 
+    paper.userInputs[field] && typeof paper.userInputs[field] === 'string' && paper.userInputs[field].length > 0
+  );
+  if (!hasDataMethod) return false;
+  
+  return true;
+}
 
 /**
- * Processes extracted scientific paper text and generates structured data using LangChain.
- * Uses Zod for validation of the extracted structure.
+ * Processes extracted scientific paper text and generates structured data using OpenAI's JSON mode.
  * @param {File} file - The document file object (used for filename in errors)
  * @returns {Promise<Object>} - The structured data for loading into the planner
  */
@@ -163,55 +170,35 @@ export const importDocumentContent = async (file) => {
       documentText: documentText.substring(0, 500) // First 500 chars for context
     });
 
-    // Step 3: Create LangChain parser with our Zod schema
-    const parser = StructuredOutputParser.fromZodSchema(ResearchPaperSchema);
-    
-    // Get the format instructions
-    const formatInstructions = parser.getFormatInstructions();
-
-    // Step 4: Create a LangChain prompt template
-    const promptTemplate = new PromptTemplate({
-      template: `
-        You are analyzing a scientific paper to extract its structure. Be methodical and accurate.
-        
-        Extract key components from the provided scientific paper text and format them according to these rules:
-        {format_instructions}
-        
-        Determine which research approach the paper likely uses:
-        1. Hypothesis-driven (distinguish between hypotheses)
-        2. Needs-based (solve a problem, e.g. engineering or medicine)
-        3. Exploratory (take data and see what is there)
-        
-        Determine which data collection method the paper likely uses:
-        1. Experiment
-        2. Analysis of Existing Data
-        
-        Based on the following text, create the scientific paper structure:
-        
-        {text}
-      `,
-      inputVariables: ["text"],
-      partialVariables: { format_instructions: formatInstructions }
+    // Step 3: Build the task prompt
+    const taskPrompt = buildTaskPrompt('documentImport', {
+      documentText: documentText,
+      isoTimestamp: new Date().toISOString()
     });
 
-    // Step 5: Create a new ChatOpenAI instance
-    const model = new ChatOpenAI({
-      modelName: "gpt-4-turbo",
-      temperature: 0.2,
-    });
+    // Step 4: Call OpenAI with JSON mode enabled
+    const result = await callOpenAI(
+      taskPrompt,
+      'document_import_task',
+      {},
+      [],
+      { temperature: 0.2, max_tokens: 3000 },
+      [],
+      systemPrompt,
+      true // Use JSON mode
+    );
 
-    // Step 6: Call the model with the prompt
-    const chain = promptTemplate.pipe(model).pipe(parser);
-    
-    const result = await chain.invoke({
-      text: documentText
-    });
+    // Step 5: Validate the result
+    if (!validateResearchPaper(result)) {
+      throw new Error("Received invalid paper structure from OpenAI");
+    }
 
-    console.log('Successfully processed extracted text to structured data with LangChain and Zod validation');
+    console.log('Successfully processed extracted text to structured data with OpenAI JSON mode');
     
     // Ensure essential fields exist
     result.timestamp = result.timestamp || new Date().toISOString();
-    result.version = result.version || '1.0-langchain-extraction';
+    result.version = result.version || '1.0-openai-json-extraction';
+    result.chatMessages = result.chatMessages || {};
     
     return result;
     
