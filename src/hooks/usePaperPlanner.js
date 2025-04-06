@@ -154,6 +154,11 @@ const usePaperPlanner = () => {
 
     setLoading(true);
 
+    // Define this outside the try/catch so it's accessible in both blocks
+    const defaultPromptMsg = isInitialPrompt 
+      ? `I'm working on the ${currentSectionData?.title || 'current'} section of my scientific paper plan. Can you help me think through this?` 
+      : messageToSend;
+
     try {
       // Find the section data for context
       const sectionsForContext = sectionContent?.sections || [];
@@ -182,27 +187,21 @@ const usePaperPlanner = () => {
       // Get chat history
       const historyForApi = chatMessages[currentSection] || [];
       
-      // For initial prompts, we use a standard intro message
-      const promptToSend = isInitialPrompt 
-        ? `I'm working on the ${currentSectionObj.title || 'current'} section of my scientific paper plan. Can you help me think through this?` 
-        : messageToSend;
-
       // Call OpenAI with the appropriate prompts and context
       const response = await callOpenAI(
-        promptToSend,             // The message to send
-        currentSection,           // Context type (section ID)
-        userInputs,               // All user inputs for broader context
-        sectionsForContext,       // Section definitions for context
-        { temperature: 0.9 },     // Higher temperature for more creative questions
-        historyForApi,            // Chat history for the current section
-        systemPrompt              // The system prompt built with promptUtils
+        defaultPromptMsg,           // The message to send
+        currentSection,             // Context type (section ID)
+        userInputs,                 // All user inputs for broader context
+        sectionsForContext,         // Section definitions for context
+        { temperature: 0.9 },       // Higher temperature for more creative questions
+        historyForApi,              // Chat history for the current section
+        systemPrompt                // The system prompt built with promptUtils
       );
       
       // For initial prompts, we need to add both the initial message and the response
       if (isInitialPrompt) {
         // Add the user's initial prompt
-        const defaultPrompt = `I'm working on the ${currentSectionData?.title || 'current'} section of my scientific paper plan. Can you help me think through this?`;
-        const initialUserMessage = { role: 'user', content: defaultPrompt };
+        const initialUserMessage = { role: 'user', content: defaultPromptMsg };
         
         // Add the assistant's response
         const newAssistantMessage = { role: 'assistant', content: response };
@@ -228,7 +227,7 @@ const usePaperPlanner = () => {
       
       // Handle error gracefully
       if (isInitialPrompt) {
-        const initialUserMessage = { role: 'user', content: promptToSend };
+        const initialUserMessage = { role: 'user', content: defaultPromptMsg };
         const errorMessage = { 
           role: 'assistant', 
           content: `Hey there! I'd love to help you think through this. What specific aspects of this ${currentSectionData?.title || 'section'} are you finding most interesting or challenging?` 
