@@ -2,7 +2,9 @@ import React, { useRef, useState, useEffect } from 'react';
 
 /**
  * Application header with absolute positioning to ensure buttons are visible
- * UPDATED: Added onboarding highlight/tooltip for PDF import button
+ * UPDATED: Improved document import feature for PDF and Word files
+ * UPDATED: Made "Make Example from PDF/Doc" button more salient
+ * REVERTED: Removed onboarding logic/props
  */
 const AppHeader = ({
   activeSection,
@@ -13,21 +15,20 @@ const AppHeader = ({
   exportProject,
   saveProject,
   loadProject,
-  importDocumentContent,
-  setShowExamplesDialog,
-  onboardingStep // Receive onboarding state
+  importDocumentContent, // Renamed from importPdfContent to reflect broader support
+  setShowExamplesDialog
+  // Removed onboardingStep prop
 }) => {
   // Use refs for file inputs
   const fileInputRef = useRef(null);
   const documentInputRef = useRef(null);
-  const pdfButtonRef = useRef(null); // Ref for the PDF button wrapper
+  // Removed pdfButtonRef as onboarding is removed
 
   // States for visual feedback
   const [isSaving, setIsSaving] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
-  // ... (handleFileChange, handleDocumentChange, handleLoadClick, etc. remain the same)
-    // Handle JSON file input change
+  // Handle JSON file input change
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -130,21 +131,18 @@ const AppHeader = ({
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []); // Ensure handleSaveClick dependency is added if needed
+  }, []); // Add handleSaveClick to dependency array if it uses state/props
 
-
-  // Determine if the PDF button should be highlighted
-  const showPdfHighlight = onboardingStep === 1;
-
+  // Reverted to original positioning logic for buttons (absolute within relative header)
   return (
     <header style={{
-      position: 'relative', // Changed from sticky/absolute if needed
+      position: 'relative', // Keep header relative for absolute positioning inside
       width: '100%',
       padding: '1rem 0',
       marginBottom: '2rem',
       borderBottom: '1px solid #e5e7eb',
       backgroundColor: 'white',
-      zIndex: 1000
+      zIndex: 1000 // Keep z-index
     }}>
       <div style={{
         display: 'flex',
@@ -156,25 +154,28 @@ const AppHeader = ({
       }}>
         {/* App title and logo */}
         <div className="flex items-center">
-           {/* ... title/logo */}
-           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold mr-3 text-lg">
-             SP
-           </div>
-           <div>
-             <h1 className="text-3xl font-bold m-0 text-gray-900">
-               Scientific Paper Planner
-             </h1>
-             <p className="text-lg text-gray-600 m-0">
-               Design a scientific project step-by-step
-             </p>
-           </div>
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold mr-3 text-lg">
+            SP
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold m-0 text-gray-900">
+              Scientific Paper Planner
+            </h1>
+            <p className="text-lg text-gray-600 m-0">
+              Design a scientific project step-by-step
+            </p>
+          </div>
         </div>
 
-        {/* Floating action buttons */}
-        {/* Adjusted positioning if header is not sticky/absolute */}
+        {/* Floating action buttons (Original absolute positioning restored) */}
         <div style={{
+           position: 'absolute',
+           top: '50%',
+           right: '1rem',
+           transform: 'translateY(-50%)',
            display: 'flex',
            gap: '0.5rem',
+           zIndex: 1001 // Ensure buttons are above other header content if needed
         }}>
           {/* New Button */}
           <button
@@ -182,7 +183,6 @@ const AppHeader = ({
             className="flex items-center px-3 py-1.5 border border-red-500 text-red-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-red-50 transition-colors"
             title="Start a new project"
           >
-            {/* ... icon + text */}
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
@@ -200,8 +200,7 @@ const AppHeader = ({
             } shadow-sm`}
             title="Save your project (Ctrl+S)"
           >
-            {/* ... icon/text conditional rendering */}
-             {isSaving ? ( <>{/* Loading */}...</> ) : ( <>{/* Icon */} Save</> )}
+            {isSaving ? ( <>{/* Loading */}...</> ) : ( <>{/* Icon */} Save</> )}
           </button>
 
           {/* Load Button */}
@@ -211,7 +210,6 @@ const AppHeader = ({
               className="flex items-center px-3 py-1.5 border border-blue-500 text-blue-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-blue-50 transition-colors"
               title="Load a saved project"
             >
-               {/* ... icon + text */}
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
@@ -226,28 +224,21 @@ const AppHeader = ({
             />
           </div>
 
-          {/* Make Example from PDF/Doc Button - Add ref and conditional highlight/tooltip */}
-          <div ref={pdfButtonRef} className={`relative ${showPdfHighlight ? 'onboarding-highlight' : ''}`}>
+          {/* Make Example from PDF/Doc Button - Kept salient green style */}
+          <div className="relative">
             <button
               onClick={handleDocumentImportClick}
               disabled={isImporting}
-               // Salient style from previous step
               className={`flex items-center px-3 py-1.5 border rounded text-sm font-medium transition-colors shadow-sm ${
                 isImporting
                   ? 'bg-gray-100 text-gray-400 border-gray-400 cursor-wait'
-                  : 'bg-green-600 text-white border-green-600 hover:bg-green-700'
+                  : 'bg-green-600 text-white border-green-600 hover:bg-green-700' // Salient style
               }`}
               title="Create example project from a scientific paper (PDF or Word)"
             >
-               {/* ... icon/text conditional rendering */}
-               {isImporting ? ( <>{/* Loading */}...</> ) : ( <>{/* Icon */} Make Example from PDF/Doc</> )}
+              {isImporting ? ( <>{/* Loading */}...</> ) : ( <>{/* Icon */} Make Example from PDF/Doc</> )}
             </button>
-             {/* Onboarding Tooltip */}
-            {showPdfHighlight && (
-              <div className="onboarding-tooltip onboarding-tooltip-header">
-                Start here: Generate a plan from a similar paper.
-              </div>
-            )}
+            {/* Removed onboarding tooltip */}
             <input
               ref={documentInputRef}
               type="file"
@@ -263,7 +254,6 @@ const AppHeader = ({
             className="flex items-center px-3 py-1.5 border border-purple-500 text-purple-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-purple-50 transition-colors"
             title="Load an example project"
           >
-             {/* ... icon + text */}
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
@@ -276,7 +266,6 @@ const AppHeader = ({
             className="flex items-center px-3 py-1.5 border border-green-500 text-green-600 rounded text-sm font-medium bg-white shadow-sm hover:bg-green-50 transition-colors"
             title="Export your project as a markdown file"
           >
-            {/* ... icon + text */}
              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
              </svg>
