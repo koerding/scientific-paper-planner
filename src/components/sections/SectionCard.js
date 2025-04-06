@@ -51,7 +51,8 @@ const SectionCard = ({
     rounded-lg 
     shadow-sm 
     p-4 
-    mb-4 
+    mb-3
+    mt-1 
     transition-all 
     duration-300 
     ease-in-out 
