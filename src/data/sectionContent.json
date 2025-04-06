@@ -33,7 +33,7 @@
       "inputPlaceholder": "Start writing your hypotheses here...",
       "instructions": {
         "title": "Hypothesis-driven Research",
-        "text": "Hypothesis-driven research tests specific predictions derived from theory. It's the classic approach where you make a clear, testable guess about how things work.\n\n---\n\n* Formulate at least two distinct, testable hypotheses.\n\n* Ensure each hypothesis is specific and clearly stated.\n\n* Your experiment must be able to differentiate between these hypotheses.\n\n* Explain why distinguishing between these hypotheses matters to the field.\n\n* Explain how data can help you decide between these hypotheses."
+        "text": "Hypothesis-driven research tests specific predictions derived from theory. It's the classic approach where you make a clear, testable guess about how things work.\n\n---\n\n* Formulate at least two distinct, testable hypotheses.\n\n* Ensure each hypothesis is specific and clearly stated.\n\n* Your experiment must be able to differentiate between these hypotheses.\n\n* Explain why distinguishing between these hypotheses matters to the field.\n\n* Explain how data can help you decide between these hypotheses.\n\n* Avoid \"HARKing\" (Hypothesizing After Results are Known). Predefine your hypotheses, and if you discover new insights, label them as exploratory or post hoc rather than rewriting your original hypotheses."
       },
       "placeholder": "Hypothesis 1: [State the first specific, testable hypothesis.]\n\nHypothesis 2: [State the second specific, testable hypothesis, distinct from H1.]\n\nWhy distinguishing these hypotheses matters:\n- \n- "
     },
@@ -81,7 +81,7 @@
       "inputPlaceholder": "Start designing your experiment here...",
       "instructions": {
         "title": "Experiment",
-        "text": "Your experiment is how you'll actually collect data to answer your research question. A well-designed experiment gives you the best chance of getting a clear answer.\n\n---\n\n* Define your key variables (independent, dependent, controlled).\n\n* Describe your sample and justify your sample size.\n\n* Outline your data collection procedures and control conditions.\n\n* State predicted results for each hypothesis.\n\n* Identify potential confounds and how you'll address them."
+        "text": "Your experiment is how you'll actually collect data to answer your research question. A well-designed experiment gives you the best chance of getting a clear answer.\n\n---\n\n* Define your key variables (independent, dependent, controlled).\n\n* Describe your sample and justify your sample size.\n\n* Outline your data collection procedures and control conditions.\n\n* State predicted results for each hypothesis.\n\n* Identify potential confounds and how you'll address them.\n\n* Where feasible, consider preregistering your experimental protocol (e.g., on the Open Science Framework) to reduce the risk of data mining or p-hacking."
       },
       "placeholder": "Key Variables:\n- Independent: \n- Dependent: \n- Controlled: \n\nSample & Size Justification: \n\nData Collection Methods: \n\nPredicted Results: \n\nPotential Confounds & Mitigations:"
     },
@@ -105,7 +105,7 @@
       "inputPlaceholder": "Start planning your data analysis here...",
       "instructions": {
         "title": "Data Analysis Plan",
-        "text": "Your analysis plan describes exactly how you'll extract meaning from your data. Planning it in advance helps prevent p-hacking and increases the credibility of your findings.\n\n---\n\n* Define your data cleaning steps and exclusion criteria.\n\n* Specify your primary statistical method(s) or model(s).\n\n* Explain how your analysis will address your research question.\n\n* Describe how you'll quantify uncertainty in your results.\n\n* Outline how you'll handle any special cases (outliers, multiple comparisons, etc.).\n\n* Consider methods to control for multiple comparisons (e.g., Bonferroni or FDR), and report effect sizes to convey practical significance where appropriate."
+        "text": "Your analysis plan describes exactly how you'll extract meaning from your data. Planning it in advance helps prevent p-hacking and increases the credibility of your findings.\n\n---\n\n* Define your data cleaning steps and exclusion criteria.\n\n* Specify your primary statistical method(s) or model(s).\n\n* Explain how your analysis will address your research question.\n\n* Describe how you'll quantify uncertainty in your results.\n\n* Outline how you'll handle any special cases (outliers, multiple comparisons, etc.).\n\n* Consider methods to control for multiple comparisons (e.g., Bonferroni or FDR), and report effect sizes to convey practical significance where appropriate.\n\n* Remain transparent about any exploratory analyses and separate them from planned analyses to avoid p-hacking."
       },
       "placeholder": "Data Cleaning & Exclusions:\n\nPrimary Analysis Method:\n\nHow Analysis Addresses Research Question:\n\nUncertainty Quantification:\n\nSpecial Cases Handling:"
     },
@@ -117,7 +117,7 @@
       "inputPlaceholder": "Outline your process, skills, and timeline...",
       "instructions": {
         "title": "Research Process",
-        "text": "Research is a practical endeavor requiring specific skills, resources, and planning. This section helps you anticipate what you'll need to successfully complete your project.\n\n---\n\n* List essential skills needed and identify which ones you lack.\n\n* Name potential collaborators and their specific contributions.\n\n* Describe your plan for data/code sharing and documentation.\n\n* Outline a realistic timeline with key milestones and duration.\n\n* Identify major potential obstacles and specific contingency plans (consider the likelihood and potential impact of each risk)."
+        "text": "Research is a practical endeavor requiring specific skills, resources, and planning. This section helps you anticipate what you'll need to successfully complete your project.\n\n---\n\n* List essential skills needed and identify which ones you lack.\n\n* Name potential collaborators and their specific contributions.\n\n* Describe your plan for data/code sharing and documentation.\n\n* Outline a realistic timeline with key milestones and duration.\n\n* Identify major potential obstacles and specific contingency plans (consider the likelihood and potential impact of each risk).\n\n* Adopt open science practices where possible (e.g., version control for code, publicly accessible repositories for data) and clarify licensing or privacy constraints."
       },
       "placeholder": "Skills Needed vs. Skills I Have:\n\nCollaborators & Their Roles:\n\nData/Code Sharing Plan:\n\nTimeline & Milestones:\n\nObstacles & Contingencies:"
     },
@@ -129,9 +129,4 @@
       "inputPlaceholder": "Draft your abstract here...",
       "instructions": {
         "title": "Drafting an Abstract",
-        "text": "An abstract is a mini-version of your entire paper. Writing it now helps you organize your thoughts and spot any inconsistencies in your research plan.\n\n---\n\n### Structure (Aim for 1-2 sentences per point):\n\n* **Background:** Briefly introduce the research area, identify the knowledge gap or problem, and state its significance.\n\n* **Objective/Question:** Clearly state the main research question, primary hypothesis being tested, exploration goal, or problem being solved.\n\n* **Methods:** Concisely summarize the core aspects of your experimental design, participants/sample, and key procedures or analytical techniques.\n\n* **(Expected) Results:** Briefly describe the main anticipated findings and, crucially, how they will address the objective or distinguish between hypotheses.\n\n* **Conclusion/Implications:** State the main takeaway message (even if speculative at this stage) and its potential broader impact on the field or application."
-      },
-      "placeholder": "Background: [Introduce field, gap, significance. 1-2 sentences]\n\nObjective/Question: [State primary aim/question/hypothesis. 1 sentence]\n\nMethods: [Briefly describe design, participants, key procedures. 1-2 sentences]\n\n(Expected) Results: [Summarize anticipated main finding and how it addresses the objective. 1-2 sentences]\n\nConclusion/Implications: [State main conclusion and broader impact. 1-2 sentences]"
-    }
-  ]
-}
+        "text": "An abstract is a mini-version of your entire paper. Writing it now helps you organize your thoughts and spot any inconsistencies in your research plan.\n\n---\n\n### Structure (Aim for 1-2 sentences per point):\n\n* **Background:** Briefly introduce the research area, identify the knowledge gap or problem, and state its significance.\n\n* **Objective/Question:** Clearly state the main research question, primary hypothesis being tested, exploration goal, or problem being solved.\n\n* **Methods:** Conc*
