@@ -6,21 +6,19 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Modernized chat interface that can be minimized to a floating button
- * MODIFIED: Receives currentSectionTitle prop and displays it dynamically
- * MODIFIED: Initiates Socratic-style conversation when a new section is selected
+ * UPDATED: Made chat user-initiated only and improved UI styling
  */
 const ModernChatInterface = ({
   currentSection,
-  currentSectionTitle, // PROP: To display the section title
+  currentSectionTitle,
   chatMessages,
   currentMessage,
   setCurrentMessage,
   handleSendMessage,
   loading,
-  currentSectionData // NEW PROP: Full section data including instructions
+  currentSectionData
 }) => {
   const [isMinimized, setIsMinimized] = useState(true);
-  const [hasShownInitialPrompt, setHasShownInitialPrompt] = useState({});
   const messagesEndRef = useRef(null);
   const previousSectionRef = useRef(null);
 
@@ -31,26 +29,13 @@ const ModernChatInterface = ({
     }
   }, [chatMessages, isMinimized, currentSection]);
 
-  // Effect to trigger Socratic prompt when section changes or is first loaded
+  // Update previous section ref when section changes (but don't auto-prompt)
   useEffect(() => {
     if (currentSection && currentSection !== previousSectionRef.current) {
-      // Only show initial prompt if there are no messages for this section yet
-      const hasNoMessages = !chatMessages[currentSection] || chatMessages[currentSection].length === 0;
-
-      if (hasNoMessages && !hasShownInitialPrompt[currentSection]) {
-        // Trigger initial Socratic question after a short delay
-        const timer = setTimeout(() => {
-          handleSendSocraticPrompt();
-          setHasShownInitialPrompt(prev => ({...prev, [currentSection]: true}));
-        }, 500);
-
-        return () => clearTimeout(timer);
-      }
-
-      // Update ref to current section for next comparison
+      // Just update the ref, don't trigger automatic messages
       previousSectionRef.current = currentSection;
     }
-  }, [currentSection, chatMessages, hasShownInitialPrompt]);
+  }, [currentSection]);
 
   // Format timestamp for messages
   const formatTime = () => {
@@ -61,36 +46,6 @@ const ModernChatInterface = ({
   // Toggle chat window visibility
   const toggleChat = () => {
     setIsMinimized(!isMinimized);
-
-    // If opening chat for the first time with no messages, trigger Socratic prompt
-    if (isMinimized && currentSection) {
-      const hasNoMessages = !chatMessages[currentSection] || chatMessages[currentSection].length === 0;
-      if (hasNoMessages && !hasShownInitialPrompt[currentSection]) {
-        // Short delay to allow animation to complete before showing prompt
-        setTimeout(() => {
-          handleSendSocraticPrompt();
-          setHasShownInitialPrompt(prev => ({...prev, [currentSection]: true}));
-        }, 500);
-      }
-    }
-  };
-
-  // Helper function to generate and send initial Socratic prompt
-  const handleSendSocraticPrompt = () => {
-    // This special message is picked up by the openAI service to trigger a Socratic-style response
-    const specialPrompt = "__SOCRATIC_PROMPT__";
-
-    // Store the current message (if any)
-    const tempMessage = currentMessage;
-
-    // Set special prompt and send
-    setCurrentMessage(specialPrompt);
-    setTimeout(() => {
-      handleSendMessage(specialPrompt, true); // Pass true to indicate this is a system-initiated prompt
-
-      // Restore user's message (if any)
-      setCurrentMessage(tempMessage);
-    }, 50);
   };
 
   return (
@@ -130,7 +85,7 @@ const ModernChatInterface = ({
             </div>
             {/* Dynamic title */}
             <h3 className="font-medium text-lg truncate pr-2">
-              {currentSectionTitle ? `AI assistant for ${currentSectionTitle}` : 'AI Research Assistant'}
+              {currentSectionTitle ? `AI Research Assistant` : 'AI Research Assistant'}
             </h3>
           </div>
           <button
@@ -155,19 +110,14 @@ const ModernChatInterface = ({
                 </div>
                 <h4 className="text-base font-medium text-gray-700 mb-1">Your AI Research Assistant</h4>
                 <p className="text-gray-500 text-base">
-                  I'll help you develop your research project. I'll initiate the conversation with thoughtful questions to guide your thinking.
+                  I'm here to help with your {currentSectionTitle || 'research project'}. Ask me anything!
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
                 {chatMessages[currentSection].map((message, index) => {
                   const isUser = message.role === 'user';
-
-                  // Skip rendering special system-initiated prompts
-                  if (message.content === "__SOCRATIC_PROMPT__" && isUser) {
-                    return null;
-                  }
-
+                  
                   return (
                     <div
                       key={index}
