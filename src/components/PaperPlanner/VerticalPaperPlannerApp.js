@@ -22,6 +22,8 @@ import '../../styles/PaperPlanner.css';
  * UPDATED: Fixes for panel positioning and styling
  * UPDATED: Added floating Magic button near chat
  * UPDATED: Made import example button more prominent
+ * UPDATED: Reduced left whitespace and removed character counts
+ * UPDATED: Tighter overall layout with better spacing
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Receive the *entire* hook result as a prop
@@ -392,7 +394,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="w-full pb-12">
+      <div className="w-full pb-8">
         <AppHeader
           activeSection={activeSection} // Pass the locally tracked active section
           setActiveSection={setActiveSectionWithManualFlag}
@@ -407,7 +409,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         />
 
         <div className="flex">
-          <div className="w-1/2 px-8 py-6" style={{ marginRight: '50%' }}>
+          {/* Reduced left padding from px-8 to px-4 for less whitespace */}
+          <div className="w-48 px-4 py-3" style={{ marginRight: '50%' }}>
             {/* Display first two sections: Question and Audience */}
             {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
               .filter(section => section?.id === 'question' || section?.id === 'audience')
@@ -447,7 +450,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           </div>
         </div>
 
-        <div className="text-center text-gray-500 text-base mt-12 border-t border-gray-200 pt-6">
+        <div className="text-center text-gray-500 text-sm mt-8 border-t border-gray-200 pt-4">
           <p>Scientific Paper Planner • Designed for Researchers • {new Date().getFullYear()}</p>
         </div>
 
