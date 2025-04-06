@@ -139,7 +139,7 @@ const FullHeightInstructionsPanel = ({
         width: '50%',
         bottom: '440px', // Align with footer
         zIndex: 10,
-        boxShadow: '0 0 10px rgba(0, 0, 0, 0.05)' // Subtle shadow for depth
+//        boxShadow: '0 0 10px rgba(0, 0, 0, 0.05)' // Subtle shadow for depth
       }}
     >
       <div className="px-4 py-3 h-full">
