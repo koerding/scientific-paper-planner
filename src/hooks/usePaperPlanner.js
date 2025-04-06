@@ -9,8 +9,7 @@ import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
 import { 
   isResearchApproachSection, 
-  buildSystemPrompt,
-  getApproachGuidance
+  buildSystemPrompt
 } from '../utils/promptUtils';
 
 // Helper function to create the initial state, corrected to prioritize templates
@@ -136,7 +135,7 @@ const usePaperPlanner = () => {
     setCurrentSection(sectionId);
   }, []);
 
-  // Unified handler for all messages - no automatic messages
+  // Modernized send message handler using JSON mode for structured data
   const handleSendMessage = useCallback(async (overrideMessage = null) => {
     const messageToSend = overrideMessage || currentMessage;
     
@@ -180,7 +179,7 @@ const usePaperPlanner = () => {
       // Get chat history
       const historyForApi = chatMessages[currentSection] || [];
       
-      // Call OpenAI
+      // For chat, don't use JSON mode
       const response = await callOpenAI(
         messageToSend,            // User's message
         currentSection,           // Context type (section ID)
@@ -188,7 +187,8 @@ const usePaperPlanner = () => {
         sectionsForContext,       // Section definitions for context
         { temperature: 0.9 },     // Higher temperature for more creative questions
         historyForApi,            // Chat history for the current section
-        systemPrompt              // The system prompt built with promptUtils
+        systemPrompt,             // The system prompt built with promptUtils
+        false                     // Don't use JSON mode for chat
       );
       
       // Add the assistant's response
@@ -326,7 +326,7 @@ const usePaperPlanner = () => {
     }
   }, [initialTemplates]);
 
-  // Import document content
+  // Import document content using the modernized service
   const importDocumentContent = useCallback(async (file) => {
     setLoading(true);
 
