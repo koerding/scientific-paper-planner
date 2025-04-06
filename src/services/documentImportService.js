@@ -1,5 +1,6 @@
 // FILE: src/services/documentImportService.js
 
+//editors and llms, please always make sure to not have prompt text in here, it all belongs into the relevant json
 /**
  * Modernized service for importing content from PDF and Word documents
  * Uses OpenAI's native JSON mode for reliable parsing with generous interpretation
