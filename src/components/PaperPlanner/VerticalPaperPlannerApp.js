@@ -26,6 +26,7 @@ import '../../styles/PaperPlanner.css';
  * - Better handling of footer spacing
  * - Added loading animation for PDF import
  * - FIXED: Properly disable Magic button during PDF import
+ * - FIXED: Added direct save implementation
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -45,7 +46,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSendMessage,
     resetProject: hookResetProject,
     exportProject,
-    saveProject,
+    saveProject: hookSaveProject, // Rename to avoid confusion
     loadProject,
     importDocumentContent
   } = usePaperPlannerHook;
@@ -313,6 +314,48 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setSectionCompletionStatus({});
   };
 
+  // FIXED: Add a direct save function that doesn't depend on the hook
+  const handleSaveProject = () => {
+    try {
+      console.log("Direct save function triggered from component");
+      
+      // Generate a timestamp-based filename
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+      const fileName = `scientific-paper-plan-${timestamp}`;
+      
+      const jsonData = {
+        userInputs: userInputs, // Use component's state directly
+        chatMessages: chatMessages, // Use component's state directly
+        timestamp: new Date().toISOString(),
+        version: "1.0-direct-from-component"
+      };
+
+      // Create the blob directly
+      const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+      const jsonUrl = URL.createObjectURL(jsonBlob);
+
+      // Create and trigger download link
+      const link = document.createElement('a');
+      link.href = jsonUrl;
+      link.download = `${fileName}.json`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(jsonUrl);
+      }, 100);
+      
+      console.log("Project saved successfully as:", fileName);
+      return true;
+    } catch (error) {
+      console.error("Error saving project:", error);
+      alert("There was an error saving your project: " + (error.message || "Unknown error"));
+      return false;
+    }
+  };
+
   const sectionDataForPanel = getCurrentSectionData();
 
   // Check if a section should be displayed based on toggles
@@ -383,7 +426,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         <AppHeader
           resetProject={() => setShowConfirmDialog(true)}
           exportProject={exportProject}
-          saveProject={saveProject}
+          saveProject={handleSaveProject} // FIXED: Use direct save implementation
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
           setShowExamplesDialog={setShowExamplesDialog}
