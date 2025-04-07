@@ -7,26 +7,36 @@
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
 
+// Define fallback implementation that doesn't rely on external libraries
+// This avoids issues with PDF.js and mammoth
+
+// Flag to determine if we should even try to use the libraries
+// Set this to false to bypass all library-based extraction
+const USE_DOCUMENT_LIBRARIES = true;
+
 // Import the document processing libraries - but with safer fallbacks
-let pdfjsLib;
-let mammoth;
+let pdfjsLib = null;
+let mammoth = null;
 
-// Safely try to import PDF.js
-try {
-  pdfjsLib = require('pdfjs-dist/build/pdf');
-  console.log("PDF.js library loaded successfully");
-} catch (e) {
-  console.warn("Failed to load PDF.js library:", e);
-  pdfjsLib = null;
-}
+// Only try to load libraries if the flag is true
+if (USE_DOCUMENT_LIBRARIES) {
+  // Safely try to import PDF.js
+  try {
+    pdfjsLib = require('pdfjs-dist/build/pdf');
+    console.log("PDF.js library loaded successfully");
+  } catch (e) {
+    console.warn("Failed to load PDF.js library:", e);
+    pdfjsLib = null;
+  }
 
-// Safely try to import mammoth for DOCX
-try {
-  mammoth = require('mammoth');
-  console.log("Mammoth library loaded successfully");
-} catch (e) {
-  console.warn("Failed to load Mammoth library:", e);
-  mammoth = null;
+  // Safely try to import mammoth for DOCX
+  try {
+    mammoth = require('mammoth');
+    console.log("Mammoth library loaded successfully");
+  } catch (e) {
+    console.warn("Failed to load Mammoth library:", e);
+    mammoth = null;
+  }
 }
 
 // Configure PDF Worker - with much better fallback handling
@@ -114,6 +124,15 @@ const extractTextFromDocument = async (file) => {
                        file.name.toLowerCase().endsWith('.docx');
         const isDoc = file.type === 'application/msword' || file.name.toLowerCase().endsWith('.doc');
 
+        // Skip library-based extraction completely if flag is false
+        if (!USE_DOCUMENT_LIBRARIES) {
+          console.log("Skipping library-based extraction as configured");
+          extractedText += `[Library-based extraction disabled]\n\n`;
+          extractedText += `Using filename and metadata to create an example instead.`;
+          resolve(extractedText);
+          return;
+        }
+        
         // PDF Extraction - with better error handling
         if (isPdf && pdfjsLib) {
           try {
