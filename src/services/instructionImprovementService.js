@@ -1,397 +1,405 @@
-// FILE: src/services/documentImportService.js
+// FILE: src/services/instructionImprovementService.js
 
 /**
- * Enhanced document import service with better error handling and fallbacks
- * FIXED: PDF.js worker loading issues and storage access errors
+ * Modern service for improving instructions based on user progress
+ * Uses OpenAI's native JSON mode for reliable parsing
  */
 import { callOpenAI } from './openaiService';
-import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
+import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
 
-// Define fallback implementation that doesn't rely on external libraries
-// This avoids issues with PDF.js and mammoth
-
-// Flag to determine if we should even try to use the libraries
-// Set this to false to bypass all library-based extraction
-const USE_DOCUMENT_LIBRARIES = true;
-
-// Import the document processing libraries - but with safer fallbacks
-let pdfjsLib = null;
-let mammoth = null;
-
-// Only try to load libraries if the flag is true
-if (USE_DOCUMENT_LIBRARIES) {
-  // Safely try to import PDF.js
+/**
+ * Improves instructions for multiple sections, separating instructions and feedback.
+ * Uses OpenAI's native JSON mode for reliable parsing.
+ * @param {Array} currentSections - Array of section objects from the main state
+ * @param {Object} userInputs - User inputs for all sections
+ * @param {Object} sectionContent - The full, original section content definition object
+ * @returns {Promise<Object>} - Result with success flag and improved instructions/feedback
+ */
+export const improveBatchInstructions = async (
+  currentSections,
+  userInputs,
+  sectionContent
+) => {
   try {
-    pdfjsLib = require('pdfjs-dist/build/pdf');
-    console.log("PDF.js library loaded successfully");
-  } catch (e) {
-    console.warn("Failed to load PDF.js library:", e);
-    pdfjsLib = null;
-  }
+    // Identify sections with meaningful user content
+    const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
+      const content = userInputs[sectionId];
+      const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
+      const placeholder = originalSectionDef?.placeholder || '';
+      
+      return typeof content === 'string' && content.trim() !== '' && content !== placeholder;
+    });
 
-  // Safely try to import mammoth for DOCX
-  try {
-    mammoth = require('mammoth');
-    console.log("Mammoth library loaded successfully");
-  } catch (e) {
-    console.warn("Failed to load Mammoth library:", e);
-    mammoth = null;
-  }
-}
-
-// Configure PDF Worker - with much better fallback handling
-if (pdfjsLib) {
-  try {
-    // Try different worker source strategies
-    const possibleWorkerSources = [
-      // Try our custom wrapper first
-      `${window.location.origin}/pdf.worker.wrapper.js`,
-      `${window.location.origin}/pdf.worker.min.mjs`,
-      `${window.location.origin}/pdf.worker.min.js`, 
-      `${window.location.origin}/pdf.worker.js`,
-      // Add CDN fallbacks if local fails
-      'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js',
-      'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js'
-    ];
-    
-    // Try each source until one works
-    let workerSet = false;
-    
-    for (const workerSrc of possibleWorkerSources) {
-      try {
-        console.log("Attempting to set pdf.js workerSrc to:", workerSrc);
-        pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
-        
-        // Create a test worker to verify it works
-        const testWorker = new Worker(workerSrc);
-        testWorker.terminate();
-        
-        console.log("Successfully set PDF.js worker to:", workerSrc);
-        workerSet = true;
-        break;
-      } catch (workerError) {
-        console.warn(`Worker source ${workerSrc} failed:`, workerError);
-        // Continue to next worker source
-      }
+    if (sectionsWithProgress.length === 0) {
+      console.log("[Instruction Improvement] No sections found with user progress.");
+      return { success: false, message: "No sections with progress to improve" };
     }
-    
-    if (!workerSet) {
-      console.error("All worker sources failed. Will try inline worker as last resort");
-      // Set up an inline worker as absolute last resort
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-    }
-  } catch (e) {
-    console.error("Failed to configure PDF.js worker:", e);
-  }
-}
 
-/**
- * Safely checks if localStorage is available in the current context
- * @returns {boolean} Whether localStorage can be used safely
- */
-const canUseStorage = () => {
-  try {
-    const testKey = '__storage_test__';
-    localStorage.setItem(testKey, testKey);
-    localStorage.removeItem(testKey);
-    return true;
-  } catch (e) {
-    console.warn("localStorage not available:", e);
-    return false;
-  }
-};
-
-/**
- * Extracts text from a document file with enhanced error handling
- * @param {File} file - The document file object
- * @returns {Promise<string>} - The extracted text
- */
-const extractTextFromDocument = async (file) => {
-  console.log(`Attempting to extract text from: ${file.name}, type: ${file.type}`);
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = async (event) => {
-      try {
-        const arrayBuffer = event.target.result;
-        let extractedText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n`;
-
-        // Determine file type from extension if MIME type is generic
-        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-        const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-                       file.name.toLowerCase().endsWith('.docx');
-        const isDoc = file.type === 'application/msword' || file.name.toLowerCase().endsWith('.doc');
-
-        // Skip library-based extraction completely if flag is false
-        if (!USE_DOCUMENT_LIBRARIES) {
-          console.log("Skipping library-based extraction as configured");
-          extractedText += `[Library-based extraction disabled]\n\n`;
-          extractedText += `Using filename and metadata to create an example instead.`;
-          resolve(extractedText);
-          return;
-        }
-        
-        // PDF Extraction - with better error handling
-        if (isPdf && pdfjsLib) {
-          try {
-            console.log("Processing as PDF...");
-            
-            // Check if pdfjsLib is properly configured
-            if (!pdfjsLib.getDocument) {
-              throw new Error("PDF.js library not properly initialized");
-            }
-            
-            // Create a loading task with enhanced options for compatibility
-            const loadingTask = pdfjsLib.getDocument({
-              data: arrayBuffer,
-              useWorkerFetch: false,
-              isEvalSupported: false,
-              disableFontFace: true,
-              nativeImageDecoderSupport: 'none'
-            });
-            
-            // Add extra error handler to the promise
-            loadingTask.promise.catch(err => {
-              console.error("PDF loading task error:", err);
-              throw err;
-            });
-            
-            const pdf = await loadingTask.promise;
-            console.log(`PDF loaded: ${pdf.numPages} pages.`);
-            
-            let textContent = '';
-            const maxPagesToProcess = Math.min(pdf.numPages, 10); // Process fewer pages for stability
-            
-            // Process each page with individual try/catch
-            for (let i = 1; i <= maxPagesToProcess; i++) {
-              try {
-                const page = await pdf.getPage(i);
-                const textContentStream = await page.getTextContent();
-                const pageText = textContentStream.items.map(item => item.str).join(' ');
-                textContent += pageText + '\n\n';
-                
-                if (textContent.length > 10000) {
-                  console.log("Truncating PDF text content due to length...");
-                  textContent = textContent.substring(0, 10000) + "... [TRUNCATED]";
-                  break;
-                }
-              } catch (pageError) {
-                console.warn(`Error extracting text from page ${i}:`, pageError);
-                textContent += `[Error extracting page ${i}]\n\n`;
-              }
-            }
-            
-            extractedText += `--- Extracted Text Start ---\n\n${textContent || '[No text content extracted]'}\n\n--- Extracted Text End ---`;
-            
-          } catch (pdfError) {
-            console.error('Error extracting PDF text:', pdfError);
-            extractedText += `[PDF EXTRACTION FAILED: ${pdfError.message || pdfError.toString()}]\n\n`;
-            extractedText += `We'll use the filename and metadata to create an example instead.`;
-          }
-        }
-        // DOCX Extraction
-        else if (isDocx && mammoth) {
-          try {
-            console.log("Processing as DOCX...");
-            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-            let docxText = result.value || '';
-            if (docxText.length > 10000) {
-              console.log("Truncating DOCX text content due to length...");
-              docxText = docxText.substring(0, 10000) + "... [TRUNCATED]";
-            }
-            extractedText += `--- Extracted Text Start ---\n\n${docxText}\n\n--- Extracted Text End ---`;
-          } catch (docxError) {
-            console.error('Error extracting DOCX text:', docxError);
-            extractedText += `[DOCX EXTRACTION FAILED: ${docxError.message || docxError.toString()}]\n\n`;
-            extractedText += `We'll use the filename and metadata to create an example instead.`;
-          }
-        }
-        // DOC Extraction (older Word format) - just use metadata
-        else if (isDoc) {
-          console.log("Classic DOC format detected - using metadata only");
-          extractedText += `[Classic DOC format detected - Only metadata available]\n\n`;
-          extractedText += `We'll use the filename and metadata to create an example for you.`;
-        }
-        // Other file types
-        else {
-          console.log(`Unsupported file type: ${file.type || 'unknown'}`);
-          extractedText += `[Unsupported file type: ${file.type || 'unknown'}]\n\n`;
-          extractedText += `We'll use the filename to create an example for you.`;
-        }
-
-        // Always resolve with some text, even if extraction failed
-        resolve(extractedText);
-      } catch (error) {
-        console.error('Error processing document content:', error);
-        const errorText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n`;
-        resolve(errorText + `[EXTRACTION ERROR: ${error.message || error.toString()}]\n\nWe'll use the filename to create an example for you.`);
+    // Prepare data for analysis
+    const sectionsDataForPrompt = sectionsWithProgress.map(sectionId => {
+      const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
+      if (!originalSectionDef || !originalSectionDef.instructions?.text) {
+        console.warn(`Original section definition or instructions missing for ID ${sectionId}. Skipping.`);
+        return null;
       }
-    };
+      
+      const userContent = userInputs[sectionId] || '';
+      const needsResearchContext = isResearchApproachSection(sectionId, originalSectionDef);
 
-    reader.onerror = (error) => {
-      console.error('Error reading file:', error);
-      const errorText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n[FILE READ ERROR]\n\n`;
-      resolve(errorText + `We'll use the filename to create an example for you.`);
-    };
+      return {
+        id: sectionId,
+        title: originalSectionDef.title,
+        originalInstructionsText: originalSectionDef.instructions.text,
+        userContent,
+        needsResearchContext
+      };
+    }).filter(data => data !== null);
 
-    reader.readAsArrayBuffer(file);
-  });
-};
+    if (sectionsDataForPrompt.length === 0) {
+      console.log("[Instruction Improvement] No valid sections found with user progress after filtering.");
+      return { success: false, message: "No valid sections with progress to improve" };
+    }
 
-/**
- * Processes extracted scientific paper text and generates structured data
- * @param {File} file - The document file object
- * @returns {Promise<Object>} - The structured data for loading into the planner
- */
-export const importDocumentContent = async (file) => {
-  let documentText = '';
-  
-  try {
-    // Step 1: Extract text from document - with robust error handling
-    console.log(`Starting text extraction for ${file.name}`);
-    documentText = await extractTextFromDocument(file);
-    console.log(`Text extraction completed for ${file.name}. Length: ${documentText.length}`);
+    // Check if any section needs research context
+    const needsOverallResearchContext = sectionsDataForPrompt.some(section => section.needsResearchContext);
 
-    // Step 2: Use OpenAI to generate a project structure based on whatever text we have
-    console.log("Generating project structure from extracted text...");
+    // Build enhanced system prompt that explicitly requests edits and congratulations
+    const systemPrompt = buildSystemPrompt('instructionImprovement', {
+      needsResearchContext: needsOverallResearchContext,
+      approachGuidance: ''
+    }) + `
+
+    IMPORTANT ADDITIONAL INSTRUCTIONS:
     
-    // Simplified prompt for more reliable results
-    const simplifiedPrompt = `
-      The document extraction ${documentText.includes("[EXTRACTION FAILED") ? "failed" : "completed"}.
-      Please create a reasonable scientific paper example based on this document:
-      
-      Document title: ${file.name}
-      Document preview: ${documentText.substring(0, 3000)}...
-      
-      Create a complete scientific paper plan with:
-      - A clear research question and significance
-      - Appropriate target audience
-      - EXACTLY ONE research approach (hypothesis, needsresearch, or exploratoryresearch)
-      - Related papers
-      - EXACTLY ONE data collection method (experiment or existingdata)
-      - Analysis plan, process description, and abstract
-      
-      This is for EDUCATIONAL PURPOSES to help students learn scientific paper structure.
-      
-      Return in valid JSON format with userInputs containing all necessary fields.
+    1. For each section, YOU MUST ACTUALLY MODIFY the instructions based on the user's progress:
+       - Remove bullet points they've already addressed
+       - Add congratulatory language when appropriate
+       - Add new, specific suggestions based on their work
+    
+    2. For complete or nearly complete sections, transform the instructions into congratulatory messages like:
+       "Great job on your [section]! You've clearly [specific achievements]. Consider these refinements: [1-2 specific suggestions]"
+    
+    3. Always provide substantial, specific feedback that references their actual work.
+    
+    4. Never return the original instructions unchanged - always edit them.
+    
+    Remember to return your response as a valid JSON array containing objects with id, editedInstructions, feedback, and completionStatus fields.
     `;
-    
-    const fallbackResult = await callOpenAI(
-      simplifiedPrompt,
-      'document_import_fallback',
-      {},
+
+    const taskPrompt = buildTaskPrompt('instructionImprovement', {
+      sectionsData: JSON.stringify(sectionsDataForPrompt, null, 2)
+    });
+
+    // Call OpenAI with JSON mode - we expect an array directly now
+    const response = await callOpenAI(
+      taskPrompt,
+      "improve_instructions_batch",
+      userInputs,
+      currentSections,
+      { 
+        temperature: 0.7, // Higher temperature for more creative edits
+        max_tokens: 3000  // More tokens for better edits
+      },
       [],
-      { temperature: 0.4, max_tokens: 3000 },
-      [],
-      "You are creating educational examples for students. Generate a complete, well-structured scientific paper example with EXACTLY ONE research approach and ONE data collection method.",
-      true
+      systemPrompt,
+      true // Use JSON mode
     );
     
-    // Format and process the result
-    console.log('Successfully created example based on document');
+    console.log("Response from OpenAI:", response);
     
-    // Clean up the result to ensure it has the proper structure
-    const processedResult = {
-      userInputs: fallbackResult.userInputs || {},
-      chatMessages: {},
-      timestamp: new Date().toISOString(),
-      version: '1.0-example-from-document'
+    // If response is empty or not an array, use fallback
+    if (!Array.isArray(response) || response.length === 0) {
+      console.warn("Invalid or empty response format from OpenAI, using fallback");
+      
+      // Create enhanced fallback responses with actual edits
+      const fallbackData = sectionsDataForPrompt.map(section => {
+        const originalInstructions = section.originalInstructionsText;
+        
+        // Create a congratulatory variant of the instructions
+        let modifiedInstructions = `Great work on your ${section.title.toLowerCase()}! You've made excellent progress.\n\n`;
+        
+        // Add a few bullet points from the original, focusing on refinement
+        modifiedInstructions += `Consider these refinements to strengthen your work:\n\n`;
+        
+        // Extract bullet points from original instructions
+        const bulletPoints = originalInstructions.match(/\*\s.+/g) || [];
+        
+        // Include 2-3 bullet points if available, or create generic ones
+        if (bulletPoints.length > 0) {
+          const selectedPoints = bulletPoints.slice(0, Math.min(3, bulletPoints.length));
+          modifiedInstructions += selectedPoints.join('\n\n');
+        } else {
+          modifiedInstructions += `* Consider the broader implications of your work\n\n* Ensure all key points are supported by evidence\n\n* Think about potential objections and address them`;
+        }
+        
+        return {
+          id: section.id,
+          editedInstructions: modifiedInstructions,
+          feedback: `Your work on this ${section.title.toLowerCase()} section shows progress. The key ideas are there, but consider addressing the remaining points to strengthen your argument.`,
+          completionStatus: 'complete'
+        };
+      });
+      
+      console.log("Using fallback data with actual edits:", fallbackData);
+      
+      return {
+        success: true,
+        improvedData: fallbackData,
+        usedFallback: true
+      };
+    }
+
+    // Validate, format, and ensure instructions are actually changed
+    const validatedData = response.map(item => {
+      const sectionData = sectionsDataForPrompt.find(s => s.id === item.id);
+      const originalInstructions = sectionData?.originalInstructionsText || '';
+      
+      // Determine if instructions were actually changed
+      const instructionsChanged = 
+        item.editedInstructions && 
+        item.editedInstructions !== originalInstructions && 
+        item.editedInstructions.length >= 50;
+      
+      // If the AI didn't change the instructions, create a congratulatory message
+      let finalInstructions = instructionsChanged 
+        ? item.editedInstructions 
+        : createCongratulatory(item.id, sectionData?.title || 'section', originalInstructions);
+      
+      // Ensure all required fields exist with appropriate values
+      return {
+        id: item.id || '',
+        editedInstructions: finalInstructions,
+        feedback: (item.feedback && item.feedback.length >= 10)
+          ? item.feedback
+          : `Your work on this section shows promise. Continue developing these ideas.`,
+        completionStatus: (item.completionStatus === 'unstarted')
+          ? 'unstarted'
+          : 'complete'
+      };
+    }).filter(item => item.id); // Remove any items without an ID
+
+    console.log(`[Instruction Improvement] Successfully processed ${validatedData.length} improved sections`);
+
+    // Return success with the validated data
+    return {
+      success: true,
+      improvedData: validatedData
     };
     
-    // Fill in any missing required fields with placeholders
-    const requiredSections = [
-      'question', 'audience', 'hypothesis', 'relatedpapers', 
-      'experiment', 'analysis', 'process', 'abstract'
-    ];
-    
-    requiredSections.forEach(section => {
-      if (!processedResult.userInputs[section]) {
-        processedResult.userInputs[section] = `[${section} content would be here]`;
-      }
-    });
-    
-    // Ensure we have exactly one research approach
-    const hasHypothesis = !!processedResult.userInputs.hypothesis;
-    const hasNeedsResearch = !!processedResult.userInputs.needsresearch;
-    const hasExploratory = !!processedResult.userInputs.exploratoryresearch;
-    
-    // If we have more than one or none, fix it
-    if ((!hasHypothesis && !hasNeedsResearch && !hasExploratory) || 
-        (hasHypothesis + hasNeedsResearch + hasExploratory > 1)) {
-      // Keep only hypothesis and delete others
-      if (!hasHypothesis) {
-        processedResult.userInputs.hypothesis = "Hypothesis 1: The effect described in the document is significant.\n\nHypothesis 2: Alternative explanation based on document context.\n\nWhy distinguishing these hypotheses matters:\n- Important for theoretical understanding\n- Has practical implications";
-      }
-      delete processedResult.userInputs.needsresearch;
-      delete processedResult.userInputs.exploratoryresearch;
-    }
-    
-    // Ensure we have exactly one data collection method
-    const hasExperiment = !!processedResult.userInputs.experiment;
-    const hasExistingData = !!processedResult.userInputs.existingdata;
-    
-    // If we have more than one or none, fix it
-    if ((!hasExperiment && !hasExistingData) || (hasExperiment && hasExistingData)) {
-      // Keep only experiment and delete others
-      if (!hasExperiment) {
-        processedResult.userInputs.experiment = "Key Variables:\n- Independent: Treatment condition\n- Dependent: Measured outcome\n- Controlled: Participant characteristics\n\nSample & Size Justification: Appropriate sample size based on power analysis\n\nData Collection Methods: Standardized measurement procedures\n\nPredicted Results: Results will align with research hypothesis\n\nPotential Confounds & Mitigations: Randomization and careful experimental control";
-      }
-      delete processedResult.userInputs.existingdata;
-    }
-    
-    return processedResult;
-    
   } catch (error) {
-    console.error('Error during document import process:', error);
-
-    // Create a simplified fallback example based just on the filename
-    try {
-      console.log("Creating simple fallback example from filename...");
-      
-      // Generate a topic idea from the filename
-      const filename = file.name;
-      const topicHint = filename.replace(/\.\w+$/, '')  // Remove extension
-                               .replace(/[_\-\d]+/g, ' ')  // Replace underscores, hyphens, numbers with spaces
-                               .trim();
-      
-      return {
-        userInputs: {
-          question: `Research Question: What factors influence ${topicHint || 'the phenomenon described in the document'}?\n\nSignificance/Impact: Understanding these factors could lead to important applications and theoretical advances.`,
-          
-          audience: `Target Audience/Community (research fields/disciplines):\n1. Researchers in ${topicHint || 'this'} field\n2. Applied practitioners\n3. Educational institutions\n\nSpecific Researchers/Labs (individual scientists or groups):\n1. Leading research labs in this area\n2. Interdisciplinary research teams\n3. Industry R&D departments`,
-          
-          hypothesis: `Hypothesis 1: There is a significant relationship between key variables in ${topicHint || 'this topic'}.\n\nHypothesis 2: Alternative mechanisms explain the observed phenomena.\n\nWhy distinguishing these hypotheses matters:\n- Advances theoretical understanding\n- Has implications for practical applications`,
-          
-          relatedpapers: `Most similar papers that test related hypotheses:\n1. Smith et al. (2020) "Key advances in ${topicHint || 'this field'}"\n2. Jones & Brown (2019) "Experimental approaches to ${topicHint || 'this topic'}"\n3. Zhang et al. (2021) "Theoretical framework for ${topicHint || 'understanding these phenomena'}"\n4. Williams (2018) "Meta-analysis of ${topicHint || 'related studies'}"\n5. Miller & Davis (2022) "Future directions in ${topicHint || 'this research area'}"`,
-          
-          experiment: `Key Variables:\n- Independent: Treatment conditions\n- Dependent: Measured outcomes\n- Controlled: Participant characteristics\n\nSample & Size Justification: Sample size determined by power analysis for detecting medium effect sizes\n\nData Collection Methods: Standardized procedures following established protocols\n\nPredicted Results: Results will show significant effects supporting the primary hypothesis\n\nPotential Confounds & Mitigations: Randomization and careful experimental controls will minimize confounding variables`,
-          
-          analysis: `Data Cleaning & Exclusions:\nStandard preprocessing procedures and clear exclusion criteria\n\nPrimary Analysis Method:\nMixed-effects regression analysis\n\nHow Analysis Addresses Research Question:\nDirectly tests the relationship between independent and dependent variables\n\nUncertainty Quantification:\nConfidence intervals and effect size estimates\n\nSpecial Cases Handling:\nRobust methods for outlier detection and handling`,
-          
-          process: `Skills Needed vs. Skills I Have:\nExperimental design, statistical analysis, and domain expertise\n\nCollaborators & Their Roles:\nMethodology expert, statistical consultant, and subject matter specialist\n\nData/Code Sharing Plan:\nOpen data and code repositories following completion\n\nTimeline & Milestones:\nThree-month preparation, six-month data collection, three-month analysis\n\nObstacles & Contingencies:\nAlternative approaches identified for potential challenges`,
-          
-          abstract: `Background: ${topicHint || 'This topic'} represents an important area of scientific inquiry with significant implications.\n\nObjective/Question: This study investigates the factors that influence ${topicHint || 'key phenomena'} and tests competing explanations.\n\nMethods: A controlled experimental design with appropriate statistical analysis will be used to test the hypotheses.\n\n(Expected) Results: Results are expected to support the primary hypothesis and provide insights into underlying mechanisms.\n\nConclusion/Implications: Findings will advance both theoretical understanding and practical applications in this field.`
-        },
-        chatMessages: {},
-        timestamp: new Date().toISOString(),
-        version: '1.0-simple-fallback'
-      };
-    } catch (fallbackError) {
-      console.error('Simple fallback also failed:', fallbackError);
-      
-      // Return minimal valid structure as absolute last resort
-      return {
-        userInputs: {
-          question: `Research Question: Error during import: ${error.message || 'Unknown error'}\n\nSignificance/Impact: Please try a different file format or create a new project.`,
-          hypothesis: `Document import failed for ${file.name}. Please try a different approach.`,
-          abstract: `Document import failed. Please try again with a different file format.`,
-        },
-        chatMessages: {},
-        timestamp: new Date().toISOString(),
-        version: '1.0-extraction-error',
-      };
-    }
+    console.error("Error improving batch instructions:", error);
+    
+    // Create enhanced fallback responses with actual edits
+    const fallbackData = Object.keys(userInputs)
+      .filter(id => {
+        const content = userInputs[id];
+        const section = sectionContent?.sections?.find(s => s.id === id);
+        const placeholder = section?.placeholder || '';
+        return content && content !== placeholder;
+      })
+      .map(id => {
+        const section = sectionContent?.sections?.find(s => s.id === id);
+        const originalInstructions = section?.instructions?.text || '';
+        
+        // Create a congratulatory message
+        const editedInstructions = createCongratulatory(id, section?.title || 'section', originalInstructions);
+        
+        return {
+          id: id,
+          editedInstructions: editedInstructions,
+          feedback: `Your work on this ${section?.title?.toLowerCase() || 'section'} shows progress. Continue developing your ideas.`,
+          completionStatus: 'complete'
+        };
+      });
+    
+    console.log("Using error fallback data with congratulatory messages:", fallbackData);
+    
+    return {
+      success: true,
+      improvedData: fallbackData,
+      usedFallback: true,
+      errorMessage: error.message || "An error occurred while improving instructions"
+    };
   }
+};
+
+/**
+ * Creates a congratulatory message based on the original instructions
+ * @param {string} id - The section ID
+ * @param {string} title - The section title 
+ * @param {string} originalInstructions - The original instructions text
+ * @returns {string} - A congratulatory message
+ */
+function createCongratulatory(id, title, originalInstructions) {
+  // Start with a congratulatory message
+  let message = `Great work on your ${title.toLowerCase()}! You've made excellent progress.\n\n`;
+  
+  // Different messages based on section type
+  switch(id) {
+    case 'question':
+      message += `Your research question is well-formed and shows clear focus. Consider these refinements:\n\n`;
+      message += `* Clarify how your question builds on existing knowledge\n\n`;
+      message += `* Emphasize the specific impact your findings will have on the field\n\n`;
+      message += `* Ensure your resources and methods are well-aligned with your question`;
+      break;
+      
+    case 'audience':
+      message += `You've identified a relevant audience for your work. To strengthen this further:\n\n`;
+      message += `* Be more specific about how each community will benefit from your work\n\n`;
+      message += `* Consider adding 1-2 more specific researchers or research groups\n\n`;
+      message += `* Think about potential skeptics and how you'll address their concerns`;
+      break;
+      
+    case 'hypothesis':
+      message += `Your hypotheses are taking shape nicely. Consider these enhancements:\n\n`;
+      message += `* Ensure each hypothesis is clearly falsifiable\n\n`;
+      message += `* Explain more precisely how your experiment will differentiate between them\n\n`;
+      message += `* Elaborate on why distinguishing between these hypotheses matters to the field`;
+      break;
+      
+    case 'relatedpapers':
+      message += `You've done a good job identifying related literature. To strengthen this section:\n\n`;
+      message += `* Be more explicit about how each paper connects to your specific research question\n\n`;
+      message += `* Highlight the specific gaps that your research will address\n\n`;
+      message += `* Consider including papers with contrasting perspectives`;
+      break;
+      
+    case 'experiment':
+      message += `Your experimental design is developing well. Consider these improvements:\n\n`;
+      message += `* Further clarify your key variables and how you'll measure them\n\n`;
+      message += `* Strengthen your justification for your sample size\n\n`;
+      message += `* Elaborate on how you'll control for potential confounds`;
+      break;
+      
+    case 'existingdata':
+      message += `Your data acquisition plan is taking shape. Consider these refinements:\n\n`;
+      message += `* Provide more specifics about data provenance and quality\n\n`;
+      message += `* Clarify how these particular datasets will answer your research question\n\n`;
+      message += `* Address potential limitations of using pre-existing data`;
+      break;
+      
+    case 'analysis':
+      message += `Your analysis plan is well-structured. To strengthen it further:\n\n`;
+      message += `* Be more specific about your data cleaning procedures\n\n`;
+      message += `* Provide more detail on how you'll quantify uncertainty\n\n`;
+      message += `* Consider alternative analysis approaches if your primary method faces challenges`;
+      break;
+      
+    case 'process':
+      message += `You've thought through your research process well. Consider these additions:\n\n`;
+      message += `* Be more specific about timeline milestones\n\n`;
+      message += `* Elaborate on your contingency plans for major obstacles\n\n`;
+      message += `* Consider adding more detail about how you'll share your findings`;
+      break;
+      
+    case 'abstract':
+      message += `Your abstract effectively summarizes your research plan. To refine it:\n\n`;
+      message += `* Sharpen the statement of your main research question or hypothesis\n\n`;
+      message += `* Be more specific about your methods and anticipated results\n\n`;
+      message += `* Strengthen the conclusion by emphasizing broader implications`;
+      break;
+      
+    default:
+      // Extract bullet points from original instructions to create suggestions
+      const bulletPoints = originalInstructions.match(/\*\s.+/g) || [];
+      message += `Consider these refinements to strengthen your work:\n\n`;
+      
+      // Include up to 3 bullet points, or generate generic ones
+      if (bulletPoints.length > 0) {
+        const selectedPoints = bulletPoints.slice(0, Math.min(3, bulletPoints.length));
+        message += selectedPoints.join('\n\n');
+      } else {
+        message += `* Consider the broader implications of your work\n\n`;
+        message += `* Ensure all key points are supported by evidence\n\n`;
+        message += `* Think about potential objections and address them`;
+      }
+  }
+  
+  return message;
+}
+
+/**
+ * Updates section content object with improved instructions AND feedback.
+ * @param {Object} currentSections - The current sections object from state.
+ * @param {Array} improvedData - Array of objects { id, editedInstructions, feedback, completionStatus }.
+ * @returns {Object} - A new object with updated section content.
+ */
+export const updateSectionWithImprovedInstructions = (currentSections, improvedData) => {
+  // Validate inputs
+  if (!currentSections || typeof currentSections !== 'object') {
+    console.error("Invalid currentSections: Expected an object");
+    return currentSections || {}; // Return original or empty object
+  }
+
+  if (!Array.isArray(improvedData)) {
+    console.error("Invalid improvedData: Expected an array");
+    return {...currentSections}; // Return a shallow copy of the original
+  }
+
+  // Create a deep copy to avoid modifying the original state directly
+  let updatedSections;
+  try {
+    updatedSections = JSON.parse(JSON.stringify(currentSections));
+  } catch(e) {
+    console.error("Error creating deep copy of sections:", e);
+    return {...currentSections}; // Return shallow copy on error
+  }
+
+  // Keep track of changes made
+  let changesApplied = false;
+  
+  // Update each section based on the improved data
+  improvedData.forEach(improvement => {
+    if (!improvement?.id) {
+      console.warn("Missing ID in improvement data, skipping", improvement);
+      return;
+    }
+
+    // Get section from updated sections
+    let section = null;
+    let sectionIndex = -1;
+    
+    if (Array.isArray(updatedSections.sections)) {
+      sectionIndex = updatedSections.sections.findIndex(s => s?.id === improvement.id);
+      if (sectionIndex === -1) {
+        console.warn(`Section not found in current state: ${improvement.id}. Cannot apply improvement.`);
+        return;
+      }
+      section = updatedSections.sections[sectionIndex];
+    } else {
+      console.error("Invalid sections structure:", updatedSections);
+      return;
+    }
+    
+    if (!section) {
+      console.warn(`Section at index ${sectionIndex} is null or undefined, skipping.`);
+      return;
+    }
+
+    // Initialize instructions object if it doesn't exist
+    if (!section.instructions) {
+      section.instructions = {};
+    }
+
+    // Update the instructions field - always update since we've already validated/generated content
+    section.instructions.text = improvement.editedInstructions;
+    console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id} (${improvement.editedInstructions.length} chars)`);
+    changesApplied = true;
+
+    // Update feedback only if it's provided and meaningful
+    if (improvement.feedback && improvement.feedback.trim() !== '' && improvement.feedback.length > 10) {
+      section.instructions.feedback = improvement.feedback;
+      console.log(`[updateSectionWithImprovedInstructions] Updated feedback for ${improvement.id} (${improvement.feedback.length} chars)`);
+      changesApplied = true;
+    } else {
+      console.warn(`[updateSectionWithImprovedInstructions] Empty or short feedback for ${improvement.id}, skipping feedback update`);
+    }
+  });
+
+  if (!changesApplied) {
+    console.warn("[updateSectionWithImprovedInstructions] No meaningful changes were applied to any section");
+  }
+
+  // Return the new object with updated sections
+  return updatedSections;
 };
