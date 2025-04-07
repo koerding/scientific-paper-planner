@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown';
  * - Fixed scrolling behavior
  * - Improved border-radius consistency
  * - Better z-index handling
+ * - FIXED: Consistent font styles with left panel
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -116,13 +117,13 @@ const FullHeightInstructionsPanel = ({
   const sectionTitle = currentSection?.title || "Instructions";
   const panelTitle = `${sectionTitle} Instructions & Feedback`;
 
-  // Custom styles for markdown content to match left side fonts
+  // FIXED: Updated styles for consistent fonts with left panel
   const customStyles = {
-    fontSize: 'text-lg leading-relaxed',
-    content: 'prose-lg prose-blue max-w-none',
-    heading: 'text-xl font-semibold my-3',
-    divider: 'border-t border-blue-200 my-4',
-    listItem: 'my-2',
+    fontSize: 'text-base leading-relaxed', // Consistent with left panel
+    content: 'prose-base prose-blue max-w-none',
+    heading: 'text-lg font-semibold my-2',
+    divider: 'border-t border-blue-200 my-3',
+    listItem: 'my-1',
   };
 
   // Get the appropriate instructions text (with fallback if needed)
@@ -131,26 +132,26 @@ const FullHeightInstructionsPanel = ({
   // FIXED: Set style to ensure consistent positioning with header (100px) and footer (44px)
   return (
     <div
-      className="bg-blue-50 border-4 border-blue-500 rounded-lg overflow-y-auto"
+      className="bg-blue-50 border-l-4 border-blue-500 rounded-lg overflow-y-auto"
       style={{
         position: 'fixed',
-        top: '10%', // Positioned right below header
+        top: '100px', // Positioned right below header
         right: '1rem',
         width: 'calc(50% - 1rem)',
-        bottom: '140px', // Align with footer
+        bottom: '80px', // Align with footer
         zIndex: 10,
-//        boxShadow: '0 0 10px rgba(0, 0, 0, 0.05)' // Subtle shadow for depth
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
       }}
     >
       <div className="px-4 py-3 h-full">
         {!currentSection ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-blue-600 text-lg">Select a section to view instructions</p>
+            <p className="text-blue-600 text-base">Select a section to view instructions</p>
           </div>
         ) : (
           <>
             <div className="flex justify-between items-start mb-2">
-              <h3 className="text-2xl font-semibold text-blue-800 flex-grow mr-3">
+              <h3 className="text-lg font-semibold text-blue-800 flex-grow mr-3">
                 {panelTitle}
               </h3>
             </div>
@@ -165,13 +166,13 @@ const FullHeightInstructionsPanel = ({
                   />
                 </div>
               ) : (
-                <p className="text-blue-600 text-lg mb-4">Instructions not available for this section.</p>
+                <p className="text-blue-600 text-base mb-4">Instructions not available for this section.</p>
               )}
 
               {/* Render Feedback Section if it exists and is meaningful */}
               {feedbackText && feedbackText.length > 5 && (
                 <div className="mt-4 pt-3 border-t border-blue-300">
-                  <h4 className="text-xl font-semibold text-blue-700 mb-2">Feedback</h4>
+                  <h4 className="text-lg font-semibold text-blue-700 mb-2">Feedback</h4>
                   <div className={`${customStyles.content} feedback-content`}>
                     <StyledMarkdown 
                       content={fixNumberedLists(feedbackText)} 
@@ -246,7 +247,7 @@ function fixNumberedLists(text) {
   return result.join('\n');
 }
 
-// Custom component to render markdown with enhanced styling
+// Custom component to render markdown with enhanced styling - FIXED: consistent fonts
 const StyledMarkdown = ({ content, customStyles }) => {
   // Process content to enhance list item styling - preserve formatting like line breaks
   const processedContent = content
@@ -258,15 +259,15 @@ const StyledMarkdown = ({ content, customStyles }) => {
       <ReactMarkdown
         components={{
           // Customize heading styles
-          h1: ({ node, ...props }) => <h1 className="text-2xl font-bold my-3" {...props} />,
-          h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-2" {...props} />,
+          h1: ({ node, ...props }) => <h1 className="text-xl font-bold my-3" {...props} />,
+          h2: ({ node, ...props }) => <h2 className="text-lg font-bold my-2" {...props} />,
           h3: ({ node, ...props }) => <h3 className="text-lg font-bold my-2" {...props} />,
           
           // Style paragraphs and lists
-          p: ({ node, ...props }) => <p className="my-2" {...props} />,
+          p: ({ node, ...props }) => <p className="my-2 text-base" {...props} />,
           ul: ({ node, ...props }) => <ul className="list-disc pl-4 my-2" {...props} />,
           ol: ({ node, ...props }) => <ol className="list-decimal pl-4 my-2" {...props} />,
-          li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
+          li: ({ node, ...props }) => <li className={`${customStyles.listItem} text-base`} {...props} />,
           
           // Style horizontal rules as dividers
           hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
