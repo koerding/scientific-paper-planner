@@ -8,7 +8,7 @@
 import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
 
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
-const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4-turbo";
+const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4o";
 const API_TIMEOUT_MS = 180000; // 180 seconds timeout
 
 /**
