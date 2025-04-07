@@ -8,6 +8,7 @@ import React, { useState, useEffect, useRef } from 'react';
  * UPDATED: Simplified box design by removing gray box background
  * FIXED: Made the inner textbox seamless and reduced padding throughout
  * FIXED: Consistent font styles with right panel (instruction panel)
+ * FIXED: Increased section title size by 40% as requested
  */
 const SectionCard = ({
   section,
@@ -70,9 +71,9 @@ const SectionCard = ({
       className={sectionClasses}
       onClick={onClick}
     >
-      {/* Header with Title and Status */}
+      {/* Header with Title and Status - FIXED: Increased title size by 40% */}
       <div className="flex justify-between items-center mb-1">
-        <h2 className="font-semibold text-base text-gray-800 mr-2">
+        <h2 className="font-semibold text-lg mr-2 text-gray-800" style={{ fontSize: 'calc(1.4 * 1rem)' }}>
           {section.title}
         </h2>
         
