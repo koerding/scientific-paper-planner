@@ -13,6 +13,8 @@ import '../../styles/PaperPlanner.css';
  * - Fixed transition issues
  * - Better handling of magic button overlap
  * - FIXED: Z-index increased to be on top of the improve instructions button
+ * - FIXED: Vertically aligned header icon and text
+ * - FIXED: Added thinking indicator while waiting for response
  */
 const ModernChatInterface = ({
   currentSection,
@@ -29,6 +31,7 @@ const ModernChatInterface = ({
   const messagesEndRef = useRef(null);
   const previousSectionRef = useRef(null);
   const chatIconRef = useRef(null);
+  const [isThinking, setIsThinking] = useState(false);
 
   // Scroll to bottom when messages change or chat is opened
   useEffect(() => {
@@ -43,6 +46,11 @@ const ModernChatInterface = ({
       previousSectionRef.current = currentSection;
     }
   }, [currentSection]);
+
+  // Track loading state to show thinking indicator
+  useEffect(() => {
+    setIsThinking(loading);
+  }, [loading]);
 
   // Format timestamp for messages
   const formatTime = () => {
@@ -97,14 +105,14 @@ const ModernChatInterface = ({
           zIndex: 1000 // FIXED: Increased z-index to be higher than the improve instructions button (z-40)
         }}
       >
-        {/* Chat header - consistent styling */}
+        {/* Chat header - FIXED: proper vertical alignment of icon and text */}
         <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3">
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3 flex-shrink-0">
               AI
             </div>
-            <h3 className="font-medium text-lg truncate pr-2">
-              {currentSectionTitle ? `AI Research Assistant - Talk about ${currentSectionTitle}` : 'AI Research Assistant'}
+            <h3 className="font-medium text-lg truncate pr-2 flex items-center">
+              AI Research Assistant - Talk about {currentSectionTitle}
             </h3>
           </div>
           <button
@@ -149,6 +157,26 @@ const ModernChatInterface = ({
                     </div>
                   </div>
                 ))}
+                
+                {/* FIXED: Thinking indicator while waiting for a response */}
+                {isThinking && (
+                  <div className="flex justify-start mb-2">
+                    <div className="message-bubble ai-message max-w-3xl">
+                      <div className="text-sm mb-1 opacity-75">
+                        AI Assistant • {formatTime()}
+                      </div>
+                      <div className="message-content text-gray-800 flex items-center">
+                        <div className="typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                        <span className="ml-2 text-gray-600">Thinking...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div ref={messagesEndRef} />
               </div>
             )}
@@ -164,6 +192,7 @@ const ModernChatInterface = ({
                 className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Ask a question..."
                 onKeyPress={(e) => e.key === 'Enter' && !loading && currentMessage.trim() !== '' && handleSendMessage()}
+                disabled={loading}
               />
               <button
                 onClick={handleSendMessage}
