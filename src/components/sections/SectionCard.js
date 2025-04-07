@@ -6,6 +6,7 @@ import React, { useState, useEffect, useRef } from 'react';
  * UPDATED: Removed character counts
  * UPDATED: Reduced whitespace for a tighter layout
  * UPDATED: Simplified box design by removing gray box background
+ * FIXED: Made the inner textbox seamless and reduced padding throughout
  */
 const SectionCard = ({
   section,
@@ -32,27 +33,30 @@ const SectionCard = ({
   }, [textValue]);
 
   // Determine the border classes based on completion status
-  // Now just using red/green (unstarted/complete)
   const getBorderClasses = () => {
     // Current section gets blue focus border regardless of completion
     if (isCurrentSection) {
-      return 'border-4 border-blue-500 shadow-xl';
+      return 'border-2 border-blue-500 shadow-md';
     }
     
     // Just red/green for completion status - very simplified
     return completionStatus === 'complete' 
-      ? 'border-4 border-green-600 section-complete'
-      : 'border-4 border-red-300 section-unstarted';
+      ? 'border-2 border-green-600 section-complete'
+      : 'border-2 border-red-300 section-unstarted';
+  };
+
+  // Determine background color for the card and textarea
+  const getBackgroundColor = () => {
+    return isCurrentSection ? 'bg-blue-50' : 'bg-white';
   };
 
   // Combine all the classes
   const sectionClasses = `
     section-card 
-    rounded-lg 
-    shadow-sm 
-    p-4 
-    mb-3
-    mt-1 
+    rounded-md 
+    ${getBackgroundColor()}
+    p-2
+    mb-2
     transition-all 
     duration-300 
     ease-in-out 
@@ -65,14 +69,14 @@ const SectionCard = ({
       className={sectionClasses}
       onClick={onClick}
     >
-      {/* Header with Title */}
-      <div className="flex justify-between items-center mb-3">
-        <h2 className={`font-semibold ${useLargerFonts ? 'text-2xl' : 'text-xl'} text-gray-800 mr-4`}>
+      {/* Header with Title and Status */}
+      <div className="flex justify-between items-center mb-1">
+        <h2 className={`font-semibold ${useLargerFonts ? 'text-lg' : 'text-base'} text-gray-800 mr-2`}>
           {section.title}
         </h2>
         
         {/* Status Indicator - Changed "empty" to "incomplete" */}
-        <div className="text-xs inline-block px-2 py-1 rounded" 
+        <div className="text-xs inline-block px-2 py-0.5 rounded" 
              style={{
                backgroundColor: 
                  completionStatus === 'complete' ? '#d1fae5' : '#fee2e2',
@@ -83,17 +87,18 @@ const SectionCard = ({
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="mb-2">
+      {/* Input Area - Simplified with matching background and reduced padding */}
+      <div>
         <textarea
           ref={textareaRef}
-          className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-300 focus:border-blue-400 outline-none resize-none overflow-hidden ${useLargerFonts ? 'text-lg leading-relaxed' : 'text-base'} ${isCurrentSection ? 'bg-blue-50' : 'bg-white'}`}
+          className={`w-full py-1 px-2 border-0 rounded focus:ring-1 focus:ring-blue-300 outline-none resize-none overflow-hidden ${useLargerFonts ? 'text-base' : 'text-sm'} ${getBackgroundColor()}`}
           value={textValue}
           onChange={(e) => handleInputChange(section.id, e.target.value)}
           rows="1"
           maxLength={section.maxLength}
+          placeholder={section.inputPlaceholder || "Start writing..."}
+          style={{ minHeight: '2rem' }}
         />
-        {/* Removed character count display */}
       </div>
     </div>
   );
