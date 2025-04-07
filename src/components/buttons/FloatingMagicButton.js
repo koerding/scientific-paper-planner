@@ -4,6 +4,7 @@ import React from 'react';
  * Floating Instructions Improvement Button
  * UPDATED: More descriptive text and styling
  * FIXED: Better handling of loading state
+ * FIXED: Lower z-index to be behind the chat when open
  */
 const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
   // Determine if the magic button should be highlighted based on onboarding step
@@ -48,7 +49,7 @@ const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
       
       {/* Onboarding Tooltip - improved positioning */}
       {showMagicHighlight && (
-        <div className="onboarding-tooltip onboarding-tooltip-magic" style={{ zIndex: 1001 }}>
+        <div className="onboarding-tooltip onboarding-tooltip-magic" style={{ zIndex: 41 }}>
           Get AI feedback on your instructions
         </div>
       )}
