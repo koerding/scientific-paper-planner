@@ -2,52 +2,125 @@
  * Utilities for exporting project content
  * UPDATED: Added support for custom file naming and separated JSON export
  * FIXED: More robust save functionality
+ * FIXED: Added format selection dialog for exports (PDF, DOCX, MD)
  */
 
 /**
- * Exports the project as a markdown file
+ * Creates a format selection dialog and handles the export based on user selection
  * @param {Object} userInputs - The user inputs
  * @param {Object} chatMessages - The chat messages
  * @param {Object} sectionContent - The section content
- * @param {string} [fileName] - Optional custom file name (without extension)
  */
-export const exportProject = (userInputs, chatMessages, sectionContent, fileName) => {
+export const exportProject = (userInputs, chatMessages, sectionContent) => {
   try {
-    // Generate a default filename with timestamp if none provided
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-    const defaultFileName = `scientific-paper-plan-${timestamp}`;
+    // Create format selection dialog
+    const formatDialog = document.createElement('div');
+    formatDialog.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+    formatDialog.id = 'format-selection-dialog';
     
-    // Ask for a file name if not provided
-    const customFileName = fileName || prompt("Enter a name for your exported file:", defaultFileName);
+    formatDialog.innerHTML = `
+      <div class="bg-white p-6 rounded-lg shadow-xl max-w-md mx-auto">
+        <h3 class="text-xl font-bold mb-4 text-gray-800">Choose Export Format</h3>
+        <p class="mb-6 text-gray-600">
+          Select the file format you would like to export your project to:
+        </p>
+        <div class="flex flex-col space-y-3">
+          <button id="btn-export-pdf" class="px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+            <span class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              PDF Document (.pdf)
+            </span>
+          </button>
+          <button id="btn-export-docx" class="px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+            <span class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Word Document (.docx)
+            </span>
+          </button>
+          <button id="btn-export-md" class="px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+            <span class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+              Markdown (.md)
+            </span>
+          </button>
+        </div>
+        <div class="flex justify-end mt-6">
+          <button id="btn-cancel-export" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">
+            Cancel
+          </button>
+        </div>
+      </div>
+    `;
     
-    // If user cancels prompt, exit the function
-    if (!customFileName) return;
+    document.body.appendChild(formatDialog);
     
-    // Determine research approach based on filled out sections
-    let researchApproach = "";
+    // Handle button clicks
+    document.getElementById('btn-export-pdf').addEventListener('click', () => {
+      document.body.removeChild(formatDialog);
+      exportAsPdf(userInputs, chatMessages, sectionContent);
+    });
     
-    if (userInputs.hypothesis && userInputs.hypothesis.trim() !== "") {
-      researchApproach = "## 3. Hypothesis-Based Research\n" + userInputs.hypothesis;
-    } else if (userInputs.needsresearch && userInputs.needsresearch.trim() !== "") {
-      researchApproach = "## 3. Needs-Based Research\n" + userInputs.needsresearch;
-    } else if (userInputs.exploratoryresearch && userInputs.exploratoryresearch.trim() !== "") {
-      researchApproach = "## 3. Exploratory Research\n" + userInputs.exploratoryresearch;
-    } else {
-      researchApproach = "## 3. Research Approach\nNot completed yet";
-    }
+    document.getElementById('btn-export-docx').addEventListener('click', () => {
+      document.body.removeChild(formatDialog);
+      exportAsDocx(userInputs, chatMessages, sectionContent);
+    });
     
-    // Determine data acquisition approach
-    let dataAcquisition = "";
+    document.getElementById('btn-export-md').addEventListener('click', () => {
+      document.body.removeChild(formatDialog);
+      exportAsMarkdown(userInputs, chatMessages, sectionContent);
+    });
     
-    if (userInputs.experiment && userInputs.experiment.trim() !== "") {
-      dataAcquisition = "## 5. Experimental Design\n" + userInputs.experiment;
-    } else if (userInputs.existingdata && userInputs.existingdata.trim() !== "") {
-      dataAcquisition = "## 5. Pre-existing Data\n" + userInputs.existingdata;
-    } else {
-      dataAcquisition = "## 5. Data Acquisition\nNot completed yet";
-    }
+    document.getElementById('btn-cancel-export').addEventListener('click', () => {
+      document.body.removeChild(formatDialog);
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error showing export dialog:", error);
+    alert("There was an error showing the export dialog. Using markdown export as fallback.");
+    
+    // Fallback to markdown export
+    return exportAsMarkdown(userInputs, chatMessages, sectionContent);
+  }
+};
 
-    const exportContent = `# Scientific Paper Project Plan
+/**
+ * Common function to get project content as structured text
+ * @param {Object} userInputs - The user inputs
+ * @returns {string} - Formatted content
+ */
+const getFormattedContent = (userInputs) => {
+  // Determine research approach based on filled out sections
+  let researchApproach = "";
+  
+  if (userInputs.hypothesis && userInputs.hypothesis.trim() !== "") {
+    researchApproach = "## 3. Hypothesis-Based Research\n" + userInputs.hypothesis;
+  } else if (userInputs.needsresearch && userInputs.needsresearch.trim() !== "") {
+    researchApproach = "## 3. Needs-Based Research\n" + userInputs.needsresearch;
+  } else if (userInputs.exploratoryresearch && userInputs.exploratoryresearch.trim() !== "") {
+    researchApproach = "## 3. Exploratory Research\n" + userInputs.exploratoryresearch;
+  } else {
+    researchApproach = "## 3. Research Approach\nNot completed yet";
+  }
+  
+  // Determine data acquisition approach
+  let dataAcquisition = "";
+  
+  if (userInputs.experiment && userInputs.experiment.trim() !== "") {
+    dataAcquisition = "## 5. Experimental Design\n" + userInputs.experiment;
+  } else if (userInputs.existingdata && userInputs.existingdata.trim() !== "") {
+    dataAcquisition = "## 5. Pre-existing Data\n" + userInputs.existingdata;
+  } else {
+    dataAcquisition = "## 5. Data Acquisition\nNot completed yet";
+  }
+
+  return `# Scientific Paper Project Plan
 
 ## 1. Research Question & Logic
 ${userInputs.question || "Not completed yet"}
@@ -71,15 +144,50 @@ ${userInputs.process || "Not completed yet"}
 ## 8. Abstract
 ${userInputs.abstract || "Not completed yet"}
 `;
+};
 
+/**
+ * Helper to prompt for filename
+ * @param {string} extension - File extension without dot
+ * @returns {string|null} - Filename with extension or null if canceled
+ */
+const promptForFilename = (extension) => {
+  // Generate a default filename with timestamp
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+  const defaultFileName = `scientific-paper-plan-${timestamp}`;
+  
+  // Ask for a file name
+  const customFileName = prompt(`Enter a name for your exported ${extension.toUpperCase()} file:`, defaultFileName);
+  
+  // If user cancels prompt, return null
+  if (!customFileName) return null;
+  
+  // Ensure filename has correct extension
+  return customFileName.endsWith(`.${extension}`) 
+    ? customFileName 
+    : `${customFileName}.${extension}`;
+};
+
+/**
+ * Exports the project as a markdown file
+ * @param {Object} userInputs - The user inputs
+ * @param {Object} chatMessages - The chat messages
+ * @param {Object} sectionContent - The section content
+ * @param {string} [fileName] - Optional custom file name (without extension)
+ * @returns {boolean} - Success flag
+ */
+export const exportAsMarkdown = (userInputs, chatMessages, sectionContent, fileName) => {
+  try {
+    // Get filename from parameter or prompt
+    const safeFileName = fileName || promptForFilename('md');
+    if (!safeFileName) return false;
+    
+    // Get formatted content
+    const exportContent = getFormattedContent(userInputs);
+    
     // Create a blob with the markdown content
     const mdBlob = new Blob([exportContent], { type: 'text/markdown' });
     const mdUrl = URL.createObjectURL(mdBlob);
-    
-    // Ensure filename has .md extension
-    const safeFileName = customFileName.endsWith('.md') 
-      ? customFileName 
-      : `${customFileName}.md`;
     
     // Create a link and trigger download of markdown
     const mdLink = document.createElement('a');
@@ -92,11 +200,136 @@ ${userInputs.abstract || "Not completed yet"}
     document.body.removeChild(mdLink);
     URL.revokeObjectURL(mdUrl);
     
-    console.log("Project exported successfully as:", safeFileName);
+    console.log("Project exported successfully as Markdown:", safeFileName);
     return true;
   } catch (error) {
-    console.error("Error exporting project:", error);
-    alert("There was an error exporting the project: " + (error.message || "Unknown error"));
+    console.error("Error exporting project as Markdown:", error);
+    alert("There was an error exporting the project as Markdown: " + (error.message || "Unknown error"));
+    return false;
+  }
+};
+
+/**
+ * Exports the project as a DOCX file using a basic HTML conversion with styling
+ * @param {Object} userInputs - The user inputs
+ * @param {Object} chatMessages - The chat messages
+ * @param {Object} sectionContent - The section content
+ * @returns {boolean} - Success flag
+ */
+export const exportAsDocx = (userInputs, chatMessages, sectionContent) => {
+  try {
+    // Get filename
+    const safeFileName = promptForFilename('docx');
+    if (!safeFileName) return false;
+    
+    // Create an alert about simulated DOCX export
+    alert("DOCX export is simulated for this demo. In a production version, this would use a library like docx.js to create a proper Word document. For now, a styled HTML file will be downloaded that can be opened in Word.");
+    
+    // Get formatted content and convert to HTML
+    const content = getFormattedContent(userInputs);
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Scientific Paper Project Plan</title>
+  <style>
+    body { font-family: 'Calibri', sans-serif; line-height: 1.5; max-width: 800px; margin: 2em auto; padding: 2em; }
+    h1 { font-size: 18pt; color: #2563EB; margin-top: 1em; margin-bottom: 0.5em; }
+    h2 { font-size: 14pt; color: #1E40AF; margin-top: 1em; margin-bottom: 0.5em; }
+    p { margin-bottom: 0.5em; }
+  </style>
+</head>
+<body>
+  ${content.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>').replace(/## (.*?)\n/g, '</p><h2>$1</h2><p>').replace(/# (.*?)\n/g, '<h1>$1</h1><p>')}
+</p>
+</body>
+</html>`;
+    
+    // Create a blob with the HTML content
+    const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+    const htmlUrl = URL.createObjectURL(htmlBlob);
+    
+    // Create a link and trigger download
+    const htmlLink = document.createElement('a');
+    htmlLink.href = htmlUrl;
+    htmlLink.download = safeFileName.replace('.docx', '.html');
+    document.body.appendChild(htmlLink);
+    htmlLink.click();
+    
+    // Clean up file link
+    document.body.removeChild(htmlLink);
+    URL.revokeObjectURL(htmlUrl);
+    
+    console.log("Project exported as HTML for Word:", safeFileName);
+    return true;
+  } catch (error) {
+    console.error("Error exporting project as DOCX:", error);
+    alert("There was an error exporting the project as DOCX: " + (error.message || "Unknown error"));
+    return false;
+  }
+};
+
+/**
+ * Exports the project as a PDF file
+ * Note: This simulates PDF export by creating a printable HTML page
+ * @param {Object} userInputs - The user inputs
+ * @param {Object} chatMessages - The chat messages 
+ * @param {Object} sectionContent - The section content
+ * @returns {boolean} - Success flag
+ */
+export const exportAsPdf = (userInputs, chatMessages, sectionContent) => {
+  try {
+    // Get filename
+    const safeFileName = promptForFilename('pdf');
+    if (!safeFileName) return false;
+    
+    // Create an alert about print-to-PDF workflow
+    alert("PDF export is simulated. A print-friendly page will open. Please use your browser's print function (Ctrl+P or Cmd+P) and select 'Save as PDF' to complete the export.");
+    
+    // Get formatted content and convert to HTML with print-friendly styling
+    const content = getFormattedContent(userInputs);
+    const printContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${safeFileName}</title>
+  <style>
+    @page { size: Letter; margin: 2cm; }
+    body { font-family: 'Arial', sans-serif; line-height: 1.6; font-size: 11pt; }
+    h1 { font-size: 16pt; color: #000; margin-top: 1em; margin-bottom: 0.5em; page-break-after: avoid; }
+    h2 { font-size: 14pt; color: #000; margin-top: 1em; margin-bottom: 0.5em; page-break-after: avoid; }
+    p { margin-bottom: 0.5em; }
+    .page-break { page-break-before: always; }
+    /* Print-specific styles */
+    @media print {
+      body { margin: 0; padding: 0; }
+      a { text-decoration: none; color: #000; }
+    }
+  </style>
+</head>
+<body>
+  ${content.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>').replace(/## (.*?)\n/g, '</p><h2>$1</h2><p>').replace(/# (.*?)\n/g, '<h1>$1</h1><p>')}
+</p>
+<script>
+  window.onload = function() {
+    setTimeout(function() {
+      window.print();
+    }, 1000);
+  }
+</script>
+</body>
+</html>`;
+    
+    // Open a new window with the print-friendly content
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    console.log("PDF export initiated through print dialog");
+    return true;
+  } catch (error) {
+    console.error("Error exporting project as PDF:", error);
+    alert("There was an error exporting the project as PDF: " + (error.message || "Unknown error"));
     return false;
   }
 };
@@ -111,20 +344,9 @@ ${userInputs.abstract || "Not completed yet"}
  */
 export const saveProjectAsJson = (userInputs, chatMessages, fileName) => {
   try {
-    // Generate a default filename with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-    const defaultFileName = `scientific-paper-plan-${timestamp}`;
-    
-    // Ask for file name if not provided
-    const customFileName = fileName || prompt("Enter a name for your project file:", defaultFileName);
-    
-    // If user cancels prompt, exit the function
-    if (!customFileName) return false;
-    
-    // Ensure filename has .json extension
-    const safeFileName = customFileName.endsWith('.json') 
-      ? customFileName 
-      : `${customFileName}.json`;
+    // Get filename from parameter or prompt
+    const safeFileName = fileName || promptForFilename('json');
+    if (!safeFileName) return false;
     
     const jsonData = {
       userInputs,
