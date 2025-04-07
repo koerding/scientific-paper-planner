@@ -14,7 +14,7 @@ import '../../styles/PaperPlanner.css';
  * - Better handling of magic button overlap
  * - FIXED: Z-index increased to be on top of the improve instructions button
  * - FIXED: Vertically aligned header icon and text
- * - FIXED: Added thinking indicator while waiting for response
+ * - FIXED: Added thinking indicator where assistant's response will appear
  */
 const ModernChatInterface = ({
   currentSection,
@@ -31,7 +31,6 @@ const ModernChatInterface = ({
   const messagesEndRef = useRef(null);
   const previousSectionRef = useRef(null);
   const chatIconRef = useRef(null);
-  const [isThinking, setIsThinking] = useState(false);
 
   // Scroll to bottom when messages change or chat is opened
   useEffect(() => {
@@ -46,11 +45,6 @@ const ModernChatInterface = ({
       previousSectionRef.current = currentSection;
     }
   }, [currentSection]);
-
-  // Track loading state to show thinking indicator
-  useEffect(() => {
-    setIsThinking(loading);
-  }, [loading]);
 
   // Format timestamp for messages
   const formatTime = () => {
@@ -105,13 +99,13 @@ const ModernChatInterface = ({
           zIndex: 1000 // FIXED: Increased z-index to be higher than the improve instructions button (z-40)
         }}
       >
-        {/* Chat header - FIXED: proper vertical alignment of icon and text */}
-        <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center">
+        {/* Chat header - FIXED: properly centered alignment */}
+        <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center chat-header">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3 flex-shrink-0">
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3">
               AI
             </div>
-            <h3 className="font-medium text-lg truncate pr-2 flex items-center">
+            <h3 className="font-medium text-lg truncate pr-2">
               AI Research Assistant - Talk about {currentSectionTitle}
             </h3>
           </div>
@@ -139,6 +133,7 @@ const ModernChatInterface = ({
               </div>
             ) : (
               <div className="space-y-3">
+                {/* Render all existing messages first */}
                 {chatMessages[currentSection].map((msg, index) => (
                   <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-2`}>
                     <div className={`message-bubble ${msg.role === 'user' ? 'user-message' : 'ai-message'} max-w-3xl`}>
@@ -158,8 +153,8 @@ const ModernChatInterface = ({
                   </div>
                 ))}
                 
-                {/* FIXED: Thinking indicator while waiting for a response */}
-                {isThinking && (
+                {/* FIXED: Show thinking indicator after the last message if loading */}
+                {loading && (
                   <div className="flex justify-start mb-2">
                     <div className="message-bubble ai-message max-w-3xl">
                       <div className="text-sm mb-1 opacity-75">
