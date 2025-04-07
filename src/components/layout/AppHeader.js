@@ -8,10 +8,6 @@ import React, { useState } from 'react';
  * - Disabled state during import to prevent multiple uploads
  */
 const AppHeader = ({
-  activeSection,
-  setActiveSection,
-  handleSectionChange,
-  scrollToSection,
   resetProject,
   exportProject,
   saveProject,
