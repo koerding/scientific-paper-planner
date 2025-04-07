@@ -1,208 +1,33 @@
 // FILE: src/services/documentImportService.js
 
 /**
- * Enhanced document import service with robust PDF extraction
- * Multiple extraction methods with fallbacks
+ * Document import service for PDF and Word documents
+ * Using the configuration that worked previously
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
 
-// Safely try to import PDF.js and mammoth libraries
-let pdfjsLib = null;
-let mammoth = null;
+// Import necessary libraries for document processing
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+import mammoth from 'mammoth';
 
-// Safely try to import PDF.js
-try {
-  pdfjsLib = require('pdfjs-dist/build/pdf');
-  console.log("PDF.js library loaded successfully");
-
-  // Configure the worker
-  if (typeof window !== 'undefined') {
+// Configure PDF Worker - using the working configuration from earlier
+if (typeof window !== 'undefined' && 'Worker' in window) {
     try {
-      // Always use our custom worker
-      const customWorkerUrl = `${window.location.origin}/pdf.worker.js`;
-      console.log("Setting PDF.js worker to:", customWorkerUrl);
-      
-      // Set the worker source
-      pdfjsLib.GlobalWorkerOptions.workerSrc = customWorkerUrl;
-      
-      // Use fake worker mode to avoid cross-origin issues
-      pdfjsLib.GlobalWorkerOptions.disableWorker = true;
-      
-      console.log("PDF.js worker configured successfully");
+        // Use the exact same configuration that worked before
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+        console.log("pdf.js workerSrc set to local:", pdfjsLib.GlobalWorkerOptions.workerSrc);
     } catch (e) {
-      console.error("Failed to configure PDF.js worker:", e);
+         console.error("Error setting pdf.js workerSrc:", e);
     }
-  }
-} catch (e) {
-  console.warn("Failed to load PDF.js library:", e);
-  pdfjsLib = null;
-}
-
-// Safely try to import mammoth for DOCX
-try {
-  mammoth = require('mammoth');
-  console.log("Mammoth library loaded successfully");
-} catch (e) {
-  console.warn("Failed to load Mammoth library:", e);
-  mammoth = null;
-}
-
-/**
- * Safely checks if localStorage is available in the current context
- * @returns {boolean} Whether localStorage can be used safely
- */
-const canUseStorage = () => {
-  try {
-    const testKey = '__storage_test__';
-    localStorage.setItem(testKey, testKey);
-    localStorage.removeItem(testKey);
-    return true;
-  } catch (e) {
-    console.warn("localStorage not available:", e);
-    return false;
-  }
-};
-
-/**
- * Primary PDF extraction using PDF.js
- * @param {ArrayBuffer} pdfBuffer - The PDF file as ArrayBuffer
- * @returns {Promise<string>} - Extracted text
- */
-async function extractPdfTextPrimary(pdfBuffer) {
-  try {
-    console.log("Using primary PDF extraction method");
-    
-    if (!pdfjsLib || !pdfjsLib.getDocument) {
-      throw new Error("PDF.js library not available");
-    }
-    
-    // Set up loading task with maximum compatibility options
-    const loadingTask = pdfjsLib.getDocument({
-      data: pdfBuffer,
-      useWorker: false,        // Force fake worker mode
-      disableAutoFetch: true,  // Disable streaming
-      disableStream: true,     // Disable streaming
-      disableFontFace: true,   // Disable font loading
-      nativeImageDecoderSupport: 'none',
-      isEvalSupported: false,
-      isOffscreenCanvasSupported: false
-    });
-    
-    // Process PDF
-    const pdf = await loadingTask.promise;
-    console.log(`PDF loaded: ${pdf.numPages} pages.`);
-          
-    let textContent = '';
-    const maxPagesToProcess = Math.min(pdf.numPages, 5); // Process fewer pages for stability
-    
-    // Process each page with individual try/catch
-    for (let i = 1; i <= maxPagesToProcess; i++) {
-      try {
-        console.log(`Processing page ${i}...`);
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        
-        const pageText = content.items
-          .map(item => item.str || '')
-          .join(' ');
-          
-        textContent += `--- Page ${i} ---\n${pageText}\n\n`;
-        
-        if (textContent.length > 5000) {
-          console.log("Truncating PDF text content due to length...");
-          textContent = textContent.substring(0, 5000) + "... [TRUNCATED]";
-          break;
-        }
-      } catch (pageError) {
-        console.warn(`Error extracting text from page ${i}:`, pageError);
-        textContent += `[Error extracting page ${i}]\n\n`;
-      }
-    }
-    
-    if (!textContent || textContent.trim() === '') {
-      throw new Error("No text content extracted from PDF");
-    }
-    
-    return textContent;
-  } catch (error) {
-    console.error("Primary PDF extraction failed:", error);
-    throw error; // Let caller try alternative methods
-  }
-}
-
-/**
- * Alternative, simpler method to extract text from PDF
- * @param {ArrayBuffer} pdfBuffer - The PDF file as ArrayBuffer
- * @returns {Promise<string>} - Extracted text
- */
-async function extractPdfTextAlternative(pdfBuffer) {
-  try {
-    console.log("Using alternative PDF extraction method");
-    
-    if (!pdfjsLib || !pdfjsLib.getDocument) {
-      throw new Error("PDF.js library not available");
-    }
-    
-    // Force absolute simplest configuration
-    const pdf = await pdfjsLib.getDocument({
-      data: pdfBuffer,
-      useWorker: false,
-      disableRange: true,
-      disableStream: true,
-      disableAutoFetch: true
-    }).promise;
-    
-    // Get the first page only to avoid complexity
-    const page = await pdf.getPage(1);
-    
-    // Get raw text using getTextContent
-    const textContent = await page.getTextContent();
-    
-    // Extract text from items
-    let extractedText = textContent.items
-      .map(item => item.str || '')
-      .join(' ');
-    
-    if (extractedText.length < 20 && pdf.numPages > 1) {
-      // Try page 2 if page 1 has very little text
-      const page2 = await pdf.getPage(2);
-      const textContent2 = await page2.getTextContent();
-      
-      extractedText += "\n\n" + textContent2.items
-        .map(item => item.str || '')
-        .join(' ');
-    }
-    
-    return extractedText;
-  } catch (error) {
-    console.error("Alternative PDF extraction failed:", error);
-    throw error;
-  }
-}
-
-/**
- * Text extraction with DOM method (most compatible)
- * @param {ArrayBuffer} pdfBuffer - The PDF file as ArrayBuffer
- * @returns {string} - Basic information
- */
-function extractTextWithDOM(pdfBuffer) {
-  try {
-    console.log("Attempting text extraction with DOM method");
-    
-    // This method doesn't actually extract text but tries to display the
-    // PDF in the browser, which might help during debugging
-    return `[PDF loaded but text extraction not supported in this browser environment. Using filename and metadata instead.]`;
-  } catch (error) {
-    console.error("DOM text extraction failed:", error);
-    return `[DOM extraction error: ${error.message}]`;
-  }
+} else {
+   console.warn("Web Workers not available. pdf.js might run slower.");
 }
 
 /**
  * Extracts text from a document file (PDF or Word)
  * @param {File} file - The document file object
- * @returns {Promise<string>} - The extracted text
+ * @returns {Promise<string>} - The extracted text (potentially truncated)
  */
 const extractTextFromDocument = async (file) => {
   console.log(`Attempting to extract text from: ${file.name}, type: ${file.type}`);
@@ -213,249 +38,344 @@ const extractTextFromDocument = async (file) => {
     reader.onload = async (event) => {
       try {
         const arrayBuffer = event.target.result;
-        let extractedText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n`;
+        let extractedText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n[Content Extraction Skipped - Library Error or Unsupported Type]`; // Default fallback
 
-        // Determine file type from extension if MIME type is generic
-        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-        const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-                       file.name.toLowerCase().endsWith('.docx');
-        const isDoc = file.type === 'application/msword' || file.name.toLowerCase().endsWith('.doc');
-
-        // PDF Extraction - with multiple fallback methods
-        if (isPdf) {
+        // PDF Extraction Logic
+        if ((file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) && 
+            typeof pdfjsLib !== 'undefined' && pdfjsLib.GlobalWorkerOptions.workerSrc) {
+          console.log("Processing as PDF...");
           try {
-            console.log("Processing as PDF...");
-            
-            // Try multiple extraction methods in sequence
-            let pdfText = '';
-            let extractionMethod = '';
-            
-            try {
-              // Method 1: Primary PDF.js extraction
-              pdfText = await extractPdfTextPrimary(arrayBuffer);
-              extractionMethod = 'Primary PDF.js';
-            } catch (method1Error) {
-              console.warn("Primary extraction failed, trying alternative:", method1Error);
-              
-              try {
-                // Method 2: Alternative simpler PDF.js extraction
-                pdfText = await extractPdfTextAlternative(arrayBuffer);
-                extractionMethod = 'Alternative PDF.js';
-              } catch (method2Error) {
-                console.warn("Alternative extraction failed, trying DOM method:", method2Error);
-                
-                // Method 3: DOM method (last resort)
-                pdfText = extractTextWithDOM(arrayBuffer);
-                extractionMethod = 'DOM method';
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            console.log(`PDF loaded: ${pdf.numPages} pages.`);
+            let textContent = '';
+            const maxPagesToProcess = Math.min(pdf.numPages, 20); // Limit pages
+            console.log(`Processing up to ${maxPagesToProcess} pages...`);
+
+            for (let i = 1; i <= maxPagesToProcess; i++) {
+              const page = await pdf.getPage(i);
+              const textContentStream = await page.getTextContent();
+              textContent += textContentStream.items.map(item => item.str).join(' ') + '\n\n';
+              if (textContent.length > 15000) { // Limit length
+                console.log("Truncating PDF text content due to length limit...");
+                textContent = textContent.substring(0, 15000) + "... [TRUNCATED]";
+                break;
               }
             }
-            
-            // Format the extracted text
-            if (pdfText && pdfText.length > 10) {
-              extractedText += `--- Extracted Text (${extractionMethod}) ---\n\n${pdfText}\n\n--- Extraction End ---`;
-            } else {
-              extractedText += `[PDF text extraction produced insufficient content with ${extractionMethod}]`;
-              extractedText += `\nWill use filename to create an example instead.`;
-            }
+            extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${textContent}\n\n--- Extracted Text End ---`;
+            console.log("PDF text extracted (potentially truncated). Length:", extractedText.length);
+
           } catch (pdfError) {
-            console.error('Error in PDF extraction:', pdfError);
-            extractedText += `[PDF EXTRACTION ERROR: ${pdfError.message || pdfError.toString()}]\n\n`;
-            extractedText += `Unable to extract text content from PDF. Using filename to create an example instead.`;
+            console.error('Error extracting PDF text:', pdfError);
+            reject(new Error(`Failed to extract text from PDF: ${pdfError.message || pdfError.toString()}`));
+            return;
           }
         }
-        // DOCX Extraction
-        else if (isDocx && mammoth) {
+        // DOCX Extraction Logic
+        else if ((file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+                  file.name.toLowerCase().endsWith('.docx')) && typeof mammoth !== 'undefined') {
+          console.log("Processing as DOCX...");
           try {
-            console.log("Processing as DOCX...");
             const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
             let docxText = result.value || '';
-            if (docxText.length > 10000) {
-              console.log("Truncating DOCX text content due to length...");
-              docxText = docxText.substring(0, 10000) + "... [TRUNCATED]";
+            if (docxText.length > 15000) { // Limit length
+              console.log("Truncating DOCX text content due to length limit...");
+              docxText = docxText.substring(0, 15000) + "... [TRUNCATED]";
             }
-            extractedText += `--- Extracted Text Start ---\n\n${docxText}\n\n--- Extracted Text End ---`;
+            extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${docxText}\n\n--- Extracted Text End ---`;
+            console.log("DOCX text extracted (potentially truncated). Length:", extractedText.length);
           } catch (docxError) {
             console.error('Error extracting DOCX text:', docxError);
-            extractedText += `[DOCX EXTRACTION FAILED: ${docxError.message || docxError.toString()}]\n\n`;
-            extractedText += `Using filename to create an example instead.`;
+            reject(new Error(`Failed to extract text from DOCX: ${docxError.message || docxError.toString()}`));
+            return;
           }
         }
-        // DOC Extraction (older Word format) - just use metadata
-        else if (isDoc) {
-          console.log("Classic DOC format detected - using metadata only");
-          extractedText += `[Classic DOC format detected - Only metadata available]\n\n`;
-          extractedText += `Using filename to create an example for you.`;
-        }
-        // Other file types
+        // Handle other types or if libraries are missing/misconfigured
         else {
-          console.log(`Unsupported file type: ${file.type || 'unknown'}`);
-          extractedText += `[Unsupported file type: ${file.type || 'unknown'}]\n\n`;
-          extractedText += `Using filename to create an example for you.`;
+          const libraryMessage = (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) 
+            ? "[PDF Library/Worker Not Loaded/Configured]"
+            : (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+               file.name.toLowerCase().endsWith('.docx')) 
+              ? "[DOCX Library Not Loaded]"
+              : `[Unsupported File Type: ${file.type || 'unknown'}]`;
+
+          console.warn(`Content extraction skipped. ${libraryMessage}`);
+          reject(new Error(`Content extraction skipped: ${libraryMessage}`));
+          return;
         }
 
-        // Always resolve with some text, even if extraction failed
         resolve(extractedText);
       } catch (error) {
         console.error('Error processing document content:', error);
-        const errorText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n`;
-        resolve(errorText + `[EXTRACTION ERROR: ${error.message || error.toString()}]\n\nUsing filename to create an example for you.`);
+        reject(new Error(`Failed to process document content: ${error.message}`));
       }
     };
 
     reader.onerror = (error) => {
       console.error('Error reading file:', error);
-      const errorText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n[FILE READ ERROR]\n\n`;
-      resolve(errorText + `Using filename to create an example for you.`);
+      reject(new Error(`Failed to read file: ${error.message}`));
     };
 
     reader.readAsArrayBuffer(file);
   });
 };
 
+// Basic validation function to ensure we have the minimum required fields
+function validateResearchPaper(paper) {
+  // Basic validation
+  if (!paper || typeof paper !== 'object') return false;
+  if (!paper.userInputs || typeof paper.userInputs !== 'object') return false;
+  
+  // Check essential fields
+  const requiredFields = ['question', 'audience', 'abstract'];
+  for (const field of requiredFields) {
+    if (typeof paper.userInputs[field] !== 'string' || paper.userInputs[field].length < 10) {
+      return false;
+    }
+  }
+  
+  // Check research approach (exactly one should be present)
+  const approachFields = ['hypothesis', 'needsresearch', 'exploratoryresearch'];
+  const presentApproaches = approachFields.filter(field => 
+    paper.userInputs[field] && typeof paper.userInputs[field] === 'string' && paper.userInputs[field].length > 0
+  );
+  if (presentApproaches.length !== 1) return false;
+  
+  // Check data collection method (exactly one should be present)
+  const dataFields = ['experiment', 'existingdata'];
+  const presentDataMethods = dataFields.filter(field => 
+    paper.userInputs[field] && typeof paper.userInputs[field] === 'string' && paper.userInputs[field].length > 0
+  );
+  if (presentDataMethods.length !== 1) return false;
+  
+  return true;
+}
+
 /**
- * Processes extracted scientific paper text and generates structured data
- * @param {File} file - The document file object
+ * Processes extracted scientific paper text and generates structured data using OpenAI's JSON mode.
+ * Uses generous interpretation to extract the most positive examples possible.
+ * @param {File} file - The document file object (used for filename in errors)
  * @returns {Promise<Object>} - The structured data for loading into the planner
  */
 export const importDocumentContent = async (file) => {
   let documentText = '';
-  
   try {
-    // Step 1: Extract text from document - with robust error handling
+    // Step 1: Extract text from document
     console.log(`Starting text extraction for ${file.name}`);
     documentText = await extractTextFromDocument(file);
-    console.log(`Text extraction completed for ${file.name}. Length: ${documentText.length}`);
+    console.log(`Extraction successful for ${file.name}. Text length: ${documentText.length}`);
 
-    // Step 2: Generate project structure from extracted text
-    console.log("Generating project structure from extracted text...");
-    
-    // Extract filename without extension
-    const fileName = file.name.replace(/\.\w+$/, '');
-    
-    // Create a prompt that uses both the filename and any extracted text
-    const prompt = `
-      Create a scientific paper example based on this:
-      
-      Document: "${fileName}"
-      
-      Extracted text (which may be partial):
-      ${documentText.substring(0, 5000)}${documentText.length > 5000 ? '...[truncated]' : ''}
-      
-      Please provide a complete, well-structured scientific paper plan with:
-      1. A research question and significance statement
-      2. Target audience (academic fields and researchers)
-      3. A hypothesis-driven research approach with two competing hypotheses
-      4. Five related papers (mentioned in the text if possible)
-      5. An experimental approach to data collection
-      6. Data analysis plan
-      7. Process description with timeline and collaborators
-      8. Abstract
-      
-      Make sure to have exactly ONE research approach (hypothesis) and ONE data collection method (experiment).
-      
-      This is for EDUCATIONAL PURPOSES to help students learn scientific paper structure.
-      Return in valid JSON format with userInputs containing all needed fields:
-      question, audience, hypothesis, relatedpapers, experiment, analysis, process, abstract
-    `;
-    
-    // Call OpenAI with the prompt
+    // Step 2: Build system prompt with research context - uses generous interpretation from promptContent.json
+    const systemPrompt = buildSystemPrompt('documentImport', {
+      needsResearchContext: true,
+      documentText: documentText.substring(0, 500) // First 500 chars for context
+    });
+
+    // Step 3: Build the task prompt - updated in promptContent.json to emphasize generous interpretation
+    const taskPrompt = buildTaskPrompt('documentImport', {
+      documentText: documentText,
+      isoTimestamp: new Date().toISOString()
+    });
+
+    // Step 4: Call OpenAI with JSON mode enabled
     const result = await callOpenAI(
-      prompt,
-      'document_import',
+      taskPrompt,
+      'document_import_task',
       {},
       [],
-      { temperature: 0.7, max_tokens: 3000 },
+      { 
+        temperature: 0.3,    // Low temperature for consistency
+        max_tokens: 3000     // Generous token count for detailed responses
+      },
       [],
-      "You are creating educational examples for students. Generate a complete, well-structured scientific paper example with EXACTLY ONE research approach and ONE data collection method. Base your example on the document text provided.",
-      true
+      systemPrompt,
+      true // Use JSON mode
     );
+
+    // Step 5: Validate the result, ensuring exactly one research approach and one data method
+    if (!validateResearchPaper(result)) {
+      console.warn("Received invalid paper structure from OpenAI, attempting to fix...");
+      
+      // Try a more direct approach if the first attempt didn't give valid results
+      const simplifiedPrompt = `
+        Extract a complete scientific paper structure from this document text.
+        
+        Be VERY GENEROUS in your interpretation - read between the lines, make positive assumptions,
+        and create a high-quality example that students can learn from. The goal is educational, not critical.
+        
+        You MUST choose EXACTLY ONE research approach:
+        - Either hypothesis-driven (testing competing explanations)
+        - OR needs-based (solving a specific problem for stakeholders)
+        - OR exploratory (discovering patterns without predetermined hypotheses)
+        
+        You MUST choose EXACTLY ONE data collection method:
+        - Either experiment (collecting new data)
+        - OR existingdata (analyzing already collected data)
+        
+        Return in this exact JSON format:
+        {
+          "userInputs": {
+            "question": "Research Question: [question from paper]\\n\\nSignificance/Impact: [significance from paper]",
+            "audience": "Target Audience/Community (research fields/disciplines):\\n1. [audience1]\\n2. [audience2]\\n3. [audience3]\\n\\nSpecific Researchers/Labs (individual scientists or groups):\\n1. [researcher1]\\n2. [researcher2]\\n3. [researcher3]",
+            
+            // Include EXACTLY ONE of these research approaches:
+            "hypothesis": "Hypothesis 1: [hypothesis1]\\n\\nHypothesis 2: [hypothesis2]\\n\\nWhy distinguishing these hypotheses matters:\\n- [reason1]\\n- [reason2]",
+            // OR
+            "needsresearch": "Who needs this research:\\n[stakeholders based on text]\\n\\nWhy they need it:\\n[problem description based on text]\\n\\nCurrent approaches and limitations:\\n[existing solutions based on text]\\n\\nSuccess criteria:\\n[evaluation methods based on text]\\n\\nAdvantages of this approach:\\n[benefits based on text]",
+            // OR
+            "exploratoryresearch": "Phenomena explored:\\n[description based on text]\\n\\nPotential discoveries your approach might reveal:\\n1. [finding1 based on text, if unspecified mention]\\n2. [finding2 based on text, if unspecified mention]\\n\\nValue of this exploration to the field:\\n[importance based on text, mention if there is lack of clarity]\\n\\nAnalytical approaches for discovery:\\n[methods based on text]\\n\\nStrategy for validating findings:\\n[validation based on text]",
+            
+            "relatedpapers": "Most similar papers that test related hypotheses:\\n1. [paper1 based on text, ideally give full reference]\\n2. [paper2 based on text, ideally give full reference]\\n3. [paper3 based on text, ideally give full reference]\\n4. [paper4 based on text, ideally give full reference]\\n5. [paper5 based on text, ideally give full reference]",
+            
+            // Include EXACTLY ONE of these data collection methods:
+            "experiment": "Key Variables:\\n- Independent: [variables based on text, mention if the text does not mention any]\\n- Dependent: [variables based on text, mention if the text does not mention any]\\n- Controlled: [variables based on text, mention if the text does not mention any]\\n\\nSample & Size Justification: [simple description based on text, mention if the text does not mention any]\\n\\nData Collection Methods: [simple description based on text, mention if the text does not mention any]\\n\\nPredicted Results: [simple description based on text, mention if the text does not mention any]\\n\\nPotential Confounds & Mitigations: [simple description based on text, mention if the text does not mention any]",
+            // OR
+            "existingdata": "Dataset name and source:\\n[description based on text, mention if the text does not specify]\\n\\nOriginal purpose of data collection:\\n[description based on text, mention if text does not specify]\\n\\nRights/permissions to use the data:\\n[description based on text, mention if the text does not specify]\\n\\nData provenance and quality information:\\n[description based on text, mention if the text does not specify]\\n\\nRelevant variables in the dataset:\\n[description based on text, mention if the text does not specify]\\n\\nPotential limitations of using this dataset:\\n[description based on text, mention if not specified]",
+            
+            "analysis": "Data Cleaning & Exclusions:\\n[simple description based on text, mention if the text does not specify]\\n\\nPrimary Analysis Method:\\n[simple description based on text]\\n\\nHow Analysis Addresses Research Question:\\n[simple description based on text, mention if this is not clear]\\n\\nUncertainty Quantification:\\n[simple description based on text, this includes any statistical method, mention if not specified]\\n\\nSpecial Cases Handling:\\n[simple description based on text]",
+            "process": "Skills Needed vs. Skills I Have:\\n[simple description based on text, guess where necessary]\\n\\nCollaborators & Their Roles:\\n[simple description based on text, guess where necessary]\\n\\nData/Code Sharing Plan:\\n[simple description based on text]\\n\\nTimeline & Milestones:\\n[simple description based on text]\\n\\nObstacles & Contingencies:\\n[simple description based on text, guess where necessary]",
+            "abstract": "Background: [simple description based on text]\\n\\nObjective/Question: [simple description based on text]\\n\\nMethods: [simple description based on text]\\n\\n(Expected) Results: [simple description based on text]\\n\\nConclusion/Implications: [simple description based on text]"
+          },
+          "chatMessages": {},
+          "timestamp": "${new Date().toISOString()}",
+          "version": "1.0-openai-json-extraction"
+        }
+        
+        Document text:
+        ${documentText.substring(0, 8000)}... [truncated]
+      `;
+      
+      const retryResult = await callOpenAI(
+        simplifiedPrompt,
+        'document_import_simplified',
+        {},
+        [],
+        { temperature: 0.3, max_tokens: 3000 },
+        [],
+        "You are creating educational examples from scientific papers. Be generous in your interpretation and create high-quality examples that demonstrate good scientific practice. Include EXACTLY ONE research approach and EXACTLY ONE data collection method.",
+        true
+      );
+      
+      if (validateResearchPaper(retryResult)) {
+        console.log('Successfully fixed paper structure on second attempt');
+        
+        // Ensure essential fields exist
+        retryResult.timestamp = retryResult.timestamp || new Date().toISOString();
+        retryResult.version = retryResult.version || '1.0-openai-json-extraction-retry';
+        retryResult.chatMessages = retryResult.chatMessages || {};
+        
+        return retryResult;
+      }
+      
+      throw new Error("Failed to extract valid paper structure after multiple attempts");
+    }
+
+    console.log('Successfully processed extracted text to structured data with OpenAI JSON mode');
     
-    console.log('Successfully created example based on document');
+    // Ensure essential fields exist
+    result.timestamp = result.timestamp || new Date().toISOString();
+    result.version = result.version || '1.0-openai-json-extraction';
+    result.chatMessages = result.chatMessages || {};
     
-    // Format and return the result
-    return {
-      userInputs: result.userInputs || createDefaultExample(fileName),
-      chatMessages: {},
-      timestamp: new Date().toISOString(),
-      version: '1.0-document-extraction'
-    };
+    return result;
     
   } catch (error) {
     console.error('Error during document import process:', error);
+
+    // Try one more time with a simplified approach focused on creating a positive example
+    try {
+      console.log("Attempting final fallback extraction...");
+      
+      // Create a bare-minimum example
+      const simplestPrompt = `
+        The document extraction failed. Please create a reasonable scientific paper example
+        based on whatever you can glean from this document, or create a generic example if needed.
+        
+        This is for EDUCATIONAL PURPOSES to help students learn scientific paper structure.
+        
+        You MUST include EXACTLY ONE research approach (hypothesis, needsresearch, or exploratoryresearch) 
+        and EXACTLY ONE data collection method (experiment or existingdata).
+        
+        Return in valid JSON format with userInputs containing question, audience, one research approach,
+        relatedpapers, one data collection method, analysis, process, and abstract fields.
+        
+        Document title: ${file.name}
+        Document preview: ${documentText.substring(0, 3000)}...
+      `;
+      
+      const fallbackResult = await callOpenAI(
+        simplestPrompt,
+        'document_import_fallback',
+        {},
+        [],
+        { temperature: 0.4, max_tokens: 3000 },
+        [],
+        "You are creating educational examples for students. Generate a complete, well-structured scientific paper example with EXACTLY ONE research approach and ONE data collection method.",
+        true
+      );
+      
+      if (validateResearchPaper(fallbackResult)) {
+        console.log('Created fallback example based on document');
+        
+        fallbackResult.timestamp = new Date().toISOString();
+        fallbackResult.version = '1.0-fallback-example';
+        fallbackResult.chatMessages = {};
+        
+        return fallbackResult;
+      }
+    } catch (fallbackError) {
+      console.error('Fallback extraction also failed:', fallbackError);
+    }
+
+    // Create a structured error response as last resort
+    const stage = documentText ? 'LLM Processing' : 'Text Extraction';
+    const detailedErrorMessage = `Import Error for ${file.name} (Stage: ${stage}):\nType: ${error.name || 'Error'}\nMessage: ${error.message || 'Unknown import error'}`;
     
-    // Create a fallback example based on the filename
+    const hypothesisTextOnError = documentText
+        ? `--- RAW EXTRACTED TEXT (for debugging) ---\n\n${documentText.substring(0, 5000)}...`
+        : "Text extraction failed. See error details in Question section.";
+
+    // Return a structured error object
     return {
-      userInputs: createDefaultExample(file.name),
+      userInputs: {
+        question: `Research Question: Error during import\n\nSignificance/Impact: ${detailedErrorMessage}`,
+        hypothesis: hypothesisTextOnError,
+        abstract: `Document import failed for ${file.name}. See details in Question section.`,
+      },
       chatMessages: {},
       timestamp: new Date().toISOString(),
-      version: '1.0-fallback'
+      version: '1.0-extraction-error',
     };
   }
 };
 
-/**
- * Testing function for PDF extraction - call from browser console
- * @returns {Promise<string>} Extracted text
- */
+// Add testing function for convenience
 window.testPdfExtraction = async function() {
   try {
     console.log("Testing PDF extraction...");
-    const response = await fetch('/sample.pdf');
-    const pdfData = await response.arrayBuffer();
     
-    console.log("PDF loaded, size:", pdfData.byteLength);
+    // Test with a URL if possible
+    let pdfUrl = '/sample.pdf';
     
-    // Try each extraction method
-    try {
-      const primaryResult = await extractPdfTextPrimary(pdfData);
-      console.log("PRIMARY METHOD SUCCESS:", primaryResult);
-      return primaryResult;
-    } catch (error) {
-      console.error("Primary method failed:", error);
-      
-      try {
-        const alternativeResult = await extractPdfTextAlternative(pdfData);
-        console.log("ALTERNATIVE METHOD SUCCESS:", alternativeResult);
-        return alternativeResult;
-      } catch (error2) {
-        console.error("Alternative method failed:", error2);
-        const domResult = extractTextWithDOM(pdfData);
-        console.log("DOM METHOD RESULT:", domResult);
-        return domResult;
-      }
+    // Try to fetch the sample PDF
+    const response = await fetch(pdfUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sample PDF: ${response.status} ${response.statusText}`);
     }
+    
+    const pdfData = await response.arrayBuffer();
+    console.log("PDF sample loaded, size:", pdfData.byteLength);
+    
+    // Create a test File object
+    const file = new File([pdfData], "sample.pdf", { type: "application/pdf" });
+    
+    // Extract text using our main function
+    const extractedText = await extractTextFromDocument(file);
+    
+    console.log("EXTRACTION RESULT:", extractedText);
+    return extractedText;
   } catch (error) {
     console.error("PDF extraction test failed:", error);
     return "Test failed: " + error.message;
   }
 };
-
-/**
- * Creates a default example structure based on filename
- * @param {string} fileName - The filename to base the example on
- * @returns {Object} - Default example structure
- */
-function createDefaultExample(fileName) {
-  // Clean up the filename to use as a topic
-  const topic = fileName.replace(/\.\w+$/, '')  // Remove extension
-                       .replace(/[_\-\d]+/g, ' ')  // Replace underscores, hyphens, numbers with spaces
-                       .trim();
-  
-  return {
-    question: `Research Question: How do mechanisms in ${topic} affect outcomes in controlled settings?\n\nSignificance/Impact: Understanding these mechanisms could lead to advances in both theory and application.`,
-    
-    audience: `Target Audience/Community (research fields/disciplines):\n1. Researchers in ${topic} field\n2. Applied practitioners\n3. Interdisciplinary scientists\n\nSpecific Researchers/Labs (individual scientists or groups):\n1. Leading research labs studying ${topic}\n2. Interdisciplinary teams working on related problems\n3. Research centers specializing in relevant methods`,
-    
-    hypothesis: `Hypothesis 1: The primary mechanism in ${topic} operates through direct causal pathways.\n\nHypothesis 2: The effects observed in ${topic} are mediated by previously unidentified factors.\n\nWhy distinguishing these hypotheses matters:\n- Would clarify fundamental mechanisms\n- Has implications for intervention design`,
-    
-    relatedpapers: `Most similar papers that test related hypotheses:\n1. Smith et al. (2022) "Recent advances in ${topic}"\n2. Johnson & Williams (2021) "Experimental approaches to ${topic}"\n3. Chen et al. (2023) "Theoretical framework for ${topic}"\n4. Patel (2020) "Meta-analysis of ${topic} research"\n5. Garcia & Lopez (2022) "Future directions in ${topic} studies"`,
-    
-    experiment: `Key Variables:\n- Independent: Treatment conditions representing different aspects of ${topic}\n- Dependent: Measurable outcomes related to the hypothesized mechanisms\n- Controlled: Participant characteristics and environmental factors\n\nSample & Size Justification: Sample size determined through power analysis to detect medium effect sizes\n\nData Collection Methods: Standardized measurement protocols with validated instruments\n\nPredicted Results: The first hypothesis will be supported by showing direct effects on primary outcomes\n\nPotential Confounds & Mitigations: Randomization and balanced design to control for confounding variables`,
-    
-    analysis: `Data Cleaning & Exclusions:\nStandard preprocessing procedures with pre-registered exclusion criteria\n\nPrimary Analysis Method:\nMixed-effects regression modeling with appropriate covariates\n\nHow Analysis Addresses Research Question:\nDirectly tests the causal pathways specified in the hypotheses\n\nUncertainty Quantification:\nBootstrap confidence intervals and Bayesian credible intervals\n\nSpecial Cases Handling:\nRobust methods for outlier detection and missing data`,
-    
-    process: `Skills Needed vs. Skills I Have:\nRequired: experimental design, statistical analysis, domain expertise\nHave: experimental design, need to collaborate for advanced statistics\n\nCollaborators & Their Roles:\nMethodologist for study design, statistician for analysis, domain expert for interpretation\n\nData/Code Sharing Plan:\nPre-registration and open data/code repositories\n\nTimeline & Milestones:\nThree months preparation, six months data collection, three months analysis and writing\n\nObstacles & Contingencies:\nRecruitment challenges addressed through multiple pathways, analysis plan includes alternatives`,
-    
-    abstract: `Background: ${topic} represents an important area of scientific inquiry with significant implications for theory and practice.\n\nObjective/Question: This study investigates the causal mechanisms underlying ${topic} by testing competing hypotheses about direct versus mediated pathways.\n\nMethods: A controlled experimental design with appropriate randomization and controls will be used to test the specified hypotheses.\n\n(Expected) Results: Results are expected to support the hypothesis of direct causal pathways, providing a clearer understanding of the fundamental mechanisms.\n\nConclusion/Implications: Findings will advance both theoretical understanding and inform practical applications in this field.`
-  };
-}
