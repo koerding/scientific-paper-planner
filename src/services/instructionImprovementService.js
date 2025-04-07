@@ -39,7 +39,9 @@ if (pdfjsLib) {
       `${window.location.origin}/pdf.worker.min.mjs`,
       `${window.location.origin}/pdf.worker.min.js`, 
       `${window.location.origin}/pdf.worker.js`,
-      // Add CDN fallback if local fails
+      // Add CDN fallbacks if local fails
+      'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js',
+      'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js',
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js'
     ];
     
