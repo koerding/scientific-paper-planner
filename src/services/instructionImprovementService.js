@@ -3,7 +3,9 @@
 /**
  * Modern service for improving instructions based on user progress
  * Uses OpenAI's native JSON mode for reliable parsing
- * UPDATED: Now provides feedback in Strengths, Weaknesses, Comments format
+ * UPDATED: Now provides feedback in Strengths, Weaknesses, Comments format with line breaks
+ * UPDATED: Now enhances the subtraction of already completed items from instructions
+ * UPDATED: More detailed console logging
  */
 import { callOpenAI } from './openaiService';
 import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -22,6 +24,9 @@ export const improveBatchInstructions = async (
   sectionContent
 ) => {
   try {
+    console.log("[Instruction Improvement] Starting batch instruction improvement process");
+    console.time("instructionImprovementTime");
+    
     // Identify sections with meaningful user content
     const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
       const content = userInputs[sectionId];
@@ -72,26 +77,44 @@ export const improveBatchInstructions = async (
 
     IMPORTANT ADDITIONAL INSTRUCTIONS:
     
-    1. For each section, YOU MUST ACTUALLY MODIFY the instructions based on the user's progress:
+    1. SUBTRACTION IS PRIMARY: Your main job is to REMOVE bullet points that the user has already addressed from the instructions.
+       - Carefully analyze what the user has already completed
+       - Remove corresponding bullet points completely from the instructions
+       - It's better to remove too much than too little - if they've made progress on a point, remove it
+    
+    2. For each section, YOU MUST ACTUALLY MODIFY the instructions based on the user's progress:
        - Remove bullet points they've already addressed
        - Add congratulatory language when appropriate
        - Add new, specific suggestions based on their work
     
-    2. For complete or nearly complete sections, transform the instructions into congratulatory messages like:
+    3. For complete or nearly complete sections, transform the instructions into congratulatory messages like:
        "Great job on your [section]! You've clearly [specific achievements]. Consider these refinements: [1-2 specific suggestions]"
     
-    3. Always provide structured feedback in this EXACT format:
-       "**Strengths:** [list specific strengths]
-       **Weaknesses:** [list areas that need improvement]
-       **Comments:** [constructive suggestions]"
+    4. Always provide structured feedback in this EXACT format with line breaks between sections:
+       "**Strengths:**
+       [list specific strengths]
+       
+       **Weaknesses:**
+       [list areas that need improvement]
+       
+       **Comments:**
+       [constructive suggestions]"
     
-    4. Never return the original instructions unchanged - always edit them.
+    5. Never return the original instructions unchanged - always edit them.
     
     Remember to return your response as a valid JSON array containing objects with id, editedInstructions, feedback, and completionStatus fields.
     `;
 
     const taskPrompt = buildTaskPrompt('instructionImprovement', {
       sectionsData: JSON.stringify(sectionsDataForPrompt, null, 2)
+    });
+
+    // Log complete request data (for debugging)
+    console.log("[Instruction Improvement] Request to OpenAI:", {
+      systemPrompt: systemPrompt,
+      taskPrompt: taskPrompt.substring(0, 200) + "...", // Truncated for readability
+      sectionsCount: sectionsDataForPrompt.length,
+      sectionIds: sectionsDataForPrompt.map(s => s.id)
     });
 
     // Call OpenAI with JSON mode - we expect an array directly now
@@ -109,11 +132,11 @@ export const improveBatchInstructions = async (
       true // Use JSON mode
     );
     
-    console.log("Response from OpenAI:", response);
+    console.log("[Instruction Improvement] Complete response from OpenAI:", response);
     
     // If response is empty or not an array, use fallback
     if (!Array.isArray(response) || response.length === 0) {
-      console.warn("Invalid or empty response format from OpenAI, using fallback");
+      console.warn("[Instruction Improvement] Invalid or empty response format from OpenAI, using fallback");
       
       // Create enhanced fallback responses with actual edits and the new feedback format
       const fallbackData = sectionsDataForPrompt.map(section => {
@@ -136,8 +159,15 @@ export const improveBatchInstructions = async (
           modifiedInstructions += `* Consider the broader implications of your work\n\n* Ensure all key points are supported by evidence\n\n* Think about potential objections and address them`;
         }
         
-        // Basic structured feedback based on content length
-        const feedback = `**Strengths:** Your work shows engagement with the task.\n**Weaknesses:** More detail may be needed in some areas.\n**Comments:** Continue developing your ${section.title.toLowerCase()}.`;
+        // Basic structured feedback with line breaks
+        const feedback = `**Strengths:**
+Your work shows engagement with the task.
+
+**Weaknesses:**
+More detail may be needed in some areas.
+
+**Comments:**
+Continue developing your ${section.title.toLowerCase()}.`;
         
         return {
           id: section.id,
@@ -147,7 +177,7 @@ export const improveBatchInstructions = async (
         };
       });
       
-      console.log("Using fallback data with actual edits:", fallbackData);
+      console.log("[Instruction Improvement] Using fallback data with actual edits:", fallbackData);
       
       return {
         success: true,
@@ -172,11 +202,15 @@ export const improveBatchInstructions = async (
         ? item.editedInstructions 
         : createCongratulatory(item.id, sectionData?.title || 'section', originalInstructions);
       
-      // Ensure feedback is in the Strengths/Weaknesses/Comments format
+      // Ensure feedback is in the Strengths/Weaknesses/Comments format with line breaks
       let structuredFeedback = item.feedback || '';
       if (!structuredFeedback.includes('**Strengths:**') || 
           !structuredFeedback.includes('**Weaknesses:**') || 
-          !structuredFeedback.includes('**Comments:**')) {
+          !structuredFeedback.includes('**Comments:**') ||
+          // Check for missing linebreaks
+          structuredFeedback.includes('**Strengths:**\n') === false ||
+          structuredFeedback.includes('\n\n**Weaknesses:**') === false ||
+          structuredFeedback.includes('\n\n**Comments:**') === false) {
         structuredFeedback = formatExistingFeedback(item.feedback || '', sectionData?.title || 'section');
       }
       
@@ -192,6 +226,7 @@ export const improveBatchInstructions = async (
     }).filter(item => item.id); // Remove any items without an ID
 
     console.log(`[Instruction Improvement] Successfully processed ${validatedData.length} improved sections`);
+    console.timeEnd("instructionImprovementTime");
 
     // Return success with the validated data
     return {
@@ -201,6 +236,7 @@ export const improveBatchInstructions = async (
     
   } catch (error) {
     console.error("Error improving batch instructions:", error);
+    console.timeEnd("instructionImprovementTime");
     
     // Create enhanced fallback responses with actual edits and structured feedback
     const fallbackData = Object.keys(userInputs)
@@ -217,8 +253,15 @@ export const improveBatchInstructions = async (
         // Create a congratulatory message
         const editedInstructions = createCongratulatory(id, section?.title || 'section', originalInstructions);
         
-        // Simple structured feedback without making up specifics
-        const feedback = `**Strengths:** Your work shows engagement with the task.\n**Weaknesses:** Some areas may need more development.\n**Comments:** Continue refining your ${section?.title?.toLowerCase() || 'work'}.`;
+        // Simple structured feedback with line breaks
+        const feedback = `**Strengths:**
+Your work shows engagement with the task.
+
+**Weaknesses:**
+Some areas may need more development.
+
+**Comments:**
+Continue refining your ${section?.title?.toLowerCase() || 'work'}.`;
         
         return {
           id: id,
@@ -228,7 +271,7 @@ export const improveBatchInstructions = async (
         };
       });
     
-    console.log("Using error fallback data with structured feedback:", fallbackData);
+    console.log("[Instruction Improvement] Using error fallback data with structured feedback:", fallbackData);
     
     return {
       success: true,
@@ -336,7 +379,7 @@ function createCongratulatory(id, title, originalInstructions) {
 
 /**
  * Formats existing feedback into the Strengths/Weaknesses/Comments structure
- * without making up content if none exists
+ * with proper line breaks between sections
  * @param {string} feedback - The feedback to format
  * @param {string} sectionTitle - The section title
  * @returns {string} - Structured feedback
@@ -344,7 +387,14 @@ function createCongratulatory(id, title, originalInstructions) {
 function formatExistingFeedback(feedback, sectionTitle) {
   // If there's no meaningful feedback, return a minimal structure
   if (!feedback || feedback.trim() === '' || feedback.length < 20) {
-    return `**Strengths:** \n**Weaknesses:** \n**Comments:** Continue developing your ${sectionTitle.toLowerCase()}.`;
+    return `**Strengths:**
+Shows effort in developing this section.
+
+**Weaknesses:**
+Needs more development in key areas.
+
+**Comments:**
+Continue developing your ${sectionTitle.toLowerCase()}.`;
   }
   
   // Try to identify strengths, weaknesses, and comments from existing feedback
@@ -373,8 +423,15 @@ function formatExistingFeedback(feedback, sectionTitle) {
     comments = feedback.trim();
   }
   
-  // Construct the structured feedback
-  return `**Strengths:** ${strengths || ''}\n**Weaknesses:** ${weaknesses || ''}\n**Comments:** ${comments || 'Continue developing your work.'}`;
+  // Construct the structured feedback with line breaks
+  return `**Strengths:**
+${strengths || 'Shows effort in developing this section.'}
+
+**Weaknesses:**
+${weaknesses || 'Some aspects could be more fully developed.'}
+
+**Comments:**
+${comments || 'Continue developing your work.'}`;
 }
 
 /**
