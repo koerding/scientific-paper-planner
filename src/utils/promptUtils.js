@@ -99,7 +99,28 @@ export const buildSystemPrompt = (promptType, params = {}) => {
   };
 
   // Replace placeholders in the base template
-  return replacePlaceholders(basePromptTemplate, allParams);
+  let finalPrompt = replacePlaceholders(basePromptTemplate, allParams);
+  
+  // For instruction improvement, add specific guidance about linebreaks in feedback
+  if (promptType === 'instructionImprovement') {
+    finalPrompt += `
+
+IMPORTANT FEEDBACK FORMAT NOTE: When providing feedback, always use this exact structure with linebreaks between sections:
+
+**Strengths:**
+[list specific strengths]
+
+**Weaknesses:**
+[list specific areas for improvement]
+
+**Comments:**
+[specific actionable suggestions]
+
+The linebreaks between sections are essential for readability.
+`;
+  }
+  
+  return finalPrompt;
 };
 
 /**
@@ -124,7 +145,28 @@ export const buildTaskPrompt = (taskType, params = {}) => {
   };
 
   // Replace placeholders
-  return replacePlaceholders(basePromptTemplate, allParams);
+  let finalPrompt = replacePlaceholders(basePromptTemplate, allParams);
+  
+  // For instruction improvement, add specific guidance about linebreaks in feedback
+  if (taskType === 'instructionImprovement') {
+    finalPrompt += `
+
+IMPORTANT ADDITIONAL INSTRUCTION: When providing feedback in the "feedback" field, use linebreaks between the Strengths, Weaknesses, and Comments sections for better readability. For example:
+
+"**Strengths:**
+The question is well-defined and its significance is clearly articulated.
+
+**Weaknesses:**
+The broader scientific context and specific methodologies are not fully addressed.
+
+**Comments:**
+Consider discussing the theoretical implications of your question to enhance its impact."
+
+These linebreaks between sections make the feedback much more readable and easier to understand.
+`;
+  }
+  
+  return finalPrompt;
 };
 
 /**
@@ -167,7 +209,12 @@ export const getRandomQuestionsForApproach = (sectionId, count = 2) => {
 export const generateMockResponse = (type, sectionId) => {
   // Handle specific mock types first
   if (type === 'instructionImprovement') {
-    return promptContent.mockResponses.instructionImprovement;
+    // Add linebreaks to feedback sections
+    let response = promptContent.mockResponses.instructionImprovement;
+    response = response.replace(/"\*\*Strengths:\*\* /g, '"**Strengths:**\n');
+    response = response.replace(/\\n\*\*Weaknesses:\*\* /g, '\n\n**Weaknesses:**\n');
+    response = response.replace(/\\n\*\*Comments:\*\* /g, '\n\n**Comments:**\n');
+    return response;
   }
   
   if (type === 'documentImport') {
