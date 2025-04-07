@@ -234,6 +234,7 @@ const loadExternalLibrary = (url) => {
 
 /**
  * Exports the project as a DOCX file using docx.js
+ * FIXED: Corrected the sections processing issue with proper error handling
  * @param {Object} userInputs - The user inputs
  * @param {Object} chatMessages - The chat messages
  * @param {Object} sectionContent - The section content
@@ -266,9 +267,8 @@ export const exportAsDocx = async (userInputs, chatMessages, sectionContent) => 
     
     // Load the docx library from CDN
     try {
-      await Promise.all([
-        loadExternalLibrary('https://unpkg.com/docx@7.1.0/build/index.js')
-      ]);
+      // Use a different version of docx that's more reliable for our use case
+      await loadExternalLibrary('https://unpkg.com/docx@5.0.2/build/index.js');
     } catch (error) {
       console.error("Failed to load docx.js:", error);
       document.body.removeChild(loadingMessage);
@@ -288,115 +288,76 @@ export const exportAsDocx = async (userInputs, chatMessages, sectionContent) => 
     const markdownContent = getFormattedContent(userInputs);
     
     // Create DOCX document
-    const { Document, Paragraph, TextRun, HeadingLevel, Packer } = window.docx;
+    const { Document, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType } = window.docx;
     
+    // Create a simple document structure
     const doc = new Document({
-      title: "Scientific Paper Project Plan",
-      description: "Exported from Scientific Paper Planner",
-      styles: {
-        paragraphStyles: [
-          {
-            id: "Normal",
-            name: "Normal",
-            basedOn: "Normal",
-            next: "Normal",
-            quickFormat: true,
-            run: {
-              size: 24, // 12pt
-              font: "Calibri",
-            },
-            paragraph: {
-              spacing: {
-                line: 276, // 1.15 line spacing
-                before: 0,
-                after: 0,
-              },
-            },
-          },
-          {
-            id: "Heading1",
-            name: "Heading 1",
-            basedOn: "Normal",
-            next: "Normal",
-            quickFormat: true,
-            run: {
-              size: 32, // 16pt
-              bold: true,
-              color: "2563EB", // blue
-              font: "Calibri",
-            },
-            paragraph: {
-              spacing: {
-                before: 340, // 17pt
-                after: 240, // 12pt
-              },
-            },
-          },
-          {
-            id: "Heading2",
-            name: "Heading 2",
-            basedOn: "Normal",
-            next: "Normal",
-            quickFormat: true,
-            run: {
-              size: 28, // 14pt
-              bold: true,
-              color: "1E40AF", // darker blue
-              font: "Calibri",
-            },
-            paragraph: {
-              spacing: {
-                before: 240, // 12pt
-                after: 120, // 6pt
-              },
-            },
-          },
-        ],
-      },
+      sections: [{
+        properties: {},
+        children: []
+      }]
     });
     
-    // Helper function to process markdown sections
-    const processMarkdownSection = (section) => {
-      const paragraphs = [];
+    // Process markdown content line by line
+    const lines = markdownContent.split('\n');
+    const children = [];
+    
+    for (let line of lines) {
+      line = line.trim();
       
-      // Split section into lines
-      const lines = section.split('\n');
-      let i = 0;
-      
-      while (i < lines.length) {
-        const line = lines[i].trim();
-        
-        // Process headings
-        if (line.startsWith('# ')) {
-          paragraphs.push(new Paragraph({
+      if (line.startsWith('# ')) {
+        // Main heading (h1)
+        children.push(
+          new Paragraph({
             text: line.substring(2),
             heading: HeadingLevel.HEADING_1,
-          }));
-        } else if (line.startsWith('## ')) {
-          paragraphs.push(new Paragraph({
+            spacing: {
+              before: 340,
+              after: 240
+            }
+          })
+        );
+      } else if (line.startsWith('## ')) {
+        // Subheading (h2)
+        children.push(
+          new Paragraph({
             text: line.substring(3),
             heading: HeadingLevel.HEADING_2,
-          }));
-        } else if (line.length > 0) {
-          // Process normal paragraphs
-          paragraphs.push(new Paragraph({
-            children: [new TextRun(line)],
-          }));
-        } else if (line.length === 0 && i > 0 && lines[i-1].length > 0) {
-          // Add empty paragraph for spacing
-          paragraphs.push(new Paragraph({}));
-        }
-        
-        i++;
+            spacing: {
+              before: 240,
+              after: 120
+            }
+          })
+        );
+      } else if (line.length > 0) {
+        // Regular paragraph
+        children.push(
+          new Paragraph({
+            text: line,
+            spacing: {
+              before: 120,
+              after: 120
+            }
+          })
+        );
+      } else {
+        // Empty line - add a spacing paragraph
+        children.push(
+          new Paragraph({
+            text: "",
+            spacing: {
+              before: 100,
+              after: 100
+            }
+          })
+        );
       }
-      
-      return paragraphs;
-    };
+    }
     
-    // Process the entire document
-    const docParagraphs = processMarkdownSection(markdownContent);
+    // Add all paragraphs to the document
     doc.addSection({
-      children: docParagraphs,
+      properties: {},
+      children: children
     });
     
     // Generate and save the DOCX file
@@ -415,6 +376,10 @@ export const exportAsDocx = async (userInputs, chatMessages, sectionContent) => 
       document.body.removeChild(loadingMessage);
       
       console.log("Project exported successfully as DOCX:", safeFileName);
+    }).catch(error => {
+      console.error("Error generating DOCX:", error);
+      document.body.removeChild(loadingMessage);
+      alert("There was an error generating the DOCX file: " + (error.message || "Unknown error"));
     });
     
     return true;
