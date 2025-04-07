@@ -10,7 +10,7 @@ import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
-import AppHeader from '../AppHeader'; // Import the external AppHeader component
+import AppHeader from '../buttons/AppHeader'; // FIXED: Updated path to AppHeader
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
