@@ -8,12 +8,28 @@
   min-height: auto !important; /* Remove any minimum height */
   width: 100% !important;
   max-width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: visible !important;
 }
 
 .section-card:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+/* Make the header a fixed size */
+.section-card .flex.justify-between.items-center {
+  flex-shrink: 0 !important;
+}
+
+/* Make the textarea container grow with content */
+.section-card > div:last-child {
+  flex-grow: 1 !important;
+  width: 100% !important;
+}
+
+/* Fix textarea resizing */
 .section-card textarea {
   background-color: transparent !important; /* Make textarea transparent */
   border: none !important;
@@ -21,13 +37,30 @@
   line-height: 1.4 !important;
   height: auto !important; /* Allow textarea to expand */
   min-height: 1.5rem !important; /* Minimal starting height */
-  overflow-y: hidden !important; /* Hide scrollbars */
+  overflow: hidden !important; /* Hide scrollbars */
   resize: none !important; /* Prevent manual resizing */
+  box-sizing: border-box !important;
+  transition: none !important; /* Disable transitions that could interfere with resizing */
+  word-wrap: break-word !important;
+  word-break: break-word !important;
 }
 
 .section-card textarea:focus {
   box-shadow: none !important;
   border: none !important;
+}
+
+/* Ensure textareas never get a fixed height from external styles */
+textarea {
+  height: auto !important;
+  min-height: auto !important;
+}
+
+/* Fix transitions that might interfere with resizing */
+.section-card,
+.section-card *,
+textarea {
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
 /* Thinner border styles to reduce visual weight */
