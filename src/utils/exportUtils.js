@@ -1,8 +1,9 @@
 /**
- * Utilities for exporting project content
+ * Utilities for exporting project content with real PDF and DOCX generation
  * UPDATED: Added support for custom file naming and separated JSON export
  * FIXED: More robust save functionality
  * FIXED: Added format selection dialog for exports (PDF, DOCX, MD)
+ * FIXED: Now creates actual PDF and DOCX files using external libraries
  */
 
 /**
@@ -210,125 +211,408 @@ export const exportAsMarkdown = (userInputs, chatMessages, sectionContent, fileN
 };
 
 /**
- * Exports the project as a DOCX file using a basic HTML conversion with styling
+ * Dynamically load an external library from CDN
+ * @param {string} url - The URL of the library to load
+ * @returns {Promise} - Resolves when the library is loaded
+ */
+const loadExternalLibrary = (url) => {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = url;
+    script.async = true;
+    script.onload = () => {
+      console.log(`Library loaded: ${url}`);
+      resolve();
+    };
+    script.onerror = () => {
+      console.error(`Failed to load library: ${url}`);
+      reject(new Error(`Failed to load library: ${url}`));
+    };
+    document.body.appendChild(script);
+  });
+};
+
+/**
+ * Exports the project as a DOCX file using docx.js
  * @param {Object} userInputs - The user inputs
  * @param {Object} chatMessages - The chat messages
  * @param {Object} sectionContent - The section content
  * @returns {boolean} - Success flag
  */
-export const exportAsDocx = (userInputs, chatMessages, sectionContent) => {
+export const exportAsDocx = async (userInputs, chatMessages, sectionContent) => {
   try {
+    // Show loading message
+    const loadingMessage = document.createElement('div');
+    loadingMessage.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+    loadingMessage.innerHTML = `
+      <div class="bg-white p-6 rounded-lg shadow-xl">
+        <div class="flex items-center">
+          <svg class="animate-spin h-5 w-5 mr-3 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Generating DOCX document...</span>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(loadingMessage);
+    
     // Get filename
     const safeFileName = promptForFilename('docx');
-    if (!safeFileName) return false;
+    if (!safeFileName) {
+      document.body.removeChild(loadingMessage);
+      return false;
+    }
     
-    // Create an alert about simulated DOCX export
-    alert("DOCX export is simulated for this demo. In a production version, this would use a library like docx.js to create a proper Word document. For now, a styled HTML file will be downloaded that can be opened in Word.");
+    // Load the docx library from CDN
+    try {
+      await Promise.all([
+        loadExternalLibrary('https://unpkg.com/docx@7.1.0/build/index.js')
+      ]);
+    } catch (error) {
+      console.error("Failed to load docx.js:", error);
+      document.body.removeChild(loadingMessage);
+      alert("Failed to load the Word document generation library. Please try again or use a different format.");
+      return false;
+    }
     
-    // Get formatted content and convert to HTML
-    const content = getFormattedContent(userInputs);
-    const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Scientific Paper Project Plan</title>
-  <style>
-    body { font-family: 'Calibri', sans-serif; line-height: 1.5; max-width: 800px; margin: 2em auto; padding: 2em; }
-    h1 { font-size: 18pt; color: #2563EB; margin-top: 1em; margin-bottom: 0.5em; }
-    h2 { font-size: 14pt; color: #1E40AF; margin-top: 1em; margin-bottom: 0.5em; }
-    p { margin-bottom: 0.5em; }
-  </style>
-</head>
-<body>
-  ${content.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>').replace(/## (.*?)\n/g, '</p><h2>$1</h2><p>').replace(/# (.*?)\n/g, '<h1>$1</h1><p>')}
-</p>
-</body>
-</html>`;
+    // Check if the library loaded correctly
+    if (!window.docx) {
+      console.error("docx library not found in global scope");
+      document.body.removeChild(loadingMessage);
+      alert("Word document generation library failed to initialize. Please try again or use a different format.");
+      return false;
+    }
     
-    // Create a blob with the HTML content
-    const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
-    const htmlUrl = URL.createObjectURL(htmlBlob);
+    // Get formatted content
+    const markdownContent = getFormattedContent(userInputs);
     
-    // Create a link and trigger download
-    const htmlLink = document.createElement('a');
-    htmlLink.href = htmlUrl;
-    htmlLink.download = safeFileName.replace('.docx', '.html');
-    document.body.appendChild(htmlLink);
-    htmlLink.click();
+    // Create DOCX document
+    const { Document, Paragraph, TextRun, HeadingLevel, Packer } = window.docx;
     
-    // Clean up file link
-    document.body.removeChild(htmlLink);
-    URL.revokeObjectURL(htmlUrl);
+    const doc = new Document({
+      title: "Scientific Paper Project Plan",
+      description: "Exported from Scientific Paper Planner",
+      styles: {
+        paragraphStyles: [
+          {
+            id: "Normal",
+            name: "Normal",
+            basedOn: "Normal",
+            next: "Normal",
+            quickFormat: true,
+            run: {
+              size: 24, // 12pt
+              font: "Calibri",
+            },
+            paragraph: {
+              spacing: {
+                line: 276, // 1.15 line spacing
+                before: 0,
+                after: 0,
+              },
+            },
+          },
+          {
+            id: "Heading1",
+            name: "Heading 1",
+            basedOn: "Normal",
+            next: "Normal",
+            quickFormat: true,
+            run: {
+              size: 32, // 16pt
+              bold: true,
+              color: "2563EB", // blue
+              font: "Calibri",
+            },
+            paragraph: {
+              spacing: {
+                before: 340, // 17pt
+                after: 240, // 12pt
+              },
+            },
+          },
+          {
+            id: "Heading2",
+            name: "Heading 2",
+            basedOn: "Normal",
+            next: "Normal",
+            quickFormat: true,
+            run: {
+              size: 28, // 14pt
+              bold: true,
+              color: "1E40AF", // darker blue
+              font: "Calibri",
+            },
+            paragraph: {
+              spacing: {
+                before: 240, // 12pt
+                after: 120, // 6pt
+              },
+            },
+          },
+        ],
+      },
+    });
     
-    console.log("Project exported as HTML for Word:", safeFileName);
+    // Helper function to process markdown sections
+    const processMarkdownSection = (section) => {
+      const paragraphs = [];
+      
+      // Split section into lines
+      const lines = section.split('\n');
+      let i = 0;
+      
+      while (i < lines.length) {
+        const line = lines[i].trim();
+        
+        // Process headings
+        if (line.startsWith('# ')) {
+          paragraphs.push(new Paragraph({
+            text: line.substring(2),
+            heading: HeadingLevel.HEADING_1,
+          }));
+        } else if (line.startsWith('## ')) {
+          paragraphs.push(new Paragraph({
+            text: line.substring(3),
+            heading: HeadingLevel.HEADING_2,
+          }));
+        } else if (line.length > 0) {
+          // Process normal paragraphs
+          paragraphs.push(new Paragraph({
+            children: [new TextRun(line)],
+          }));
+        } else if (line.length === 0 && i > 0 && lines[i-1].length > 0) {
+          // Add empty paragraph for spacing
+          paragraphs.push(new Paragraph({}));
+        }
+        
+        i++;
+      }
+      
+      return paragraphs;
+    };
+    
+    // Process the entire document
+    const docParagraphs = processMarkdownSection(markdownContent);
+    doc.addSection({
+      children: docParagraphs,
+    });
+    
+    // Generate and save the DOCX file
+    Packer.toBlob(doc).then(blob => {
+      // Create a download link for the blob
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = safeFileName;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      document.body.removeChild(loadingMessage);
+      
+      console.log("Project exported successfully as DOCX:", safeFileName);
+    });
+    
     return true;
   } catch (error) {
     console.error("Error exporting project as DOCX:", error);
+    
+    // Remove loading message if present
+    const loadingMessage = document.querySelector('.fixed.inset-0.bg-gray-600.bg-opacity-50');
+    if (loadingMessage) {
+      document.body.removeChild(loadingMessage);
+    }
+    
     alert("There was an error exporting the project as DOCX: " + (error.message || "Unknown error"));
     return false;
   }
 };
 
 /**
- * Exports the project as a PDF file
- * Note: This simulates PDF export by creating a printable HTML page
+ * Exports the project as a PDF file using jsPDF
  * @param {Object} userInputs - The user inputs
- * @param {Object} chatMessages - The chat messages 
+ * @param {Object} chatMessages - The chat messages
  * @param {Object} sectionContent - The section content
  * @returns {boolean} - Success flag
  */
-export const exportAsPdf = (userInputs, chatMessages, sectionContent) => {
+export const exportAsPdf = async (userInputs, chatMessages, sectionContent) => {
   try {
+    // Show loading message
+    const loadingMessage = document.createElement('div');
+    loadingMessage.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+    loadingMessage.innerHTML = `
+      <div class="bg-white p-6 rounded-lg shadow-xl">
+        <div class="flex items-center">
+          <svg class="animate-spin h-5 w-5 mr-3 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Generating PDF document...</span>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(loadingMessage);
+    
     // Get filename
     const safeFileName = promptForFilename('pdf');
-    if (!safeFileName) return false;
-    
-    // Create an alert about print-to-PDF workflow
-    alert("PDF export is simulated. A print-friendly page will open. Please use your browser's print function (Ctrl+P or Cmd+P) and select 'Save as PDF' to complete the export.");
-    
-    // Get formatted content and convert to HTML with print-friendly styling
-    const content = getFormattedContent(userInputs);
-    const printContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${safeFileName}</title>
-  <style>
-    @page { size: Letter; margin: 2cm; }
-    body { font-family: 'Arial', sans-serif; line-height: 1.6; font-size: 11pt; }
-    h1 { font-size: 16pt; color: #000; margin-top: 1em; margin-bottom: 0.5em; page-break-after: avoid; }
-    h2 { font-size: 14pt; color: #000; margin-top: 1em; margin-bottom: 0.5em; page-break-after: avoid; }
-    p { margin-bottom: 0.5em; }
-    .page-break { page-break-before: always; }
-    /* Print-specific styles */
-    @media print {
-      body { margin: 0; padding: 0; }
-      a { text-decoration: none; color: #000; }
+    if (!safeFileName) {
+      document.body.removeChild(loadingMessage);
+      return false;
     }
-  </style>
-</head>
-<body>
-  ${content.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>').replace(/## (.*?)\n/g, '</p><h2>$1</h2><p>').replace(/# (.*?)\n/g, '<h1>$1</h1><p>')}
-</p>
-<script>
-  window.onload = function() {
-    setTimeout(function() {
-      window.print();
-    }, 1000);
-  }
-</script>
-</body>
-</html>`;
     
-    // Open a new window with the print-friendly content
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
-    printWindow.document.close();
+    // Load the jsPDF library from CDN
+    try {
+      await Promise.all([
+        loadExternalLibrary('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
+        loadExternalLibrary('https://unpkg.com/markdown-it@12.3.2/dist/markdown-it.min.js')
+      ]);
+    } catch (error) {
+      console.error("Failed to load PDF libraries:", error);
+      document.body.removeChild(loadingMessage);
+      alert("Failed to load the PDF generation libraries. Please try again or use a different format.");
+      return false;
+    }
     
-    console.log("PDF export initiated through print dialog");
+    // Check if the libraries loaded correctly
+    if (!window.jspdf || !window.markdownit) {
+      console.error("PDF libraries not found in global scope");
+      document.body.removeChild(loadingMessage);
+      alert("PDF generation libraries failed to initialize. Please try again or use a different format.");
+      return false;
+    }
+    
+    // Get formatted content
+    const markdownContent = getFormattedContent(userInputs);
+    
+    // Convert markdown to HTML for better formatting
+    const md = window.markdownit();
+    const htmlContent = md.render(markdownContent);
+    
+    // Create a hidden div to render the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '-9999px';
+    tempDiv.innerHTML = htmlContent;
+    document.body.appendChild(tempDiv);
+    
+    // Initialize jsPDF
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // Set font settings
+    pdf.setFont('helvetica');
+    pdf.setFontSize(11);
+    
+    // Calculate page dimensions
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20; // 20mm margins
+    const contentWidth = pageWidth - (margin * 2);
+    
+    // Process HTML content into simpler structure for PDF
+    const sections = [];
+    
+    // Process h1 headers (main title)
+    const h1Elements = tempDiv.querySelectorAll('h1');
+    for (const h1 of h1Elements) {
+      sections.push({
+        type: 'h1',
+        text: h1.textContent,
+      });
+    }
+    
+    // Process h2 headers (section headers) and paragraphs
+    const h2Elements = tempDiv.querySelectorAll('h2');
+    for (const h2 of h2Elements) {
+      sections.push({
+        type: 'h2',
+        text: h2.textContent,
+      });
+      
+      // Get all content until the next h2
+      let nextElement = h2.nextElementSibling;
+      while (nextElement && nextElement.tagName !== 'H2') {
+        if (nextElement.tagName === 'P') {
+          sections.push({
+            type: 'p',
+            text: nextElement.textContent,
+          });
+        }
+        nextElement = nextElement.nextElementSibling;
+      }
+    }
+    
+    // Draw content to PDF
+    let y = margin;
+    
+    for (const section of sections) {
+      // Set styling based on content type
+      if (section.type === 'h1') {
+        pdf.setFontSize(18);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 139); // dark blue
+      } else if (section.type === 'h2') {
+        // Check if we need a new page
+        if (y > pageHeight - margin * 2) {
+          pdf.addPage();
+          y = margin;
+        }
+        
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 100); // medium blue
+        
+        // Add some extra spacing before new sections
+        y += 5;
+      } else {
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0); // black
+      }
+      
+      // Split text into lines that fit the page width
+      const lines = pdf.splitTextToSize(section.text, contentWidth);
+      
+      // Check if we need a new page
+      if (y + (lines.length * 7) > pageHeight - margin) {
+        pdf.addPage();
+        y = margin;
+      }
+      
+      // Draw text
+      pdf.text(lines, margin, y);
+      
+      // Update y position for next content
+      y += (lines.length * 7) + (section.type === 'h1' || section.type === 'h2' ? 5 : 3);
+    }
+    
+    // Save the PDF
+    pdf.save(safeFileName);
+    
+    // Clean up
+    document.body.removeChild(tempDiv);
+    document.body.removeChild(loadingMessage);
+    
+    console.log("Project exported successfully as PDF:", safeFileName);
     return true;
   } catch (error) {
     console.error("Error exporting project as PDF:", error);
+    
+    // Remove loading message if present
+    const loadingMessage = document.querySelector('.fixed.inset-0.bg-gray-600.bg-opacity-50');
+    if (loadingMessage) {
+      document.body.removeChild(loadingMessage);
+    }
+    
     alert("There was an error exporting the project as PDF: " + (error.message || "Unknown error"));
     return false;
   }
