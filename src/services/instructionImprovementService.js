@@ -136,13 +136,13 @@ export const improveBatchInstructions = async (
           modifiedInstructions += `* Consider the broader implications of your work\n\n* Ensure all key points are supported by evidence\n\n* Think about potential objections and address them`;
         }
         
-        // Create the new feedback format
-        const structuredFeedback = `**Strengths:** The core elements of your ${section.title.toLowerCase()} are well-defined and show good understanding of the topic.\n**Weaknesses:** Some areas could benefit from more detailed explanation and examples.\n**Comments:** Consider adding more specific details that connect your work to current literature in the field.`;
+        // Basic structured feedback based on content length
+        const feedback = `**Strengths:** Your work shows engagement with the task.\n**Weaknesses:** More detail may be needed in some areas.\n**Comments:** Continue developing your ${section.title.toLowerCase()}.`;
         
         return {
           id: section.id,
           editedInstructions: modifiedInstructions,
-          feedback: structuredFeedback,
+          feedback: feedback,
           completionStatus: 'complete'
         };
       });
@@ -177,7 +177,7 @@ export const improveBatchInstructions = async (
       if (!structuredFeedback.includes('**Strengths:**') || 
           !structuredFeedback.includes('**Weaknesses:**') || 
           !structuredFeedback.includes('**Comments:**')) {
-        structuredFeedback = createStructuredFeedback(item.id, sectionData?.title || 'section', item.feedback);
+        structuredFeedback = formatExistingFeedback(item.feedback || '', sectionData?.title || 'section');
       }
       
       // Ensure all required fields exist with appropriate values
@@ -217,8 +217,8 @@ export const improveBatchInstructions = async (
         // Create a congratulatory message
         const editedInstructions = createCongratulatory(id, section?.title || 'section', originalInstructions);
         
-        // Create structured feedback
-        const feedback = createStructuredFeedback(id, section?.title || 'section');
+        // Simple structured feedback without making up specifics
+        const feedback = `**Strengths:** Your work shows engagement with the task.\n**Weaknesses:** Some areas may need more development.\n**Comments:** Continue refining your ${section?.title?.toLowerCase() || 'work'}.`;
         
         return {
           id: id,
@@ -228,7 +228,7 @@ export const improveBatchInstructions = async (
         };
       });
     
-    console.log("Using error fallback data with congratulatory messages and structured feedback:", fallbackData);
+    console.log("Using error fallback data with structured feedback:", fallbackData);
     
     return {
       success: true,
@@ -335,130 +335,46 @@ function createCongratulatory(id, title, originalInstructions) {
 }
 
 /**
- * Creates structured feedback in the Strengths/Weaknesses/Comments format
- * @param {string} id - The section ID
- * @param {string} title - The section title
- * @param {string} existingFeedback - Any existing feedback to adapt
+ * Formats existing feedback into the Strengths/Weaknesses/Comments structure
+ * without making up content if none exists
+ * @param {string} feedback - The feedback to format
+ * @param {string} sectionTitle - The section title
  * @returns {string} - Structured feedback
  */
-function createStructuredFeedback(id, title, existingFeedback = '') {
-  // Default strengths, weaknesses, and comments
-  let strengths = [];
-  let weaknesses = [];
-  let comments = [];
+function formatExistingFeedback(feedback, sectionTitle) {
+  // If there's no meaningful feedback, return a minimal structure
+  if (!feedback || feedback.trim() === '' || feedback.length < 20) {
+    return `**Strengths:** \n**Weaknesses:** \n**Comments:** Continue developing your ${sectionTitle.toLowerCase()}.`;
+  }
   
-  // Try to extract insights from existing feedback
-  if (existingFeedback && existingFeedback.length > 20) {
-    // Look for positive statements as strengths
-    const positivePatterns = [
-      /good|well|excellent|clear|strong|thorough|comprehensive|thoughtful|detailed/gi,
-      /impressed|impressive|nicely|effectively|successfully/gi
-    ];
-    
-    // Look for areas of improvement as weaknesses
-    const weaknessPatterns = [
-      /could|should|need|lack|miss|improv|consider|clarif|expand|elaborat/gi,
-      /unclear|vague|insufficient|limited|too (general|broad|narrow)/gi
-    ];
-    
-    // Split existing feedback into sentences
-    const sentences = existingFeedback.split(/\.\s+|\.(?=\n)/);
-    
-    for (const sentence of sentences) {
-      if (sentence.length < 5) continue;
-      
-      const lowerSentence = sentence.toLowerCase();
-      
-      // Categorize each sentence
-      if (positivePatterns.some(pattern => pattern.test(lowerSentence))) {
-        strengths.push(sentence.trim() + (sentence.endsWith('.') ? '' : '.'));
-      } else if (weaknessPatterns.some(pattern => pattern.test(lowerSentence))) {
-        weaknesses.push(sentence.trim() + (sentence.endsWith('.') ? '' : '.'));
-      } else if (lowerSentence.includes('suggest') || lowerSentence.includes('recommend') || 
-                 lowerSentence.includes('try') || lowerSentence.includes('consider')) {
-        comments.push(sentence.trim() + (sentence.endsWith('.') ? '' : '.'));
-      }
+  // Try to identify strengths, weaknesses, and comments from existing feedback
+  const lines = feedback.split('\n');
+  let strengths = '';
+  let weaknesses = '';
+  let comments = '';
+  
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    // Look for patterns that might indicate strengths or weaknesses
+    if (lower.includes('good') || lower.includes('well') || lower.includes('strong') || 
+        lower.includes('clear') || lower.includes('excellent')) {
+      strengths += (strengths ? ' ' : '') + line.trim();
+    } else if (lower.includes('could') || lower.includes('should') || lower.includes('need') || 
+               lower.includes('improve') || lower.includes('consider') || lower.includes('missing')) {
+      weaknesses += (weaknesses ? ' ' : '') + line.trim();
+    } else if (lower.includes('suggest') || lower.includes('recommendation') || 
+               lower.includes('might want to') || lower.includes('try')) {
+      comments += (comments ? ' ' : '') + line.trim();
     }
   }
   
-  // Default strengths if none were found
-  if (strengths.length === 0) {
-    switch(id) {
-      case 'question':
-        strengths.push('Your research question addresses an important gap in the field.');
-        strengths.push('You've clearly identified the significance of your work.');
-        break;
-      case 'audience':
-        strengths.push('You've identified relevant communities who would benefit from your research.');
-        break;
-      case 'hypothesis':
-        strengths.push('Your hypotheses are clearly stated and testable.');
-        break;
-      case 'relatedpapers':
-        strengths.push('You've identified relevant literature in the field.');
-        break;
-      case 'analysis':
-        strengths.push('Your analysis approach is appropriate for your research question.');
-        break;
-      default:
-        strengths.push(`You've made good progress on your ${title.toLowerCase()}.`);
-    }
+  // If we couldn't identify specific categories, use the entire feedback as comments
+  if (!strengths && !weaknesses && !comments) {
+    comments = feedback.trim();
   }
   
-  // Default weaknesses if none were found
-  if (weaknesses.length === 0) {
-    switch(id) {
-      case 'question':
-        weaknesses.push('The logical structure of your question could be more explicit.');
-        break;
-      case 'audience':
-        weaknesses.push('More specific researchers or research groups could be identified.');
-        break;
-      case 'hypothesis':
-        weaknesses.push('The connection between your hypotheses could be clearer.');
-        break;
-      case 'relatedpapers':
-        weaknesses.push('The connection between the papers and your specific work could be stronger.');
-        break;
-      case 'analysis':
-        weaknesses.push('More detail on uncertainty quantification would strengthen this section.');
-        break;
-      default:
-        weaknesses.push(`Some aspects of your ${title.toLowerCase()} could be more detailed.`);
-    }
-  }
-  
-  // Default comments if none were found
-  if (comments.length === 0) {
-    switch(id) {
-      case 'question':
-        comments.push('Consider framing your question in relation to existing theoretical frameworks.');
-        break;
-      case 'audience':
-        comments.push('Try to be more specific about how each audience group will use your findings.');
-        break;
-      case 'hypothesis':
-        comments.push('Consider adding how your experiment will specifically test each hypothesis.');
-        break;
-      case 'relatedpapers':
-        comments.push('Try organizing the papers to show the evolution of thinking in this area.');
-        break;
-      case 'analysis':
-        comments.push('Consider adding details about how you'll handle unexpected results or outliers.');
-        break;
-      default:
-        comments.push(`Consider connecting your ${title.toLowerCase()} more explicitly to your overall research goals.`);
-    }
-  }
-  
-  // Formatting for clean feedback
-  const formatList = (items) => {
-    if (items.length === 1) return items[0];
-    return items.join(' ');
-  };
-  
-  // Build the structured feedback
-  return `**Strengths:** ${formatList(strengths)}\n**Weaknesses:** ${formatList(weaknesses)}\n**Comments:** ${formatList(comments)}`;
+  // Construct the structured feedback
+  return `**Strengths:** ${strengths || ''}\n**Weaknesses:** ${weaknesses || ''}\n**Comments:** ${comments || 'Continue developing your work.'}`;
 }
 
 /**
