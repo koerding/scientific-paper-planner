@@ -37,13 +37,13 @@ const SectionCard = ({
   const getBorderClasses = () => {
     // Current section gets blue focus border regardless of completion
     if (isCurrentSection) {
-      return 'border-2 border-blue-500 shadow-md';
+      return 'border-4 border-blue-500 shadow-md';
     }
     
     // Just red/green for completion status - very simplified
     return completionStatus === 'complete' 
-      ? 'border-2 border-green-600 section-complete'
-      : 'border-2 border-red-300 section-unstarted';
+      ? 'border-4 border-green-600 section-complete'
+      : 'border-4 border-red-300 section-unstarted';
   };
 
   // Determine background color for the card and textarea
