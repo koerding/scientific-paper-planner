@@ -1,3 +1,510 @@
+/* Safe CSS for Paper Planner - minification friendly */
+
+/* FIXED: Simplified section card layout with reduced spacing */
+.section-card {
+  margin-bottom: 0.5rem !important;
+  transition: border-color 0.3s ease, border-width 0.3s ease, box-shadow 0.3s ease;
+}
+
+.section-card:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.section-card textarea {
+  background-color: transparent !important; /* Make textarea transparent */
+  border: none !important;
+  padding: 0.25rem 0.5rem !important;
+  line-height: 1.4 !important;
+}
+
+.section-card textarea:focus {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Thinner border styles to reduce visual weight */
+.border-2 {
+  border-width: 2px !important;
+}
+
+/* Status-based border colors */
+.section-complete {
+  border-color: #10B981 !important;
+  border-width: 2px !important;
+}
+
+.section-unstarted {
+  border-color: #EF4444 !important;
+  border-width: 2px !important;
+}
+
+/* Tighter spacing for approach and data toggles */
+.approach-toggle, .data-toggle {
+  border-radius: 4px;
+  padding-top: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.approach-toggle h3, .data-toggle h3 {
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.approach-toggle button, .data-toggle button {
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+/* Better chat styling fixes */
+.prose-sm img {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Header styling fixes */
+header.bg-white.shadow-sm {
+  border-bottom: 1px solid #e5e7eb;
+  height: 100px;
+  box-sizing: border-box;
+}
+
+header.bg-white.shadow-sm .container {
+  max-width: 100%;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+header.bg-white.shadow-sm .flex.items-center.justify-between {
+  height: 100%;
+  align-items: center !important;
+}
+
+/* Logo styling */
+header .w-10.h-10.bg-purple-600 {
+  width: 60px !important;
+  height: 60px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+}
+
+header .w-10.h-10.bg-purple-600 .font-bold.text-xl {
+  font-size: 1.5rem !important;
+}
+
+/* Title styling */
+header h1.text-xl.font-bold {
+  font-size: 1.5rem !important;
+  margin: 0;
+  line-height: 1.2;
+}
+
+header p.text-sm.text-gray-600 {
+  margin: 0;
+  font-size: 0.9rem !important;
+}
+
+/* Buttons styling */
+header .flex.items-center.space-x-2 button,
+header .flex.items-center.space-x-2 label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  height: 2.5rem;
+  white-space: nowrap;
+}
+
+/* Make sure the title and logo area have proper space */
+header .flex.items-center:first-child {
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+/* Ensure the buttons container doesn't shrink too much */
+header .flex.items-center.space-x-2 {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
+/* PDF processing button should always be prominent */
+header label.inline-flex.items-center.border-indigo-500 {
+  background-color: #4F46E5 !important;
+  border-color: #4338CA !important;
+  color: white !important;
+  font-weight: 500 !important;
+}
+
+header label.inline-flex.items-center.border-indigo-500:hover {
+  background-color: #4338CA !important;
+}
+
+/* Fix spacing when header is viewed on smaller screens */
+@media (max-width: 1024px) {
+  header .flex.items-center.justify-between {
+    flex-wrap: nowrap;
+  }
+  
+  header .flex.items-center.space-x-2 {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    margin-bottom: -0.5rem;
+    -ms-overflow-style: none;  /* Hide scrollbar for IE and Edge */
+    scrollbar-width: none;  /* Hide scrollbar for Firefox */
+  }
+  
+  header .flex.items-center.space-x-2::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome, Safari and Opera */
+  }
+}
+
+/* Fix for AI badge and header styling */
+.chat-header {
+  background-color: #4f46e5;
+  color: white;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center !important;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  height: 56px; /* Fixed height to ensure consistency */
+}
+
+.chat-header .flex.items-center {
+  display: flex;
+  align-items: center !important;
+  height: 100%;
+}
+
+.chat-header .w-8 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 32px;
+  width: 32px;
+}
+
+.chat-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  line-height: normal;
+}
+
+.ai-avatar {
+  width: 2rem;
+  height: 2rem;
+  background-color: white;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #4f46e5;
+  margin-right: 0.75rem;
+}
+
+/* Clean message bubbles */
+.message-bubble {
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  display: inline-block;
+  max-width: 80%;
+  margin-bottom: 8px; /* Consistent spacing between messages */
+}
+
+.user-message {
+  background-color: #4f46e5;
+  color: white;
+  border-top-right-radius: 0;
+}
+
+.ai-message {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-top-left-radius: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* FIXED: Typing indicator animation */
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  height: 24px; /* Fixed height */
+}
+
+.typing-indicator span {
+  height: 8px;
+  width: 8px;
+  margin: 0 1px;
+  background-color: #6366F1;
+  border-radius: 50%;
+  display: inline-block;
+  opacity: 0.6;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation: typing 1s infinite 0s;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation: typing 1s infinite 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation: typing 1s infinite 0.4s;
+}
+
+@keyframes typing {
+  0% {
+    transform: translateY(0px);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0px);
+    opacity: 0.6;
+  }
+}
+
+/* Message content styling */
+.message-content {
+  word-break: break-word;
+}
+
+.prose.prose-sm {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Subtle active button styles */
+.approach-toggle button.active, .data-toggle button.active {
+  font-weight: 600;
+  color: #4f46e5;
+  background-color: #eef2ff;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .approach-toggle .flex, .data-toggle .flex {
+    flex-direction: column;
+  }
+
+  .approach-toggle button, .data-toggle button {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Animation for toggle transitions */
+.toggle-fade-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.toggle-fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.toggle-fade-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toggle-fade-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Onboarding Highlight and Tooltip Styles */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+
+.onboarding-highlight {
+  position: relative;
+  z-index: 1100;
+  animation: pulse-glow 2s infinite;
+  border-radius: 0.375rem;
+}
+
+/* Specific adjustments for chat icon highlight */
+.onboarding-highlight-chat {
+  position: relative;
+  z-index: 1100;
+}
+.onboarding-highlight-chat > div {
+   animation: pulse-glow 2s infinite;
+   border-radius: 9999px;
+}
+
+/* Specific adjustments for magic button highlight */
+.onboarding-highlight-magic {
+  position: relative;
+  z-index: 40; /* FIXED: Lower z-index to keep it below chat */
+}
+.onboarding-highlight-magic > button {
+  animation: pulse-glow 2s infinite;
+  border-radius: 9999px;
+}
+
+.onboarding-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background-color: #2d3748;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  z-index: 41; /* FIXED: Should be above the button but below chat */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Tooltip arrow */
+.onboarding-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #2d3748 transparent transparent transparent;
+}
+
+/* Adjust tooltip position for chat icon (bottom right) */
+.onboarding-tooltip-chat {
+  bottom: auto;
+  top: 50%;
+  left: auto;
+  right: 100%;
+  transform: translateY(-50%) translateX(-12px);
+  z-index: 1001; /* Higher than chat interface */
+}
+
+.onboarding-tooltip-chat::after {
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  border-color: transparent transparent transparent #2d3748;
+}
+
+/* Adjust tooltip position for magic button (left of chat) */
+.onboarding-tooltip-magic {
+  bottom: auto;
+  top: 50%;
+  left: auto;
+  right: 100%;
+  transform: translateY(-50%) translateX(-12px);
+}
+
+.onboarding-tooltip-magic::after {
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  border-color: transparent transparent transparent #2d3748;
+}
+
+/* Adjust tooltip position for header buttons (top right) */
+.onboarding-tooltip-header {
+   bottom: 100%;
+   left: auto;
+   right: 0;
+   transform: translateX(0%) translateY(-8px);
+}
+
+.onboarding-tooltip-header::after {
+   left: auto;
+   right: 15px;
+   transform: translateX(0%);
+}
+
+/* Adjust tooltip position for right panel button */
+.onboarding-tooltip-panel {
+  bottom: auto;
+  top: 0;
+  left: auto;
+  right: 100%;
+  transform: translateY(0%) translateX(-12px);
+}
+
+.onboarding-tooltip-panel::after {
+  top: 10px;
+  left: 100%;
+  transform: translateY(0%);
+  border-color: transparent transparent transparent #2d3748;
+}
+
+/* Fix spacing between header and content */
+.min-h-screen > .w-full {
+  padding-top: 100px;
+  box-sizing: border-box;
+}
+
+/* Footer fixes */
+.text-center.text-gray-500.text-sm.mt-8.border-t {
+  height: 44px;
+  position: relative;
+  z-index: 5;
+  margin-bottom: 0;
+  padding-bottom: 0.5rem;
+  background-color: #ffffff;
+}
+
+/* Fix for floating buttons positioning */
+.fixed.bottom-6.right-6,
+.fixed.bottom-6.right-28 {
+  bottom: 1.5rem !important;
+}
+
+.fixed.bottom-6.right-28 {
+  right: 7rem !important;
+}
+
+/* Fixed z-index for chat interface to always be on top when open */
+.fixed.shadow-lg.bg-white.rounded-t-lg.overflow-hidden.transition-all {
+  z-index: 1000 !important;
+}
+
+/* Improve transition for chat window */
+.fixed.z-40.shadow-lg.bg-white.rounded-t-lg {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Override any Tailwind styles that might interfere */
+.bg-indigo-600.text-white.px-4.py-3 {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.bg-indigo-600.text-white.px-4.py-3 .flex.items-center {
+  display: flex !important;
+  align-items: center !important;
+}
+
 /* Left panel layout fixes - ensure it covers the left half of the screen */
 .w-half {
   width: 50% !important;
@@ -44,4 +551,40 @@ html body .min-h-screen .w-full .flex {
 html body .min-h-screen .w-full .flex > div:first-child {
   width: 50% !important;
   flex: 0 0 50% !important;
+}
+
+/* Ensure proper content scrolling with fixed elements */
+.w-half.px-4.py-2 {
+  min-height: calc(100vh - 144px);
+  overflow-y: auto;
+  padding-bottom: 3rem;
+  padding-left: 1rem !important; /* Less padding on left side */
+  padding-right: 1rem !important; /* Less padding on right side */
+}
+
+/* Fix for instructions panel, this is where the dimensions of the panel are actually set */
+.bg-blue-50.border-4.border-blue-500 {
+  height: calc(100vh - 304px);
+  top: 150px !important;
+  bottom: 50px !important;
+}
+
+/* Ensure content width doesn't collapse */
+.w-half.px-6.py-3 {
+  min-width: 50%;
+  width: 50% !important;
+}
+
+/* Prevent horizontal scrolling */
+body, html {
+  overflow-x: hidden;
+}
+
+/* Add these Tailwind-compatible helper classes to fix w-1/2 issues */
+.w-half {
+  width: 50%;
+}
+
+.mr-half {
+  margin-right: 50%;
 }
