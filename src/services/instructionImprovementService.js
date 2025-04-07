@@ -375,7 +375,7 @@ function createStructuredFeedback(id, title, existingFeedback = '') {
       } else if (weaknessPatterns.some(pattern => pattern.test(lowerSentence))) {
         weaknesses.push(sentence.trim() + (sentence.endsWith('.') ? '' : '.'));
       } else if (lowerSentence.includes('suggest') || lowerSentence.includes('recommend') || 
-                lowerSentence.includes('try') || lowerSentence.includes('consider')) {
+                 lowerSentence.includes('try') || lowerSentence.includes('consider')) {
         comments.push(sentence.trim() + (sentence.endsWith('.') ? '' : '.'));
       }
     }
