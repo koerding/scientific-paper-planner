@@ -34,6 +34,8 @@ if (pdfjsLib) {
   try {
     // Try different worker source strategies
     const possibleWorkerSources = [
+      // Try our custom wrapper first
+      `${window.location.origin}/pdf.worker.wrapper.js`,
       `${window.location.origin}/pdf.worker.min.mjs`,
       `${window.location.origin}/pdf.worker.min.js`, 
       `${window.location.origin}/pdf.worker.js`,
