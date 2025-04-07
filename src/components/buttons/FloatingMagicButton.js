@@ -3,6 +3,7 @@ import React from 'react';
 /**
  * Floating Instructions Improvement Button
  * UPDATED: More descriptive text and styling
+ * FIXED: Better handling of loading state
  */
 const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
   // Determine if the magic button should be highlighted based on onboarding step
@@ -10,11 +11,11 @@ const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
 
   return (
     <div
-      className={`fixed bottom-6 right-28 z-40 cursor-pointer ${showMagicHighlight ? 'onboarding-highlight-magic' : ''}`}
+      className={`fixed bottom-6 right-28 z-40 ${loading ? 'cursor-wait' : 'cursor-pointer'} ${showMagicHighlight ? 'onboarding-highlight-magic' : ''}`}
       style={{ transform: 'translateZ(0)' }} /* Force hardware acceleration for smoother animations */
     >
       <button
-        onClick={handleMagicClick}
+        onClick={loading ? null : handleMagicClick} // Prevent click when loading
         disabled={loading}
         className={`
           flex items-center justify-center 
@@ -42,7 +43,7 @@ const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
         )}
-        Improve Instructions
+        {loading ? 'Processing...' : 'Improve Instructions'}
       </button>
       
       {/* Onboarding Tooltip - improved positioning */}
