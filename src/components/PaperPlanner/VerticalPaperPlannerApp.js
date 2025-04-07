@@ -10,7 +10,7 @@ import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
-import AppHeader from '../layout/AppHeader'; // FIXED: Updated path to AppHeader
+import AppHeader from '../layout/AppHeader';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -27,6 +27,7 @@ import '../../styles/PaperPlanner.css';
  * - Added loading animation for PDF import
  * - FIXED: Properly disable Magic button during PDF import
  * - FIXED: Added direct save implementation
+ * - FIXED: Reduced overall whitespace and simplified layout
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -46,7 +47,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSendMessage,
     resetProject: hookResetProject,
     exportProject,
-    saveProject: hookSaveProject, // Rename to avoid confusion
+    saveProject: hookSaveProject,
     loadProject,
     importDocumentContent
   } = usePaperPlannerHook;
@@ -161,7 +162,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     // If it has meaningful content different from the placeholder
     if (content !== placeholder && content.trim().length > 0) {
       const lines = content.split('\n').filter(line => line.trim().length > 0);
-      const placeholderLines = placeholder.split('\n').filter(line => line.trim().length > 0);
 
       // Section-specific checks
       if (sectionId === 'hypothesis') {
@@ -297,233 +297,3 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       setImprovingInstructions(false);
     }
   };
-
-  // Combine local reset logic with hook's reset logic
-  const handleResetRequest = () => {
-    hookResetProject();
-    // Reset local instructions state
-    try {
-      setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent)));
-    } catch(e) {
-      console.error("Failed to reset local section content:", e);
-      setLocalSectionContent({ sections: [] });
-    }
-    setActiveSection(sectionContent?.sections?.[0]?.id || 'question');
-    setActiveApproach('hypothesis');
-    setActiveDataMethod('experiment');
-    setSectionCompletionStatus({});
-  };
-
-  // FIXED: Add a direct save function that doesn't depend on the hook
-  const handleSaveProject = () => {
-    try {
-      console.log("Direct save function triggered from component");
-      
-      // Generate a timestamp-based filename
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-      const fileName = `scientific-paper-plan-${timestamp}`;
-      
-      const jsonData = {
-        userInputs: userInputs, // Use component's state directly
-        chatMessages: chatMessages, // Use component's state directly
-        timestamp: new Date().toISOString(),
-        version: "1.0-direct-from-component"
-      };
-
-      // Create the blob directly
-      const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
-      const jsonUrl = URL.createObjectURL(jsonBlob);
-
-      // Create and trigger download link
-      const link = document.createElement('a');
-      link.href = jsonUrl;
-      link.download = `${fileName}.json`;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(jsonUrl);
-      }, 100);
-      
-      console.log("Project saved successfully as:", fileName);
-      return true;
-    } catch (error) {
-      console.error("Error saving project:", error);
-      alert("There was an error saving your project: " + (error.message || "Unknown error"));
-      return false;
-    }
-  };
-
-  const sectionDataForPanel = getCurrentSectionData();
-
-  // Check if a section should be displayed based on toggles
-  const shouldDisplaySection = (sectionId) => {
-    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
-      return sectionId === activeApproach;
-    }
-
-    if (sectionId === 'experiment' || sectionId === 'existingdata') {
-      return sectionId === activeDataMethod;
-    }
-
-    return true; // All other sections are always displayed
-  };
-
-  // Handle approach toggle
-  const handleApproachToggle = (approach) => {
-    setActiveApproach(approach);
-    setActiveSectionWithManualFlag(approach);
-  };
-
-  // Handle data method toggle
-  const handleDataMethodToggle = (method) => {
-    setActiveDataMethod(method);
-    setActiveSectionWithManualFlag(method);
-  };
-
-  // Render a section with proper completion status
-  const renderSection = (section) => {
-    if (!section || !section.id) return null;
-
-    const isCurrentActive = activeSection === section.id;
-    const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
-
-    return (
-      <SectionCard
-        key={section.id}
-        section={section}
-        isCurrentSection={isCurrentActive}
-        completionStatus={completionStatus}
-        userInputs={userInputs}
-        handleInputChange={handleInputChange}
-        loading={chatLoading && currentSectionIdForChat === section.id}
-        sectionRef={sectionRefs.current[section.id]}
-        onClick={() => setActiveSectionWithManualFlag(section.id)}
-        useLargerFonts={true}
-      />
-    );
-  };
-
-  // Wrapper for import document content to track loading state
-  const handleDocumentImport = async (file) => {
-    setLoading(true);
-    try {
-      await importDocumentContent(file);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // FIXED: Combined loading state to properly disable buttons
-  const isAnyLoading = loading || chatLoading || improvingInstructions;
-
-  return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="w-full pb-8">
-        {/* Use imported AppHeader component with props */}
-        <AppHeader
-          resetProject={() => setShowConfirmDialog(true)}
-          exportProject={exportProject}
-          saveProject={handleSaveProject} // FIXED: Use direct save implementation
-          loadProject={loadProject}
-          importDocumentContent={handleDocumentImport}
-          setShowExamplesDialog={setShowExamplesDialog}
-          loading={isAnyLoading}
-        />
-
-        {/* Main content area */}
-        <div style={{ paddingTop: '40px' }}>
-          <div className="flex">
-            <div className="w-half px-6 py-3" style={{ marginRight: '50%' }}>
-              {/* Display first two sections: Question and Audience */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'question' || section?.id === 'audience')
-                .map(section => renderSection(section))}
-
-              {/* Research Approach Toggle */}
-              <ResearchApproachToggle
-                activeApproach={activeApproach}
-                setActiveApproach={handleApproachToggle}
-              />
-
-              {/* Display active approach section */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
-                .map(section => renderSection(section))}
-
-              {/* Related Papers Section */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'relatedpapers')
-                .map(section => renderSection(section))}
-
-              {/* Data Acquisition Toggle */}
-              <DataAcquisitionToggle
-                activeMethod={activeDataMethod}
-                setActiveMethod={handleDataMethodToggle}
-              />
-
-              {/* Display active data acquisition section */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
-                .map(section => renderSection(section))}
-
-              {/* Display remaining sections: Analysis, Process, Abstract */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
-                .map(section => renderSection(section))}
-            </div>
-          </div>
-
-          {/* Fixed-height footer */}
-          <div className="text-center text-gray-500 text-sm mt-8 border-t border-gray-200 pt-4 pb-4 bg-white">
-            <p>Scientific Paper Planner • Designed with Love for Researchers by Konrad @Kordinglab • {new Date().getFullYear()}</p>
-          </div>
-        </div>
-
-        <FullHeightInstructionsPanel
-          currentSection={sectionDataForPanel}
-          improveInstructions={handleMagic}
-          loading={improvingInstructions}
-          userInputs={userInputs}
-        />
-
-        {/* Floating Magic Button - FIXED: Pass proper loading state */}
-        <FloatingMagicButton
-          handleMagicClick={handleMagic}
-          loading={improvingInstructions || loading} // Disable during either loading state
-          onboardingStep={onboardingStep}
-        />
-
-        {/* Chat Interface */}
-        <ModernChatInterface
-          currentSection={currentSectionIdForChat}
-          currentSectionTitle={sectionDataForPanel?.title}
-          chatMessages={chatMessages}
-          currentMessage={currentMessage}
-          setCurrentMessage={setCurrentMessage}
-          handleSendMessage={handleSendMessage}
-          loading={chatLoading}
-          currentSectionData={sectionDataForPanel}
-          onboardingStep={onboardingStep}
-        />
-
-        {/* Dialogs */}
-        <ConfirmDialog
-          showConfirmDialog={showConfirmDialog}
-          setShowConfirmDialog={setShowConfirmDialog}
-          resetProject={handleResetRequest}
-        />
-
-        <ExamplesDialog
-          showExamplesDialog={showExamplesDialog}
-          setShowExamplesDialog={setShowExamplesDialog}
-          loadProject={loadProject}
-        />
-      </div>
-    </div>
-  );
-};
-
-export default VerticalPaperPlannerApp;
