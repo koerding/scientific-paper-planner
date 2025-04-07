@@ -3,12 +3,14 @@
 /**
  * Modernized OpenAI service using JSON mode for structured responses
  * Uses OpenAI's native JSON mode for reliable parsing
- * UPDATED: Refined JSON mode prompt/parsing for batch instructions to ensure array output.
+ * UPDATED: Comprehensive logging of requests and responses
+ * UPDATED: Updated to use GPT-4o model by default
+ * UPDATED: Refined JSON mode prompt/parsing for batch instructions to ensure array output
  */
 import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
 
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
-const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4o";
+const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4o"; // Updated to use GPT-4o by default
 const API_TIMEOUT_MS = 180000; // 180 seconds timeout
 
 /**
@@ -28,6 +30,44 @@ const buildMessages = (prompt, contextType, currentChatHistory = [], systemPromp
 };
 
 /**
+ * Log API request/response data while handling sensitive information
+ */
+const logApiData = (label, data, isSensitive = false) => {
+  // Create a copy of the data to avoid modifying the original
+  let logData = JSON.parse(JSON.stringify(data));
+  
+  // If sensitive, mask the API key in headers
+  if (isSensitive && logData.headers && logData.headers.Authorization) {
+    logData.headers.Authorization = "Bearer sk-...";
+  }
+  
+  // For large responses, trim to reasonable size for console
+  if (label.includes("Response") && logData.choices && logData.choices[0]?.message?.content) {
+    const content = logData.choices[0].message.content;
+    if (content.length > 2000) {
+      logData.choices[0].message.content = content.substring(0, 1000) + 
+        "\n...[content truncated for logging]...\n" + 
+        content.substring(content.length - 1000);
+    }
+  }
+  
+  // For request body, also log full system prompt for debugging
+  if (label.includes("Request") && logData.messages) {
+    // If first message is system, log it separately
+    const systemMsg = logData.messages.find(m => m.role === 'system');
+    if (systemMsg) {
+      console.log(`${label} - SYSTEM PROMPT:`, systemMsg.content);
+    }
+  }
+  
+  // Log the data
+  console.log(`${label}:`, logData);
+  
+  // Return full data for convenience
+  return data;
+};
+
+/**
  * Call OpenAI API
  */
 export const callOpenAI = async (
@@ -41,7 +81,13 @@ export const callOpenAI = async (
     useJsonMode = contextType !== "general"
  ) => {
 
-  console.log(`[openaiService] API Call Request - Context: ${contextType}`, { /* Log details */ });
+  console.log(`[openaiService] API Call Request - Context: ${contextType}`, { 
+    promptLength: prompt?.length,
+    userInputKeys: Object.keys(userInputs || {}),
+    sectionsCount: sections?.length,
+    chatHistoryLength: chatHistory?.length,
+    useJsonMode
+  });
 
   if (!apiKey) {
     throw new Error("OpenAI API key not configured.");
@@ -58,13 +104,15 @@ export const callOpenAI = async (
         {
           "id": "section_id_1",
           "editedInstructions": "Full instructions text for this section, reflecting user progress and feedback.",
-          "feedback": "Specific, constructive feedback on their work for this section.",
+          "feedback": "**Strengths:**\\nSpecific, constructive feedback on their work.\\n\\n**Weaknesses:**\\nAreas that need improvement.\\n\\n**Comments:**\\nSuggestions for enhancement.",
           "completionStatus": "complete" // or "unstarted" or "progress" based on analysis
         },
         // Include one object here for EACH section provided in the input data
       ]
     }
     Return ONLY this single JSON object with no additional text, comments, or explanations outside the JSON structure. Ensure the 'results' array contains an entry for every section processed.
+    
+    Important note about the feedback format: Make sure to include line breaks between the Strengths, Weaknesses, and Comments sections for better readability.
     `;
   }
   // --- End System Prompt Update ---
@@ -87,10 +135,22 @@ export const callOpenAI = async (
     requestBody.response_format = { type: "json_object" };
   }
 
+  // Log the full request (except sensitive parts)
+  console.log(`[openaiService] Full Request Details:`);
+  console.log(`API URL: ${apiUrl}`);
+  console.log(`Context Type: ${contextType}`);
+  console.log(`Model: ${model}`);
+  console.log(`Temperature: ${temperature}`);
+  console.log(`Max Tokens: ${max_tokens}`);
+  console.log(`Use JSON Mode: ${useJsonMode}`);
+  console.log(`Messages:`, messages);
+  console.log(`Request Body:`, JSON.stringify(requestBody, null, 2));
+
   let timeoutId;
 
   try {
     console.log(`[openaiService] Sending request to OpenAI API (Timeout: ${API_TIMEOUT_MS / 1000}s)...`);
+    console.time("openaiApiCallTime");
 
     const controller = new AbortController();
     timeoutId = setTimeout(() => {
@@ -110,41 +170,54 @@ export const callOpenAI = async (
 
     const response = await fetchPromise;
     clearTimeout(timeoutId);
+    console.timeEnd("openaiApiCallTime");
 
     if (!response.ok) {
       // Error handling remains the same
       let errorMessage = `API request failed with status ${response.status}`;
       try {
         const errorBody = await response.json();
+        console.error("[openaiService] API Error Response:", errorBody);
         errorMessage += `: ${errorBody?.error?.message || response.statusText}`;
-      } catch (parseError) { /* ignore */ }
+      } catch (parseError) { 
+        console.error("[openaiService] Failed to parse error response:", parseError);
+      }
       throw new Error(errorMessage);
     }
 
     const data = await response.json();
     console.log("[openaiService] API Response received successfully");
+    console.log("[openaiService] Complete API Response:", data);
 
     const responseContent = data.choices?.[0]?.message?.content?.trim();
     if (!responseContent) {
         throw new Error("Received empty or invalid response content from API.");
     }
 
+    // Log the full response content
+    console.log("[openaiService] Response Content:", responseContent);
+
     // --- Updated JSON Parsing Logic ---
     if (useJsonMode) {
       try {
         // Always parse the response as an object first
-        console.log("Raw JSON response:", responseContent);
+        console.log("[openaiService] Parsing JSON response...");
         const jsonObj = JSON.parse(responseContent);
+        console.log("[openaiService] Successfully parsed JSON:", jsonObj);
 
         // Special handling for improve_instructions_batch context
         if (contextType === "improve_instructions_batch") {
           // Look specifically for the 'results' array within the object
           if (jsonObj && Array.isArray(jsonObj.results)) {
-              console.log(`Found 'results' array with ${jsonObj.results.length} items.`);
+              console.log(`[openaiService] Found 'results' array with ${jsonObj.results.length} items.`);
               return jsonObj.results; // Return the array directly
+          } else if (Array.isArray(jsonObj)) {
+              // Handle case where the API directly returns an array (shouldn't happen with json_object mode)
+              console.log(`[openaiService] Response is already an array with ${jsonObj.length} items.`);
+              return jsonObj;
           } else {
               // If the expected structure isn't found, log a warning and return empty array
-              console.warn("Response JSON object did not contain expected 'results' array. Response:", jsonObj);
+              console.warn("[openaiService] Response JSON object did not contain expected 'results' array. Response:", jsonObj);
               return []; // Return empty array to indicate failure to get batch results
           }
         }
@@ -153,7 +226,7 @@ export const callOpenAI = async (
         return jsonObj;
 
       } catch (error) {
-        console.error("Error parsing JSON response:", error, "Raw:", responseContent);
+        console.error("[openaiService] Error parsing JSON response:", error, "Raw:", responseContent);
         // If parsing fails for batch, return empty array
         if (contextType === "improve_instructions_batch") {
           return [];
@@ -168,12 +241,14 @@ export const callOpenAI = async (
 
   } catch (error) {
     if (timeoutId) { clearTimeout(timeoutId); }
-    console.error("Error calling OpenAI API:", error);
-    if (error.name === 'AbortError') { throw new Error(`OpenAI API request timed out...`); }
-    else if (error.message.includes('Failed to fetch') /*...*/) { throw new Error("Network error..."); }
+    console.error("[openaiService] Error calling OpenAI API:", error);
+    if (error.name === 'AbortError') { throw new Error(`OpenAI API request timed out after ${API_TIMEOUT_MS / 1000} seconds`); }
+    else if (error.message.includes('Failed to fetch')) { 
+      throw new Error("Network error connecting to OpenAI API. Please check your internet connection."); 
+    }
     throw new Error(`OpenAI API Error: ${error.message || 'Unknown error'}`);
   }
 };
 
 // Export the helper function for testing
-export { buildMessages };
+export { buildMessages, logApiData };
