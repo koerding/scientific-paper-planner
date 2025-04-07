@@ -1,122 +1,47 @@
-/* Chat header styles - FIXED for proper vertical alignment */
-.chat-header {
-  background-color: #4f46e5;
-  color: white;
-  padding: 0.75rem 1rem;
+/* Left panel layout fixes - ensure it covers the left half of the screen */
+.w-half {
+  width: 50% !important;
+  flex: 0 0 50% !important;
+  min-width: 50% !important;
+  max-width: 50% !important;
+}
+
+/* Fix flex layout issue */
+.flex {
   display: flex;
-  justify-content: space-between;
-  align-items: center !important;
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
-  height: 56px; /* Fixed height to ensure consistency */
 }
 
-.chat-header .flex.items-center {
-  display: flex;
-  align-items: center !important;
-  height: 100%;
+/* Fix margin issues that might be causing layout problems */
+div[style*="margin-right: 50%"] {
+  margin-right: 0 !important;
 }
 
-.chat-header .w-8 {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  height: 32px;
-  width: 32px;
+/* Ensure content width stays consistent */
+.flex > .w-half {
+  width: 50% !important;
+  margin-right: 0 !important;
 }
 
-.chat-header h3 {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  height: 100%;
-  line-height: normal;
+/* Add explicit styles for the right panel to ensure it doesn't push the left panel */
+.bg-blue-50.border-4.border-blue-500.rounded-lg.overflow-y-auto {
+  position: fixed !important;
+  right: 1rem !important;
+  width: calc(50% - 1rem) !important;
+  left: auto !important;
 }
 
-/* Typing indicator animation - IMPROVED */
-.typing-indicator {
-  display: inline-flex;
-  align-items: center;
-  height: 24px; /* Fixed height */
+/* Ensure section cards maintain proper width */
+.section-card {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
-.typing-indicator span {
-  height: 8px;
-  width: 8px;
-  margin: 0 1px;
-  background-color: #6366F1;
-  border-radius: 50%;
-  display: inline-block;
-  opacity: 0.6;
-}
-
-.typing-indicator span:nth-child(1) {
-  animation: typing 1s infinite 0s;
-}
-
-.typing-indicator span:nth-child(2) {
-  animation: typing 1s infinite 0.2s;
-}
-
-.typing-indicator span:nth-child(3) {
-  animation: typing 1s infinite 0.4s;
-}
-
-@keyframes typing {
-  0% {
-    transform: translateY(0px);
-    opacity: 0.6;
-  }
-  50% {
-    transform: translateY(-5px);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0px);
-    opacity: 0.6;
-  }
-}
-
-/* Message bubbles - ensure consistent styling */
-.message-bubble {
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  display: inline-block;
-  max-width: 80%;
-  margin-bottom: 8px; /* Consistent spacing between messages */
-}
-
-.user-message {
-  background-color: #4f46e5;
-  color: white;
-  border-top-right-radius: 0;
-}
-
-.ai-message {
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-top-left-radius: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-/* Message content styling */
-.message-content {
-  word-break: break-word;
-}
-
-.prose.prose-sm {
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-/* Override any Tailwind styles that might interfere */
-.bg-indigo-600.text-white.px-4.py-3 {
+/* Force layout to behave correctly */
+html body .min-h-screen .w-full .flex {
   display: flex !important;
-  align-items: center !important;
 }
 
-.bg-indigo-600.text-white.px-4.py-3 .flex.items-center {
-  display: flex !important;
-  align-items: center !important;
+html body .min-h-screen .w-full .flex > div:first-child {
+  width: 50% !important;
+  flex: 0 0 50% !important;
 }
