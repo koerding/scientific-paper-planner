@@ -6,6 +6,7 @@ import React, { useState } from 'react';
  * - Proper loading animation that shows during the entire import process
  * - Visual feedback for users during PDF processing
  * - Disabled state during import to prevent multiple uploads
+ * - FIXED: Better handling of different loading states
  */
 const AppHeader = ({
   resetProject,
