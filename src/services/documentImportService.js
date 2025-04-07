@@ -2,32 +2,106 @@
 
 /**
  * Document import service for PDF and Word documents
- * Using the configuration that worked previously
+ * Using CDN-based PDF.js for better compatibility
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
 
 // Import necessary libraries for document processing
-import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+// We'll use mammoth for DOCX but load PDF.js from CDN
 import mammoth from 'mammoth';
 
-// Configure PDF Worker - using the working configuration from earlier
-if (typeof window !== 'undefined' && 'Worker' in window) {
-    try {
-        // Use the exact same configuration that worked before
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-        console.log("pdf.js workerSrc set to local:", pdfjsLib.GlobalWorkerOptions.workerSrc);
-    } catch (e) {
-         console.error("Error setting pdf.js workerSrc:", e);
+// Load PDF.js from CDN when the component mounts
+// This function should be called from a useEffect in a component that needs PDF functionality
+export const loadPDFJS = async () => {
+  // Only load if it's not already loaded
+  if (window.pdfjsLib) return window.pdfjsLib;
+  
+  return new Promise((resolve, reject) => {
+    // Create script element for PDF.js
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.async = true;
+    
+    // Handle load event
+    script.onload = () => {
+      console.log("PDF.js loaded from CDN successfully");
+      
+      // PDF.js is now available as pdfjsLib in the global scope
+      if (window.pdfjsLib) {
+        // Basic configuration
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        resolve(window.pdfjsLib);
+      } else {
+        reject(new Error("PDF.js loaded but pdfjsLib not found in window"));
+      }
+    };
+    
+    // Handle error
+    script.onerror = () => {
+      console.error("Failed to load PDF.js from CDN");
+      reject(new Error("Failed to load PDF.js from CDN"));
+    };
+    
+    // Add to document
+    document.body.appendChild(script);
+  });
+};
+
+/**
+ * Extracts text from a PDF using the CDN-loaded PDF.js
+ * @param {ArrayBuffer} pdfData - The PDF file as ArrayBuffer
+ * @returns {Promise<string>} - The extracted text
+ */
+const extractTextFromPDF = async (pdfData) => {
+  try {
+    // Ensure PDF.js is loaded
+    if (!window.pdfjsLib) {
+      await loadPDFJS();
     }
-} else {
-   console.warn("Web Workers not available. pdf.js might run slower.");
-}
+    
+    // Load the PDF
+    const loadingTask = window.pdfjsLib.getDocument({data: pdfData});
+    const pdf = await loadingTask.promise;
+    console.log(`PDF loaded: ${pdf.numPages} pages.`);
+    
+    // Extract text from all pages
+    let fullText = '';
+    
+    // Limit to reasonable number of pages
+    const maxPagesToProcess = Math.min(pdf.numPages, 20);
+    
+    for (let pageNum = 1; pageNum <= maxPagesToProcess; pageNum++) {
+      try {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+        const strings = content.items.map(item => item.str);
+        fullText += `--- Page ${pageNum} ---\n` + strings.join(' ') + '\n\n';
+        
+        // Limit text length
+        if (fullText.length > 15000) {
+          fullText = fullText.substring(0, 15000) + "... [TRUNCATED]";
+          break;
+        }
+      } catch (pageError) {
+        console.warn(`Error extracting text from page ${pageNum}:`, pageError);
+        fullText += `[Error extracting page ${pageNum}]\n\n`;
+      }
+    }
+    
+    return fullText;
+  } catch (error) {
+    console.error("Error in PDF extraction:", error);
+    throw error;
+  }
+};
 
 /**
  * Extracts text from a document file (PDF or Word)
  * @param {File} file - The document file object
- * @returns {Promise<string>} - The extracted text (potentially truncated)
+ * @returns {Promise<string>} - The extracted text
  */
 const extractTextFromDocument = async (file) => {
   console.log(`Attempting to extract text from: ${file.name}, type: ${file.type}`);
@@ -40,31 +114,14 @@ const extractTextFromDocument = async (file) => {
         const arrayBuffer = event.target.result;
         let extractedText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n[Content Extraction Skipped - Library Error or Unsupported Type]`; // Default fallback
 
-        // PDF Extraction Logic
-        if ((file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) && 
-            typeof pdfjsLib !== 'undefined' && pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        // PDF Extraction Logic - using CDN-loaded PDF.js
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
           console.log("Processing as PDF...");
           try {
-            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-            const pdf = await loadingTask.promise;
-            console.log(`PDF loaded: ${pdf.numPages} pages.`);
-            let textContent = '';
-            const maxPagesToProcess = Math.min(pdf.numPages, 20); // Limit pages
-            console.log(`Processing up to ${maxPagesToProcess} pages...`);
-
-            for (let i = 1; i <= maxPagesToProcess; i++) {
-              const page = await pdf.getPage(i);
-              const textContentStream = await page.getTextContent();
-              textContent += textContentStream.items.map(item => item.str).join(' ') + '\n\n';
-              if (textContent.length > 15000) { // Limit length
-                console.log("Truncating PDF text content due to length limit...");
-                textContent = textContent.substring(0, 15000) + "... [TRUNCATED]";
-                break;
-              }
-            }
-            extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${textContent}\n\n--- Extracted Text End ---`;
-            console.log("PDF text extracted (potentially truncated). Length:", extractedText.length);
-
+            // Use our CDN-based extraction function
+            const pdfText = await extractTextFromPDF(arrayBuffer);
+            extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${pdfText}\n\n--- Extracted Text End ---`;
+            console.log("PDF text extracted. Length:", extractedText.length);
           } catch (pdfError) {
             console.error('Error extracting PDF text:', pdfError);
             reject(new Error(`Failed to extract text from PDF: ${pdfError.message || pdfError.toString()}`));
@@ -83,17 +140,17 @@ const extractTextFromDocument = async (file) => {
               docxText = docxText.substring(0, 15000) + "... [TRUNCATED]";
             }
             extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${docxText}\n\n--- Extracted Text End ---`;
-            console.log("DOCX text extracted (potentially truncated). Length:", extractedText.length);
+            console.log("DOCX text extracted. Length:", extractedText.length);
           } catch (docxError) {
             console.error('Error extracting DOCX text:', docxError);
             reject(new Error(`Failed to extract text from DOCX: ${docxError.message || docxError.toString()}`));
             return;
           }
         }
-        // Handle other types or if libraries are missing/misconfigured
+        // Handle other types
         else {
           const libraryMessage = (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) 
-            ? "[PDF Library/Worker Not Loaded/Configured]"
+            ? "[PDF Library Not Loaded]"
             : (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
                file.name.toLowerCase().endsWith('.docx')) 
               ? "[DOCX Library Not Loaded]"
@@ -160,18 +217,28 @@ function validateResearchPaper(paper) {
 export const importDocumentContent = async (file) => {
   let documentText = '';
   try {
+    // Load PDF.js first if this is a PDF
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      try {
+        await loadPDFJS();
+      } catch (loadError) {
+        console.warn("Failed to load PDF.js from CDN:", loadError);
+        // Continue anyway - we'll handle fallback later
+      }
+    }
+    
     // Step 1: Extract text from document
     console.log(`Starting text extraction for ${file.name}`);
     documentText = await extractTextFromDocument(file);
     console.log(`Extraction successful for ${file.name}. Text length: ${documentText.length}`);
 
-    // Step 2: Build system prompt with research context - uses generous interpretation from promptContent.json
+    // Step 2: Build system prompt with research context
     const systemPrompt = buildSystemPrompt('documentImport', {
       needsResearchContext: true,
       documentText: documentText.substring(0, 500) // First 500 chars for context
     });
 
-    // Step 3: Build the task prompt - updated in promptContent.json to emphasize generous interpretation
+    // Step 3: Build the task prompt
     const taskPrompt = buildTaskPrompt('documentImport', {
       documentText: documentText,
       isoTimestamp: new Date().toISOString()
@@ -317,7 +384,7 @@ export const importDocumentContent = async (file) => {
           }
         }
         
-        Create a thoughtful, well-structured scientific paper example focusing on Bayesian inference with probabilistic population models.
+        Create a thoughtful, well-structured scientific paper example focusing on the topic in the document title.
       `;
       
       const fallbackResult = await callOpenAI(
@@ -371,23 +438,23 @@ window.testPdfExtraction = async function() {
   try {
     console.log("Testing PDF extraction...");
     
-    // Test with a URL if possible
-    let pdfUrl = '/sample.pdf';
+    // Load PDF.js first
+    await loadPDFJS();
     
-    // Try to fetch the sample PDF
+    // Test with a URL
+    let pdfUrl = 'https://arxiv.org/pdf/1409.0473.pdf'; // Neural Machine Translation paper
+    
+    console.log("Fetching test PDF from URL:", pdfUrl);
     const response = await fetch(pdfUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch sample PDF: ${response.status} ${response.statusText}`);
     }
     
     const pdfData = await response.arrayBuffer();
-    console.log("PDF sample loaded, size:", pdfData.byteLength);
+    console.log("PDF fetched, size:", pdfData.byteLength);
     
-    // Create a test File object
-    const file = new File([pdfData], "sample.pdf", { type: "application/pdf" });
-    
-    // Extract text using our main function
-    const extractedText = await extractTextFromDocument(file);
+    // Extract text directly using our CDN-based function
+    const extractedText = await extractTextFromPDF(pdfData);
     
     console.log("EXTRACTION RESULT:", extractedText);
     return extractedText;
@@ -396,3 +463,13 @@ window.testPdfExtraction = async function() {
     return "Test failed: " + error.message;
   }
 };
+
+// Preload PDF.js when the app starts
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', () => {
+    // Try to preload PDF.js
+    loadPDFJS().catch(error => {
+      console.warn("Preloading PDF.js failed, will try again when needed:", error);
+    });
+  });
+}
