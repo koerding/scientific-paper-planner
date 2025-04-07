@@ -18,13 +18,20 @@ pdfjsWorker.WorkerMessageHandler = {
   
   // Process each task type
   handleMessage: function(data) {
-    console.log("[PDF Worker] Message received:", data.type);
+    console.log("[PDF Worker] Message received:", data.cmd || data.type);
     
-    switch (data.type) {
+    if (data.test) {
+      return { success: true };
+    }
+    
+    // Handle message based on command
+    switch (data.cmd || data.type) {
       case 'test':
+      case 'TEST':
         return { success: true };
       
       case 'GetDocRequest':
+      case 'LOAD_DUMMY_PDF':
         this._data = data;
         this._document = {
           numPages: data.numPages || 1,
@@ -32,9 +39,20 @@ pdfjsWorker.WorkerMessageHandler = {
           isPureXfa: false,
           loadingParams: {}
         };
-        return { numPages: this._document.numPages, fingerprint: this._document.fingerprint };
+        return { 
+          numPages: this._document.numPages, 
+          fingerprint: this._document.fingerprint,
+          info: {
+            PDFFormatVersion: "1.7",
+            IsLinearized: false,
+            IsEncrypted: false,
+            Producer: "Scientific Paper Planner",
+            Creator: "Custom PDF Worker"
+          }
+        };
       
       case 'GetPage':
+      case 'PAGE_INFO':
         this._page = {
           pageIndex: data.pageIndex || 0,
           rotate: 0,
@@ -42,36 +60,54 @@ pdfjsWorker.WorkerMessageHandler = {
           userUnit: 1.0,
           view: [0, 0, 595.28, 841.89]
         };
-        return this._page;
+        return {
+          pageIndex: data.pageIndex || 0,
+          rotate: 0,
+          view: [0, 0, 595.28, 841.89],
+          info: {
+            width: 595.28,
+            height: 841.89,
+            num: 1
+          }
+        };
       
       case 'GetTextContent':
+      case 'GET_TEXT_CONTENT':
         // Create simplified text content for the current page
         return {
+          bidiTexts: [
+            { dir: "ltr", str: "PDF text extraction active" },
+            { dir: "ltr", str: "This text is extracted by a custom PDF.js worker" },
+            { dir: "ltr", str: "The original text couldn't be processed due to a worker issue" },
+            { dir: "ltr", str: "But this text will help generate an example paper" }
+          ],
           items: [
-            { str: "PDF text extraction active", height: 12, width: 150, transform: [12, 0, 0, 12, 100, 700] },
-            { str: "Page " + (data.pageIndex + 1), height: 12, width: 50, transform: [12, 0, 0, 12, 100, 650] },
-            { str: "Content processed by custom PDF.js worker", height: 12, width: 250, transform: [12, 0, 0, 12, 100, 600] }
+            { str: "PDF text extraction active", dir: "ltr", width: 150, height: 12, transform: [12, 0, 0, 12, 100, 700] },
+            { str: "This text is extracted by a custom PDF.js worker", dir: "ltr", width: 250, height: 12, transform: [12, 0, 0, 12, 100, 650] },
+            { str: "The original text couldn't be processed due to a worker issue", dir: "ltr", width: 250, height: 12, transform: [12, 0, 0, 12, 100, 600] },
+            { str: "But this text will help generate an example paper", dir: "ltr", width: 250, height: 12, transform: [12, 0, 0, 12, 100, 550] }
           ],
           styles: []
         };
       
       case 'RenderPageRequest':
+      case 'RENDER_PAGE':
         // Return minimal rendering info
         return {
-          transparency: { 
-            canvasGradient: true, 
-            canvasPattern: true 
-          },
           viewport: {
             width: 595.28,
             height: 841.89,
             fontScale: 1.0
           },
-          annotations: []
+          annotations: [],
+          operatorList: {
+            fnArray: [],
+            argsArray: []
+          }
         };
       
       default:
-        console.log("[PDF Worker] Unhandled message type:", data.type);
+        console.log("[PDF Worker] Unhandled message:", data.cmd || data.type);
         return { success: false, error: "Unsupported operation" };
     }
   }
