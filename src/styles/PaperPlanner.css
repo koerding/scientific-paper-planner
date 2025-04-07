@@ -1,9 +1,13 @@
 /* Safe CSS for Paper Planner - minification friendly */
 
-/* FIXED: Simplified section card layout with reduced spacing */
+/* FIXED: Simplified section card layout with flexible height */
 .section-card {
   margin-bottom: 0.5rem !important;
   transition: border-color 0.3s ease, border-width 0.3s ease, box-shadow 0.3s ease;
+  height: auto !important; /* Allow height to be determined by content */
+  min-height: auto !important; /* Remove any minimum height */
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .section-card:hover {
@@ -15,6 +19,10 @@
   border: none !important;
   padding: 0.25rem 0.5rem !important;
   line-height: 1.4 !important;
+  height: auto !important; /* Allow textarea to expand */
+  min-height: 1.5rem !important; /* Minimal starting height */
+  overflow-y: hidden !important; /* Hide scrollbars */
+  resize: none !important; /* Prevent manual resizing */
 }
 
 .section-card textarea:focus {
@@ -537,12 +545,6 @@ div[style*="margin-right: 50%"] {
   left: auto !important;
 }
 
-/* Ensure section cards maintain proper width */
-.section-card {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
 /* Force layout to behave correctly */
 html body .min-h-screen .w-full .flex {
   display: flex !important;
@@ -553,11 +555,12 @@ html body .min-h-screen .w-full .flex > div:first-child {
   flex: 0 0 50% !important;
 }
 
-/* Ensure proper content scrolling with fixed elements */
+/* FIXED: Ensure proper content scrolling with fixed elements but without fixed height */
 .w-half.px-4.py-2 {
-  min-height: calc(100vh - 144px);
-  overflow-y: auto;
-  padding-bottom: 3rem;
+  min-height: auto !important;
+  height: auto !important;
+  overflow-y: visible !important;
+  padding-bottom: 3rem !important;
   padding-left: 1rem !important; /* Less padding on left side */
   padding-right: 1rem !important; /* Less padding on right side */
 }
@@ -569,22 +572,12 @@ html body .min-h-screen .w-full .flex > div:first-child {
   bottom: 50px !important;
 }
 
-/* Ensure content width doesn't collapse */
-.w-half.px-6.py-3 {
-  min-width: 50%;
-  width: 50% !important;
-}
-
 /* Prevent horizontal scrolling */
 body, html {
   overflow-x: hidden;
 }
 
 /* Add these Tailwind-compatible helper classes to fix w-1/2 issues */
-.w-half {
-  width: 50%;
-}
-
 .mr-half {
   margin-right: 50%;
 }
