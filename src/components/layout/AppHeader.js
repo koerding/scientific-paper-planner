@@ -7,6 +7,7 @@ import React, { useState } from 'react';
  * - Visual feedback for users during PDF processing
  * - Disabled state during import to prevent multiple uploads
  * - FIXED: Better handling of different loading states
+ * - FIXED: Restored original header design and layout
  */
 const AppHeader = ({
   resetProject,
@@ -72,9 +73,9 @@ const AppHeader = ({
   return (
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-4">
-        <div className="flex flex-wrap items-center justify-between">
+        <div className="flex items-center justify-between">
           {/* Logo and title - fixed spacing */}
-          <div className="flex items-center mb-2 md:mb-0">
+          <div className="flex items-center">
             <div className="w-10 h-10 bg-purple-600 text-white rounded-md flex items-center justify-center mr-3">
               <span className="font-bold text-xl">SP</span>
             </div>
@@ -84,8 +85,8 @@ const AppHeader = ({
             </div>
           </div>
 
-          {/* Action buttons - improved wrap behavior */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Action buttons - improved styling */}
+          <div className="flex items-center space-x-2">
             {/* New Project button */}
             <button
               onClick={resetProject}
