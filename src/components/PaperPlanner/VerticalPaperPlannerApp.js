@@ -25,6 +25,7 @@ import '../../styles/PaperPlanner.css';
  * - Improved fixed positioning for instructions panel
  * - Better handling of footer spacing
  * - Added loading animation for PDF import
+ * - FIXED: Properly disable Magic button during PDF import
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -224,6 +225,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Handle magic (formerly improving instructions)
   const handleMagic = async () => {
+    // FIXED: Don't allow instruction improvement during loading
+    if (loading) return;
+    
     setImprovingInstructions(true);
     try {
       const result = await improveBatchInstructions(
@@ -369,6 +373,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
+  // FIXED: Combined loading state to properly disable buttons
+  const isAnyLoading = loading || chatLoading || improvingInstructions;
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="w-full pb-8">
@@ -380,7 +387,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
           setShowExamplesDialog={setShowExamplesDialog}
-          loading={loading || chatLoading || improvingInstructions}
+          loading={isAnyLoading}
         />
 
         {/* Main content area */}
@@ -439,10 +446,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           userInputs={userInputs}
         />
 
-        {/* Floating Magic Button */}
+        {/* Floating Magic Button - FIXED: Pass proper loading state */}
         <FloatingMagicButton
           handleMagicClick={handleMagic}
-          loading={improvingInstructions}
+          loading={improvingInstructions || loading} // Disable during either loading state
           onboardingStep={onboardingStep}
         />
 
