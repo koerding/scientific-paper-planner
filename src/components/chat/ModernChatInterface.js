@@ -12,6 +12,7 @@ import '../../styles/PaperPlanner.css';
  * - Improved z-index handling
  * - Fixed transition issues
  * - Better handling of magic button overlap
+ * - FIXED: Z-index increased to be on top of the improve instructions button
  */
 const ModernChatInterface = ({
   currentSection,
@@ -83,7 +84,7 @@ const ModernChatInterface = ({
 
       {/* Expanded chat interface - fixed positioning and transitions */}
       <div
-        className={`fixed z-50 shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`fixed shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
           isMinimized ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'
         }`}
         style={{
@@ -92,7 +93,8 @@ const ModernChatInterface = ({
           width: 'min(950px, 95vw)',
           height: 'min(600px, 75vh)',
           transform: isMinimized ? 'translateZ(0) translateY(20px)' : 'translateZ(0)',
-          maxHeight: 'calc(100vh - 48px)'
+          maxHeight: 'calc(100vh - 48px)',
+          zIndex: 1000 // FIXED: Increased z-index to be higher than the improve instructions button (z-40)
         }}
       >
         {/* Chat header - consistent styling */}
