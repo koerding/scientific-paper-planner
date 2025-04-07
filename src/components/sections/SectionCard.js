@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef } from 'react';
  * FIXED: Made the inner textbox seamless and reduced padding throughout
  * FIXED: Consistent font styles with right panel (instruction panel)
  * FIXED: Increased section title size by 40% as requested
+ * FIXED: Properly resize textarea based on content
  */
 const SectionCard = ({
   section,
@@ -26,13 +27,29 @@ const SectionCard = ({
   // Get the actual value stored in userInputs
   const textValue = userInputs[section.id] || '';
 
-  // Auto-resize textarea height
-  useEffect(() => {
+  // Auto-resize textarea height - improved version
+  const adjustTextareaHeight = () => {
     if (textareaRef.current) {
+      // Reset height to auto first to get accurate scrollHeight
       textareaRef.current.style.height = 'auto';
+      // Then set to scrollHeight to fit content exactly
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
+  };
+
+  // Adjust on initial render and when text changes
+  useEffect(() => {
+    adjustTextareaHeight();
   }, [textValue]);
+
+  // Adjust after the component has fully mounted to handle initial content
+  useEffect(() => {
+    // Small delay to ensure the component is fully rendered
+    const timer = setTimeout(() => {
+      adjustTextareaHeight();
+    }, 10);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Determine the border classes based on completion status
   const getBorderClasses = () => {
@@ -65,6 +82,13 @@ const SectionCard = ({
     ${getBorderClasses()}
   `;
 
+  // Handle input change and resize
+  const handleTextChange = (e) => {
+    handleInputChange(section.id, e.target.value);
+    // Ensure height adjustment occurs after state update
+    setTimeout(adjustTextareaHeight, 0);
+  };
+
   return (
     <div
       ref={sectionRef}
@@ -95,7 +119,8 @@ const SectionCard = ({
           ref={textareaRef}
           className={`w-full py-1 px-2 border-0 rounded focus:ring-1 focus:ring-blue-300 outline-none resize-none overflow-hidden text-base leading-relaxed ${getBackgroundColor()} font-normal`}
           value={textValue}
-          onChange={(e) => handleInputChange(section.id, e.target.value)}
+          onChange={handleTextChange}
+          onInput={adjustTextareaHeight}
           rows="1"
           maxLength={section.maxLength}
           placeholder={section.inputPlaceholder || "Start writing..."}
