@@ -1,5 +1,67 @@
 /* Safe CSS for Paper Planner - minification friendly */
 
+/* FIXED: Simplified section card layout with reduced spacing */
+.section-card {
+  margin-bottom: 0.5rem !important;
+  transition: border-color 0.3s ease, border-width 0.3s ease, box-shadow 0.3s ease;
+}
+
+.section-card:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.section-card textarea {
+  background-color: transparent !important; /* Make textarea transparent */
+  border: none !important;
+  padding: 0.25rem 0.5rem !important;
+  line-height: 1.4 !important;
+}
+
+.section-card textarea:focus {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Thinner border styles to reduce visual weight */
+.border-2 {
+  border-width: 2px !important;
+}
+
+/* Status-based border colors */
+.section-complete {
+  border-color: #10B981 !important;
+  border-width: 2px !important;
+}
+
+.section-unstarted {
+  border-color: #EF4444 !important;
+  border-width: 2px !important;
+}
+
+/* Tighter spacing for approach and data toggles */
+.approach-toggle, .data-toggle {
+  border-radius: 4px;
+  padding-top: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.approach-toggle h3, .data-toggle h3 {
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.approach-toggle button, .data-toggle button {
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
 /* Better chat styling fixes */
 .prose-sm img {
   margin-top: 0;
@@ -52,40 +114,6 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* Research Approach and Data Acquisition Toggles (Subtle Style) */
-.approach-toggle, .data-toggle {
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  padding-top: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.approach-toggle button, .data-toggle button {
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-}
-
-.approach-toggle button:hover, .data-toggle button:hover {
-  background-color: #f3f4f6;
-  color: #374151;
-}
-
-.approach-toggle button:active, .data-toggle button:active {
-  background-color: #e5e7eb;
-}
-
-.approach-toggle h3, .data-toggle h3 {
-  border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.75rem;
-  font-weight: 600;
-  color: #374151;
-}
-
 /* Subtle active button styles */
 .approach-toggle button.active, .data-toggle button.active {
   font-weight: 600;
@@ -125,35 +153,6 @@
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 300ms, transform 300ms;
-}
-
-/* Custom border styles for completion status - IMPROVED RED/GREEN CONTRAST */
-.border-3 {
-  border-width: 3px !important;
-}
-
-.border-4 {
-  border-width: 4px !important;
-}
-
-/* Status-based border colors */
-.section-complete {
-  border-color: #10B981 !important;
-  border-width: 4px !important;
-}
-
-.section-unstarted {
-  border-color: #EF4444 !important;
-  border-width: 4px !important;
-}
-
-/* Ensure borders are visible */
-.section-card {
-  transition: border-color 0.3s ease, border-width 0.3s ease, box-shadow 0.3s ease;
-}
-
-.section-card:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 /* Onboarding Highlight and Tooltip Styles */
@@ -328,6 +327,8 @@ header.bg-white.shadow-sm .container {
   min-height: calc(100vh - 144px);
   overflow-y: auto;
   padding-bottom: 3rem;
+  padding-left: 1rem !important; /* Less padding on left side */
+  padding-right: 1rem !important; /* Less padding on right side */
 }
 
 /* Fix for instructions panel, this is where the dimensions of the panel are actually set */
@@ -335,11 +336,6 @@ header.bg-white.shadow-sm .container {
   height: calc(100vh - 304px);
   top: 150px !important;
   bottom: 50px !important;
-}
-
-/* Ensure consistent section spacing */
-.section-card {
-  margin-bottom: 1rem !important;
 }
 
 /* Improve transition for chat window */
