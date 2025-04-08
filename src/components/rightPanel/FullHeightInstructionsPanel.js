@@ -133,7 +133,7 @@ const FullHeightInstructionsPanel = ({
   // FIXED: Set style to ensure top alignment with content sections (same as the green boxes)
   return (
     <div
-      className="bg-blue-50 border-l-4 border-blue-500 rounded-lg overflow-y-auto"
+      className="bg-blue-50 border-4 border-blue-500 rounded-lg overflow-y-auto"
       style={{
         position: 'fixed',
         top: '100px', // FIXED: Aligned with content top (accounting for header height)
