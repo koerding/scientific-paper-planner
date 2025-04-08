@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
  * - Improved border-radius consistency
  * - Better z-index handling
  * - FIXED: Consistent font styles with left panel
+ * - FIXED: Top alignment with content sections
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -129,13 +130,13 @@ const FullHeightInstructionsPanel = ({
   // Get the appropriate instructions text (with fallback if needed)
   const instructionsText = getInstructionsText();
 
-  // FIXED: Set style to ensure consistent positioning with header (100px) and footer (44px)
+  // FIXED: Set style to ensure top alignment with content sections (same as the green boxes)
   return (
     <div
-      className="bg-blue-50 border-4 border-blue-500 rounded-lg overflow-y-auto"
+      className="bg-blue-50 border-l-4 border-blue-500 rounded-lg overflow-y-auto"
       style={{
         position: 'fixed',
-        top: '100px', // Positioned right below header
+        top: '100px', // FIXED: Aligned with content top (accounting for header height)
         right: '1rem',
         width: 'calc(50% - 1rem)',
         bottom: '80px', // Align with footer
