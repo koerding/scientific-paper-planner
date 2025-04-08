@@ -30,6 +30,7 @@ import '../../styles/PaperPlanner.css';
  * - FIXED: Reduced overall whitespace and simplified layout
  * - FIXED: Consistent font styles between left and right panels
  * - RESTORED: Left cards layout with proper width/spacing
+ * - UPDATED: Moved Target Audience section after Research Approach block
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -440,9 +441,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           <div className="flex">
             {/* RESTORED: Left panel with full half-width */}
             <div className="w-half px-4 py-2" style={{ width: '50%' }}>
-              {/* Display first two sections: Question and Audience */}
+              {/* Display Research Question first */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'question' || section?.id === 'audience')
+                .filter(section => section?.id === 'question')
                 .map(section => renderSection(section))}
 
               {/* Research Approach Toggle */}
@@ -454,6 +455,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
               {/* Display active approach section */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
+                .map(section => renderSection(section))}
+
+              {/* MOVED: Target Audience section after Research Approach block */}
+              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
+                .filter(section => section?.id === 'audience')
                 .map(section => renderSection(section))}
 
               {/* Related Papers Section */}
