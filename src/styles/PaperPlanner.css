@@ -491,7 +491,7 @@ body, html {
 /* Fix for right panel using a unique class selector that won't affect the left panel */
 .right-panel {
   height: calc(100vh - 304px);
-  top: 150px !important;
+  top: 145px !important;
   bottom: 50px !important;
 }
 
