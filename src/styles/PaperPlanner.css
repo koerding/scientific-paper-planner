@@ -488,15 +488,14 @@ body, html {
 
 /* Add this to the bottom of your PaperPlanner.css file */
 
-/* Fix for instructions panel with any border style */
-.instructions-panel-fixed {
+/* Fix for right panel using a unique class selector that won't affect the left panel */
+.right-panel {
   height: calc(100vh - 304px);
   top: 150px !important;
   bottom: 50px !important;
 }
 
-/* The rule below is already in your CSS but is only targeting border-l-4 */
-/* We've added a new, more general rule above that will work with border-4 */
+/* Keep the existing rule in place for backward compatibility */
 .bg-blue-50.border-l-4.border-blue-500 {
   height: calc(100vh - 304px);
   top: 150px !important;
