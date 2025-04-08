@@ -6,10 +6,10 @@ import ReactMarkdown from 'react-markdown';
  * FIXES:
  * - Correct positioning relative to header and footer
  * - Fixed scrolling behavior
- * - Improved border-radius consistency
+ * - Border-radius consistency with full border
  * - Better z-index handling
- * - FIXED: Consistent font styles with left panel
- * - FIXED: Top alignment with content sections
+ * - Consistent font styles with left panel
+ * - FIXED: Top alignment with green boxes while keeping full blue border
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -130,17 +130,19 @@ const FullHeightInstructionsPanel = ({
   // Get the appropriate instructions text (with fallback if needed)
   const instructionsText = getInstructionsText();
 
-  // FIXED: Set style to ensure top alignment with content sections (same as the green boxes)
+  // FIXED: Position style to align with content sections while keeping full border
+  // The key is to use box-sizing: border-box to include border in the positioning calculations
   return (
     <div
       className="bg-blue-50 border-4 border-blue-500 rounded-lg overflow-y-auto"
       style={{
         position: 'fixed',
-        top: '100px', // FIXED: Aligned with content top (accounting for header height)
+        top: '100px', // Aligned with content top (accounts for header)
         right: '1rem',
         width: 'calc(50% - 1rem)',
         bottom: '80px', // Align with footer
         zIndex: 10,
+        boxSizing: 'border-box', // IMPORTANT: Makes border part of the element's dimensions
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
       }}
     >
