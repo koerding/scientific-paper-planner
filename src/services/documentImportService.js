@@ -323,8 +323,7 @@ export async function importDocumentContent(file) {
     if (!validateResearchPaper(result)) {
       console.warn("Received invalid paper structure from OpenAI, attempting to fix...");
       
-      // Try a more direct approach if the first attempt didn't give valid results
-      const simplifiedPrompt = `
+ const simplifiedPrompt = `
         Extract a complete scientific paper structure from this document text.
         
         Be VERY GENEROUS in your interpretation - read between the lines, make positive assumptions,
@@ -338,6 +337,7 @@ export async function importDocumentContent(file) {
         You MUST choose EXACTLY ONE data collection method:
         - Either experiment (collecting new data)
         - OR existingdata (analyzing already collected data)
+        - OR theorysimulation (using theory or computational models)
         
         Return in this exact JSON format:
         {
@@ -358,6 +358,8 @@ export async function importDocumentContent(file) {
             "experiment": "Key Variables:\\n- Independent: [variables based on text, mention if the text does not mention any]\\n- Dependent: [variables based on text, mention if the text does not mention any]\\n- Controlled: [variables based on text, mention if the text does not mention any]\\n\\nSample & Size Justification: [simple description based on text, mention if the text does not mention any]\\n\\nData Collection Methods: [simple description based on text, mention if the text does not mention any]\\n\\nPredicted Results: [simple description based on text, mention if the text does not mention any]\\n\\nPotential Confounds & Mitigations: [simple description based on text, mention if the text does not mention any]",
             // OR
             "existingdata": "Dataset name and source:\\n[description based on text, mention if the text does not specify]\\n\\nOriginal purpose of data collection:\\n[description based on text, mention if text does not specify]\\n\\nRights/permissions to use the data:\\n[description based on text, mention if the text does not specify]\\n\\nData provenance and quality information:\\n[description based on text, mention if the text does not specify]\\n\\nRelevant variables in the dataset:\\n[description based on text, mention if the text does not specify]\\n\\nPotential limitations of using this dataset:\\n[description based on text, mention if not specified]",
+            // OR
+            "theorysimulation": "Key Theoretical Assumptions:\\n- [assumption1 based on text]\\n- [assumption2 based on text]\\n- [assumption3 based on text]\\n\\nRelationship to Real-world Phenomena:\\n[description based on text]\\n\\nMathematical/Computational Framework:\\n[description based on text]\\n\\nSolution/Simulation Approach:\\n[description based on text]\\n\\nValidation Strategy:\\n[description based on text]\\n\\nPotential Limitations:\\n[description based on text]\\n\\nTheoretical Significance:\\n[description based on text]",
             
             "analysis": "Data Cleaning & Exclusions:\\n[simple description based on text, mention if the text does not specify]\\n\\nPrimary Analysis Method:\\n[simple description based on text]\\n\\nHow Analysis Addresses Research Question:\\n[simple description based on text, mention if this is not clear]\\n\\nUncertainty Quantification:\\n[simple description based on text, this includes any statistical method, mention if not specified]\\n\\nSpecial Cases Handling:\\n[simple description based on text]",
             "process": "Skills Needed vs. Skills I Have:\\n[simple description based on text, guess where necessary]\\n\\nCollaborators & Their Roles:\\n[simple description based on text, guess where necessary]\\n\\nData/Code Sharing Plan:\\n[simple description based on text]\\n\\nTimeline & Milestones:\\n[simple description based on text]\\n\\nObstacles & Contingencies:\\n[simple description based on text, guess where necessary]",
