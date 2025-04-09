@@ -241,6 +241,83 @@ export const improveBatchInstructions = async (
       errorMessage: error.message || "An error occurred while improving instructions"
     };
   }
+};
+
+/**
+ * Updates section content object with improved instructions.
+ * @param {Object} currentSections - The current sections object from state.
+ * @param {Array} improvedData - Array of objects { id, editedInstructions, completionStatus }.
+ * @returns {Object} - A new object with updated section content.
+ */
+export const updateSectionWithImprovedInstructions = (currentSections, improvedData) => {
+  // Validate inputs
+  if (!currentSections || typeof currentSections !== 'object') {
+    console.error("Invalid currentSections: Expected an object");
+    return currentSections || {}; // Return original or empty object
+  }
+
+  if (!Array.isArray(improvedData)) {
+    console.error("Invalid improvedData: Expected an array");
+    return {...currentSections}; // Return a shallow copy of the original
+  }
+
+  // Create a deep copy to avoid modifying the original state directly
+  let updatedSections;
+  try {
+    updatedSections = JSON.parse(JSON.stringify(currentSections));
+  } catch(e) {
+    console.error("Error creating deep copy of sections:", e);
+    return {...currentSections}; // Return shallow copy on error
+  }
+
+  // Keep track of changes made
+  let changesApplied = false;
+  
+  // Update each section based on the improved data
+  improvedData.forEach(improvement => {
+    if (!improvement?.id) {
+      console.warn("Missing ID in improvement data, skipping", improvement);
+      return;
+    }
+
+    // Get section from updated sections
+    let section = null;
+    let sectionIndex = -1;
+    
+    if (Array.isArray(updatedSections.sections)) {
+      sectionIndex = updatedSections.sections.findIndex(s => s?.id === improvement.id);
+      if (sectionIndex === -1) {
+        console.warn(`Section not found in current state: ${improvement.id}. Cannot apply improvement.`);
+        return;
+      }
+      section = updatedSections.sections[sectionIndex];
+    } else {
+      console.error("Invalid sections structure:", updatedSections);
+      return;
+    }
+    
+    if (!section) {
+      console.warn(`Section at index ${sectionIndex} is null or undefined, skipping.`);
+      return;
+    }
+
+    // Initialize instructions object if it doesn't exist
+    if (!section.instructions) {
+      section.instructions = {};
+    }
+
+    // Update the instructions field - always update since we've already validated/generated content
+    section.instructions.text = improvement.editedInstructions;
+    console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id} (${improvement.editedInstructions.length} chars)`);
+    changesApplied = true;
+
+    // No need to update feedback separately since it's now inline with instructions
+    // Remove any existing separate feedback field to avoid confusion
+    if (section.instructions.hasOwnProperty('feedback')) {
+      delete section.instructions.feedback;
+      console.log(`[updateSectionWithImprovedInstructions] Removed separate feedback for ${improvement.id} as it's now inline`);
+    }
+  });
 
   if (!changesApplied) {
     console.warn("[updateSectionWithImprovedInstructions] No meaningful changes were applied to any section");
@@ -544,78 +621,3 @@ function createFormattedFallbackInstructions(sectionTitle, originalInstructions)
   
   return formattedInstructions;
 }
-
-/**
- * Updates section content object with improved instructions.
- * @param {Object} currentSections - The current sections object from state.
- * @param {Array} improvedData - Array of objects { id, editedInstructions, completionStatus }.
- * @returns {Object} - A new object with updated section content.
- */
-export const updateSectionWithImprovedInstructions = (currentSections, improvedData) => {
-  // Validate inputs
-  if (!currentSections || typeof currentSections !== 'object') {
-    console.error("Invalid currentSections: Expected an object");
-    return currentSections || {}; // Return original or empty object
-  }
-
-  if (!Array.isArray(improvedData)) {
-    console.error("Invalid improvedData: Expected an array");
-    return {...currentSections}; // Return a shallow copy of the original
-  }
-
-  // Create a deep copy to avoid modifying the original state directly
-  let updatedSections;
-  try {
-    updatedSections = JSON.parse(JSON.stringify(currentSections));
-  } catch(e) {
-    console.error("Error creating deep copy of sections:", e);
-    return {...currentSections}; // Return shallow copy on error
-  }
-
-  // Keep track of changes made
-  let changesApplied = false;
-  
-  // Update each section based on the improved data
-  improvedData.forEach(improvement => {
-    if (!improvement?.id) {
-      console.warn("Missing ID in improvement data, skipping", improvement);
-      return;
-    }
-
-    // Get section from updated sections
-    let section = null;
-    let sectionIndex = -1;
-    
-    if (Array.isArray(updatedSections.sections)) {
-      sectionIndex = updatedSections.sections.findIndex(s => s?.id === improvement.id);
-      if (sectionIndex === -1) {
-        console.warn(`Section not found in current state: ${improvement.id}. Cannot apply improvement.`);
-        return;
-      }
-      section = updatedSections.sections[sectionIndex];
-    } else {
-      console.error("Invalid sections structure:", updatedSections);
-      return;
-    }
-    
-    if (!section) {
-      console.warn(`Section at index ${sectionIndex} is null or undefined, skipping.`);
-      return;
-    }
-
-    // Initialize instructions object if it doesn't exist
-    if (!section.instructions) {
-      section.instructions = {};
-    }
-
-    // Update the instructions field - always update since we've already validated/generated content
-    section.instructions.text = improvement.editedInstructions;
-    console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id} (${improvement.editedInstructions.length} chars)`);
-    changesApplied = true;
-
-    // No need to update feedback separately since it's now inline with instructions
-    // Remove any existing separate feedback field to avoid confusion
-    if (section.instructions.hasOwnProperty('feedback')) {
-      delete section.instructions.feedback;
-      console.log(`[updateSectionWithImprovedInstructions] Removed separate feedback for ${improvement.id} as it's now inline`);
-    }
