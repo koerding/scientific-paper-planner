@@ -102,6 +102,7 @@ export const buildSystemPrompt = (promptType, params = {}) => {
   let finalPrompt = replacePlaceholders(basePromptTemplate, allParams);
   
   // For instruction improvement, add specific guidance about linebreaks in feedback
+  // and strikethrough for completed items
   if (promptType === 'instructionImprovement') {
     finalPrompt += `
 
@@ -117,6 +118,16 @@ IMPORTANT FEEDBACK FORMAT NOTE: When providing feedback, always use this exact s
 [specific actionable suggestions]
 
 The linebreaks between sections are essential for readability.
+
+INSTRUCTION FORMATTING: Use ~~strikethrough~~ for completed items instead of removing them. For example, if the original instruction has:
+* Define your research question clearly.
+* Explain why the question matters.
+
+And the user has defined their question clearly but not explained why it matters, change it to:
+* ~~Define your research question clearly.~~
+* Explain why the question matters.
+
+This helps users see their progress while keeping all original instructions visible.
 `;
   }
   
@@ -148,10 +159,13 @@ export const buildTaskPrompt = (taskType, params = {}) => {
   let finalPrompt = replacePlaceholders(basePromptTemplate, allParams);
   
   // For instruction improvement, add specific guidance about linebreaks in feedback
+  // and using strikethrough instead of deletion
   if (taskType === 'instructionImprovement') {
     finalPrompt += `
 
-IMPORTANT ADDITIONAL INSTRUCTION: When providing feedback in the "feedback" field, use linebreaks between the Strengths, Weaknesses, and Comments sections for better readability. For example:
+IMPORTANT ADDITIONAL INSTRUCTION: 
+
+1. When providing feedback in the "feedback" field, use linebreaks between the Strengths, Weaknesses, and Comments sections for better readability. For example:
 
 "**Strengths:**
 The question is well-defined and its significance is clearly articulated.
@@ -162,7 +176,19 @@ The broader scientific context and specific methodologies are not fully addresse
 **Comments:**
 Consider discussing the theoretical implications of your question to enhance its impact."
 
-These linebreaks between sections make the feedback much more readable and easier to understand.
+2. CRITICAL: When updating instructions, DO NOT DELETE completed items. Instead, mark them with strikethrough like this: ~~completed item~~. For example, if the original instructions include:
+
+* Define your research question
+* Explain the significance
+* Identify methodological approach
+
+And the user has completed the first two, your editedInstructions should be:
+
+* ~~Define your research question~~
+* ~~Explain the significance~~
+* Identify methodological approach
+
+This way, users can see what they've accomplished while still having the original instructions visible.
 `;
   }
   
@@ -209,11 +235,18 @@ export const getRandomQuestionsForApproach = (sectionId, count = 2) => {
 export const generateMockResponse = (type, sectionId) => {
   // Handle specific mock types first
   if (type === 'instructionImprovement') {
-    // Add linebreaks to feedback sections
+    // Add linebreaks to feedback sections and strikethrough to completed items
     let response = promptContent.mockResponses.instructionImprovement;
     response = response.replace(/"\*\*Strengths:\*\* /g, '"**Strengths:**\n');
     response = response.replace(/\\n\*\*Weaknesses:\*\* /g, '\n\n**Weaknesses:**\n');
     response = response.replace(/\\n\*\*Comments:\*\* /g, '\n\n**Comments:**\n');
+    
+    // Add strikethrough to some items to simulate completion
+    if (response.includes('editedInstructions')) {
+      response = response.replace(/Great job defining your research question/g, 
+        'Great job defining your research question. Your current work shows good progress:\n\n* ~~Define your research question clearly.~~\n* ~~Articulate scientific significance.~~\n* Consider methodological implications');
+    }
+    
     return response;
   }
   
