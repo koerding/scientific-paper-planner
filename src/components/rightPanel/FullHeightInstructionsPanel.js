@@ -3,15 +3,15 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 /**
- * Enhanced full-height instructions panel
- * FIXES:
- * - Correct positioning relative to header and footer
- * - Fixed scrolling behavior
- * - Improved border-radius consistency
- * - Better z-index handling
- * - FIXED: Consistent font styles with left panel
- * - FIXED: Using unique class for right panel only
- * - FIXED: Added proper support for strikethrough in markdown formatting
+ * Enhanced full-height instructions panel with inline feedback formatting
+ * UPDATED: Now renders instructions in bold and inline feedback in regular text
+ * FIXED: Correct positioning relative to header and footer
+ * FIXED: Fixed scrolling behavior
+ * FIXED: Improved border-radius consistency
+ * FIXED: Better z-index handling
+ * FIXED: Consistent font styles with left panel
+ * FIXED: Using unique class for right panel only
+ * FIXED: Added proper support for strikethrough in markdown formatting
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -55,33 +55,49 @@ const FullHeightInstructionsPanel = ({
       case 'question':
         return `${baseInstructions}
 
-* Specify your question clearly.
+* **Specify your question clearly.**
+This helps readers immediately understand your research focus.
 
-* Be clear about the logic. Are you asking how something is? Why it is the way it is? What gives rise to something? How it got their over time?
+* **Be clear about the logic.**
+Are you asking how something is? Why it is the way it is? What gives rise to something? How it got there over time?
 
-* Explain why the question matters to the field. How will science be different after your work?
+* **Explain why the question matters to the field.**
+How will science be different after your work? Include both theoretical and practical significance.
 
-* Ensure your question is answerable with your anticipated resources.`;
+* **Ensure your question is answerable with your anticipated resources.**
+Consider what data, methods, and skills you'll need to address it properly.`;
       
       case 'audience':
         return `${baseInstructions}
 
-* Identify primary academic communities who would benefit most directly.
+* **Identify primary academic communities who would benefit most directly.**
+Be specific about which subfields or research areas will find your work valuable.
 
-* For each community, note how your research might impact their work.
+* **For each community, note how your research might impact their work.**
+Explain what gap you're filling or what problem you're solving for them.
 
-* Then, specify 3-5 individual researchers or research groups representing your audience.`;
+* **Specify 3-5 individual researchers or research groups representing your audience.**
+These should be people actively working in areas related to your question.
+
+* **Consider how your findings might be communicated effectively to this audience.**
+Think about their background knowledge, methodological preferences, and terminology.`;
       
       // Additional cases omitted for brevity - would include all other sections
       
       default:
         return `${baseInstructions}
 
-* Be specific and clear in your writing.
+* **Be specific and clear in your writing.**
+Vague statements reduce the impact of your work and may confuse readers.
 
-* Consider how this section connects to your overall research goals.
+* **Consider how this section connects to your overall research goals.**
+Every part of your paper should contribute to answering your research question.
 
-* Ensure this section addresses the key requirements for your project.`;
+* **Ensure this section addresses the key requirements for your project.**
+Different research approaches have different expectations for how information should be presented.
+
+* **Think about how readers will use this information.**
+What do they need to know to understand and evaluate your research properly?`;
     }
   }
 
@@ -112,9 +128,6 @@ const FullHeightInstructionsPanel = ({
     
     return rawText;
   };
-  
-  // Safely access feedback text - use null check and proper fallback
-  const feedbackText = currentSection?.instructions?.feedback || '';
 
   // Create a title that includes the section name
   const sectionTitle = currentSection?.title || "Instructions";
@@ -174,19 +187,6 @@ const FullHeightInstructionsPanel = ({
               ) : (
                 <p className="text-blue-600 text-base mb-4">Instructions not available for this section.</p>
               )}
-
-              {/* Render Feedback Section if it exists and is meaningful */}
-              {feedbackText && feedbackText.length > 5 && (
-                <div className="mt-4 pt-3 border-t border-blue-300">
-                  <h4 className="text-lg font-semibold text-blue-700 mb-2">Feedback</h4>
-                  <div className={`${customStyles.content} feedback-content`}>
-                    <StyledMarkdown 
-                      content={fixNumberedLists(feedbackText)} 
-                      customStyles={customStyles}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           </>
         )}
@@ -195,65 +195,7 @@ const FullHeightInstructionsPanel = ({
   );
 };
 
-/**
- * Fixes numbered lists by ensuring they start at 1 and increment properly
- * @param {string} text - Markdown text to process
- * @returns {string} - Processed text with fixed numbering
- */
-function fixNumberedLists(text) {
-  if (!text) return text;
-  
-  // Split text into lines
-  const lines = text.split('\n');
-  
-  // Find and group numbered list items
-  let inNumberedList = false;
-  let currentListItems = [];
-  let result = [];
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const isNumberedItem = /^\d+\.\s/.test(line.trim());
-    
-    if (isNumberedItem) {
-      // Extract the content after the number
-      const content = line.replace(/^\d+\.\s/, '');
-      
-      if (!inNumberedList) {
-        // Starting a new list
-        inNumberedList = true;
-        currentListItems = [content];
-      } else {
-        // Continuing the current list
-        currentListItems.push(content);
-      }
-    } else {
-      // Not a numbered item
-      if (inNumberedList) {
-        // End of a list, add renumbered items to result
-        for (let j = 0; j < currentListItems.length; j++) {
-          result.push(`${j + 1}. ${currentListItems[j]}`);
-        }
-        currentListItems = [];
-        inNumberedList = false;
-      }
-      
-      // Add the current non-list line
-      result.push(line);
-    }
-  }
-  
-  // Add any remaining list items
-  if (inNumberedList && currentListItems.length > 0) {
-    for (let j = 0; j < currentListItems.length; j++) {
-      result.push(`${j + 1}. ${currentListItems[j]}`);
-    }
-  }
-  
-  return result.join('\n');
-}
-
-// Custom component to render markdown with enhanced styling - FIXED: support for strikethrough
+// Custom component to render markdown with enhanced styling for bold instructions and regular feedback
 const StyledMarkdown = ({ content, customStyles }) => {
   // Process content to enhance list item styling
   const processedContent = content
@@ -280,7 +222,25 @@ const StyledMarkdown = ({ content, customStyles }) => {
           hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
           
           // Style strikethrough text (this will be applied to ~~text~~ syntax)
-          del: ({ node, ...props }) => <del className={customStyles.strikethrough} {...props} />
+          del: ({ node, ...props }) => <del className={customStyles.strikethrough} {...props} />,
+          
+          // Handle strong (bold) elements - this is critical for the new format
+          strong: ({ node, children, ...props }) => {
+            // Check if it's a strikethrough instruction (bold + strikethrough)
+            const text = node.children && node.children[0] && node.children[0].value;
+            const isStricken = text && text.startsWith('~~') && text.endsWith('~~');
+            
+            if (isStricken) {
+              // For bold + strikethrough, return both styles
+              return (
+                <strong className="font-bold" {...props}>
+                  <del className={customStyles.strikethrough}>{children}</del>
+                </strong>
+              );
+            }
+            
+            return <strong className="font-bold" {...props}>{children}</strong>;
+          }
         }}
       >
         {processedContent}
