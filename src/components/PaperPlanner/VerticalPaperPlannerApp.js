@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
 import ExamplesDialog from './ExamplesDialog';
+import SaveDialog from './SaveDialog';
 import SectionCard from '../sections/SectionCard';
 import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
 import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
@@ -31,6 +32,7 @@ import '../../styles/PaperPlanner.css';
  * - FIXED: Consistent font styles between left and right panels
  * - RESTORED: Left cards layout with proper width/spacing
  * - UPDATED: Moved Target Audience section after Research Approach block
+ * - ADDED: Save dialog to prompt for file name when saving
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -62,6 +64,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [improvingInstructions, setImprovingInstructions] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [loading, setLoading] = useState(false); // Track overall loading state
+  const [showSaveDialog, setShowSaveDialog] = useState(false); // New state for save dialog
   const sectionRefs = useRef({});
 
   // Use local state for instructions potentially modified by AI
@@ -317,18 +320,25 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setSectionCompletionStatus({});
   };
 
-  // FIXED: Add a direct save function that doesn't depend on the hook
+  // UPDATED: Modified save function to show dialog instead of direct save
   const handleSaveProject = () => {
+    setShowSaveDialog(true);
+  };
+
+  // NEW: Function to actually save the project with filename from dialog
+  const saveProjectWithFilename = (fileName) => {
     try {
-      console.log("Direct save function triggered from component");
+      console.log("Save function triggered with filename:", fileName);
       
-      // Generate a timestamp-based filename
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-      const fileName = `scientific-paper-plan-${timestamp}`;
+      // Generate a safe filename
+      const safeFileName = fileName.trim() || 'scientific-paper-plan';
+      
+      // Add the .json extension if not present
+      const finalFileName = safeFileName.endsWith('.json') ? safeFileName : `${safeFileName}.json`;
       
       const jsonData = {
-        userInputs: userInputs, // Use component's state directly
-        chatMessages: chatMessages, // Use component's state directly
+        userInputs: userInputs,
+        chatMessages: chatMessages,
         timestamp: new Date().toISOString(),
         version: "1.0-direct-from-component"
       };
@@ -340,7 +350,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       // Create and trigger download link
       const link = document.createElement('a');
       link.href = jsonUrl;
-      link.download = `${fileName}.json`;
+      link.download = finalFileName;
       document.body.appendChild(link);
       link.click();
       
@@ -350,7 +360,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         URL.revokeObjectURL(jsonUrl);
       }, 100);
       
-      console.log("Project saved successfully as:", fileName);
+      console.log("Project saved successfully as:", finalFileName);
       return true;
     } catch (error) {
       console.error("Error saving project:", error);
@@ -429,7 +439,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         <AppHeader
           resetProject={() => setShowConfirmDialog(true)}
           exportProject={exportProject}
-          saveProject={handleSaveProject} // FIXED: Use direct save implementation
+          saveProject={handleSaveProject} // UPDATED: Now shows save dialog
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
           setShowExamplesDialog={setShowExamplesDialog}
@@ -529,6 +539,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           showExamplesDialog={showExamplesDialog}
           setShowExamplesDialog={setShowExamplesDialog}
           loadProject={loadProject}
+        />
+
+        {/* NEW: Save Dialog */}
+        <SaveDialog
+          showSaveDialog={showSaveDialog}
+          setShowSaveDialog={setShowSaveDialog}
+          saveProject={saveProjectWithFilename}
         />
       </div>
     </div>
