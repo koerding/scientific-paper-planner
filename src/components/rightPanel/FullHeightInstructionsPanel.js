@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
  * - Better z-index handling
  * - FIXED: Consistent font styles with left panel
  * - FIXED: Using unique class for right panel only
+ * - ADDED: Support for strikethrough in markdown formatting
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -125,6 +126,7 @@ const FullHeightInstructionsPanel = ({
     heading: 'text-lg font-semibold my-2',
     divider: 'border-t border-blue-200 my-3',
     listItem: 'my-1',
+    strikethrough: 'line-through text-gray-500 opacity-70', // Added styling for strikethrough text
   };
 
   // Get the appropriate instructions text (with fallback if needed)
@@ -250,7 +252,7 @@ function fixNumberedLists(text) {
   return result.join('\n');
 }
 
-// Custom component to render markdown with enhanced styling - FIXED: consistent fonts
+// Custom component to render markdown with enhanced styling - FIXED: consistent fonts and strikethrough support
 const StyledMarkdown = ({ content, customStyles }) => {
   // Process content to enhance list item styling - preserve formatting like line breaks
   const processedContent = content
@@ -274,6 +276,9 @@ const StyledMarkdown = ({ content, customStyles }) => {
           
           // Style horizontal rules as dividers
           hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
+          
+          // Add proper styling for strikethrough text
+          del: ({ node, ...props }) => <del className={customStyles.strikethrough} {...props} />
         }}
       >
         {processedContent}
