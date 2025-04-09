@@ -498,8 +498,9 @@ const renderSection = (section) => {
               />
 
               {/* Display active data acquisition section */}
+            // Fixed code that includes theorysimulation:
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata') && section?.id === activeDataMethod)
+                .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
                 .map(section => renderSection(section))}
 
               {/* Display remaining sections: Analysis, Process, Abstract */}
