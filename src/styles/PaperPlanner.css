@@ -539,3 +539,27 @@ body, html {
   color: #6B7280 !important; /* gray-500 */
   opacity: 0.7 !important;
 }
+
+/* Add these styles to your PaperPlanner.css file */
+
+/* Ensure strikethrough text is properly styled */
+.instructions-content del,
+.instructions-content s {
+  text-decoration: line-through;
+  color: #6B7280; /* gray-500 */
+  opacity: 0.7;
+}
+
+/* Ensure the right panel can render strikethrough properly */
+.right-panel .line-through {
+  text-decoration: line-through;
+  color: #6B7280; /* gray-500 */
+  opacity: 0.7;
+}
+
+/* Override default strikethrough styling */
+.markdown-content del {
+  text-decoration: line-through !important;
+  color: #6B7280 !important; /* gray-500 */
+  opacity: 0.7 !important;
+}
