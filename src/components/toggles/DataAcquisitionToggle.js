@@ -4,6 +4,7 @@ import React from 'react';
  * Toggle component for selecting data acquisition method
  * UPDATED: Made styling more subtle
  * FIXED: Significantly more compact layout with less whitespace
+ * UPDATED: Added Theory/Simulation as a third option
  */
 const DataAcquisitionToggle = ({ activeMethod, setActiveMethod }) => {
   // Helper to generate button classes
@@ -20,7 +21,7 @@ const DataAcquisitionToggle = ({ activeMethod, setActiveMethod }) => {
     <div className="data-toggle mb-3">
       <h3 className="font-medium text-sm text-gray-800 mb-2">Data Acquisition:</h3>
 
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1">
         <button
           onClick={() => setActiveMethod('experiment')}
           className={getButtonClasses('experiment')}
@@ -36,6 +37,15 @@ const DataAcquisitionToggle = ({ activeMethod, setActiveMethod }) => {
         >
           <div className="flex items-center justify-center">
             Existing Data
+          </div>
+        </button>
+
+        <button
+          onClick={() => setActiveMethod('theorysimulation')}
+          className={getButtonClasses('theorysimulation')}
+        >
+          <div className="flex items-center justify-center">
+            Theory/Simulation
           </div>
         </button>
       </div>
