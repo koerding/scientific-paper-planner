@@ -213,7 +213,7 @@ const usePaperPlanner = () => {
     }
   }, [currentMessage, currentSection, currentSectionData, userInputs, chatMessages]);
 
-  // Reset project function - FIXED to correctly use fresh templates
+// Reset project function - FIXED to correctly use fresh templates
   const resetProject = useCallback(() => {
     // Clear localStorage first, if available
     if (storageAvailable) {
@@ -233,7 +233,9 @@ const usePaperPlanner = () => {
     setUserInputs(freshInputs);
     setChatMessages(freshChat);
     setCurrentSection(sectionContent?.sections?.[0]?.id || 'question');
-    setShowConfirmDialog(false);
+    setActiveApproach('hypothesis');
+    setActiveDataMethod('experiment');
+    setSectionCompletionStatus({});
   }, [initialTemplates, storageAvailable]);
 
   const exportProject = useCallback(() => {
