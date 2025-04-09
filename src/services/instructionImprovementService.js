@@ -4,9 +4,9 @@
  * Modern service for improving instructions based on user progress
  * Uses OpenAI's native JSON mode for reliable parsing
  * UPDATED: Now provides feedback in Strengths, Weaknesses, Comments format with line breaks
- * UPDATED: Now enhances the subtraction of already completed items from instructions
+ * UPDATED: Now crosses out completed items from instructions instead of removing them
  * UPDATED: More detailed console logging
- * UPDATED: Now crosses out completed instructions instead of removing them
+ * FIXED: Resolved issues with improve button functionality
  */
 import { callOpenAI } from './openaiService';
 import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -113,10 +113,10 @@ export const improveBatchInstructions = async (
       sectionsData: JSON.stringify(sectionsDataForPrompt, null, 2)
     });
 
-    // Log complete request data (for debugging)
+    // Log request data (truncated for readability)
     console.log("[Instruction Improvement] Request to OpenAI:", {
-      systemPrompt: systemPrompt,
-      taskPrompt: taskPrompt.substring(0, 200) + "...", // Truncated for readability
+      systemPromptLength: systemPrompt.length,
+      taskPromptLength: taskPrompt.length,
       sectionsCount: sectionsDataForPrompt.length,
       sectionIds: sectionsDataForPrompt.map(s => s.id)
     });
@@ -136,7 +136,7 @@ export const improveBatchInstructions = async (
       true // Use JSON mode
     );
     
-    console.log("[Instruction Improvement] Complete response from OpenAI:", response);
+    console.log("[Instruction Improvement] Response received from OpenAI, processing now...");
     
     // If response is empty or not an array, use fallback
     if (!Array.isArray(response) || response.length === 0) {
@@ -151,9 +151,8 @@ export const improveBatchInstructions = async (
         
         // Process the original instructions to add strikethrough (cross out) formatting
         // This is a simple simulation - in real use we'd use more sophisticated content matching
-        const processedInstructions = processInstructionsWithStrikethrough(
+        const processedInstructions = simulateStrikethroughByRatio(
           originalInstructions, 
-          section.userContent, 
           0.7 // Cross out about 70% of instructions as a fallback
         );
         
@@ -178,7 +177,7 @@ Continue developing your ${section.title.toLowerCase()}.`;
         };
       });
       
-      console.log("[Instruction Improvement] Using fallback data with crossed-out instructions:", fallbackData);
+      console.log("[Instruction Improvement] Using fallback data with crossed-out instructions:", fallbackData.length);
       
       return {
         success: true,
@@ -187,7 +186,7 @@ Continue developing your ${section.title.toLowerCase()}.`;
       };
     }
 
-    // Validate, format, and ensure instructions use strikethrough instead of removal
+    // Validate and ensure instructions use strikethrough instead of removal
     const validatedData = response.map(item => {
       const sectionData = sectionsDataForPrompt.find(s => s.id === item.id);
       const originalInstructions = sectionData?.originalInstructionsText || '';
@@ -272,7 +271,7 @@ Continue refining your ${section?.title?.toLowerCase() || 'work'}.`;
         };
       });
     
-    console.log("[Instruction Improvement] Using error fallback data with strikethrough formatting:", fallbackData);
+    console.log("[Instruction Improvement] Using error fallback data with strikethrough formatting:", fallbackData.length);
     
     return {
       success: true,
@@ -284,99 +283,14 @@ Continue refining your ${section?.title?.toLowerCase() || 'work'}.`;
 };
 
 /**
- * Process instructions to add strikethrough formatting based on user content
- * @param {string} instructions - The original instructions text
- * @param {string} userContent - The user's content for the section
- * @param {number} completionRatio - Optional ratio of how much to consider complete (0.0-1.0)
- * @returns {string} - Instructions with strikethrough formatting for completed items
- */
-function processInstructionsWithStrikethrough(instructions, userContent, completionRatio = null) {
-  if (!instructions) return '';
-  
-  // For a simple fallback, use a fixed completion ratio to simulate progress
-  if (completionRatio !== null) {
-    return simulateStrikethroughByRatio(instructions, completionRatio);
-  }
-  
-  // Try to intelligently mark items as completed based on user content
-  const lines = instructions.split('\n');
-  const processedLines = [];
-  
-  // Normalize user content for easier matching
-  const normalizedUserContent = userContent.toLowerCase().trim();
-  
-  for (const line of lines) {
-    // Check if line is a bullet point
-    if (line.trim().startsWith('*')) {
-      // Extract the instruction content from the bullet point
-      const instructionContent = line.trim().substring(1).trim();
-      
-      // Simple heuristic: if key terms from the instruction appear in the user content,
-      // consider it completed and add strikethrough
-      const keyTerms = extractKeyTerms(instructionContent);
-      const isCompleted = keyTerms.some(term => 
-        normalizedUserContent.includes(term.toLowerCase())
-      );
-      
-      if (isCompleted) {
-        // Add strikethrough formatting
-        const strikeThroughLine = line.replace(
-          instructionContent, 
-          `~~${instructionContent}~~`
-        );
-        processedLines.push(strikeThroughLine);
-      } else {
-        // Keep the line as is
-        processedLines.push(line);
-      }
-    } else {
-      // Non-bullet point lines remain unchanged
-      processedLines.push(line);
-    }
-  }
-  
-  return processedLines.join('\n');
-}
-
-/**
- * Extract key terms from an instruction for matching with user content
- * @param {string} instruction - The instruction text
- * @returns {string[]} - Array of key terms
- */
-function extractKeyTerms(instruction) {
-  // Split by common separators and get words/phrases
-  const terms = [];
-  
-  // Add the full instruction as one term
-  terms.push(instruction);
-  
-  // Split by some common separators to get more specific terms
-  const splitTerms = instruction.split(/[,.;:()[\]{}]/).map(t => t.trim()).filter(t => t.length > 5);
-  terms.push(...splitTerms);
-  
-  // Get specific noun phrases or important terms (simplified approach)
-  const words = instruction.split(/\s+/);
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i].toLowerCase();
-    // Check for likely important terms based on common instruction keywords
-    if (['define', 'describe', 'explain', 'identify', 'list', 'specify', 'justify'].includes(word)) {
-      // Include the next 2-3 words as a potential key phrase
-      if (i + 2 < words.length) {
-        terms.push(words.slice(i, i + 3).join(' '));
-      }
-    }
-  }
-  
-  return terms.filter(term => term.length > 0);
-}
-
-/**
  * Simple simulation of progress by applying strikethrough to a percentage of bullet points
  * @param {string} instructions - The original instructions text
  * @param {number} ratio - Ratio of bullet points to cross out (0.0-1.0)
  * @returns {string} - Instructions with simulated progress
  */
 function simulateStrikethroughByRatio(instructions, ratio) {
+  if (!instructions) return '';
+  
   const lines = instructions.split('\n');
   const bulletPoints = lines.filter(line => line.trim().startsWith('*'));
   const numToStrikethrough = Math.floor(bulletPoints.length * ratio);
