@@ -409,27 +409,29 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   };
 
   // Render a section with proper completion status
-  const renderSection = (section) => {
-    if (!section || !section.id) return null;
+const renderSection = (section) => {
+  if (!section || !section.id) return null;
 
-    const isCurrentActive = activeSection === section.id;
-    const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
+  const isCurrentActive = activeSection === section.id;
+  
+  // We still calculate completionStatus internally but don't use it for styling
+  const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
 
-    return (
-      <SectionCard
-        key={section.id}
-        section={section}
-        isCurrentSection={isCurrentActive}
-        completionStatus={completionStatus}
-        userInputs={userInputs}
-        handleInputChange={handleInputChange}
-        loading={chatLoading && currentSectionIdForChat === section.id}
-        sectionRef={sectionRefs.current[section.id]}
-        onClick={() => setActiveSectionWithManualFlag(section.id)}
-        useLargerFonts={false} // FIXED: Use smaller fonts for more compact layout
-      />
-    );
-  };
+  return (
+    <SectionCard
+      key={section.id}
+      section={section}
+      isCurrentSection={isCurrentActive}
+      completionStatus={completionStatus} // Still pass it for internal use if needed
+      userInputs={userInputs}
+      handleInputChange={handleInputChange}
+      loading={chatLoading && currentSectionIdForChat === section.id}
+      sectionRef={sectionRefs.current[section.id]}
+      onClick={() => setActiveSectionWithManualFlag(section.id)}
+      useLargerFonts={false} // FIXED: Use smaller fonts for more compact layout
+    />
+  );
+};
 
   // Wrapper for import document content to track loading state
   const handleDocumentImport = async (file) => {
