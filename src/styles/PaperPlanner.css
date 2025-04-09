@@ -563,3 +563,56 @@ body, html {
   color: #6B7280 !important; /* gray-500 */
   opacity: 0.7 !important;
 }
+/* Add these styles to your PaperPlanner.css file */
+
+/* Style for instructions (bold) and feedback (regular) */
+.instructions-content li {
+  margin-bottom: 0.75rem;
+}
+
+/* Make sure bold text is actually bold */
+.instructions-content strong {
+  font-weight: 700 !important;
+  color: #1e3a8a !important; /* Dark blue for instructions */
+}
+
+/* Style for regular text feedback */
+.instructions-content li + p,
+.instructions-content li + br + p {
+  margin-top: 0.25rem !important;
+  margin-bottom: 1rem !important;
+  margin-left: 1.5rem !important;
+  color: #4b5563 !important; /* Gray-600 for feedback */
+  font-size: 0.95rem !important;
+}
+
+/* Ensure strikethrough inside bold is visible */
+.instructions-content strong del,
+.instructions-content del strong,
+.instructions-content strong.strikethrough-text {
+  text-decoration: line-through !important;
+  color: #6B7280 !important; /* gray-500 */
+  opacity: 0.7 !important;
+  font-weight: 700 !important;
+}
+
+/* Optional: add a subtle indent for feedback paragraphs that follow bullet points */
+.instructions-content ul li ~ p:not(:has(strong)):not(li) {
+  padding-left: 1rem;
+  border-left: 2px solid #e5e7eb;
+  margin-left: 1rem !important;
+}
+
+/* Ensure bulleted items have proper spacing */
+.instructions-content ul li,
+.instructions-content ol li {
+  margin-bottom: 0.25rem !important;
+}
+
+/* Make completed instructions more distinct */
+.instructions-content li strong del,
+.instructions-content li del strong {
+  background-color: rgba(209, 250, 229, 0.3) !important; /* Light green background */
+  padding: 0.1rem 0.25rem !important;
+  border-radius: 0.25rem !important;
+}
