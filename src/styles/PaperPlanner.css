@@ -616,3 +616,38 @@ body, html {
   padding: 0.1rem 0.25rem !important;
   border-radius: 0.25rem !important;
 }
+* Add these styles to your PaperPlanner.css file to override the completion status colors */
+
+/* Override the border colors to use neutral colors regardless of completion status */
+.section-card {
+  border-color: #e5e7eb !important; /* gray-200 */
+  border-width: 2px !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Only the current section gets a blue border */
+.section-card.border-blue-500 {
+  border-color: #3b82f6 !important; /* blue-500 */
+  border-width: 4px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Remove/override the completion status-based border colors */
+.section-complete,
+.section-unstarted,
+.section-progress {
+  border-color: #e5e7eb !important; /* gray-200 */
+  border-width: 2px !important;
+}
+
+/* Hover effect for all sections */
+.section-card:hover {
+  border-color: #d1d5db !important; /* gray-300 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Override any hard-coded colors in the SectionCard component */
+[style*="border-color: #10B981"],
+[style*="border-color: #EF4444"] {
+  border-color: #e5e7eb !important; /* gray-200 */
+}
