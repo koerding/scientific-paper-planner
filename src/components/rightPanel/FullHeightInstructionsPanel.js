@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 /**
  * Enhanced full-height instructions panel
@@ -132,27 +133,6 @@ const FullHeightInstructionsPanel = ({
   // Get the appropriate instructions text (with fallback if needed)
   const instructionsText = getInstructionsText();
 
-  // Pre-process the instructions text to fix any markdown issues
-  const prepareMarkdownText = (text) => {
-    if (!text) return '';
-    
-    // First, ensure strikethrough has proper spacing
-    let processedText = text
-      // Fix common issues with strikethrough marks
-      .replace(/~~([^ ])/g, '~~ $1') // Add space after ~~ if missing
-      .replace(/([^ ])~~/g, '$1 ~~') // Add space before ~~ if missing
-      // Normalize bullet points
-      .replace(/\n\* /g, "\n• ");
-      
-    // Log for debugging
-    console.log("Processing markdown with strikethrough:", 
-                processedText.includes('~~') ? "Contains strikethrough" : "No strikethrough found");
-    
-    return processedText;
-  };
-
-  const processedInstructionsText = prepareMarkdownText(instructionsText);
-
   // FIXED: Add a unique class that won't conflict with left panel
   // The 'right-panel' class is unique to this component
   return (
@@ -184,10 +164,10 @@ const FullHeightInstructionsPanel = ({
 
             {/* Improved layout for instructions content */}
             <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
-              {processedInstructionsText ? (
+              {instructionsText ? (
                 <div className={`${customStyles.content} instructions-content mb-4`}>
                   <StyledMarkdown 
-                    content={processedInstructionsText} 
+                    content={instructionsText} 
                     customStyles={customStyles}
                   />
                 </div>
@@ -275,13 +255,15 @@ function fixNumberedLists(text) {
 
 // Custom component to render markdown with enhanced styling - FIXED: support for strikethrough
 const StyledMarkdown = ({ content, customStyles }) => {
-  // Add debug logging to see what's coming in
-  console.log("StyledMarkdown content:", content ? content.substring(0, 100) + "..." : "None");
-  console.log("Contains strikethrough:", content?.includes('~~') ? "Yes" : "No");
-
+  // Process content to enhance list item styling
+  const processedContent = content
+    ? content.replace(/\n\* /g, "\n• ")
+    : '';
+  
   return (
     <div className={`${customStyles.fontSize}`}>
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]} // Enable GitHub Flavored Markdown (including strikethrough)
         components={{
           // Customize heading styles
           h1: ({ node, ...props }) => <h1 className="text-xl font-bold my-3" {...props} />,
@@ -297,30 +279,14 @@ const StyledMarkdown = ({ content, customStyles }) => {
           // Style horizontal rules as dividers
           hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
           
-          // FIXED: Properly handle strikethrough text with custom styling
-          del: ({ node, ...props }) => {
-            console.log("Rendering strikethrough text:", props.children);
-            return <del className={customStyles.strikethrough} {...props} />;
-          }
+          // Style strikethrough text (this will be applied to ~~text~~ syntax)
+          del: ({ node, ...props }) => <del className={customStyles.strikethrough} {...props} />
         }}
       >
-        {/* FIXED: We need to manually handle strikethrough markdown if ReactMarkdown doesn't do it */}
-        {content.includes('~~') ? processStrikethrough(content) : content}
+        {processedContent}
       </ReactMarkdown>
     </div>
   );
-};
-
-/**
- * Process strikethrough markdown manually if needed
- * @param {string} content - The markdown content
- * @returns {string} - Processed content with HTML strikethrough tags
- */
-const processStrikethrough = (content) => {
-  if (!content) return '';
-  
-  // Replace markdown strikethrough with HTML strikethrough
-  return content.replace(/~~(.*?)~~/g, '<del>$1</del>');
 };
 
 export default FullHeightInstructionsPanel;
