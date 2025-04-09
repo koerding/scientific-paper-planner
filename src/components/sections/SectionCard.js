@@ -2,10 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 
 /**
  * Section card component for the paper planner
- * UPDATED: Changed "empty" status label to "incomplete" for better clarity
- * UPDATED: Removed character counts
- * UPDATED: Reduced whitespace for a tighter layout
- * UPDATED: Simplified box design by removing gray box background
+ * UPDATED: Removed color-coding based on completion status
+ * UPDATED: Removed "complete/incomplete" status labels
+ * UPDATED: Simplified box design with neutral colors
  * FIXED: Made the inner textbox seamless and reduced padding throughout
  * FIXED: Consistent font styles with right panel (instruction panel)
  * FIXED: Increased section title size by 40% as requested
@@ -51,17 +50,15 @@ const SectionCard = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Determine the border classes based on completion status
+  // Determine border class for the current selection only
   const getBorderClasses = () => {
-    // Current section gets blue focus border regardless of completion
+    // Current section gets blue focus border
     if (isCurrentSection) {
       return 'border-4 border-blue-500 shadow-md';
     }
     
-    // Just red/green for completion status - very simplified
-    return completionStatus === 'complete' 
-      ? 'border-4 border-green-600 section-complete'
-      : 'border-4 border-red-300 section-unstarted';
+    // Other sections get a neutral gray border
+    return 'border-2 border-gray-300';
   };
 
   // Determine background color for the card and textarea
@@ -95,22 +92,11 @@ const SectionCard = ({
       className={sectionClasses}
       onClick={onClick}
     >
-      {/* Header with Title and Status - FIXED: Increased title size by 40% */}
+      {/* Header with Title only - removed status indicator */}
       <div className="flex justify-between items-center mb-1">
         <h2 className="font-semibold text-lg mr-2 text-gray-800" style={{ fontSize: 'calc(1.4 * 1rem)' }}>
           {section.title}
         </h2>
-        
-        {/* Status Indicator - Changed "empty" to "incomplete" */}
-        <div className="text-xs inline-block px-2 py-0.5 rounded" 
-             style={{
-               backgroundColor: 
-                 completionStatus === 'complete' ? '#d1fae5' : '#fee2e2',
-               color: 
-                 completionStatus === 'complete' ? '#065f46' : '#b91c1c'
-             }}>
-          {completionStatus === 'complete' ? 'complete' : 'incomplete'}
-        </div>
       </div>
 
       {/* Input Area - Simplified with matching background and reduced padding */}
