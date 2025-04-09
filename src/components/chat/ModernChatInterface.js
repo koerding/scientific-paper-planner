@@ -15,6 +15,7 @@ import '../../styles/PaperPlanner.css';
  * - FIXED: Z-index increased to be on top of the improve instructions button
  * - FIXED: Vertically aligned header icon and text
  * - FIXED: Added thinking indicator where assistant's response will appear
+ * - UPDATED: Changed chat icon to button similar to improve instructions with text "Let's talk about this"
  */
 const ModernChatInterface = ({
   currentSection,
@@ -62,19 +63,37 @@ const ModernChatInterface = ({
 
   return (
     <>
-      {/* Minimized chat icon - improved positioning */}
+      {/* UPDATED: Changed minimized chat icon to button matching improve instructions button style */}
       {isMinimized && (
         <div
           ref={chatIconRef}
-          className={`fixed bottom-6 right-6 z-50 cursor-pointer ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`}
-          onClick={toggleChat}
+          className={`fixed bottom-6 right-6 z-50 ${loading ? 'cursor-wait' : 'cursor-pointer'} ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`}
           style={{ transform: 'translateZ(0)' }}
         >
-          <div className="w-16 h-16 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
+          <button
+            onClick={toggleChat}
+            disabled={loading}
+            className={`
+              flex items-center justify-center 
+              px-4 py-5 
+              rounded-full 
+              shadow-lg 
+              transition-colors 
+              text-white 
+              font-medium 
+              ${loading
+                ? 'bg-indigo-400 cursor-wait'
+                : 'bg-indigo-600 hover:bg-indigo-700'
+              }
+            `}
+            title="Ask AI for help on this section"
+            aria-label="Open chat"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
             </svg>
-          </div>
+            Let's talk about this
+          </button>
           {/* Onboarding Tooltip - improved positioning */}
           {showChatHighlight && (
             <div className="onboarding-tooltip onboarding-tooltip-chat">
