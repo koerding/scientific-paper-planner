@@ -476,9 +476,9 @@ const renderSection = (section) => {
                 setActiveApproach={handleApproachToggle}
               />
 
-              {/* Display active approach section */}
+              {/* Display active data acquisition section */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
+                .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
                 .map(section => renderSection(section))}
 
               {/* MOVED: Target Audience section after Research Approach block */}
