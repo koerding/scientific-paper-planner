@@ -233,6 +233,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   };
 
 // Handle magic (improving instructions)
+// Handle magic (improving instructions)
   const handleMagic = async () => {
     // FIXED: Don't allow instruction improvement during loading
     if (loading) return;
