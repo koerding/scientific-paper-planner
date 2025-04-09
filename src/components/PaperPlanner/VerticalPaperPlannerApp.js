@@ -125,6 +125,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       setActiveDataMethod('experiment');
     } else if (isModified('existingdata')) {
       setActiveDataMethod('existingdata');
+    } else if (isModified('theorysimulation')) {
+      setActiveDataMethod('theorysimulation');
     } else {
       setActiveDataMethod('experiment'); // Default
     }
@@ -377,7 +379,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       return sectionId === activeApproach;
     }
 
-    if (sectionId === 'experiment' || sectionId === 'existingdata') {
+    if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
       return sectionId === activeDataMethod;
     }
 
