@@ -227,6 +227,30 @@ function generatePlaceholderContent(sectionId, fileName) {
   const paperTopic = fileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
   
   switch(sectionId) {
+    case 'theorysimulation':
+      return `Key Theoretical Assumptions:
+- The system exhibits certain properties that can be described mathematically
+- Interactions between components follow established principles
+- The model captures essential features while simplifying non-essential details
+
+Relationship to Real-world Phenomena:
+This theoretical framework provides insights into how the underlying mechanisms operate in real-world systems, allowing predictions about behavior under various conditions.
+
+Mathematical/Computational Framework:
+The approach uses differential equations to model system dynamics, with numerical methods to solve equations that cannot be addressed analytically.
+
+Solution/Simulation Approach:
+We will implement the model using standard numerical methods with adaptive step size to ensure accuracy, running multiple simulations with varying initial conditions.
+
+Validation Strategy:
+The model predictions will be compared with existing empirical data from the literature. Qualitative patterns and quantitative predictions will both be assessed.
+
+Potential Limitations:
+The theoretical framework makes simplifying assumptions that may not hold in all real-world contexts. Edge cases may not be well-represented by the model.
+
+Theoretical Significance:
+This work will advance understanding by providing a unified framework that connects previously disparate observations.`;
+      
     case 'analysis':
       return `Data Cleaning & Exclusions:
 The data will be preprocessed to remove outliers (values exceeding 3 standard deviations from the mean) and missing values will be imputed using appropriate methods based on data distribution.
