@@ -5,6 +5,7 @@ import React from 'react';
  * UPDATED: More descriptive text and styling
  * FIXED: Better handling of loading state
  * FIXED: Lower z-index to be behind the chat when open
+ * FIXED: Moved further to the left to avoid overlapping with chat button
  */
 const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
   // Determine if the magic button should be highlighted based on onboarding step
@@ -12,7 +13,7 @@ const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
 
   return (
     <div
-      className={`fixed bottom-6 right-28 z-40 ${loading ? 'cursor-wait' : 'cursor-pointer'} ${showMagicHighlight ? 'onboarding-highlight-magic' : ''}`}
+      className={`fixed bottom-6 right-52 z-40 ${loading ? 'cursor-wait' : 'cursor-pointer'} ${showMagicHighlight ? 'onboarding-highlight-magic' : ''}`}
       style={{ transform: 'translateZ(0)' }} /* Force hardware acceleration for smoother animations */
     >
       <button
