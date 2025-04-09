@@ -87,6 +87,11 @@ const usePaperPlanner = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showExamplesDialog, setShowExamplesDialog] = useState(false);
   const [currentSectionData, setCurrentSectionData] = useState(null);
+  const [sectionCompletionStatus, setSectionCompletionStatus] = useState({});
+
+  // These additional states are used by the VerticalPaperPlannerApp.js but needed in resetProject
+  const [activeApproach, setActiveApproach] = useState('hypothesis');
+  const [activeDataMethod, setActiveDataMethod] = useState('experiment');
 
   // Add state to track if we've loaded from storage
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(hasStoredData);
@@ -213,7 +218,7 @@ const usePaperPlanner = () => {
     }
   }, [currentMessage, currentSection, currentSectionData, userInputs, chatMessages]);
 
-// Reset project function - FIXED to correctly use fresh templates
+  // Reset project function - FIXED to correctly use fresh templates and all required states
   const resetProject = useCallback(() => {
     // Clear localStorage first, if available
     if (storageAvailable) {
@@ -236,6 +241,7 @@ const usePaperPlanner = () => {
     setActiveApproach('hypothesis');
     setActiveDataMethod('experiment');
     setSectionCompletionStatus({});
+    setShowConfirmDialog(false);
   }, [initialTemplates, storageAvailable]);
 
   const exportProject = useCallback(() => {
@@ -335,7 +341,7 @@ const usePaperPlanner = () => {
     } catch (error) {
       alert("Error loading project: " + (error.message || "Unknown error"));
     }
-  }, [initialTemplates, storageAvailable]);
+  }, [storageAvailable]);
 
   // Import document content using the service
   // FIXED: No need to rename the import, use it directly
@@ -378,11 +384,17 @@ const usePaperPlanner = () => {
     showConfirmDialog,
     showExamplesDialog,
     currentSectionData,  // Provides section data to chat
+    activeApproach,      // Added to expose for VerticalPaperPlannerApp
+    activeDataMethod,    // Added to expose for VerticalPaperPlannerApp
+    sectionCompletionStatus, // Added to expose for VerticalPaperPlannerApp
     setChatMessages,
     setUserInputs,
     setCurrentMessage,
     setShowConfirmDialog,
     setShowExamplesDialog,
+    setActiveApproach,    // Added to expose for VerticalPaperPlannerApp
+    setActiveDataMethod,  // Added to expose for VerticalPaperPlannerApp
+    setSectionCompletionStatus, // Added to expose for VerticalPaperPlannerApp
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
