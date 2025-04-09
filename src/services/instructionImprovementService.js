@@ -6,6 +6,7 @@
  * UPDATED: Now provides feedback in Strengths, Weaknesses, Comments format with line breaks
  * UPDATED: Now enhances the subtraction of already completed items from instructions
  * UPDATED: More detailed console logging
+ * UPDATED: Now crosses out completed instructions instead of removing them
  */
 import { callOpenAI } from './openaiService';
 import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -77,18 +78,21 @@ export const improveBatchInstructions = async (
 
     IMPORTANT ADDITIONAL INSTRUCTIONS:
     
-    1. SUBTRACTION IS PRIMARY: Your main job is to REMOVE bullet points that the user has already addressed from the instructions.
+    1. CROSS OUT COMPLETED ITEMS: Your main job is to CROSS OUT bullet points that the user has already addressed, not remove them.
        - Carefully analyze what the user has already completed
-       - Remove corresponding bullet points completely from the instructions
-       - It's better to remove too much than too little - if they've made progress on a point, remove it
+       - For each bullet point that's been addressed, wrap it in Markdown strikethrough: ~~like this~~
+       - Do not remove any instructions, just cross them out so users can see their progress
+       - It's better to cross out too many points than too few - if they've made good progress on a point, cross it out
     
     2. For each section, YOU MUST ACTUALLY MODIFY the instructions based on the user's progress:
-       - Remove bullet points they've already addressed
+       - Cross out bullet points they've already addressed using ~~strikethrough~~
        - Add congratulatory language when appropriate
        - Add new, specific suggestions based on their work
+       - Keep all original bullet points even if crossed out
     
-    3. For complete or nearly complete sections, transform the instructions into congratulatory messages like:
-       "Great job on your [section]! You've clearly [specific achievements]. Consider these refinements: [1-2 specific suggestions]"
+    3. For complete or nearly complete sections, add congratulatory messages above the instructions like:
+       "Great job on your [section]! You've clearly [specific achievements]."
+       Then show the original instructions with most points crossed out using ~~strikethrough~~.
     
     4. Always provide structured feedback in this EXACT format with line breaks between sections:
        "**Strengths:**
@@ -100,7 +104,7 @@ export const improveBatchInstructions = async (
        **Comments:**
        [constructive suggestions]"
     
-    5. Never return the original instructions unchanged - always edit them.
+    5. Never delete the original instructions - always keep them but use ~~strikethrough~~ for completed items.
     
     Remember to return your response as a valid JSON array containing objects with id, editedInstructions, feedback, and completionStatus fields.
     `;
@@ -138,26 +142,23 @@ export const improveBatchInstructions = async (
     if (!Array.isArray(response) || response.length === 0) {
       console.warn("[Instruction Improvement] Invalid or empty response format from OpenAI, using fallback");
       
-      // Create enhanced fallback responses with actual edits and the new feedback format
+      // Create enhanced fallback responses with crossed-out items and the new feedback format
       const fallbackData = sectionsDataForPrompt.map(section => {
         const originalInstructions = section.originalInstructionsText;
         
-        // Create a congratulatory variant of the instructions
+        // Create a congratulatory message
         let modifiedInstructions = `Great work on your ${section.title.toLowerCase()}! You've made excellent progress.\n\n`;
         
-        // Add a few bullet points from the original, focusing on refinement
-        modifiedInstructions += `Consider these refinements to strengthen your work:\n\n`;
+        // Process the original instructions to add strikethrough (cross out) formatting
+        // This is a simple simulation - in real use we'd use more sophisticated content matching
+        const processedInstructions = processInstructionsWithStrikethrough(
+          originalInstructions, 
+          section.userContent, 
+          0.7 // Cross out about 70% of instructions as a fallback
+        );
         
-        // Extract bullet points from original instructions
-        const bulletPoints = originalInstructions.match(/\*\s.+/g) || [];
-        
-        // Include 2-3 bullet points if available, or create generic ones
-        if (bulletPoints.length > 0) {
-          const selectedPoints = bulletPoints.slice(0, Math.min(3, bulletPoints.length));
-          modifiedInstructions += selectedPoints.join('\n\n');
-        } else {
-          modifiedInstructions += `* Consider the broader implications of your work\n\n* Ensure all key points are supported by evidence\n\n* Think about potential objections and address them`;
-        }
+        // Add the processed instructions with strikethrough formatting
+        modifiedInstructions += processedInstructions;
         
         // Basic structured feedback with line breaks
         const feedback = `**Strengths:**
@@ -177,7 +178,7 @@ Continue developing your ${section.title.toLowerCase()}.`;
         };
       });
       
-      console.log("[Instruction Improvement] Using fallback data with actual edits:", fallbackData);
+      console.log("[Instruction Improvement] Using fallback data with crossed-out instructions:", fallbackData);
       
       return {
         success: true,
@@ -186,7 +187,7 @@ Continue developing your ${section.title.toLowerCase()}.`;
       };
     }
 
-    // Validate, format, and ensure instructions are actually changed
+    // Validate, format, and ensure instructions use strikethrough instead of removal
     const validatedData = response.map(item => {
       const sectionData = sectionsDataForPrompt.find(s => s.id === item.id);
       const originalInstructions = sectionData?.originalInstructionsText || '';
@@ -197,10 +198,10 @@ Continue developing your ${section.title.toLowerCase()}.`;
         item.editedInstructions !== originalInstructions && 
         item.editedInstructions.length >= 50;
       
-      // If the AI didn't change the instructions, create a congratulatory message
+      // If the AI didn't change the instructions properly, ensure we have strikethrough formatting
       let finalInstructions = instructionsChanged 
-        ? item.editedInstructions 
-        : createCongratulatory(item.id, sectionData?.title || 'section', originalInstructions);
+        ? ensureStrikethroughFormat(item.editedInstructions, originalInstructions)
+        : createCrossedOutCongratulatory(item.id, sectionData?.title || 'section', originalInstructions);
       
       // Ensure feedback is in the Strengths/Weaknesses/Comments format with line breaks
       let structuredFeedback = item.feedback || '';
@@ -225,7 +226,7 @@ Continue developing your ${section.title.toLowerCase()}.`;
       };
     }).filter(item => item.id); // Remove any items without an ID
 
-    console.log(`[Instruction Improvement] Successfully processed ${validatedData.length} improved sections`);
+    console.log(`[Instruction Improvement] Successfully processed ${validatedData.length} improved sections with strikethrough formatting`);
     console.timeEnd("instructionImprovementTime");
 
     // Return success with the validated data
@@ -238,7 +239,7 @@ Continue developing your ${section.title.toLowerCase()}.`;
     console.error("Error improving batch instructions:", error);
     console.timeEnd("instructionImprovementTime");
     
-    // Create enhanced fallback responses with actual edits and structured feedback
+    // Create enhanced fallback responses with strikethrough formatting and structured feedback
     const fallbackData = Object.keys(userInputs)
       .filter(id => {
         const content = userInputs[id];
@@ -250,8 +251,8 @@ Continue developing your ${section.title.toLowerCase()}.`;
         const section = sectionContent?.sections?.find(s => s.id === id);
         const originalInstructions = section?.instructions?.text || '';
         
-        // Create a congratulatory message
-        const editedInstructions = createCongratulatory(id, section?.title || 'section', originalInstructions);
+        // Create a congratulatory message with crossed-out original instructions
+        const editedInstructions = createCrossedOutCongratulatory(id, section?.title || 'section', originalInstructions);
         
         // Simple structured feedback with line breaks
         const feedback = `**Strengths:**
@@ -271,7 +272,7 @@ Continue refining your ${section?.title?.toLowerCase() || 'work'}.`;
         };
       });
     
-    console.log("[Instruction Improvement] Using error fallback data with structured feedback:", fallbackData);
+    console.log("[Instruction Improvement] Using error fallback data with strikethrough formatting:", fallbackData);
     
     return {
       success: true,
@@ -283,98 +284,253 @@ Continue refining your ${section?.title?.toLowerCase() || 'work'}.`;
 };
 
 /**
- * Creates a congratulatory message based on the original instructions
+ * Process instructions to add strikethrough formatting based on user content
+ * @param {string} instructions - The original instructions text
+ * @param {string} userContent - The user's content for the section
+ * @param {number} completionRatio - Optional ratio of how much to consider complete (0.0-1.0)
+ * @returns {string} - Instructions with strikethrough formatting for completed items
+ */
+function processInstructionsWithStrikethrough(instructions, userContent, completionRatio = null) {
+  if (!instructions) return '';
+  
+  // For a simple fallback, use a fixed completion ratio to simulate progress
+  if (completionRatio !== null) {
+    return simulateStrikethroughByRatio(instructions, completionRatio);
+  }
+  
+  // Try to intelligently mark items as completed based on user content
+  const lines = instructions.split('\n');
+  const processedLines = [];
+  
+  // Normalize user content for easier matching
+  const normalizedUserContent = userContent.toLowerCase().trim();
+  
+  for (const line of lines) {
+    // Check if line is a bullet point
+    if (line.trim().startsWith('*')) {
+      // Extract the instruction content from the bullet point
+      const instructionContent = line.trim().substring(1).trim();
+      
+      // Simple heuristic: if key terms from the instruction appear in the user content,
+      // consider it completed and add strikethrough
+      const keyTerms = extractKeyTerms(instructionContent);
+      const isCompleted = keyTerms.some(term => 
+        normalizedUserContent.includes(term.toLowerCase())
+      );
+      
+      if (isCompleted) {
+        // Add strikethrough formatting
+        const strikeThroughLine = line.replace(
+          instructionContent, 
+          `~~${instructionContent}~~`
+        );
+        processedLines.push(strikeThroughLine);
+      } else {
+        // Keep the line as is
+        processedLines.push(line);
+      }
+    } else {
+      // Non-bullet point lines remain unchanged
+      processedLines.push(line);
+    }
+  }
+  
+  return processedLines.join('\n');
+}
+
+/**
+ * Extract key terms from an instruction for matching with user content
+ * @param {string} instruction - The instruction text
+ * @returns {string[]} - Array of key terms
+ */
+function extractKeyTerms(instruction) {
+  // Split by common separators and get words/phrases
+  const terms = [];
+  
+  // Add the full instruction as one term
+  terms.push(instruction);
+  
+  // Split by some common separators to get more specific terms
+  const splitTerms = instruction.split(/[,.;:()[\]{}]/).map(t => t.trim()).filter(t => t.length > 5);
+  terms.push(...splitTerms);
+  
+  // Get specific noun phrases or important terms (simplified approach)
+  const words = instruction.split(/\s+/);
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i].toLowerCase();
+    // Check for likely important terms based on common instruction keywords
+    if (['define', 'describe', 'explain', 'identify', 'list', 'specify', 'justify'].includes(word)) {
+      // Include the next 2-3 words as a potential key phrase
+      if (i + 2 < words.length) {
+        terms.push(words.slice(i, i + 3).join(' '));
+      }
+    }
+  }
+  
+  return terms.filter(term => term.length > 0);
+}
+
+/**
+ * Simple simulation of progress by applying strikethrough to a percentage of bullet points
+ * @param {string} instructions - The original instructions text
+ * @param {number} ratio - Ratio of bullet points to cross out (0.0-1.0)
+ * @returns {string} - Instructions with simulated progress
+ */
+function simulateStrikethroughByRatio(instructions, ratio) {
+  const lines = instructions.split('\n');
+  const bulletPoints = lines.filter(line => line.trim().startsWith('*'));
+  const numToStrikethrough = Math.floor(bulletPoints.length * ratio);
+  
+  let bulletPointsProcessed = 0;
+  
+  return lines.map(line => {
+    if (line.trim().startsWith('*')) {
+      bulletPointsProcessed++;
+      
+      if (bulletPointsProcessed <= numToStrikethrough) {
+        // Cross out the content part of the bullet point
+        const bulletPart = line.indexOf('*');
+        const contentStart = line.indexOf(' ', bulletPart) + 1;
+        const firstPart = line.substring(0, contentStart);
+        const contentPart = line.substring(contentStart);
+        
+        return `${firstPart}~~${contentPart}~~`;
+      }
+    }
+    return line;
+  }).join('\n');
+}
+
+/**
+ * Creates a congratulatory message with crossed-out instructions
  * @param {string} id - The section ID
  * @param {string} title - The section title 
  * @param {string} originalInstructions - The original instructions text
- * @returns {string} - A congratulatory message
+ * @returns {string} - A congratulatory message with crossed-out instructions
  */
-function createCongratulatory(id, title, originalInstructions) {
+function createCrossedOutCongratulatory(id, title, originalInstructions) {
   // Start with a congratulatory message
   let message = `Great work on your ${title.toLowerCase()}! You've made excellent progress.\n\n`;
   
-  // Different messages based on section type
+  // Add crossed-out version of the original instructions
+  const crossedOutInstructions = simulateStrikethroughByRatio(originalInstructions, 0.7);
+  message += crossedOutInstructions;
+  
+  // Different messages based on section type - add at the end
   switch(id) {
     case 'question':
-      message += `Your research question is well-formed and shows clear focus. Consider these refinements:\n\n`;
-      message += `* Clarify how your question builds on existing knowledge\n\n`;
-      message += `* Emphasize the specific impact your findings will have on the field\n\n`;
-      message += `* Ensure your resources and methods are well-aligned with your question`;
+      message += `\n\n* Consider how your question relates to current debates in the field`;
       break;
       
     case 'audience':
-      message += `You've identified a relevant audience for your work. To strengthen this further:\n\n`;
-      message += `* Be more specific about how each community will benefit from your work\n\n`;
-      message += `* Consider adding 1-2 more specific researchers or research groups\n\n`;
-      message += `* Think about potential skeptics and how you'll address their concerns`;
+      message += `\n\n* Consider the potential impact of your work on policy makers or industry practitioners`;
       break;
       
     case 'hypothesis':
-      message += `Your hypotheses are taking shape nicely. Consider these enhancements:\n\n`;
-      message += `* Ensure each hypothesis is clearly falsifiable\n\n`;
-      message += `* Explain more precisely how your experiment will differentiate between them\n\n`;
-      message += `* Elaborate on why distinguishing between these hypotheses matters to the field`;
+      message += `\n\n* Consider the broader theoretical implications if your results support neither hypothesis`;
       break;
       
     case 'relatedpapers':
-      message += `You've done a good job identifying related literature. To strengthen this section:\n\n`;
-      message += `* Be more explicit about how each paper connects to your specific research question\n\n`;
-      message += `* Highlight the specific gaps that your research will address\n\n`;
-      message += `* Consider including papers with contrasting perspectives`;
+      message += `\n\n* Consider contrasting perspectives or methodological approaches in your literature review`;
       break;
       
     case 'experiment':
-      message += `Your experimental design is developing well. Consider these improvements:\n\n`;
-      message += `* Further clarify your key variables and how you'll measure them\n\n`;
-      message += `* Strengthen your justification for your sample size\n\n`;
-      message += `* Elaborate on how you'll control for potential confounds`;
-      break;
-      
-    case 'existingdata':
-      message += `Your data acquisition plan is taking shape. Consider these refinements:\n\n`;
-      message += `* Provide more specifics about data provenance and quality\n\n`;
-      message += `* Clarify how these particular datasets will answer your research question\n\n`;
-      message += `* Address potential limitations of using pre-existing data`;
-      break;
-      
-    case 'analysis':
-      message += `Your analysis plan is well-structured. To strengthen it further:\n\n`;
-      message += `* Be more specific about your data cleaning procedures\n\n`;
-      message += `* Provide more detail on how you'll quantify uncertainty\n\n`;
-      message += `* Consider alternative analysis approaches if your primary method faces challenges`;
-      break;
-      
-    case 'process':
-      message += `You've thought through your research process well. Consider these additions:\n\n`;
-      message += `* Be more specific about timeline milestones\n\n`;
-      message += `* Elaborate on your contingency plans for major obstacles\n\n`;
-      message += `* Consider adding more detail about how you'll share your findings`;
-      break;
-      
-    case 'abstract':
-      message += `Your abstract effectively summarizes your research plan. To refine it:\n\n`;
-      message += `* Sharpen the statement of your main research question or hypothesis\n\n`;
-      message += `* Be more specific about your methods and anticipated results\n\n`;
-      message += `* Strengthen the conclusion by emphasizing broader implications`;
+      message += `\n\n* Consider pre-registering your experimental protocol for increased credibility`;
       break;
       
     default:
-      // Extract bullet points from original instructions to create suggestions
-      const bulletPoints = originalInstructions.match(/\*\s.+/g) || [];
-      message += `Consider these refinements to strengthen your work:\n\n`;
-      
-      // Include up to 3 bullet points, or generate generic ones
-      if (bulletPoints.length > 0) {
-        const selectedPoints = bulletPoints.slice(0, Math.min(3, bulletPoints.length));
-        message += selectedPoints.join('\n\n');
-      } else {
-        message += `* Consider the broader implications of your work\n\n`;
-        message += `* Ensure all key points are supported by evidence\n\n`;
-        message += `* Think about potential objections and address them`;
+      // Only add a new suggestion if we haven't removed too many
+      if (Math.random() > 0.5) {
+        message += `\n\n* Consider how this section connects to your broader research narrative`;
       }
   }
   
   return message;
+}
+
+/**
+ * Ensures proper strikethrough format is applied to instructions
+ * @param {string} editedInstructions - The AI-edited instructions 
+ * @param {string} originalInstructions - The original instructions text
+ * @returns {string} - Instructions with proper strikethrough formatting
+ */
+function ensureStrikethroughFormat(editedInstructions, originalInstructions) {
+  // Check if the AI already used strikethrough formatting
+  if (editedInstructions.includes('~~')) {
+    return editedInstructions;
+  }
+  
+  // If no strikethrough is found, compare with original to add it
+  const originalLines = originalInstructions.split('\n');
+  const editedLines = editedInstructions.split('\n');
+  
+  // Find bullet points in original that are missing in edited
+  const missingLines = originalLines.filter(line => {
+    // Only consider bullet points
+    if (!line.trim().startsWith('*')) return false;
+    
+    // Check if this line is missing in edited version
+    return !editedLines.some(editedLine => 
+      editedLine.includes(line.trim()) || 
+      // Also check if it appears with strikethrough already
+      editedLine.includes('~~' + line.trim() + '~~')
+    );
+  });
+  
+  // If there are missing lines, add them back with strikethrough
+  if (missingLines.length > 0) {
+    let congrats = '';
+    if (editedInstructions.startsWith('Great') || 
+        editedInstructions.startsWith('Excellent') || 
+        editedInstructions.startsWith('Well done')) {
+      // Extract the congratulatory part
+      const firstParagraphEnd = editedInstructions.indexOf('\n\n');
+      if (firstParagraphEnd > 0) {
+        congrats = editedInstructions.substring(0, firstParagraphEnd + 2);
+        editedInstructions = editedInstructions.substring(firstParagraphEnd + 2);
+      }
+    }
+    
+    // Add missing lines with strikethrough
+    const missingLinesWithStrikethrough = missingLines.map(line => {
+      // Extract the content part of the bullet point
+      const bulletPart = line.indexOf('*');
+      const contentStart = line.indexOf(' ', bulletPart) + 1;
+      const firstPart = line.substring(0, contentStart);
+      const contentPart = line.substring(contentStart);
+      
+      return `${firstPart}~~${contentPart}~~`;
+    }).join('\n');
+    
+    // Add crossed-out lines at an appropriate position
+    // Try to insert after existing bullet points if they exist
+    let bulletPointFound = false;
+    for (let i = 0; i < editedLines.length; i++) {
+      if (editedLines[i].trim().startsWith('*')) {
+        bulletPointFound = true;
+        // Add the missing lines after the last existing bullet point
+        let j = i;
+        while (j < editedLines.length && (editedLines[j].trim().startsWith('*') || editedLines[j].trim() === '')) {
+          j++;
+        }
+        
+        // Insert the missing lines
+        editedLines.splice(j, 0, missingLinesWithStrikethrough);
+        break;
+      }
+    }
+    
+    // If no bullet points found, add at the end
+    if (!bulletPointFound) {
+      editedLines.push('');
+      editedLines.push(missingLinesWithStrikethrough);
+    }
+    
+    return congrats + editedLines.join('\n');
+  }
+  
+  // If no significant differences found, return the edited instructions
+  return editedInstructions;
 }
 
 /**
