@@ -117,6 +117,8 @@ const getFormattedContent = (userInputs) => {
     dataAcquisition = "## 5. Experimental Design\n" + userInputs.experiment;
   } else if (userInputs.existingdata && userInputs.existingdata.trim() !== "") {
     dataAcquisition = "## 5. Pre-existing Data\n" + userInputs.existingdata;
+  } else if (userInputs.theorysimulation && userInputs.theorysimulation.trim() !== "") {
+    dataAcquisition = "## 5. Theory/Simulation Approach\n" + userInputs.theorysimulation;
   } else {
     dataAcquisition = "## 5. Data Acquisition\nNot completed yet";
   }
