@@ -11,6 +11,7 @@ import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
+import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 import AppHeader from '../layout/AppHeader';
 import {
   improveBatchInstructions,
@@ -33,6 +34,8 @@ import '../../styles/PaperPlanner.css';
  * - RESTORED: Left cards layout with proper width/spacing
  * - UPDATED: Moved Target Audience section after Research Approach block
  * - ADDED: Save dialog to prompt for file name when saving
+ * - ADDED: Theory/Simulation option in data acquisition methods filter
+ * - ADDED: Improvement reminder toast after 3 minutes of editing
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -66,6 +69,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [loading, setLoading] = useState(false); // Track overall loading state
   const [showSaveDialog, setShowSaveDialog] = useState(false); // New state for save dialog
   const sectionRefs = useRef({});
+  
+  // New states for tracking improvement reminders
+  const [lastImprovementTime, setLastImprovementTime] = useState(Date.now());
+  const [editEvents, setEditEvents] = useState([]);
+  const [significantEditsMade, setSignificantEditsMade] = useState(false);
 
   // Use local state for instructions potentially modified by AI
   const [localSectionContent, setLocalSectionContent] = useState(() => {
@@ -232,11 +240,28 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     return sectionData;
   };
 
-// Handle magic (improving instructions)
-// Handle magic (improving instructions)
+  // Handle edit events for improvement reminder
+  const handleEdit = (sectionId, timestamp) => {
+    setEditEvents(prev => [...prev, { sectionId, timestamp, type: 'edit' }]);
+  };
+
+  // Handle significant edit events for improvement reminder
+  const handleSignificantEdit = (sectionId, timestamp) => {
+    setEditEvents(prev => [...prev, { sectionId, timestamp, type: 'significant' }]);
+    setSignificantEditsMade(true);
+  };
+
+  // Handle magic (improving instructions)
   const handleMagic = async () => {
     // FIXED: Don't allow instruction improvement during loading
     if (loading) return;
+    
+    // Track when improvement was last used
+    setLastImprovementTime(Date.now());
+    // Reset significant edits flag
+    setSignificantEditsMade(false);
+    // Clear edit events
+    setEditEvents([]);
     
     setImprovingInstructions(true);
     try {
@@ -330,6 +355,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setActiveApproach('hypothesis');
     setActiveDataMethod('experiment');
     setSectionCompletionStatus({});
+    
+    // Reset improvement reminder state
+    setLastImprovementTime(Date.now());
+    setEditEvents([]);
+    setSignificantEditsMade(false);
   };
 
   // UPDATED: Modified save function to show dialog instead of direct save
@@ -409,29 +439,31 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   };
 
   // Render a section with proper completion status
-const renderSection = (section) => {
-  if (!section || !section.id) return null;
+  const renderSection = (section) => {
+    if (!section || !section.id) return null;
 
-  const isCurrentActive = activeSection === section.id;
-  
-  // We still calculate completionStatus internally but don't use it for styling
-  const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
+    const isCurrentActive = activeSection === section.id;
+    
+    // We still calculate completionStatus internally but don't use it for styling
+    const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
 
-  return (
-    <SectionCard
-      key={section.id}
-      section={section}
-      isCurrentSection={isCurrentActive}
-      completionStatus={completionStatus} // Still pass it for internal use if needed
-      userInputs={userInputs}
-      handleInputChange={handleInputChange}
-      loading={chatLoading && currentSectionIdForChat === section.id}
-      sectionRef={sectionRefs.current[section.id]}
-      onClick={() => setActiveSectionWithManualFlag(section.id)}
-      useLargerFonts={false} // FIXED: Use smaller fonts for more compact layout
-    />
-  );
-};
+    return (
+      <SectionCard
+        key={section.id}
+        section={section}
+        isCurrentSection={isCurrentActive}
+        completionStatus={completionStatus} // Still pass it for internal use if needed
+        userInputs={userInputs}
+        handleInputChange={handleInputChange}
+        loading={chatLoading && currentSectionIdForChat === section.id}
+        sectionRef={sectionRefs.current[section.id]}
+        onClick={() => setActiveSectionWithManualFlag(section.id)}
+        useLargerFonts={false} // FIXED: Use smaller fonts for more compact layout
+        onEdit={handleEdit}
+        onSignificantEdit={handleSignificantEdit}
+      />
+    );
+  };
 
   // Wrapper for import document content to track loading state
   const handleDocumentImport = async (file) => {
@@ -476,9 +508,9 @@ const renderSection = (section) => {
                 setActiveApproach={handleApproachToggle}
               />
 
-              {/* Display active data acquisition section */}
+              {/* Display active approach section */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
+                .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
                 .map(section => renderSection(section))}
 
               {/* MOVED: Target Audience section after Research Approach block */}
@@ -497,8 +529,7 @@ const renderSection = (section) => {
                 setActiveMethod={handleDataMethodToggle}
               />
 
-              {/* Display active data acquisition section */}
-            // Fixed code that includes theorysimulation:
+              {/* Display active data acquisition section - FIXED: Added theorysimulation */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
                 .map(section => renderSection(section))}
@@ -521,6 +552,15 @@ const renderSection = (section) => {
           improveInstructions={handleMagic}
           loading={improvingInstructions}
           userInputs={userInputs}
+        />
+
+        {/* Improvement Reminder Toast */}
+        <ImprovementReminderToast
+          userInputs={userInputs}
+          lastImprovementTime={lastImprovementTime}
+          editEvents={editEvents}
+          significantEditsMade={significantEditsMade}
+          handleMagicClick={handleMagic}
         />
 
         {/* Floating Magic Button - FIXED: Pass proper loading state */}
