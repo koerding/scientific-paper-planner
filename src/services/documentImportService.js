@@ -205,7 +205,7 @@ function validateResearchPaper(paper) {
   }
   
   // Check data collection method (exactly one should be present)
-  const dataFields = ['experiment', 'existingdata'];
+  const dataFields = ['experiment', 'existingdata', 'theorysimulation'];
   const presentDataMethods = dataFields.filter(field => 
     paper.userInputs[field] && typeof paper.userInputs[field] === 'string' && paper.userInputs[field].length > 0
   );
