@@ -13,7 +13,7 @@ const FloatingMagicButton = ({ handleMagicClick, loading, onboardingStep }) => {
 
   return (
     <div
-      className={`fixed bottom-6 right-62 z-40 ${loading ? 'cursor-wait' : 'cursor-pointer'} ${showMagicHighlight ? 'onboarding-highlight-magic' : ''}`}
+      className={`fixed bottom-6 right-60 z-40 ${loading ? 'cursor-wait' : 'cursor-pointer'} ${showMagicHighlight ? 'onboarding-highlight-magic' : ''}`}
       style={{ transform: 'translateZ(0)' }} /* Force hardware acceleration for smoother animations */
     >
       <button
