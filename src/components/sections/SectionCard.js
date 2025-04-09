@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef } from 'react';
  * FIXED: Consistent font styles with right panel (instruction panel)
  * FIXED: Increased section title size by 40% as requested
  * FIXED: Properly resize textarea based on content
+ * ADDED: Tracking of significant edit events for improvement reminder
  */
 const SectionCard = ({
   section,
@@ -19,12 +20,18 @@ const SectionCard = ({
   loading,
   sectionRef,
   onClick,
-  useLargerFonts = false
+  useLargerFonts = false,
+  onEdit,
+  onSignificantEdit
 }) => {
   const textareaRef = useRef(null);
   
   // Get the actual value stored in userInputs
   const textValue = userInputs[section.id] || '';
+
+  // Track user edits for improvement reminder
+  const [lastEditTimestamp, setLastEditTimestamp] = useState(null);
+  const [significantChange, setSignificantChange] = useState(false);
 
   // Auto-resize textarea height - improved version
   const adjustTextareaHeight = () => {
@@ -79,9 +86,37 @@ const SectionCard = ({
     ${getBorderClasses()}
   `;
 
-  // Handle input change and resize
+  // Handle input change and resize, with tracking for improvement reminder
   const handleTextChange = (e) => {
-    handleInputChange(section.id, e.target.value);
+    const newValue = e.target.value;
+    const currentValue = textValue;
+    
+    // Call the parent's input change handler
+    handleInputChange(section.id, newValue);
+    
+    // Track edit timestamp for significant changes
+    const now = Date.now();
+    
+    // Determine if this is a significant change (e.g., added/removed more than 15 chars)
+    if (Math.abs(newValue.length - currentValue.length) > 15) {
+      setLastEditTimestamp(now);
+      setSignificantChange(true);
+      
+      // Emit significant edit event to parent component
+      if (typeof onSignificantEdit === 'function') {
+        onSignificantEdit(section.id, now);
+      }
+    }
+    // Update timestamp periodically even for smaller changes
+    else if (!lastEditTimestamp || (now - lastEditTimestamp) > 30000) { // 30 seconds
+      setLastEditTimestamp(now);
+      
+      // Emit regular edit event to parent component
+      if (typeof onEdit === 'function') {
+        onEdit(section.id, now);
+      }
+    }
+    
     // Ensure height adjustment occurs after state update
     setTimeout(adjustTextareaHeight, 0);
   };
