@@ -232,20 +232,25 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     return sectionData;
   };
 
-  // Handle magic (formerly improving instructions)
+// Handle magic (improving instructions)
   const handleMagic = async () => {
     // FIXED: Don't allow instruction improvement during loading
     if (loading) return;
     
     setImprovingInstructions(true);
     try {
+      console.log("Calling improveBatchInstructions...");
       const result = await improveBatchInstructions(
         localSectionContent.sections,
         userInputs,
         sectionContent
       );
 
+      console.log("Received result from improveBatchInstructions:", result.success);
+
       if (result.success && result.improvedData && result.improvedData.length > 0) {
+        console.log("Processing improved data...", result.improvedData.length);
+        
         // Update the instruction content
         const updatedSections = updateSectionWithImprovedInstructions(
           localSectionContent,
@@ -298,6 +303,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           ...prevStatus,
           ...newCompletionStatuses
         }));
+        
+        console.log("Instruction improvement completed successfully");
+      } else {
+        console.warn("No improved data received from API");
       }
     } catch (error) {
       console.error("[handleMagic] Error during improvement process:", error);
