@@ -6,6 +6,7 @@
  * UPDATED: Comprehensive logging of requests and responses
  * UPDATED: Updated to use GPT-4o model by default
  * UPDATED: Refined JSON mode prompt/parsing for batch instructions to ensure array output
+ * UPDATED: Now includes instructions for using strikethrough instead of deleting completed items
  */
 import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
 
@@ -94,7 +95,7 @@ export const callOpenAI = async (
   }
 
   // --- Updated System Prompt for Batch Instructions JSON Mode ---
-  // Ask for a JSON object containing a 'results' array
+  // Ask for a JSON object containing a 'results' array and explicitly mention strikethrough
   if (contextType === "improve_instructions_batch" && useJsonMode) {
     systemPrompt = (systemPrompt || "") + `
 
@@ -103,7 +104,7 @@ export const callOpenAI = async (
       "results": [
         {
           "id": "section_id_1",
-          "editedInstructions": "Full instructions text for this section, reflecting user progress and feedback.",
+          "editedInstructions": "Full instructions text for this section, with completed items marked with ~~strikethrough~~ (not deleted).",
           "feedback": "**Strengths:**\\nSpecific, constructive feedback on their work.\\n\\n**Weaknesses:**\\nAreas that need improvement.\\n\\n**Comments:**\\nSuggestions for enhancement.",
           "completionStatus": "complete" // or "unstarted" or "progress" based on analysis
         },
@@ -112,7 +113,11 @@ export const callOpenAI = async (
     }
     Return ONLY this single JSON object with no additional text, comments, or explanations outside the JSON structure. Ensure the 'results' array contains an entry for every section processed.
     
-    Important note about the feedback format: Make sure to include line breaks between the Strengths, Weaknesses, and Comments sections for better readability.
+    Important note about instructions format: 
+    - Use ~~strikethrough~~ to mark completed items (do NOT delete them)
+    - Keep all original bullet points but cross out the completed ones
+    - Add congratulatory messages for good progress
+    - Make sure to include line breaks between feedback sections for better readability
     `;
   }
   // --- End System Prompt Update ---
