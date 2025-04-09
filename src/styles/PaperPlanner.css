@@ -501,3 +501,41 @@ body, html {
   top: 150px !important;
   bottom: 50px !important;
 }
+/* Add these styles to your PaperPlanner.css file */
+
+/* Ensure strikethrough text is properly styled */
+.instructions-content del,
+.instructions-content s {
+  text-decoration: line-through;
+  color: #6B7280; /* gray-500 */
+  opacity: 0.7;
+}
+
+/* Custom class for markdown strikethrough */
+.strikethrough-text {
+  text-decoration: line-through;
+  color: #6B7280; /* gray-500 */
+  opacity: 0.7;
+}
+
+/* Ensure strikethrough is visible in markdown content */
+.prose del,
+.prose s {
+  text-decoration: line-through !important;
+  color: #6B7280 !important; /* gray-500 */
+  opacity: 0.7 !important;
+}
+
+/* Override any conflicting styles */
+.instructions-content *[style*="text-decoration: line-through"] {
+  color: #6B7280 !important; /* gray-500 */
+  opacity: 0.7 !important;
+}
+
+/* Ensure the `~~text~~` markdown is correctly parsed */
+.line-through,
+[data-strikethrough="true"] {
+  text-decoration: line-through !important;
+  color: #6B7280 !important; /* gray-500 */
+  opacity: 0.7 !important;
+}
