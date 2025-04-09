@@ -14,6 +14,18 @@
       "placeholder": "Research Question:[Write it out] \n\nSignificance/Impact: [Why it matters]\n"
     },
     {
+      "id": "theorysimulation",
+      "title": "Theory/Simulation",
+      "type": "text",
+      "maxLength": 2500,
+      "inputPlaceholder": "Describe your theoretical approach or simulation...",
+      "instructions": {
+      "title": "Theory/Simulation Approach",
+      "text": "Theoretical frameworks and simulations allow you to explore complex systems and make predictions without requiring new experimental data collection. This approach relies on clearly stated assumptions and rigorous mathematical or computational methods.\n\n---\n\n* Clearly articulate your key assumptions and their justifications.\n\n* Explain how these assumptions relate to real-world phenomena or systems.\n\n* Describe your mathematical framework or simulation methodology in detail.\n\n* Outline your approach for solving equations or implementing simulations.\n\n* Specify how you will validate your theoretical predictions or simulation results.\n\n* Identify potential limitations of your theoretical framework or simulation.\n\n* Clarify how your work advances theoretical understanding in your field."
+  },
+  "placeholder": "Key Theoretical Assumptions:\n- \n- \n- \n\nRelationship to Real-world Phenomena:\n\nMathematical/Computational Framework:\n\nSolution/Simulation Approach:\n\nValidation Strategy:\n\nPotential Limitations:\n\nTheoretical Significance:"
+    },  
+    {
       "id": "audience",
       "title": "Target Audience",
       "type": "text",
