@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 
 /**
  * Enhanced full-height instructions panel with tooltip debugging
- * Contains various debugging tools and visual markers to identify tooltip issues
+ * Contains various debugging tools to identify tooltip issues
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -14,48 +14,33 @@ const FullHeightInstructionsPanel = ({
 }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
   const [debugTooltipVisible, setDebugTooltipVisible] = useState(false);
-  const [markdownVisualDebug, setMarkdownVisualDebug] = useState(false);
-  const [debugMode, setDebugMode] = useState(true); // Set to true to enable debugging features
-  const [tooltipTestText, setTooltipTestText] = useState("Tooltip test text");
+  const [debugMode, setDebugMode] = useState(true); // Set to true to enable debugging
   const [debugMessages, setDebugMessages] = useState([]);
+  const [markdownVisualDebug, setMarkdownVisualDebug] = useState(false);
 
   // Add a debug message
   const addDebugMessage = (message) => {
-    setDebugMessages(prev => [
-      { id: Date.now(), text: message, timestamp: new Date().toLocaleTimeString() },
-      ...prev.slice(0, 9) // Keep only the last 10 messages
-    ]);
+    if (debugMode) {
+      console.log("DEBUG:", message);
+      setDebugMessages(prev => [
+        { id: Date.now(), text: message, timestamp: new Date().toLocaleTimeString() },
+        ...prev.slice(0, 9) // Keep only the last 10 messages
+      ]);
+    }
   };
 
   useEffect(() => {
-    if (debugMode) {
-      console.log("DEBUG: FullHeightInstructionsPanel mounted with currentSection:", currentSection);
-      console.log("DEBUG: Current section data:", currentSection ? `ID: ${currentSection.id}, Title: ${currentSection.title}` : "None");
+    if (debugMode && currentSection) {
+      addDebugMessage(`Section changed to: ${currentSection.id}`);
       
       // Check if there are any italics in the instructions
       const instructionsText = getInstructionsText();
-      const hasItalics = instructionsText.includes('*') && !instructionsText.includes('**');
-      console.log("DEBUG: Instructions contain italics:", hasItalics);
-      
-      // Count italicized passages
       const italicMatches = instructionsText.match(/(?<!\*)\*([^*]+)\*(?!\*)/g) || [];
-      console.log(`DEBUG: Found ${italicMatches.length} italicized passages`);
-      
-      if (italicMatches.length > 0) {
-        console.log("DEBUG: First italicized passage:", italicMatches[0]);
-      }
-      
-      addDebugMessage(`Panel mounted. Found ${italicMatches.length} italics.`);
+      addDebugMessage(`Found ${italicMatches.length} italicized passages`);
     }
   }, [currentSection, debugMode]);
 
-  // Debug handler for logging tooltip test events
-  const handleTooltipTest = (action) => {
-    console.log(`DEBUG TOOLTIP: ${action}`);
-    addDebugMessage(`Tooltip ${action}`);
-  };
-
-  // Enhanced magic handler - retained for external use
+  // Enhanced magic handler
   const handleMagicClick = () => {
     const now = Date.now();
     if (now - lastClickTime < 1500) {
@@ -92,7 +77,7 @@ const FullHeightInstructionsPanel = ({
     // Common base instructions for all sections
     const baseInstructions = `A good ${sectionTitle} is critical to a strong research paper. Here are some key points to consider:`;
     
-    // Section-specific instructions
+    // Section-specific instructions with deliberate italic text for testing tooltips
     switch(sectionId) {
       case 'question':
         return `${baseInstructions}
@@ -113,13 +98,12 @@ How will science be different after your work? *Tooltips help keep the interface
 Be specific about which subfields or research areas will find your work valuable. *The primary value of tooltips is reducing visual clutter without sacrificing content.*
 
 * **For each community, note how your research might impact their work.**
-Explain what gap you're filling or what problem you're solving for them. *This detailed explanation would normally take up a lot of space.*
+Explain what gap you're filling or what problem you're solving for them.
 
 * **Specify 3-5 individual researchers or research groups representing your audience.**
-These should be people actively working in areas related to your question. *Adding tooltips improves the reading experience for users who want focused guidance.*`;
+These should be people actively working in areas related to your question.`;
       
-      // Additional cases omitted for brevity - would include all other sections
-      
+      // Default case for other sections
       default:
         return `${baseInstructions}
 
@@ -130,10 +114,10 @@ Vague statements reduce the impact of your work and may confuse readers. *This i
 Every part of your paper should contribute to answering your research question. *Tooltips should appear when hovering over the info icon.*
 
 * **Ensure this section addresses the key requirements for your project.**
-Different research approaches have different expectations for how information should be presented. *Test italicized text for tooltips.*
+Different research approaches have different expectations for how information should be presented.
 
 * **Think about how readers will use this information.**
-What do they need to know to understand and evaluate your research properly? *Final tooltip test.*`;
+What do they need to know to understand and evaluate your research properly?`;
     }
   }
 
@@ -169,21 +153,19 @@ What do they need to know to understand and evaluate your research properly? *Fi
   const sectionTitle = currentSection?.title || "Instructions";
   const panelTitle = `${sectionTitle} Instructions & Feedback`;
 
-  // FIXED: Updated styles for consistent fonts with left panel
+  // Updated styles
   const customStyles = {
-    fontSize: 'text-base leading-relaxed', // Consistent with left panel
+    fontSize: 'text-base leading-relaxed', 
     content: 'prose-base prose-blue max-w-none',
     heading: 'text-lg font-semibold my-2',
     divider: 'border-t border-blue-200 my-3',
     listItem: 'my-1',
-    strikethrough: 'line-through text-gray-500 opacity-70', // Style for strikethrough text
+    strikethrough: 'line-through text-gray-500 opacity-70'
   };
 
   // Get the appropriate instructions text (with fallback if needed)
   const instructionsText = getInstructionsText();
 
-  // FIXED: Add a unique class that won't conflict with left panel
-  // The 'right-panel' class is unique to this component
   return (
     <div
       className="bg-blue-50 border-4 border-blue-500 rounded-lg overflow-y-auto right-panel"
@@ -212,7 +194,7 @@ What do they need to know to understand and evaluate your research properly? *Fi
               {debugMode && (
                 <button
                   onClick={toggleMarkdownDebug}
-                  className="px-2 py-1 text-xs bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                  className="px-2 py-1 text-xs bg-gray-200 text-gray-800 rounded hover:bg-gray-300 mr-2"
                 >
                   {markdownVisualDebug ? 'Hide MD Debug' : 'Show MD Debug'}
                 </button>
@@ -252,13 +234,13 @@ What do they need to know to understand and evaluate your research properly? *Fi
                 padding: '10px', 
                 backgroundColor: '#f0f0f0', 
                 border: '1px solid #ccc',
-                borderRadius: '4px',
-                position: 'relative'
+                borderRadius: '4px'
               }}>
                 <h4 style={{ marginBottom: '8px', fontWeight: 'bold' }}>Debug Tooltip Test</h4>
                 
+                {/* Direct test with inline styles */}
                 <p style={{ marginBottom: '8px' }}>
-                  <span>Basic span with inline-style tooltip: </span>
+                  <span>Inline-style tooltip: </span>
                   <span style={{ position: 'relative', display: 'inline-block' }}>
                     Hover here
                     <span 
@@ -278,11 +260,11 @@ What do they need to know to understand and evaluate your research properly? *Fi
                       }}
                       onMouseEnter={() => {
                         setDebugTooltipVisible(true);
-                        handleTooltipTest('shown (inline)');
+                        addDebugMessage('Tooltip shown (inline test)');
                       }}
                       onMouseLeave={() => {
                         setDebugTooltipVisible(false);
-                        handleTooltipTest('hidden (inline)');
+                        addDebugMessage('Tooltip hidden (inline test)');
                       }}
                     >
                       ⓘ
@@ -307,7 +289,7 @@ What do they need to know to understand and evaluate your research properly? *Fi
                           marginBottom: '8px',
                         }}
                       >
-                        {tooltipTestText}
+                        This is a test tooltip using inline styles only
                         <div 
                           style={{
                             position: 'absolute',
@@ -326,40 +308,28 @@ What do they need to know to understand and evaluate your research properly? *Fi
                   </span>
                 </p>
 
-                {/* Direct TooltipText component test */}
+                {/* Component test */}
                 <p style={{ marginBottom: '8px' }}>
-                  Component tooltip: <TooltipText text="(component test)" tooltipContent="This tooltip uses the TooltipText component directly" />
+                  Component tooltip: <InlineTooltip text="Hover over this info icon" tooltipContent="This tooltip uses the InlineTooltip component" />
                 </p>
                 
-                {/* Test form to modify tooltip content */}
-                <div style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>
-                  <input 
-                    type="text" 
-                    value={tooltipTestText} 
-                    onChange={(e) => setTooltipTestText(e.target.value)}
-                    style={{ 
-                      padding: '4px 8px', 
-                      border: '1px solid #ccc', 
-                      borderRadius: '4px',
-                      marginRight: '8px',
-                      flex: 1
-                    }}
-                    placeholder="Change tooltip text"
-                  />
-                  <button
-                    onClick={() => setDebugTooltipVisible(!debugTooltipVisible)}
-                    style={{ 
-                      padding: '4px 8px', 
-                      backgroundColor: debugTooltipVisible ? '#EF4444' : '#10B981', 
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {debugTooltipVisible ? 'Hide' : 'Show'} Tooltip
-                  </button>
-                </div>
+                {/* Test button */}
+                <button
+                  onClick={() => {
+                    setDebugTooltipVisible(!debugTooltipVisible);
+                    addDebugMessage(`Debug tooltip ${!debugTooltipVisible ? 'forced visible' : 'forced hidden'}`);
+                  }}
+                  style={{ 
+                    padding: '4px 8px', 
+                    backgroundColor: debugTooltipVisible ? '#EF4444' : '#10B981', 
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {debugTooltipVisible ? 'Hide' : 'Show'} Debug Tooltip
+                </button>
               </div>
             )}
 
@@ -424,7 +394,7 @@ What do they need to know to understand and evaluate your research properly? *Fi
               </div>
             )}
 
-            {/* Improved layout for instructions content */}
+            {/* Instructions content */}
             <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
               {instructionsText ? (
                 <div className={`${customStyles.content} instructions-content mb-4`}>
@@ -487,43 +457,23 @@ function extractTooltipContent(text, onDebugMessage = null) {
   mainText = mainText.replace(/\s+/g, ' ').trim();
   
   if (onDebugMessage) {
-    onDebugMessage(`Main text (first 50 chars): ${mainText.substring(0, 50)}...`);
-    onDebugMessage(`Tooltip text (first 50 chars): ${tooltipText.substring(0, 50)}...`);
+    onDebugMessage(`Main text length: ${mainText.length} chars`);
+    onDebugMessage(`Tooltip text length: ${tooltipText.length} chars`);
   }
   
   return { mainText, tooltipText };
 }
 
 /**
- * Tooltip component with forced inline styles for maximum compatibility
+ * Tooltip component with pure inline styles for maximum compatibility
  */
-const TooltipText = ({ text, tooltipContent }) => {
-  // Use ref instead of state for better performance and to avoid re-renders
-  const tooltipRef = useRef(null);
+const InlineTooltip = ({ text, tooltipContent }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
   
   if (!tooltipContent) {
     return <span>{text}</span>;
   }
   
-  const showTooltip = () => {
-    if (tooltipRef.current) {
-      tooltipRef.current.style.display = 'block';
-      tooltipRef.current.style.opacity = '1';
-      tooltipRef.current.style.visibility = 'visible';
-      console.log("DEBUG: Showing tooltip");
-    }
-  };
-  
-  const hideTooltip = () => {
-    if (tooltipRef.current) {
-      tooltipRef.current.style.display = 'none';
-      tooltipRef.current.style.opacity = '0';
-      tooltipRef.current.style.visibility = 'hidden';
-      console.log("DEBUG: Hiding tooltip");
-    }
-  };
-  
-  // Using all inline styles for maximum compatibility
   return (
     <span style={{ 
       position: 'relative', 
@@ -545,79 +495,72 @@ const TooltipText = ({ text, tooltipContent }) => {
           fontWeight: 'bold',
           marginLeft: '4px',
           cursor: 'help',
-          zIndex: 51,
-          position: 'relative'
+          position: 'relative',
+          zIndex: 51
         }}
-        onMouseEnter={showTooltip}
-        onMouseLeave={hideTooltip}
-        onFocus={showTooltip}
-        onBlur={hideTooltip}
-        tabIndex="0"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
         aria-label="Additional information"
       >
         ⓘ
       </span>
       
-      <div 
-        ref={tooltipRef}
-        style={{
-          position: 'absolute',
-          zIndex: 9999,
-          width: '280px',
-          padding: '0.75rem',
-          backgroundColor: '#1F2937',
-          color: 'white',
-          borderRadius: '0.375rem',
-          fontSize: '0.875rem',
-          lineHeight: 1.5,
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginBottom: '8px',
-          display: 'none',
-          opacity: 0,
-          visibility: 'hidden'
-        }}
-        role="tooltip"
-      >
-        {tooltipContent}
+      {showTooltip && (
         <div 
           style={{
             position: 'absolute',
-            width: 0,
-            height: 0,
-            borderLeft: '6px solid transparent',
-            borderRight: '6px solid transparent',
-            borderTop: '6px solid #1F2937',
-            top: '100%',
+            zIndex: 9999,
+            width: '280px',
+            padding: '0.75rem',
+            backgroundColor: '#1F2937',
+            color: 'white',
+            borderRadius: '0.375rem',
+            fontSize: '0.875rem',
+            lineHeight: 1.5,
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            bottom: '100%',
             left: '50%',
-            transform: 'translateX(-50%)'
+            transform: 'translateX(-50%)',
+            marginBottom: '8px',
+            display: 'block',
+            visibility: 'visible',
+            opacity: 1
           }}
-        />
-      </div>
+          role="tooltip"
+        >
+          {tooltipContent}
+          <div 
+            style={{
+              position: 'absolute',
+              width: 0,
+              height: 0,
+              borderLeft: '6px solid transparent',
+              borderRight: '6px solid transparent',
+              borderTop: '6px solid #1F2937',
+              top: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)'
+            }}
+          />
+        </div>
+      )}
     </span>
   );
 };
 
 /**
- * Enhanced debugging version of StyledMarkdown
+ * Enhanced debugging version of the styled markdown component
  */
 const DebugStyledMarkdown = ({ content, customStyles, debugMode = false, onDebugMessage = null }) => {
-  // Track paragraph processing for debugging
-  const [processedParagraphs, setProcessedParagraphs] = useState(0);
-  
-  // Process content to enhance list item styling and extract tooltips
+  // Process content for consistent bullet points
   const processedContent = content
-    // Replace asterisks with bullet points for consistency
     .replace(/\n\* /g, "\n• ");
   
   // Log debug info on content change
   useEffect(() => {
     if (debugMode) {
-      if (onDebugMessage) onDebugMessage(`Content length: ${content.length} chars`);
-      console.log("DEBUG markdown processing:", {
-        contentPreview: content.substring(0, 100) + "...",
+      if (onDebugMessage) onDebugMessage(`Markdown content: ${content.length} chars`);
+      console.log("DEBUG markdown:", {
         hasItalics: content.includes('*'),
         boldCount: (content.match(/\*\*.*?\*\*/g) || []).length,
         italicsCount: (content.match(/(?<!\*)\*([^*]+)\*(?!\*)/g) || []).length,
@@ -625,22 +568,9 @@ const DebugStyledMarkdown = ({ content, customStyles, debugMode = false, onDebug
     }
   }, [content, debugMode]);
   
-  const handleParagraphProcess = (nodeText, result) => {
-    if (debugMode) {
-      setProcessedParagraphs(prev => prev + 1);
-      if (onDebugMessage) {
-        if (result.tooltipText) {
-          onDebugMessage(`P${processedParagraphs+1}: Found tooltip (${result.tooltipText.length} chars)`);
-        } else {
-          onDebugMessage(`P${processedParagraphs+1}: No tooltip found`);
-        }
-      }
-    }
-  };
-  
   return (
     <div className={`${customStyles.fontSize}`}>
-      {/* Add debug panel at the top of the rendered markdown */}
+      {/* Debug panel at the top */}
       {debugMode && (
         <div style={{ 
           marginBottom: '15px', 
@@ -654,35 +584,29 @@ const DebugStyledMarkdown = ({ content, customStyles, debugMode = false, onDebug
           <div>Total length: {content.length} characters</div>
           <div>Bold sections: {(content.match(/\*\*.*?\*\*/g) || []).length}</div>
           <div>Italic sections: {(content.match(/(?<!\*)\*([^*]+)\*(?!\*)/g) || []).length}</div>
-          <div>Paragraphs processed: {processedParagraphs}</div>
         </div>
       )}
       
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           // Customize heading styles
           h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
           h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
           h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
           
-          // Style paragraphs and handle tooltips with debugging
+          // Style paragraphs and handle tooltips
           p: ({ node, ...props }) => {
             // Get the raw text content for processing
             const text = node.children
               .map(child => {
-                if (child.type === 'text') {
-                  if (debugMode && onDebugMessage) {
-                    onDebugMessage(`Processing text node: ${child.value.substring(0, 20)}...`);
-                  }
-                  return child.value || '';
-                }
+                if (child.type === 'text') return child.value || '';
                 return '';
               })
               .join('');
             
             // Process the paragraph text to extract tooltips
             const result = extractTooltipContent(text, onDebugMessage);
-            handleParagraphProcess(text, result);
             
             // Add visual debugging if enabled
             if (debugMode) {
@@ -699,7 +623,31 @@ const DebugStyledMarkdown = ({ content, customStyles, debugMode = false, onDebug
                   }}>
                     {hasTooltip ? (
                       <>
-                        <TooltipText text={result.mainText} tooltipContent={result.tooltipText} />
+                        <InlineTooltip text={result.mainText} tooltipContent={result.tooltipText} />
+                        <span style={{ 
+                          position: 'absolute', 
+                          right: '4px', 
+                          top: '4px', 
+                          fontSize: '10px',
+                          color: '#059669',
+                          backgroundColor: '#D1FAE5',
+                          padding: '1px 4px',
+                          borderRadius: '4px'
+                        }}>
+                          tooltip
+                        </span>
+                      </>
+                    ) : props.children}
+                  </p>
+                </div>
+              );
+            }
+            
+            // Normal rendering without debugging
+            if (result.tooltipText) {
+              return (
+                <p className="my-4">
+                  <InlineTooltip text={result.mainText} tooltipContent={result.tooltipText} />
                 </p>
               );
             }
@@ -722,7 +670,7 @@ const DebugStyledMarkdown = ({ content, customStyles, debugMode = false, onDebug
           // Suppress rendering of italic text since we're handling it with tooltips
           em: ({ node, ...props }) => {
             if (debugMode && onDebugMessage) {
-              onDebugMessage(`Found <em> tag that would normally be suppressed`);
+              onDebugMessage(`Found <em> tag that should be converted to tooltip`);
             }
             // In debug mode, show italics with visual indicator
             return debugMode ? (
@@ -732,7 +680,6 @@ const DebugStyledMarkdown = ({ content, customStyles, debugMode = false, onDebug
             ) : null;
           },
         }}
-        remarkPlugins={[remarkGfm]}
       >
         {processedContent}
       </ReactMarkdown>
@@ -747,37 +694,18 @@ const DebugStyledMarkdown = ({ content, customStyles, debugMode = false, onDebug
           borderRadius: '4px',
           fontSize: '12px'
         }}>
-          <div><strong>Rendering Complete</strong></div>
+          <div><strong>Tooltips Debug</strong></div>
           <div>Tooltips should be visible when hovering over info icons (ⓘ)</div>
-          <div>If tooltips aren't visible, check the browser console for errors</div>
+          <div>If tooltips aren't visible, check if:</div>
+          <ol style={{ marginLeft: '20px', marginTop: '4px' }}>
+            <li>1. There are info icons visible in the content</li>
+            <li>2. The hover state is triggering (check console logs)</li>
+            <li>3. Z-index conflicts are preventing tooltip display</li>
+          </ol>
         </div>
       )}
     </div>
   );
 };
 
-export default FullHeightInstructionsPanel; />
-                        {hasTooltip && <span style={{ 
-                          position: 'absolute', 
-                          right: '4px', 
-                          top: '4px', 
-                          fontSize: '10px',
-                          color: '#059669',
-                          backgroundColor: '#D1FAE5',
-                          padding: '1px 4px',
-                          borderRadius: '4px'
-                        }}>
-                          tooltip
-                        </span>}
-                      </>
-                    ) : props.children}
-                  </p>
-                </div>
-              );
-            }
-            
-            // Normal rendering without debugging
-            if (result.tooltipText) {
-              return (
-                <p className="my-4">
-                  <TooltipText text={result.mainText} tooltipContent={result.tooltipText}
+export default FullHeightInstructionsPanel;
