@@ -862,3 +862,80 @@ body, html {
   left: 50%;
   transform: translateX(-50%);
 }
+/* Add these styles to your PaperPlanner.css file */
+
+/* Tooltip container */
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+/* Info icon styling */
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #EEF2FF; /* indigo-50 */
+  color: #4F46E5; /* indigo-600 */
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* Tooltip styling */
+.tooltip {
+  visibility: hidden;
+  position: absolute;
+  width: 200px;
+  background-color: #1F2937; /* gray-800 */
+  color: white;
+  text-align: center;
+  padding: 8px;
+  border-radius: 6px;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* Show tooltip on hover */
+.tooltip-container:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Tooltip arrow */
+.tooltip-arrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1F2937 transparent transparent transparent;
+}
+
+/* Override em styles specifically for tooltips */
+.tooltip-text {
+  font-style: italic !important;
+  font-size: inherit !important;
+  display: inline !important;
+  margin: 0 !important;
+  color: inherit !important;
+  line-height: inherit !important;
+}
+
+/* Fix for em tags inside instruction content but outside tooltips */
+.instructions-content em:not(.tooltip-text) {
+  font-size: 0.85em;
+  display: inline;
+  font-style: italic;
+  color: #555;
+}
