@@ -522,24 +522,6 @@ body, html {
   animation: fadeIn 0.5s ease-out;
 }
 
-/* Pulsing animation for the "Improve Now" button */
-@keyframes gentlePulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-.toast-action-button {
-  animation: gentlePulse 2s infinite;
-}
-
-.toast-action-button:hover {
-  animation: none;
-}
-
 /* CLEAN TOOLTIP STYLES */
 /* --------------------- */
 
