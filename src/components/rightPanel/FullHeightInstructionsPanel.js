@@ -3,8 +3,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 /**
- * Enhanced full-height instructions panel with tooltip debugging
- * Contains various debugging tools to identify tooltip issues
+ * Enhanced full-height instructions panel with tooltip functionality
+ * FIXED: Improved tooltip extraction and rendering
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -165,6 +165,25 @@ What do they need to know to understand and evaluate your research properly?`;
 
   // Get the appropriate instructions text (with fallback if needed)
   const instructionsText = getInstructionsText();
+
+  // FIX: Pre-process markdown to ensure all italics can be identified correctly
+  const preprocessMarkdown = (markdown) => {
+    if (!markdown) return '';
+
+    // Store all italicized text with a special marker
+    let processedText = markdown;
+    const italicsRegex = /(?<!\*)\*([^*]+)\*(?!\*)/g;
+    const italicsMatches = [...markdown.matchAll(italicsRegex)];
+    
+    if (italicsMatches.length > 0) {
+      addDebugMessage(`Pre-processing ${italicsMatches.length} italic segments`);
+    }
+    
+    return processedText;
+  };
+
+  // Process instructions text to prepare for rendering
+  const processedInstructionsText = preprocessMarkdown(instructionsText);
 
   return (
     <div
@@ -394,11 +413,28 @@ What do they need to know to understand and evaluate your research properly?`;
               </div>
             )}
 
+            {/* Markdown Stats */}
+            {debugMode && (
+              <div style={{ 
+                marginBottom: '15px', 
+                padding: '8px', 
+                backgroundColor: '#DBEAFE', 
+                border: '1px solid #93C5FD',
+                borderRadius: '4px',
+                fontSize: '12px'
+              }}>
+                <div><strong>Markdown Stats:</strong></div>
+                <div>Total length: {instructionsText.length} characters</div>
+                <div>Bold sections: {(instructionsText.match(/\*\*.*?\*\*/g) || []).length}</div>
+                <div>Italic sections: {(instructionsText.match(/(?<!\*)\*([^*]+)\*(?!\*)/g) || []).length}</div>
+              </div>
+            )}
+
             {/* Instructions content */}
             <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
               {instructionsText ? (
                 <div className={`${customStyles.content} instructions-content mb-4`}>
-                  <DebugStyledMarkdown 
+                  <EnhancedMarkdown 
                     content={instructionsText} 
                     customStyles={customStyles}
                     debugMode={debugMode}
@@ -417,21 +453,23 @@ What do they need to know to understand and evaluate your research properly?`;
 };
 
 /**
- * Extracts main text and tooltip content from a markdown string
- * Tooltip content is any text within italics (*text*)
- * @param {string} text - The markdown text to process
- * @returns {Object} - Object with mainText and tooltipText properties
+ * FIXED: Improved extraction of tooltip content from markdown
+ * Now correctly processes markdown text directly to find italics
  */
 function extractTooltipContent(text, onDebugMessage = null) {
-  // If no text or no italics, return as is
-  if (!text || !text.includes('*')) {
-    if (onDebugMessage) onDebugMessage("No italic markers found in text");
+  // If no text, return as is
+  if (!text) {
+    if (onDebugMessage) onDebugMessage("No text provided to extract tooltip");
     return { mainText: text, tooltipText: null };
   }
   
-  // Pattern to match italicized text (text between single asterisks)
-  // This regex looks for text between asterisks where the asterisks aren't part of a bold marker
+  // Direct processing of text for italic content
   const italicPattern = /(?<!\*)\*([^*]+)\*(?!\*)/g;
+  
+  if (!text.includes('*')) {
+    if (onDebugMessage) onDebugMessage("No asterisks found in text");
+    return { mainText: text, tooltipText: null };
+  }
   
   // Find all italicized segments
   const matches = [...text.matchAll(italicPattern)];
@@ -549,161 +587,133 @@ const InlineTooltip = ({ text, tooltipContent }) => {
 };
 
 /**
- * Enhanced debugging version of the styled markdown component
+ * FIXED: Enhanced markdown component that properly processes italics
+ * This version directly processes the full markdown content before rendering
  */
-const DebugStyledMarkdown = ({ content, customStyles, debugMode = false, onDebugMessage = null }) => {
-  // Process content for consistent bullet points
-  const processedContent = content
-    .replace(/\n\* /g, "\n• ");
+const EnhancedMarkdown = ({ content, customStyles, debugMode = false, onDebugMessage = null }) => {
+  // First, directly process the full content to find and extract all italics
+  const [processedSegments, setProcessedSegments] = useState([]);
   
-  // Log debug info on content change
+  // Direct pre-processing of all content
   useEffect(() => {
+    if (!content) return;
+    
     if (debugMode) {
-      if (onDebugMessage) onDebugMessage(`Markdown content: ${content.length} chars`);
-      console.log("DEBUG markdown:", {
-        hasItalics: content.includes('*'),
-        boldCount: (content.match(/\*\*.*?\*\*/g) || []).length,
-        italicsCount: (content.match(/(?<!\*)\*([^*]+)\*(?!\*)/g) || []).length,
-      });
+      if (onDebugMessage) onDebugMessage(`Processing markdown content: ${content.length} chars`);
     }
-  }, [content, debugMode]);
+    
+    // Split content by paragraphs while preserving empty lines
+    const paragraphs = content.split(/(\n\n+)/);
+    const segments = [];
+    
+    // Process each paragraph
+    paragraphs.forEach((paragraph, index) => {
+      // Skip empty paragraphs or just whitespace/newlines
+      if (!paragraph.trim()) {
+        segments.push({ type: 'raw', content: paragraph });
+        return;
+      }
+      
+      // Check if paragraph contains italics
+      if (paragraph.includes('*') && !paragraph.startsWith('**') && !paragraph.includes('**')) {
+        const italicResult = extractTooltipContent(paragraph, onDebugMessage);
+        if (italicResult.tooltipText) {
+          segments.push({ 
+            type: 'tooltip', 
+            mainText: italicResult.mainText, 
+            tooltipText: italicResult.tooltipText,
+            original: paragraph
+          });
+          if (debugMode && onDebugMessage) {
+            onDebugMessage(`Processed segment ${segments.length}: Tooltip extracted`);
+          }
+          return;
+        }
+      }
+      
+      // Default: keep as is
+      segments.push({ type: 'raw', content: paragraph });
+    });
+    
+    setProcessedSegments(segments);
+    
+    if (debugMode && onDebugMessage) {
+      onDebugMessage(`Processed ${segments.length} content segments`);
+      const tooltipCount = segments.filter(s => s.type === 'tooltip').length;
+      onDebugMessage(`Found ${tooltipCount} segments with tooltips`);
+    }
+  }, [content, debugMode, onDebugMessage]);
+  
+  // Process content for consistent bullet points
+  const processedContent = content ? content.replace(/\n\* /g, "\n• ") : '';
   
   return (
     <div className={`${customStyles.fontSize}`}>
-      {/* Debug panel at the top */}
-      {debugMode && (
-        <div style={{ 
-          marginBottom: '15px', 
-          padding: '8px', 
-          backgroundColor: '#DBEAFE', 
-          border: '1px solid #93C5FD',
-          borderRadius: '4px',
-          fontSize: '12px'
-        }}>
-          <div><strong>Markdown Stats:</strong></div>
-          <div>Total length: {content.length} characters</div>
-          <div>Bold sections: {(content.match(/\*\*.*?\*\*/g) || []).length}</div>
-          <div>Italic sections: {(content.match(/(?<!\*)\*([^*]+)\*(?!\*)/g) || []).length}</div>
-        </div>
-      )}
-      
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          // Customize heading styles
-          h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
-          h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
-          h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
-          
-          // Style paragraphs and handle tooltips
-          p: ({ node, ...props }) => {
-            // Get the raw text content for processing
-            const text = node.children
-              .map(child => {
-                if (child.type === 'text') return child.value || '';
-                return '';
-              })
-              .join('');
-            
-            // Process the paragraph text to extract tooltips
-            const result = extractTooltipContent(text, onDebugMessage);
-            
-            // Add visual debugging if enabled
-            if (debugMode) {
-              const hasTooltip = !!result.tooltipText;
-              
-              return (
-                <div className="my-4" style={{ position: 'relative' }}>
-                  <p {...props} style={{ 
-                    position: 'relative',
-                    backgroundColor: hasTooltip ? 'rgba(209, 250, 229, 0.3)' : undefined,
-                    padding: hasTooltip ? '4px' : undefined,
-                    borderRadius: hasTooltip ? '4px' : undefined,
-                    border: hasTooltip ? '1px dashed #10B981' : undefined
+      {/* Use the processed segments directly */}
+      {processedSegments.map((segment, index) => {
+        if (segment.type === 'tooltip') {
+          return (
+            <div key={index} className="my-4">
+              {debugMode && (
+                <div style={{ 
+                  backgroundColor: 'rgba(209, 250, 229, 0.3)',
+                  padding: '4px',
+                  borderRadius: '4px',
+                  border: '1px dashed #10B981',
+                  position: 'relative'
+                }}>
+                  <InlineTooltip text={segment.mainText} tooltipContent={segment.tooltipText} />
+                  <span style={{ 
+                    position: 'absolute', 
+                    right: '4px', 
+                    top: '4px', 
+                    fontSize: '10px',
+                    color: '#059669',
+                    backgroundColor: '#D1FAE5',
+                    padding: '1px 4px',
+                    borderRadius: '4px'
                   }}>
-                    {hasTooltip ? (
-                      <>
-                        <InlineTooltip text={result.mainText} tooltipContent={result.tooltipText} />
-                        <span style={{ 
-                          position: 'absolute', 
-                          right: '4px', 
-                          top: '4px', 
-                          fontSize: '10px',
-                          color: '#059669',
-                          backgroundColor: '#D1FAE5',
-                          padding: '1px 4px',
-                          borderRadius: '4px'
-                        }}>
-                          tooltip
-                        </span>
-                      </>
-                    ) : props.children}
-                  </p>
+                    tooltip
+                  </span>
                 </div>
-              );
-            }
-            
-            // Normal rendering without debugging
-            if (result.tooltipText) {
-              return (
-                <p className="my-4">
-                  <InlineTooltip text={result.mainText} tooltipContent={result.tooltipText} />
-                </p>
-              );
-            }
-            
-            // Default paragraph rendering if no tooltips
-            return <p className="my-4" {...props} />;
-          },
-          
-          // Style lists and other elements
-          ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
-          ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
-          li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
-          
-          // Style horizontal rules as dividers
-          hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
-          
-          // Handle bold text normally
-          strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
-          
-          // Suppress rendering of italic text since we're handling it with tooltips
-          em: ({ node, ...props }) => {
-            if (debugMode && onDebugMessage) {
-              onDebugMessage(`Found <em> tag that should be converted to tooltip`);
-            }
-            // In debug mode, show italics with visual indicator
-            return debugMode ? (
-              <span style={{ fontStyle: 'italic', backgroundColor: '#FEF3C7', padding: '0 4px', borderRadius: '2px' }}>
-                {props.children}
-              </span>
-            ) : null;
-          },
-        }}
-      >
-        {processedContent}
-      </ReactMarkdown>
-      
-      {/* Debug footer */}
-      {debugMode && (
-        <div style={{ 
-          marginTop: '15px', 
-          padding: '8px', 
-          backgroundColor: '#FEF3C7', 
-          border: '1px solid #FCD34D',
-          borderRadius: '4px',
-          fontSize: '12px'
-        }}>
-          <div><strong>Tooltips Debug</strong></div>
-          <div>Tooltips should be visible when hovering over info icons (ⓘ)</div>
-          <div>If tooltips aren't visible, check if:</div>
-          <ol style={{ marginLeft: '20px', marginTop: '4px' }}>
-            <li>1. There are info icons visible in the content</li>
-            <li>2. The hover state is triggering (check console logs)</li>
-            <li>3. Z-index conflicts are preventing tooltip display</li>
-          </ol>
-        </div>
-      )}
+              )}
+              
+              {!debugMode && (
+                <InlineTooltip text={segment.mainText} tooltipContent={segment.tooltipText} />
+              )}
+            </div>
+          );
+        }
+        
+        // For raw content, use ReactMarkdown
+        return (
+          <ReactMarkdown
+            key={index}
+            remarkPlugins={[remarkGfm]}
+            components={{
+              h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
+              h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
+              h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
+              p: ({ node, ...props }) => <p className="my-4" {...props} />,
+              ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
+              ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
+              li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
+              hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
+              strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
+              em: ({ node, ...props }) => {
+                // In debug mode, show italics
+                return debugMode ? (
+                  <span style={{ fontStyle: 'italic', backgroundColor: '#FEF3C7', padding: '0 4px', borderRadius: '2px' }}>
+                    {props.children}
+                  </span>
+                ) : null; // Don't render in normal mode
+              },
+            }}
+          >
+            {segment.content}
+          </ReactMarkdown>
+        );
+      })}
     </div>
   );
 };
