@@ -195,52 +195,141 @@ What do they need to know to understand and evaluate your research properly?`;
   );
 };
 
-// Custom component to render markdown with enhanced styling for bold instructions and regular feedback
+// ===== STEP 1: Add this helper function to FullHeightInstructionsPanel.js =====
+
+/**
+ * Extracts main text and tooltip content from a markdown string
+ * Tooltip content is any text within italics (*text*)
+ * @param {string} text - The markdown text to process
+ * @returns {Object} - Object with mainText and tooltipText properties
+ */
+function extractTooltipContent(text) {
+  // If no text or no italics, return as is
+  if (!text || !text.includes('*')) {
+    return { mainText: text, tooltipText: null };
+  }
+  
+  // Pattern to match italicized text (text between single asterisks)
+  // This regex looks for text between asterisks where the asterisks aren't part of a bold marker
+  const italicPattern = /(?<!\*)\*([^*]+)\*(?!\*)/g;
+  
+  // Find all italicized segments
+  const matches = [...text.matchAll(italicPattern)];
+  
+  if (matches.length === 0) {
+    return { mainText: text, tooltipText: null };
+  }
+  
+  // Extract the tooltip content (all italicized segments)
+  const tooltipText = matches.map(match => match[1].trim()).join(' ');
+  
+  // Create main text by removing the italicized portions
+  let mainText = text;
+  matches.forEach(match => {
+    mainText = mainText.replace(match[0], '');
+  });
+  
+  // Clean up any double spaces from removed segments
+  mainText = mainText.replace(/\s+/g, ' ').trim();
+  
+  return { mainText, tooltipText };
+}
+
+// ===== STEP 2: Add the TooltipText component to FullHeightInstructionsPanel.js =====
+
+/**
+ * Component that displays text with a tooltip icon
+ * Shows tooltip content on hover
+ */
+const TooltipText = ({ text, tooltipContent }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  if (!tooltipContent) {
+    return <span>{text}</span>;
+  }
+  
+  return (
+    <span className="tooltip-container">
+      {text}
+      <span 
+        className="info-icon"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        aria-label="Additional information"
+      >
+        ⓘ
+      </span>
+      
+      {showTooltip && (
+        <div className="tooltip" role="tooltip">
+          {tooltipContent}
+          <div className="tooltip-arrow" />
+        </div>
+      )}
+    </span>
+  );
+};
+
+
+/**
+ * Enhanced StyledMarkdown component that converts italicized text to tooltips
+ * This makes the interface cleaner while preserving detailed explanations
+ */
+
+// Custom component to render markdown with enhanced styling and tooltips
 const StyledMarkdown = ({ content, customStyles }) => {
-  // Process content to enhance list item styling
+  // Process content to enhance list item styling and extract tooltips
   const processedContent = content
-    ? content.replace(/\n\* /g, "\n• ")
-    : '';
+    // Replace asterisks with bullet points for consistency
+    .replace(/\n\* /g, "\n• ");
   
   return (
     <div className={`${customStyles.fontSize}`}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]} // Enable GitHub Flavored Markdown (including strikethrough)
         components={{
           // Customize heading styles
-          h1: ({ node, ...props }) => <h1 className="text-xl font-bold my-3" {...props} />,
-          h2: ({ node, ...props }) => <h2 className="text-lg font-bold my-2" {...props} />,
-          h3: ({ node, ...props }) => <h3 className="text-lg font-bold my-2" {...props} />,
+          h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
+          h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
+          h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
           
-          // Style paragraphs and lists
-          p: ({ node, ...props }) => <p className="my-2 text-base" {...props} />,
-          ul: ({ node, ...props }) => <ul className="list-disc pl-4 my-2" {...props} />,
-          ol: ({ node, ...props }) => <ol className="list-decimal pl-4 my-2" {...props} />,
-          li: ({ node, ...props }) => <li className={`${customStyles.listItem} text-base`} {...props} />,
+          // Style paragraphs and handle tooltips
+          p: ({ node, ...props }) => {
+            // Get the raw text content for processing
+            const text = node.children
+              .map(child => {
+                if (child.type === 'text') return child.value || '';
+                return '';
+              })
+              .join('');
+            
+            // Process the paragraph text to extract tooltips
+            const { mainText, tooltipText } = extractTooltipContent(text);
+            
+            if (tooltipText) {
+              return (
+                <p className="my-4">
+                  <TooltipText text={mainText} tooltipContent={tooltipText} />
+                </p>
+              );
+            }
+            
+            // Default paragraph rendering if no tooltips
+            return <p className="my-4" {...props} />;
+          },
+          
+          // Style lists and other elements
+          ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
+          ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
+          li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
           
           // Style horizontal rules as dividers
           hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
           
-          // Style strikethrough text (this will be applied to ~~text~~ syntax)
-          del: ({ node, ...props }) => <del className={customStyles.strikethrough} {...props} />,
+          // Handle bold text normally
+          strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
           
-          // Handle strong (bold) elements - this is critical for the new format
-          strong: ({ node, children, ...props }) => {
-            // Check if it's a strikethrough instruction (bold + strikethrough)
-            const text = node.children && node.children[0] && node.children[0].value;
-            const isStricken = text && text.startsWith('~~') && text.endsWith('~~');
-            
-            if (isStricken) {
-              // For bold + strikethrough, return both styles
-              return (
-                <strong className="font-bold" {...props}>
-                  <del className={customStyles.strikethrough}>{children}</del>
-                </strong>
-              );
-            }
-            
-            return <strong className="font-bold" {...props}>{children}</strong>;
-          }
+          // Suppress rendering of italic text since we're handling it with tooltips
+          em: ({ node, ...props }) => null,
         }}
       >
         {processedContent}
