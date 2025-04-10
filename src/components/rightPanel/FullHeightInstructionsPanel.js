@@ -265,6 +265,8 @@ const TooltipText = ({ text, tooltipContent }) => {
           fontWeight: 'bold',
           marginLeft: '4px',
           cursor: 'help',
+          position: 'relative',
+          zIndex: 50
         }}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
@@ -289,6 +291,9 @@ const TooltipText = ({ text, tooltipContent }) => {
             left: '50%',
             transform: 'translateX(-50%)',
             marginBottom: '8px',
+            display: 'block',
+            visibility: 'visible',
+            opacity: 1
           }}
         >
           {tooltipContent}
@@ -302,7 +307,7 @@ const TooltipText = ({ text, tooltipContent }) => {
               borderTop: '6px solid #1F2937',
               top: '100%',
               left: '50%',
-              transform: 'translateX(-50%)',
+              transform: 'translateX(-50%)'
             }}
           />
         </div>
@@ -310,7 +315,6 @@ const TooltipText = ({ text, tooltipContent }) => {
     </span>
   );
 };
-
 
 /**
  * Enhanced StyledMarkdown component that converts italicized text to tooltips
