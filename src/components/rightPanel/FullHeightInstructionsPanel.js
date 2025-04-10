@@ -249,22 +249,62 @@ const TooltipText = ({ text, tooltipContent }) => {
   }
   
   return (
-    <span className="tooltip-container">
+    <span style={{ position: 'relative', display: 'inline' }}>
       {text}
       <span 
-        className="info-icon"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '16px',
+          height: '16px',
+          borderRadius: '50%',
+          backgroundColor: '#EEF2FF',
+          color: '#4F46E5',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          marginLeft: '4px',
+          cursor: 'help',
+        }}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        aria-label="Additional information"
-        style={{ display: 'inline-flex' }}
       >
         ⓘ
       </span>
       
       {showTooltip && (
-        <div className="tooltip" role="tooltip" style={{ display: 'block' }}>
+        <div 
+          style={{
+            position: 'absolute',
+            zIndex: 9999,
+            width: '280px',
+            padding: '0.75rem',
+            backgroundColor: '#1F2937',
+            color: 'white',
+            borderRadius: '0.375rem',
+            fontSize: '0.875rem',
+            lineHeight: 1.5,
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            bottom: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            marginBottom: '8px',
+          }}
+        >
           {tooltipContent}
-          <div className="tooltip-arrow" />
+          <div 
+            style={{
+              position: 'absolute',
+              width: 0,
+              height: 0,
+              borderLeft: '6px solid transparent',
+              borderRight: '6px solid transparent',
+              borderTop: '6px solid #1F2937',
+              top: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+            }}
+          />
         </div>
       )}
     </span>
