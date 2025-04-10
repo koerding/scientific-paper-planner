@@ -4,7 +4,8 @@ import remarkGfm from 'remark-gfm';
 
 /**
  * Enhanced full-height instructions panel
- * Using React component-based tooltips for maximum compatibility
+ * With proper tooltip rendering for italicized text (em tags)
+ * Magic button removed as requested
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -13,37 +14,6 @@ const FullHeightInstructionsPanel = ({
   userInputs
 }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
-
-  // Tooltip component
-  const Tooltip = ({ text, children }) => {
-    return (
-      <span className="tooltip-container">
-        {children}
-        <span className="info-icon">ⓘ</span>
-        <div className="tooltip">
-          {text}
-          <div className="tooltip-arrow"></div>
-        </div>
-      </span>
-    );
-  };
-
-  // Enhanced magic handler
-  const handleMagicClick = () => {
-    const now = Date.now();
-    if (now - lastClickTime < 1500) {
-      return;
-    }
-    setLastClickTime(now);
-
-    if (typeof improveInstructions === 'function') {
-      try {
-        improveInstructions();
-      } catch (error) {
-        console.error("Error triggering magic:", error);
-      }
-    }
-  };
 
   /**
    * Returns fallback instructions based on section ID
@@ -141,6 +111,68 @@ What do they need to know to understand and evaluate your research properly?`;
     ? instructionsText.replace(/\n\* /g, "\n• ")
     : '';
 
+  // Convert italicized text into tooltips
+  // This function transforms markdown italics (*text*) into tooltips
+  const processItalicsToTooltips = (content) => {
+    // First, check if there's any italicized text
+    if (!content || !content.includes("*")) return content;
+
+    // Replace italicized text with tooltip markup
+    // Look for patterns like *tooltip text* and replace with tooltip component markup
+    let processedContent = content;
+    const italicsRegex = /\*([^*]+)\*/g; // Match text between * characters
+    
+    processedContent = processedContent.replace(italicsRegex, (match, p1) => {
+      return `<tooltip>${p1}</tooltip>`;
+    });
+
+    return processedContent;
+  };
+
+  // Custom components for ReactMarkdown
+  const customComponents = {
+    h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
+    h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
+    h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
+    p: ({ node, ...props }) => <p className="my-4" {...props} />,
+    ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
+    ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
+    li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
+    hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
+    strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
+    
+    // Convert em elements to tooltip components
+    em: ({ node, children }) => {
+      const tooltipText = children?.toString() || '';
+      
+      // Create tooltip display
+      return (
+        <span className="tooltip-container">
+          <span className="info-icon">ⓘ</span>
+          <span className="tooltip">
+            {tooltipText}
+            <span className="tooltip-arrow"></span>
+          </span>
+        </span>
+      );
+    },
+    
+    // Handle our custom tooltip tags
+    tooltip: ({ node, children }) => {
+      const tooltipText = children?.toString() || '';
+      
+      return (
+        <span className="tooltip-container">
+          <span className="info-icon">ⓘ</span>
+          <span className="tooltip">
+            {tooltipText}
+            <span className="tooltip-arrow"></span>
+          </span>
+        </span>
+      );
+    }
+  };
+
   return (
     <div
       className="bg-blue-50 border-4 border-blue-500 rounded-lg overflow-y-auto right-panel"
@@ -166,39 +198,19 @@ What do they need to know to understand and evaluate your research properly?`;
               <h3 className="text-lg font-semibold text-blue-800 flex-grow mr-3">
                 {panelTitle}
               </h3>
-              <button
-                onClick={handleMagicClick}
-                disabled={loading}
-                className={`px-4 py-2 rounded-lg text-base font-medium transition-all flex-shrink-0 ${ 
-                  loading
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-purple-600 text-white hover:bg-purple-700 shadow hover:shadow-md'
-                  }`}
-              >
-                {loading ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Magic in progress...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                    </svg>
-                    Magic
-                  </span>
-                )}
-              </button>
+              {/* Magic button removed as requested */}
             </div>
 
-            {/* Example of the working tooltip */}
+            {/* Example tooltip */}
             <p className="mb-4">
-              <Tooltip text="This is how tooltips should work in the instructions panel">
+              <span className="tooltip-container">
                 Example tooltip
-              </Tooltip>
+                <span className="info-icon">ⓘ</span>
+                <span className="tooltip">
+                  This is how tooltips should work in the instructions panel
+                  <span className="tooltip-arrow"></span>
+                </span>
+              </span>
             </p>
 
             {/* Instructions content */}
@@ -207,20 +219,9 @@ What do they need to know to understand and evaluate your research properly?`;
                 <div className={`${customStyles.content} instructions-content mb-4`}>
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    components={{
-                      h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
-                      h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
-                      h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
-                      p: ({ node, ...props }) => <p className="my-4" {...props} />,
-                      ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
-                      ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
-                      li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
-                      hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
-                      strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
-                      em: ({ node, ...props }) => <em className="tooltip-text" style={{ fontStyle: 'italic', display: 'inline' }} {...props} />,
-                    }}
+                    components={customComponents}
                   >
-                    {processedContent}
+                    {processItalicsToTooltips(processedContent)}
                   </ReactMarkdown>
                 </div>
               ) : (
@@ -239,6 +240,7 @@ What do they need to know to understand and evaluate your research properly?`;
           position: relative;
           display: inline-block;
           cursor: help;
+          margin-right: 4px;
         }
         
         .info-icon {
@@ -252,25 +254,27 @@ What do they need to know to understand and evaluate your research properly?`;
           color: #4F46E5;
           font-size: 12px;
           font-weight: bold;
-          margin-left: 4px;
+          margin-left: 0;
           vertical-align: middle;
         }
         
         .tooltip {
           visibility: hidden;
           position: absolute;
-          width: 200px;
+          width: 240px;
           background-color: #1F2937;
           color: white;
-          text-align: center;
-          padding: 8px;
+          text-align: left;
+          padding: 8px 12px;
           border-radius: 6px;
           z-index: 1000;
           bottom: 125%;
           left: 50%;
-          margin-left: -100px;
+          transform: translateX(-50%);
           opacity: 0;
-          transition: opacity 0.3s;
+          transition: opacity 0.3s, visibility 0.3s;
+          font-size: 0.9rem;
+          line-height: 1.4;
         }
         
         .tooltip-container:hover .tooltip {
@@ -288,14 +292,9 @@ What do they need to know to understand and evaluate your research properly?`;
           border-color: #1F2937 transparent transparent transparent;
         }
         
-        /* Override em styles specifically for tooltips */
-        .tooltip-text {
-          font-style: italic !important;
-          font-size: inherit !important;
-          display: inline !important;
-          margin: 0 !important;
-          color: inherit !important;
-          line-height: inherit !important;
+        /* Make sure this overrides any conflicting styles */
+        .instructions-content em {
+          display: none !important;
         }
       `}
       </style>
