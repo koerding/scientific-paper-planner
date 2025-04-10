@@ -4,7 +4,9 @@ import remarkGfm from 'remark-gfm';
 
 /**
  * Enhanced full-height instructions panel
- * Fixed to properly render tooltips only for italicized text, preserving surrounding content
+ * Fixed to properly render tooltips only for italicized text
+ * Preserves bold formatting
+ * Wider tooltips for better content display
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -110,58 +112,152 @@ What do they need to know to understand and evaluate your research properly?`;
     ? instructionsText.replace(/\n\* /g, "\n• ")
     : '';
 
-  // Custom renderer that does special handling for italics
-  const renderWithTooltips = (content) => {
-    if (!content) return <div></div>;
+  // Much improved manual markdown renderer that preserves all formatting
+  // and only converts *italic* to tooltips
+  const renderCustomMarkdown = (content) => {
+    if (!content) return null;
     
-    // Split the content by italic markers *text*
-    const parts = content.split(/(\*[^*\n]+\*)/g);
+    // First, create segments by splitting on code blocks, so we don't process markdown inside code
+    const segments = content.split(/(```[\s\S]*?```)/g);
     
     return (
       <div>
-        {parts.map((part, index) => {
-          // Check if this part is an italic section (surrounded by asterisks)
-          if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-            // Extract the text between asterisks
-            const tooltipText = part.substring(1, part.length - 1);
-            
-            // Render as a tooltip
+        {segments.map((segment, segmentIndex) => {
+          // If this is a code block, render it directly without processing
+          if (segment.startsWith('```') && segment.endsWith('```')) {
+            const code = segment.slice(3, -3);
             return (
-              <span key={index} className="tooltip-container">
-                <span className="info-icon">ⓘ</span>
-                <span className="tooltip">
-                  {tooltipText}
-                  <span className="tooltip-arrow"></span>
-                </span>
-              </span>
-            );
-          } else {
-            // For regular text, render it normally with ReactMarkdown
-            return (
-              <ReactMarkdown 
-                key={index}
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
-                  h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
-                  h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
-                  p: ({ node, ...props }) => <p className="my-4" {...props} />,
-                  ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
-                  ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
-                  li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
-                  hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
-                  strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
-                  // Skip em rendering since we're handling that separately
-                  em: ({ node, ...props }) => <span {...props} />
-                }}
-              >
-                {part}
-              </ReactMarkdown>
+              <pre key={segmentIndex} className="bg-gray-100 p-3 rounded overflow-auto my-4">
+                <code>{code}</code>
+              </pre>
             );
           }
+          
+          // Split the segment into paragraphs first
+          const paragraphs = segment.split(/\n\n+/);
+          
+          return (
+            <div key={segmentIndex}>
+              {paragraphs.map((paragraph, paragraphIndex) => {
+                // Skip empty paragraphs
+                if (!paragraph.trim()) return null;
+                
+                // Check if this is a heading
+                if (paragraph.startsWith('# ')) {
+                  const headingText = paragraph.substring(2);
+                  return <h1 key={paragraphIndex} className="text-3xl font-bold my-5">{headingText}</h1>;
+                }
+                
+                if (paragraph.startsWith('## ')) {
+                  const headingText = paragraph.substring(3);
+                  return <h2 key={paragraphIndex} className="text-2xl font-bold my-4">{headingText}</h2>;
+                }
+                
+                if (paragraph.startsWith('### ')) {
+                  const headingText = paragraph.substring(4);
+                  return <h3 key={paragraphIndex} className="text-xl font-bold my-3">{headingText}</h3>;
+                }
+                
+                // Check if this is a list item
+                if (paragraph.startsWith('* ') || paragraph.startsWith('- ') || /^\d+\.\s/.test(paragraph)) {
+                  // For list items, we'll split by line and create a list
+                  const listItems = paragraph.split(/\n/).filter(item => item.trim());
+                  
+                  // Check if this is a numbered list
+                  const isNumbered = /^\d+\.\s/.test(listItems[0]);
+                  
+                  const ListTag = isNumbered ? 'ol' : 'ul';
+                  const listClasses = isNumbered ? 'list-decimal pl-5 my-4' : 'list-disc pl-5 my-4';
+                  
+                  return (
+                    <ListTag key={paragraphIndex} className={listClasses}>
+                      {listItems.map((item, itemIndex) => {
+                        // Remove the bullet or number
+                        let itemText = item;
+                        if (isNumbered) {
+                          itemText = item.replace(/^\d+\.\s/, '');
+                        } else {
+                          itemText = item.replace(/^[*-]\s/, '');
+                        }
+                        
+                        // Process the item text for formatting
+                        return (
+                          <li key={itemIndex} className={customStyles.listItem}>
+                            {processTextWithFormatting(itemText)}
+                          </li>
+                        );
+                      })}
+                    </ListTag>
+                  );
+                }
+                
+                // Regular paragraph
+                return (
+                  <p key={paragraphIndex} className="my-4">
+                    {processTextWithFormatting(paragraph)}
+                  </p>
+                );
+              })}
+            </div>
+          );
         })}
       </div>
     );
+  };
+  
+  // Helper function to process text with bold, italic, and other formatting
+  const processTextWithFormatting = (text) => {
+    if (!text) return null;
+    
+    // We'll process the text in chunks to handle nested formatting
+    // Strategy: Split by starting/ending format markers and keep track of state
+    
+    // First, split by bold markers
+    const boldParts = text.split(/(\*\*[^*]+\*\*)/g);
+    
+    // Process each part - either bold or regular text
+    return boldParts.map((part, boldIndex) => {
+      // Check if this is bold text
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+        // Extract the bold text and return as strong
+        const boldText = part.substring(2, part.length - 2);
+        return <strong key={boldIndex} className="font-bold">{processItalics(boldText)}</strong>;
+      } else {
+        // Regular text, check for italics
+        return processItalics(part, boldIndex);
+      }
+    });
+  };
+  
+  // Helper to process italic text and convert to tooltips
+  const processItalics = (text, keyPrefix = '') => {
+    if (!text) return null;
+    
+    // Split by italic markers
+    const italicParts = text.split(/(\*[^*\n]+\*)/g);
+    
+    return italicParts.map((part, italicIndex) => {
+      const key = `${keyPrefix}-${italicIndex}`;
+      
+      // Check if this is italic text
+      if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+        // Extract the italic text and convert to tooltip
+        const tooltipText = part.substring(1, part.length - 1);
+        
+        return (
+          <span key={key} className="tooltip-container">
+            <span className="info-icon">ⓘ</span>
+            <span className="tooltip">
+              {tooltipText}
+              <span className="tooltip-arrow"></span>
+            </span>
+          </span>
+        );
+      } else {
+        // Return regular text
+        return <span key={key}>{part}</span>;
+      }
+    });
   };
 
   return (
@@ -208,7 +304,7 @@ What do they need to know to understand and evaluate your research properly?`;
             <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
               {instructionsText ? (
                 <div className={`${customStyles.content} instructions-content mb-4`}>
-                  {renderWithTooltips(processedContent)}
+                  {renderCustomMarkdown(processedContent)}
                 </div>
               ) : (
                 <p className="text-blue-600 text-base mb-4">Instructions not available for this section.</p>
@@ -247,12 +343,12 @@ What do they need to know to understand and evaluate your research properly?`;
         .tooltip {
           visibility: hidden;
           position: absolute;
-          width: 300px;
-          max-width: 50vw;
+          width: 400px;
+          max-width: 60vw;
           background-color: #1F2937;
           color: white;
           text-align: left;
-          padding: 8px 12px;
+          padding: 10px 15px;
           border-radius: 6px;
           z-index: 1000;
           bottom: 125%;
@@ -264,6 +360,7 @@ What do they need to know to understand and evaluate your research properly?`;
           line-height: 1.4;
           overflow-y: auto;
           max-height: 300px;
+          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
         
         .tooltip-container:hover .tooltip {
@@ -279,6 +376,20 @@ What do they need to know to understand and evaluate your research properly?`;
           border-width: 5px;
           border-style: solid;
           border-color: #1F2937 transparent transparent transparent;
+        }
+        
+        /* Other important styles */
+        .instructions-content strong {
+          font-weight: 700 !important;
+          color: #1e3a8a !important;
+        }
+        
+        /* Ensure strikethrough is visible */
+        .instructions-content del,
+        .instructions-content s {
+          text-decoration: line-through !important;
+          color: #6B7280 !important;
+          opacity: 0.7 !important;
         }
       `}
       </style>
