@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 /**
  * Enhanced full-height instructions panel
+ * Using CSS-only tooltips for maximum compatibility
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -58,23 +59,6 @@ How will science be different after your work? Include both theoretical and prac
 
 * **Ensure your question is answerable with your anticipated resources.**
 Consider what data, methods, and skills you'll need to address it properly.`;
-      
-      case 'audience':
-        return `${baseInstructions}
-
-* **Identify primary academic communities who would benefit most directly.**
-Be specific about which subfields or research areas will find your work valuable.
-
-* **For each community, note how your research might impact their work.**
-Explain what gap you're filling or what problem you're solving for them.
-
-* **Specify 3-5 individual researchers or research groups representing your audience.**
-These should be people actively working in areas related to your question.
-
-* **Consider how your findings might be communicated effectively to this audience.**
-Think about their background knowledge, methodological preferences, and terminology.`;
-      
-      // Additional cases omitted for brevity - would include all other sections
       
       default:
         return `${baseInstructions}
@@ -196,73 +180,54 @@ What do they need to know to understand and evaluate your research properly?`;
               </button>
             </div>
 
-            {/* Simple test for tooltip functionality */}
+            {/* CSS-only tooltip test */}
             <p style={{ marginBottom: '10px' }}>
               <span style={{ position: 'relative', display: 'inline-block' }}>
                 Test tooltip
-                <span 
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '50%',
-                    backgroundColor: '#EEF2FF',
-                    color: '#4F46E5',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    marginLeft: '4px',
-                    cursor: 'help',
-                  }}
-                  onMouseEnter={() => {
-                    console.log("Mouse enter");
-                    const tooltip = document.getElementById('test-tooltip');
-                    if (tooltip) tooltip.style.display = 'block';
-                  }}
-                  onMouseLeave={() => {
-                    console.log("Mouse leave");
-                    const tooltip = document.getElementById('test-tooltip');
-                    if (tooltip) tooltip.style.display = 'none';
-                  }}
-                >
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  backgroundColor: '#EEF2FF',
+                  color: '#4F46E5',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  marginLeft: '4px',
+                  cursor: 'help',
+                  position: 'relative',
+                }}>
                   ⓘ
-                </span>
-                <div 
-                  id="test-tooltip"
-                  style={{
-                    display: 'none',
+                  <span style={{
+                    visibility: 'hidden',
                     position: 'absolute',
-                    zIndex: 9999,
-                    width: '280px',
-                    padding: '0.75rem',
+                    width: '200px',
                     backgroundColor: '#1F2937',
                     color: 'white',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    lineHeight: 1.5,
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                    bottom: '100%',
+                    textAlign: 'center',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    zIndex: 1000,
+                    bottom: '150%',
                     left: '50%',
-                    transform: 'translateX(-50%)',
-                    marginBottom: '8px',
-                  }}
-                >
-                  This is a test tooltip
-                  <div 
-                    style={{
+                    marginLeft: '-100px',
+                    opacity: 0,
+                    transition: 'opacity 0.3s',
+                  }} className="tooltip-content">
+                    This is a test tooltip
+                    <div style={{
                       position: 'absolute',
-                      width: 0,
-                      height: 0,
-                      borderLeft: '6px solid transparent',
-                      borderRight: '6px solid transparent',
-                      borderTop: '6px solid #1F2937',
                       top: '100%',
                       left: '50%',
-                      transform: 'translateX(-50%)'
-                    }}
-                  />
-                </div>
+                      marginLeft: '-5px',
+                      borderWidth: '5px',
+                      borderStyle: 'solid',
+                      borderColor: '#1F2937 transparent transparent transparent',
+                    }}></div>
+                  </span>
+                </span>
               </span>
             </p>
 
@@ -270,7 +235,6 @@ What do they need to know to understand and evaluate your research properly?`;
             <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
               {instructionsText ? (
                 <div className={`${customStyles.content} instructions-content mb-4`}>
-                  {/* Use basic ReactMarkdown for now */}
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
@@ -296,6 +260,21 @@ What do they need to know to understand and evaluate your research properly?`;
           </>
         )}
       </div>
+      
+      {/* Add this CSS for hover effect */}
+      <style>
+        {`
+        [class^="tooltip-content"] {
+          visibility: hidden;
+          opacity: 0;
+        }
+        
+        span:hover > .tooltip-content {
+          visibility: visible;
+          opacity: 1;
+        }
+        `}
+      </style>
     </div>
   );
 };
