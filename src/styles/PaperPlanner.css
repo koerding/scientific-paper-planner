@@ -4,10 +4,14 @@
 .section-card {
   margin-bottom: 0.5rem !important;
   transition: border-color 0.3s ease, border-width 0.3s ease, box-shadow 0.3s ease;
+  border-color: #e5e7eb !important; /* gray-200 */
+  border-width: 2px !important;
 }
 
 .section-card:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-color: #d1d5db !important; /* gray-300 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
 .section-card textarea {
@@ -22,19 +26,15 @@
   border: none !important;
 }
 
+/* Only the current section gets a blue border */
+.section-card.border-blue-500 {
+  border-color: #3b82f6 !important; /* blue-500 */
+  border-width: 4px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
 /* Thinner border styles to reduce visual weight */
 .border-2 {
-  border-width: 2px !important;
-}
-
-/* Status-based border colors */
-.section-complete {
-  border-color: #10B981 !important;
-  border-width: 2px !important;
-}
-
-.section-unstarted {
-  border-color: #EF4444 !important;
   border-width: 2px !important;
 }
 
@@ -62,6 +62,13 @@
   font-size: 0.875rem;
 }
 
+/* Subtle active button styles */
+.approach-toggle button.active, .data-toggle button.active {
+  font-weight: 600;
+  color: #4f46e5;
+  background-color: #eef2ff;
+}
+
 /* Better chat styling fixes */
 .prose-sm img {
   margin-top: 0;
@@ -75,9 +82,33 @@
   padding: 0.75rem 1rem;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: center !important;
   border-top-left-radius: 0.5rem;
   border-top-right-radius: 0.5rem;
+  height: 56px; /* Fixed height to ensure consistency */
+}
+
+.chat-header .flex.items-center {
+  display: flex;
+  align-items: center !important;
+  height: 100%;
+}
+
+.chat-header .w-8 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 32px;
+  width: 32px;
+}
+
+.chat-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  line-height: normal;
 }
 
 .ai-avatar {
@@ -99,6 +130,7 @@
   padding: 0.75rem 1rem;
   display: inline-block;
   max-width: 80%;
+  margin-bottom: 8px; /* Consistent spacing between messages */
 }
 
 .user-message {
@@ -114,11 +146,14 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* Subtle active button styles */
-.approach-toggle button.active, .data-toggle button.active {
-  font-weight: 600;
-  color: #4f46e5;
-  background-color: #eef2ff;
+/* Message content styling */
+.message-content {
+  word-break: break-word;
+}
+
+.prose.prose-sm {
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 /* Responsive styles */
@@ -329,24 +364,22 @@ header.bg-white.shadow-sm .container {
   padding-bottom: 3rem;
   padding-left: 1rem !important; /* Less padding on left side */
   padding-right: 1rem !important; /* Less padding on right side */
+  min-width: 50%;
+  width: 50% !important;
 }
 
 /* Fix for instructions panel, this is where the dimensions of the panel are actually set */
-.bg-blue-50.border-l-4.border-blue-500 {
+.bg-blue-50.border-l-4.border-blue-500,
+.right-panel {
   height: calc(100vh - 304px);
   top: 150px !important;
   bottom: 50px !important;
+  z-index: 10;
 }
 
 /* Improve transition for chat window */
 .fixed.z-40.shadow-lg.bg-white.rounded-t-lg {
   transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-/* Ensure content width doesn't collapse */
-.w-half.px-6.py-3 {
-  min-width: 50%;
-  width: 50% !important;
 }
 
 /* Prevent horizontal scrolling */
@@ -361,42 +394,6 @@ body, html {
 
 .mr-half {
   margin-right: 50%;
-}
-
-/* Chat header styles - FIXED for proper vertical alignment */
-.chat-header {
-  background-color: #4f46e5;
-  color: white;
-  padding: 0.75rem 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center !important;
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
-  height: 56px; /* Fixed height to ensure consistency */
-}
-
-.chat-header .flex.items-center {
-  display: flex;
-  align-items: center !important;
-  height: 100%;
-}
-
-.chat-header .w-8 {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  height: 32px;
-  width: 32px;
-}
-
-.chat-header h3 {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  height: 100%;
-  line-height: normal;
 }
 
 /* Typing indicator animation - IMPROVED */
@@ -443,38 +440,6 @@ body, html {
   }
 }
 
-/* Message bubbles - ensure consistent styling */
-.message-bubble {
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  display: inline-block;
-  max-width: 80%;
-  margin-bottom: 8px; /* Consistent spacing between messages */
-}
-
-.user-message {
-  background-color: #4f46e5;
-  color: white;
-  border-top-right-radius: 0;
-}
-
-.ai-message {
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-top-left-radius: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-/* Message content styling */
-.message-content {
-  word-break: break-word;
-}
-
-.prose.prose-sm {
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
 /* Override any Tailwind styles that might interfere */
 .bg-indigo-600.text-white.px-4.py-3 {
   display: flex !important;
@@ -486,75 +451,16 @@ body, html {
   align-items: center !important;
 }
 
-/* Add this to the bottom of your PaperPlanner.css file */
-
-/* Fix for right panel using a unique class selector that won't affect the left panel */
-.right-panel {
-  height: calc(100vh - 304px);
-  top: 145px !important;
-  bottom: 50px !important;
-}
-
-/* Keep the existing rule in place for backward compatibility */
-.bg-blue-50.border-l-4.border-blue-500 {
-  height: calc(100vh - 304px);
-  top: 150px !important;
-  bottom: 50px !important;
-}
-
 /* Ensure strikethrough text is properly styled */
 .instructions-content del,
-.instructions-content s {
-  text-decoration: line-through;
-  color: #6B7280; /* gray-500 */
-  opacity: 0.7;
-}
-
-/* Custom class for markdown strikethrough */
-.strikethrough-text {
-  text-decoration: line-through;
-  color: #6B7280; /* gray-500 */
-  opacity: 0.7;
-}
-
-/* Ensure strikethrough is visible in markdown content */
+.instructions-content s,
+.strikethrough-text,
 .prose del,
-.prose s {
-  text-decoration: line-through !important;
-  color: #6B7280 !important; /* gray-500 */
-  opacity: 0.7 !important;
-}
-
-/* Override any conflicting styles */
-.instructions-content *[style*="text-decoration: line-through"] {
-  color: #6B7280 !important; /* gray-500 */
-  opacity: 0.7 !important;
-}
-
-/* Ensure the `~~text~~` markdown is correctly parsed */
+.prose s,
+.instructions-content *[style*="text-decoration: line-through"],
 .line-through,
-[data-strikethrough="true"] {
-  text-decoration: line-through !important;
-  color: #6B7280 !important; /* gray-500 */
-  opacity: 0.7 !important;
-}
-
-/* Ensure strikethrough text is properly styled */
-.instructions-content del,
-.instructions-content s {
-  text-decoration: line-through;
-  color: #6B7280; /* gray-500 */
-  opacity: 0.7;
-}
-
-/* Ensure the right panel can render strikethrough properly */
-.right-panel .line-through {
-  text-decoration: line-through;
-  color: #6B7280; /* gray-500 */
-  opacity: 0.7;
-}
-
-/* Override default strikethrough styling */
+[data-strikethrough="true"],
+.right-panel .line-through,
 .markdown-content del {
   text-decoration: line-through !important;
   color: #6B7280 !important; /* gray-500 */
@@ -592,19 +498,6 @@ body, html {
   font-weight: 700 !important;
 }
 
-/* Optional: add a subtle indent for feedback paragraphs that follow bullet points */
-.instructions-content ul li ~ p:not(:has(strong)):not(li) {
-  padding-left: 1rem;
-  border-left: 2px solid #e5e7eb;
-  margin-left: 1rem !important;
-}
-
-/* Ensure bulleted items have proper spacing */
-.instructions-content ul li,
-.instructions-content ol li {
-  margin-bottom: 0.25rem !important;
-}
-
 /* Make completed instructions more distinct */
 .instructions-content li strong del,
 .instructions-content li del strong {
@@ -612,42 +505,6 @@ body, html {
   padding: 0.1rem 0.25rem !important;
   border-radius: 0.25rem !important;
 }
-
-/* Override the border colors to use neutral colors regardless of completion status */
-.section-card {
-  border-color: #e5e7eb !important; /* gray-200 */
-  border-width: 2px !important;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-/* Only the current section gets a blue border */
-.section-card.border-blue-500 {
-  border-color: #3b82f6 !important; /* blue-500 */
-  border-width: 4px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* Remove/override the completion status-based border colors */
-.section-complete,
-.section-unstarted,
-.section-progress {
-  border-color: #e5e7eb !important; /* gray-200 */
-  border-width: 2px !important;
-}
-
-/* Hover effect for all sections */
-.section-card:hover {
-  border-color: #d1d5db !important; /* gray-300 */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-}
-
-/* Override any hard-coded colors in the SectionCard component */
-[style*="border-color: #10B981"],
-[style*="border-color: #EF4444"] {
-  border-color: #e5e7eb !important; /* gray-200 */
-}
-
-/* Add these animations to your PaperPlanner.css file */
 
 /* Animation for the improvement reminder toast */
 @keyframes fadeIn {
@@ -682,270 +539,15 @@ body, html {
 .toast-action-button:hover {
   animation: none;
 }
-/* Add these styles to your PaperPlanner.css file */
 
-/* Make italicized text in the instructions panel half the size */
-.instructions-content em,
-.feedback-content em {
-  font-size: 0.5em; /* Half the size of normal text */
-  line-height: 1.4; /* Slightly increased line height for readability */
-  display: block; /* Make it a block element for better spacing */
-  margin-top: 0.5em; /* Add some spacing from previous content */
-  margin-bottom: 0.5em; /* Add some spacing from following content */
-  color: #555; /* Slightly dimmed color for secondary information */
-  font-style: italic; /* Maintain italics */
-}
-
-/* Apply the same to italicized text inside any paragraph, list item, or other element */
-.instructions-content p em,
-.instructions-content li em,
-.feedback-content p em,
-.feedback-content li em {
-  display: block;
-  font-size: 0.5em;
-  padding-left: 1em; /* Indent slightly for better visual hierarchy */
-  margin: 0.5em 0; /* Vertical spacing */
-  border-left: 2px solid #eaeaea; /* Subtle left border for visual distinction */
-}
-
-/* Ensure right panel renders markdown properly */
-.FullHeightInstructionsPanel .StyledMarkdown p em {
-  font-size: 0.5em;
-  display: block;
-  margin: 0.5em 0;
-  color: #555;
-  line-height: 1.4;
-}
-
-/* Add these styles to PaperPlanner.css */
-
-/* Container for tooltip text and icon */
-.tooltip-container {
-  position: relative;
-  display: inline;
-}
-
-/* Info icon styling */
-.info-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: #EEF2FF; /* indigo-50 */
-  color: #4F46E5; /* indigo-600 */
-  font-size: 12px;
-  font-weight: bold;
-  margin-left: 4px;
-  cursor: help;
-  transition: all 0.2s;
-}
-
-.info-icon:hover {
-  background-color: #C7D2FE; /* indigo-200 */
-}
-
-/* Tooltip popup styling */
-.tooltip {
-  position: absolute;
-  z-index: 50;
-  width: 280px;
-  padding: 0.75rem;
-  background-color: #1F2937; /* gray-800 */
-  color: white;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 8px;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s, visibility 0.2s;
-}
-
-.tooltip-container:hover .tooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Tooltip arrow */
-.tooltip-arrow {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #1F2937; /* gray-800 */
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .info-icon {
-    background-color: #312E81; /* indigo-900 */
-    color: #C7D2FE; /* indigo-200 */
-  }
-  
-  .info-icon:hover {
-    background-color: #4338CA; /* indigo-700 */
-  }
-  
-  .tooltip {
-    background-color: #111827; /* gray-900 */
-  }
-  
-  .tooltip-arrow {
-    border-top-color: #111827; /* gray-900 */
-  }
-}
-
-/* Mobile optimization */
-@media (max-width: 640px) {
-  .tooltip {
-    width: 220px;
-    font-size: 0.75rem;
-    padding: 0.5rem;
-  }
-}
-/* Tooltip styles for instruction panel */
-.tooltip-container {
-  position: relative;
-  display: inline;
-}
-
-.info-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: #EEF2FF; /* indigo-50 */
-  color: #4F46E5; /* indigo-600 */
-  font-size: 12px;
-  font-weight: bold;
-  margin-left: 4px;
-  cursor: help;
-}
-
-.tooltip {
-  position: absolute;
-  z-index: 50;
-  width: 280px;
-  padding: 0.75rem;
-  background-color: #1F2937; /* gray-800 */
-  color: white;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 8px;
-}
-
-.tooltip-arrow {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #1F2937; /* gray-800 */
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-}
-/* Add these styles to your PaperPlanner.css file */
+/* CLEAN TOOLTIP STYLES */
+/* --------------------- */
 
 /* Tooltip container */
 .tooltip-container {
   position: relative;
   display: inline-block;
   cursor: help;
-}
-
-/* Info icon styling */
-.info-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: #EEF2FF; /* indigo-50 */
-  color: #4F46E5; /* indigo-600 */
-  font-size: 12px;
-  font-weight: bold;
-  margin-left: 4px;
-  vertical-align: middle;
-}
-
-/* Tooltip styling */
-.tooltip {
-  visibility: hidden;
-  position: absolute;
-  width: 200px;
-  background-color: #1F2937; /* gray-800 */
-  color: white;
-  text-align: center;
-  padding: 8px;
-  border-radius: 6px;
-  z-index: 1000;
-  bottom: 125%;
-  left: 50%;
-  margin-left: -100px;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-/* Show tooltip on hover */
-.tooltip-container:hover .tooltip {
-  visibility: visible;
-  opacity: 1;
-}
-
-/* Tooltip arrow */
-.tooltip-arrow {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #1F2937 transparent transparent transparent;
-}
-
-/* Override em styles specifically for tooltips */
-.tooltip-text {
-  font-style: italic !important;
-  font-size: inherit !important;
-  display: inline !important;
-  margin: 0 !important;
-  color: inherit !important;
-  line-height: inherit !important;
-}
-
-/* Fix for em tags inside instruction content but outside tooltips */
-.instructions-content em:not(.tooltip-text) {
-  font-size: 0.85em;
-  display: inline;
-  font-style: italic;
-  color: #555;
-}
-/* Fix for tooltips - add this to PaperPlanner.css */
-
-/* Override any existing .tooltip-container styles */
-.tooltip-container {
-  position: relative;
-  display: inline-block;
-  cursor: help;
   margin-right: 4px;
 }
 
@@ -1002,11 +604,6 @@ body, html {
   border-color: #1F2937 transparent transparent transparent;
 }
 
-/* Important: Override any problematic em styles from the markdown */
-.instructions-content em {
-  display: none !important;
-}
-
 /* Make sure italic text in tooltips is styled properly */
 .tooltip em, 
 .tooltip i {
@@ -1017,14 +614,6 @@ body, html {
   line-height: inherit;
 }
 
-/* Make sure the right panel and tooltips are properly layered */
-.right-panel {
-  z-index: 10;
-}
-.right-panel .tooltip {
-  z-index: 1000;
-}
-
 /* Fix any potential issues with nested tooltips */
 .tooltip .tooltip-container {
   display: inline;
@@ -1032,96 +621,8 @@ body, html {
 .tooltip .tooltip {
   display: none !important;
 }
-/* Fix for tooltips - add this to PaperPlanner.css */
 
-/* Override any existing .tooltip-container styles */
-.tooltip-container {
-  position: relative;
-  display: inline-block;
-  cursor: help;
-  margin-right: 4px;
-}
-
-/* Info icon styling */
-.info-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: #EEF2FF;
-  color: #4F46E5;
-  font-size: 12px;
-  font-weight: bold;
-  vertical-align: middle;
-}
-
-/* Tooltip styling */
-.tooltip {
-  visibility: hidden;
-  position: absolute;
-  width: 240px;
-  background-color: #1F2937;
-  color: white;
-  text-align: left;
-  padding: 8px 12px;
-  border-radius: 6px;
-  z-index: 1000;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0;
-  transition: opacity 0.3s, visibility 0.3s;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Show tooltip on hover */
-.tooltip-container:hover .tooltip {
-  visibility: visible;
-  opacity: 1;
-}
-
-/* Tooltip arrow */
-.tooltip-arrow {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #1F2937 transparent transparent transparent;
-}
-
-/* Important: Override any problematic em styles from the markdown */
+/* Hide normal em tags in instruction content since we're converting them to tooltips */
 .instructions-content em {
-  display: none !important;
-}
-
-/* Make sure italic text in tooltips is styled properly */
-.tooltip em, 
-.tooltip i {
-  font-style: italic;
-  font-size: inherit;
-  display: inline;
-  color: inherit;
-  line-height: inherit;
-}
-
-/* Make sure the right panel and tooltips are properly layered */
-.right-panel {
-  z-index: 10;
-}
-.right-panel .tooltip {
-  z-index: 1000;
-}
-
-/* Fix any potential issues with nested tooltips */
-.tooltip .tooltip-container {
-  display: inline;
-}
-.tooltip .tooltip {
   display: none !important;
 }
