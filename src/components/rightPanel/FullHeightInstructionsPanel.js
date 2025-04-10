@@ -256,12 +256,13 @@ const TooltipText = ({ text, tooltipContent }) => {
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
         aria-label="Additional information"
+        style={{ display: 'inline-flex' }}
       >
         ⓘ
       </span>
       
       {showTooltip && (
-        <div className="tooltip" role="tooltip">
+        <div className="tooltip" role="tooltip" style={{ display: 'block' }}>
           {tooltipContent}
           <div className="tooltip-arrow" />
         </div>
