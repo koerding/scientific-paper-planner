@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 
 /**
  * Enhanced full-height instructions panel
- * Using CSS-only tooltips for maximum compatibility
+ * Using React component-based tooltips for maximum compatibility
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -13,6 +13,20 @@ const FullHeightInstructionsPanel = ({
   userInputs
 }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
+
+  // Tooltip component
+  const Tooltip = ({ text, children }) => {
+    return (
+      <span className="tooltip-container">
+        {children}
+        <span className="info-icon">ⓘ</span>
+        <div className="tooltip">
+          {text}
+          <div className="tooltip-arrow"></div>
+        </div>
+      </span>
+    );
+  };
 
   // Enhanced magic handler
   const handleMagicClick = () => {
@@ -180,55 +194,11 @@ What do they need to know to understand and evaluate your research properly?`;
               </button>
             </div>
 
-            {/* CSS-only tooltip test */}
-            <p style={{ marginBottom: '10px' }}>
-              <span style={{ position: 'relative', display: 'inline-block' }}>
-                Test tooltip
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: '50%',
-                  backgroundColor: '#EEF2FF',
-                  color: '#4F46E5',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  marginLeft: '4px',
-                  cursor: 'help',
-                  position: 'relative',
-                }}>
-                  ⓘ
-                  <span style={{
-                    visibility: 'hidden',
-                    position: 'absolute',
-                    width: '200px',
-                    backgroundColor: '#1F2937',
-                    color: 'white',
-                    textAlign: 'center',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    zIndex: 1000,
-                    bottom: '150%',
-                    left: '50%',
-                    marginLeft: '-100px',
-                    opacity: 0,
-                    transition: 'opacity 0.3s',
-                  }} className="tooltip-content">
-                    This is a test tooltip
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: '50%',
-                      marginLeft: '-5px',
-                      borderWidth: '5px',
-                      borderStyle: 'solid',
-                      borderColor: '#1F2937 transparent transparent transparent',
-                    }}></div>
-                  </span>
-                </span>
-              </span>
+            {/* Example of the working tooltip */}
+            <p className="mb-4">
+              <Tooltip text="This is how tooltips should work in the instructions panel">
+                Example tooltip
+              </Tooltip>
             </p>
 
             {/* Instructions content */}
@@ -247,7 +217,7 @@ What do they need to know to understand and evaluate your research properly?`;
                       li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
                       hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
                       strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
-                      em: ({ node, ...props }) => <em style={{ fontStyle: 'italic' }} {...props} />,
+                      em: ({ node, ...props }) => <em className="tooltip-text" style={{ fontStyle: 'italic', display: 'inline' }} {...props} />,
                     }}
                   >
                     {processedContent}
@@ -261,19 +231,73 @@ What do they need to know to understand and evaluate your research properly?`;
         )}
       </div>
       
-      {/* Add this CSS for hover effect */}
+      {/* CSS for tooltips */}
       <style>
-        {`
-        [class^="tooltip-content"] {
-          visibility: hidden;
-          opacity: 0;
+      {`
+        /* Tooltip styling */
+        .tooltip-container {
+          position: relative;
+          display: inline-block;
+          cursor: help;
         }
         
-        span:hover > .tooltip-content {
+        .info-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background-color: #EEF2FF;
+          color: #4F46E5;
+          font-size: 12px;
+          font-weight: bold;
+          margin-left: 4px;
+          vertical-align: middle;
+        }
+        
+        .tooltip {
+          visibility: hidden;
+          position: absolute;
+          width: 200px;
+          background-color: #1F2937;
+          color: white;
+          text-align: center;
+          padding: 8px;
+          border-radius: 6px;
+          z-index: 1000;
+          bottom: 125%;
+          left: 50%;
+          margin-left: -100px;
+          opacity: 0;
+          transition: opacity 0.3s;
+        }
+        
+        .tooltip-container:hover .tooltip {
           visibility: visible;
           opacity: 1;
         }
-        `}
+        
+        .tooltip-arrow {
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          margin-left: -5px;
+          border-width: 5px;
+          border-style: solid;
+          border-color: #1F2937 transparent transparent transparent;
+        }
+        
+        /* Override em styles specifically for tooltips */
+        .tooltip-text {
+          font-style: italic !important;
+          font-size: inherit !important;
+          display: inline !important;
+          margin: 0 !important;
+          color: inherit !important;
+          line-height: inherit !important;
+        }
+      `}
       </style>
     </div>
   );
