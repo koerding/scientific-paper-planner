@@ -939,3 +939,96 @@ body, html {
   font-style: italic;
   color: #555;
 }
+/* Fix for tooltips - add this to PaperPlanner.css */
+
+/* Override any existing .tooltip-container styles */
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+  margin-right: 4px;
+}
+
+/* Info icon styling */
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #EEF2FF;
+  color: #4F46E5;
+  font-size: 12px;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+/* Tooltip styling */
+.tooltip {
+  visibility: hidden;
+  position: absolute;
+  width: 240px;
+  background-color: #1F2937;
+  color: white;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 6px;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s, visibility 0.3s;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Show tooltip on hover */
+.tooltip-container:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Tooltip arrow */
+.tooltip-arrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1F2937 transparent transparent transparent;
+}
+
+/* Important: Override any problematic em styles from the markdown */
+.instructions-content em {
+  display: none !important;
+}
+
+/* Make sure italic text in tooltips is styled properly */
+.tooltip em, 
+.tooltip i {
+  font-style: italic;
+  font-size: inherit;
+  display: inline;
+  color: inherit;
+  line-height: inherit;
+}
+
+/* Make sure the right panel and tooltips are properly layered */
+.right-panel {
+  z-index: 10;
+}
+.right-panel .tooltip {
+  z-index: 1000;
+}
+
+/* Fix any potential issues with nested tooltips */
+.tooltip .tooltip-container {
+  display: inline;
+}
+.tooltip .tooltip {
+  display: none !important;
+}
