@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 /**
  * Enhanced full-height instructions panel
- * With proper tooltip rendering for italicized text (em tags)
- * Magic button removed as requested
+ * With proper tooltip rendering for italicized text and magic button removed
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -13,6 +12,7 @@ const FullHeightInstructionsPanel = ({
   loading,
   userInputs
 }) => {
+  // State for tracking last click time
   const [lastClickTime, setLastClickTime] = useState(0);
 
   /**
@@ -111,26 +111,23 @@ What do they need to know to understand and evaluate your research properly?`;
     ? instructionsText.replace(/\n\* /g, "\n• ")
     : '';
 
-  // Convert italicized text into tooltips
-  // This function transforms markdown italics (*text*) into tooltips
-  const processItalicsToTooltips = (content) => {
-    // First, check if there's any italicized text
-    if (!content || !content.includes("*")) return content;
-
-    // Replace italicized text with tooltip markup
-    // Look for patterns like *tooltip text* and replace with tooltip component markup
-    let processedContent = content;
-    const italicsRegex = /\*([^*]+)\*/g; // Match text between * characters
+  // This function transforms italicized text (*text*) into tooltips
+  const processContent = useCallback((content) => {
+    if (!content) return '';
     
-    processedContent = processedContent.replace(italicsRegex, (match, p1) => {
-      return `<tooltip>${p1}</tooltip>`;
-    });
+    // Replace markdown italic indicators with tooltip delimiters
+    let processed = content;
+    const italicRegex = /\*([^*\n]+)\*/g;
 
-    return processedContent;
-  };
+    processed = processed.replace(italicRegex, (match, text) => {
+      return `<tooltip>${text}</tooltip>`;
+    });
+    
+    return processed;
+  }, []);
 
   // Custom components for ReactMarkdown
-  const customComponents = {
+  const components = {
     h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
     h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
     h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
@@ -141,35 +138,58 @@ What do they need to know to understand and evaluate your research properly?`;
     hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
     strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
     
-    // Convert em elements to tooltip components
+    // Process normal em tags (italics)
     em: ({ node, children }) => {
-      const tooltipText = children?.toString() || '';
-      
-      // Create tooltip display
       return (
         <span className="tooltip-container">
           <span className="info-icon">ⓘ</span>
           <span className="tooltip">
-            {tooltipText}
+            {children}
             <span className="tooltip-arrow"></span>
           </span>
         </span>
       );
     },
     
-    // Handle our custom tooltip tags
+    // Process our custom tooltip tags that come from the regex replacement
     tooltip: ({ node, children }) => {
-      const tooltipText = children?.toString() || '';
-      
       return (
         <span className="tooltip-container">
           <span className="info-icon">ⓘ</span>
           <span className="tooltip">
-            {tooltipText}
+            {children}
             <span className="tooltip-arrow"></span>
           </span>
         </span>
       );
+    },
+    
+    // Adding code to preprocess text nodes to handle our <tooltip> tags
+    text: ({ children }) => {
+      if (typeof children !== 'string') return children;
+      
+      if (children.includes('<tooltip>')) {
+        const parts = children.split(/<\/?tooltip>/g);
+        
+        return parts.map((part, index) => {
+          // Even indices are regular text, odd indices are tooltip content
+          if (index % 2 === 0) {
+            return part;
+          } else {
+            return (
+              <span key={index} className="tooltip-container">
+                <span className="info-icon">ⓘ</span>
+                <span className="tooltip">
+                  {part}
+                  <span className="tooltip-arrow"></span>
+                </span>
+              </span>
+            );
+          }
+        });
+      }
+      
+      return children;
     }
   };
 
@@ -207,7 +227,7 @@ What do they need to know to understand and evaluate your research properly?`;
                 Example tooltip
                 <span className="info-icon">ⓘ</span>
                 <span className="tooltip">
-                  This is how tooltips should work in the instructions panel
+                  This is how tooltips should work
                   <span className="tooltip-arrow"></span>
                 </span>
               </span>
@@ -217,11 +237,8 @@ What do they need to know to understand and evaluate your research properly?`;
             <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
               {instructionsText ? (
                 <div className={`${customStyles.content} instructions-content mb-4`}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={customComponents}
-                  >
-                    {processItalicsToTooltips(processedContent)}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                    {processContent(processedContent)}
                   </ReactMarkdown>
                 </div>
               ) : (
