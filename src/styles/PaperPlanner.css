@@ -682,3 +682,37 @@ body, html {
 .toast-action-button:hover {
   animation: none;
 }
+/* Add these styles to your PaperPlanner.css file */
+
+/* Make italicized text in the instructions panel half the size */
+.instructions-content em,
+.feedback-content em {
+  font-size: 0.5em; /* Half the size of normal text */
+  line-height: 1.4; /* Slightly increased line height for readability */
+  display: block; /* Make it a block element for better spacing */
+  margin-top: 0.5em; /* Add some spacing from previous content */
+  margin-bottom: 0.5em; /* Add some spacing from following content */
+  color: #555; /* Slightly dimmed color for secondary information */
+  font-style: italic; /* Maintain italics */
+}
+
+/* Apply the same to italicized text inside any paragraph, list item, or other element */
+.instructions-content p em,
+.instructions-content li em,
+.feedback-content p em,
+.feedback-content li em {
+  display: block;
+  font-size: 0.5em;
+  padding-left: 1em; /* Indent slightly for better visual hierarchy */
+  margin: 0.5em 0; /* Vertical spacing */
+  border-left: 2px solid #eaeaea; /* Subtle left border for visual distinction */
+}
+
+/* Ensure right panel renders markdown properly */
+.FullHeightInstructionsPanel .StyledMarkdown p em {
+  font-size: 0.5em;
+  display: block;
+  margin: 0.5em 0;
+  color: #555;
+  line-height: 1.4;
+}
