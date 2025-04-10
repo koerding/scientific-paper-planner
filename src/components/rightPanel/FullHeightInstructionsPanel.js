@@ -1,10 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 /**
  * Enhanced full-height instructions panel
- * With proper tooltip rendering for italicized text and magic button removed
+ * Fixed to properly render tooltips only for italicized text, preserving surrounding content
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -12,7 +12,6 @@ const FullHeightInstructionsPanel = ({
   loading,
   userInputs
 }) => {
-  // State for tracking last click time
   const [lastClickTime, setLastClickTime] = useState(0);
 
   /**
@@ -111,86 +110,58 @@ What do they need to know to understand and evaluate your research properly?`;
     ? instructionsText.replace(/\n\* /g, "\n• ")
     : '';
 
-  // This function transforms italicized text (*text*) into tooltips
-  const processContent = useCallback((content) => {
-    if (!content) return '';
+  // Custom renderer that does special handling for italics
+  const renderWithTooltips = (content) => {
+    if (!content) return <div></div>;
     
-    // Replace markdown italic indicators with tooltip delimiters
-    let processed = content;
-    const italicRegex = /\*([^*\n]+)\*/g;
-
-    processed = processed.replace(italicRegex, (match, text) => {
-      return `<tooltip>${text}</tooltip>`;
-    });
+    // Split the content by italic markers *text*
+    const parts = content.split(/(\*[^*\n]+\*)/g);
     
-    return processed;
-  }, []);
-
-  // Custom components for ReactMarkdown
-  const components = {
-    h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
-    h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
-    h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
-    p: ({ node, ...props }) => <p className="my-4" {...props} />,
-    ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
-    ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
-    li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
-    hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
-    strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
-    
-    // Process normal em tags (italics)
-    em: ({ node, children }) => {
-      return (
-        <span className="tooltip-container">
-          <span className="info-icon">ⓘ</span>
-          <span className="tooltip">
-            {children}
-            <span className="tooltip-arrow"></span>
-          </span>
-        </span>
-      );
-    },
-    
-    // Process our custom tooltip tags that come from the regex replacement
-    tooltip: ({ node, children }) => {
-      return (
-        <span className="tooltip-container">
-          <span className="info-icon">ⓘ</span>
-          <span className="tooltip">
-            {children}
-            <span className="tooltip-arrow"></span>
-          </span>
-        </span>
-      );
-    },
-    
-    // Adding code to preprocess text nodes to handle our <tooltip> tags
-    text: ({ children }) => {
-      if (typeof children !== 'string') return children;
-      
-      if (children.includes('<tooltip>')) {
-        const parts = children.split(/<\/?tooltip>/g);
-        
-        return parts.map((part, index) => {
-          // Even indices are regular text, odd indices are tooltip content
-          if (index % 2 === 0) {
-            return part;
-          } else {
+    return (
+      <div>
+        {parts.map((part, index) => {
+          // Check if this part is an italic section (surrounded by asterisks)
+          if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+            // Extract the text between asterisks
+            const tooltipText = part.substring(1, part.length - 1);
+            
+            // Render as a tooltip
             return (
               <span key={index} className="tooltip-container">
                 <span className="info-icon">ⓘ</span>
                 <span className="tooltip">
-                  {part}
+                  {tooltipText}
                   <span className="tooltip-arrow"></span>
                 </span>
               </span>
             );
+          } else {
+            // For regular text, render it normally with ReactMarkdown
+            return (
+              <ReactMarkdown 
+                key={index}
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
+                  h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
+                  h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
+                  p: ({ node, ...props }) => <p className="my-4" {...props} />,
+                  ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
+                  ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
+                  li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
+                  hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
+                  strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
+                  // Skip em rendering since we're handling that separately
+                  em: ({ node, ...props }) => <span {...props} />
+                }}
+              >
+                {part}
+              </ReactMarkdown>
+            );
           }
-        });
-      }
-      
-      return children;
-    }
+        })}
+      </div>
+    );
   };
 
   return (
@@ -223,8 +194,8 @@ What do they need to know to understand and evaluate your research properly?`;
 
             {/* Example tooltip */}
             <p className="mb-4">
+              Example tooltip
               <span className="tooltip-container">
-                Example tooltip
                 <span className="info-icon">ⓘ</span>
                 <span className="tooltip">
                   This is how tooltips should work
@@ -237,9 +208,7 @@ What do they need to know to understand and evaluate your research properly?`;
             <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
               {instructionsText ? (
                 <div className={`${customStyles.content} instructions-content mb-4`}>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-                    {processContent(processedContent)}
-                  </ReactMarkdown>
+                  {renderWithTooltips(processedContent)}
                 </div>
               ) : (
                 <p className="text-blue-600 text-base mb-4">Instructions not available for this section.</p>
@@ -278,7 +247,8 @@ What do they need to know to understand and evaluate your research properly?`;
         .tooltip {
           visibility: hidden;
           position: absolute;
-          width: 240px;
+          width: 300px;
+          max-width: 50vw;
           background-color: #1F2937;
           color: white;
           text-align: left;
@@ -292,6 +262,8 @@ What do they need to know to understand and evaluate your research properly?`;
           transition: opacity 0.3s, visibility 0.3s;
           font-size: 0.9rem;
           line-height: 1.4;
+          overflow-y: auto;
+          max-height: 300px;
         }
         
         .tooltip-container:hover .tooltip {
@@ -307,11 +279,6 @@ What do they need to know to understand and evaluate your research properly?`;
           border-width: 5px;
           border-style: solid;
           border-color: #1F2937 transparent transparent transparent;
-        }
-        
-        /* Make sure this overrides any conflicting styles */
-        .instructions-content em {
-          display: none !important;
         }
       `}
       </style>
