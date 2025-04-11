@@ -101,8 +101,8 @@ export const buildSystemPrompt = (promptType, params = {}) => {
   // Replace placeholders in the base template
   let finalPrompt = replacePlaceholders(basePromptTemplate, allParams);
   
-  // For instruction improvement, add specific guidance about linebreaks in feedback
-  // and strikethrough for completed items
+  // For instruction improvement, add specific guidance about tooltips,
+  // linebreaks in feedback, and strikethrough for completed items
   if (promptType === 'instructionImprovement') {
     finalPrompt += `
 
@@ -128,6 +128,13 @@ And the user has defined their question clearly but not explained why it matters
 * Explain why the question matters.
 
 This helps users see their progress while keeping all original instructions visible.
+
+CRITICAL TOOLTIP HANDLING: When processing text with special tooltip markers like [TOOLTIP_MARKER_0], [TOOLTIP_MARKER_1], etc.:
+1. DO NOT modify these markers in any way
+2. DO NOT remove these markers from the text
+3. Simply leave them exactly as they appear
+
+These markers will be replaced later with their actual content. Preserving them exactly is essential for proper tooltip rendering.
 `;
   }
   
@@ -158,8 +165,8 @@ export const buildTaskPrompt = (taskType, params = {}) => {
   // Replace placeholders
   let finalPrompt = replacePlaceholders(basePromptTemplate, allParams);
   
-  // For instruction improvement, add specific guidance about linebreaks in feedback
-  // and using strikethrough instead of deletion
+  // For instruction improvement, add specific guidance about preserving tooltips,
+  // linebreaks in feedback, and using strikethrough instead of deletion
   if (taskType === 'instructionImprovement') {
     finalPrompt += `
 
@@ -189,113 +196,11 @@ And the user has completed the first two, your editedInstructions should be:
 * Identify methodological approach
 
 This way, users can see what they've accomplished while still having the original instructions visible.
+
+3. CRITICAL TOOLTIP INSTRUCTIONS: When you see text containing special markers like [TOOLTIP_MARKER_0], [TOOLTIP_MARKER_1], etc.:
+
+- DO NOT modify, remove, or change these markers in any way
+- Always preserve them exactly as they appear
+- These markers will be replaced with actual content later
+- Failure to preserve these markers will break important functionality in the application
 `;
-  }
-  
-  return finalPrompt;
-};
-
-/**
- * Get random questions for a specific research approach or section
- * @param {string} sectionId - The section ID or approach type ('hypothesis', 'needsresearch', 'exploratory', or 'general')
- * @param {number} count - Number of questions to return (default: 2)
- * @returns {Array<string>} - Array of randomly selected questions
- */
-export const getRandomQuestionsForApproach = (sectionId, count = 2) => {
-  // Map section IDs to question sets (just 3 approaches plus general)
-  let questionSetKey = 'general'; // Default
-  
-  if (sectionId === 'hypothesis') {
-    questionSetKey = 'hypothesis';
-  } else if (sectionId === 'needsresearch') {
-    questionSetKey = 'needsresearch';
-  } else if (sectionId === 'exploratoryresearch') {
-    questionSetKey = 'exploratory';
-  }
-
-  const questionSet = promptContent.researchApproaches.questions[questionSetKey];
-
-  // If there are no questions, return empty array
-  if (!questionSet || !questionSet.length) {
-    console.warn(`No questions found for approach/section: ${questionSetKey}`);
-    return [];
-  }
-
-  // Shuffle the questions and pick the requested number
-  const shuffled = [...questionSet].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, Math.min(count, shuffled.length));
-};
-
-/**
- * Generate a mock response for testing without API
- * @param {string} type - Response type ('chat', 'instructionImprovement', 'documentImport')
- * @param {string} sectionId - The section ID or approach type for context
- * @returns {string} - A formatted mock response string
- */
-export const generateMockResponse = (type, sectionId) => {
-  // Handle specific mock types first
-  if (type === 'instructionImprovement') {
-    // Add linebreaks to feedback sections and strikethrough to completed items
-    let response = promptContent.mockResponses.instructionImprovement;
-    response = response.replace(/"\*\*Strengths:\*\* /g, '"**Strengths:**\n');
-    response = response.replace(/\\n\*\*Weaknesses:\*\* /g, '\n\n**Weaknesses:**\n');
-    response = response.replace(/\\n\*\*Comments:\*\* /g, '\n\n**Comments:**\n');
-    
-    // Add strikethrough to some items to simulate completion
-    if (response.includes('editedInstructions')) {
-      response = response.replace(/Great job defining your research question/g, 
-        'Great job defining your research question. Your current work shows good progress:\n\n* ~~Define your research question clearly.~~\n* ~~Articulate scientific significance.~~\n* Consider methodological implications');
-    }
-    
-    return response;
-  }
-  
-  if (type === 'documentImport') {
-    return promptContent.mockResponses.documentImport;
-  }
-
-  // For chat responses, determine the approach type
-  let approachTypeKey = 'general'; // Default
-  if (sectionId === 'hypothesis') {
-    approachTypeKey = 'hypothesis';
-  } else if (sectionId === 'needsresearch') {
-    approachTypeKey = 'needsresearch';
-  } else if (sectionId === 'exploratoryresearch') {
-    approachTypeKey = 'exploratory';
-  }
-
-  // Get the response template
-  let template;
-  if (promptContent.mockResponses.chat && promptContent.mockResponses.chat[approachTypeKey]) {
-     template = promptContent.mockResponses.chat[approachTypeKey];
-  } else {
-     // Fallback if specific template missing
-     console.warn(`Mock response template missing for approach: ${approachTypeKey}. Using general fallback.`);
-     template = promptContent.mockResponses.chat?.general ||
-                `Let's discuss ${sectionId || 'your work'}. What's on your mind?`; // Absolute fallback
-  }
-
-  // Get random questions for this approach if needed by the template
-  if (template.includes('{{question')) {
-    const questions = getRandomQuestionsForApproach(approachTypeKey, 3);
-    const questionParams = {};
-    questions.forEach((q, i) => {
-        questionParams[`question${i + 1}`] = q;
-    });
-    // Use replacePlaceholders to fill in questions
-    template = replacePlaceholders(template, questionParams);
-  }
-
-  // Add other simple replacements if needed by templates
-  template = replacePlaceholders(template, {
-      hypothesis_aspect: 'aspect A',
-      alternative_aspect: 'aspect B',
-      stakeholder: 'the user group',
-      sectionId: sectionId || 'the current section'
-  });
-
-  // Final cleanup of any remaining placeholders
-  template = template.replace(/{{[^}]+}}/g, '');
-
-  return template.trim();
-};
