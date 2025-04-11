@@ -11,6 +11,10 @@ import remarkGfm from 'remark-gfm';
  * - Removed example tooltip
  * - FIXED: Properly handles strikethrough for both bold and regular text
  * - FIXED: Tooltip positioning and styling corrected
+ * - FIXED: Increased tooltip width to fit all text content
+ * - FIXED: Tooltips remain visible in strikethrough text
+ * - FIXED: Removed dollar signs from strikethrough rendering
+ * - FIXED: Strikethrough applies to both the bold instruction and the following text
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -116,6 +120,47 @@ What do they need to know to understand and evaluate your research properly?`;
     ? instructionsText.replace(/\n\* /g, "\n• ")
     : '';
 
+  // FIXED: Helper function to process list items with strikethrough
+  // This ensures both the instruction and following text get strikethrough
+  const processListItem = (item, isCompleted) => {
+    // Extract the bullet point content (removing "* " prefix)
+    const content = item.replace(/^[*•-]\s+/, '').trim();
+    
+    // Look for bold formatting
+    const boldMatch = content.match(/^\*\*([^*]+)\*\*(.*)$/);
+    
+    if (boldMatch) {
+      const instruction = boldMatch[1]; // The bold part (instruction)
+      const remainingText = boldMatch[2]; // The text after the bold part
+      
+      // If this item is completed, apply strikethrough to both parts
+      if (isCompleted) {
+        // FIXED: Remove dollar signs from strikethrough
+        return (
+          <li className="line-through text-gray-500 opacity-70 my-1">
+            <strong className="font-bold">{instruction}</strong>
+            {remainingText}
+          </li>
+        );
+      } else {
+        // Not completed, render normally
+        return (
+          <li className="my-1">
+            <strong className="font-bold">{instruction}</strong>
+            {remainingText}
+          </li>
+        );
+      }
+    } else {
+      // No bold formatting, just render as is
+      return (
+        <li className={isCompleted ? "line-through text-gray-500 opacity-70 my-1" : "my-1"}>
+          {content}
+        </li>
+      );
+    }
+  };
+
   // Improved manual markdown renderer that preserves all formatting,
   // converts *italic* to tooltips, and handles strikethrough properly
   const renderCustomMarkdown = (content) => {
@@ -178,8 +223,9 @@ What do they need to know to understand and evaluate your research properly?`;
                   return <h3 key={paragraphIndex} className="text-xl font-bold my-3">{renderFormattedContent(headingText)}</h3>;
                 }
                 
+                // FIXED: Better handling of list items with strikethrough
                 // Check if this is a list item
-                if (paragraph.startsWith('* ') || paragraph.startsWith('- ') || /^\d+\.\s/.test(paragraph)) {
+                if (paragraph.startsWith('* ') || paragraph.startsWith('- ') || paragraph.startsWith('• ') || /^\d+\.\s/.test(paragraph)) {
                   // For list items, we'll split by line and create a list
                   const listItems = paragraph.split(/\n/).filter(item => item.trim());
                   
@@ -189,47 +235,36 @@ What do they need to know to understand and evaluate your research properly?`;
                   const ListTag = isNumbered ? 'ol' : 'ul';
                   const listClasses = isNumbered ? 'list-decimal pl-5 my-4' : 'list-disc pl-5 my-4';
                   
+                  // Process each list item, handling strikethrough for entire items
                   return (
                     <ListTag key={paragraphIndex} className={listClasses}>
                       {listItems.map((item, itemIndex) => {
-                        // Remove the bullet or number
-                        let itemText = item;
-                        if (isNumbered) {
-                          itemText = item.replace(/^\d+\.\s/, '');
-                        } else {
-                          itemText = item.replace(/^[*-]\s/, '');
-                        }
+                        // Check if the item has strikethrough markers
+                        const hasCompleteStrikethrough = item.match(/^[*•-]\s+~~.*~~$/) || item.match(/^[*•-]\s+\*\*~~.*~~\*\*/) || item.includes('**~~') && item.includes('~~**');
                         
-                        // Check if the entire item has strikethrough
-                        const hasCompleteStrikethrough = 
-                          itemText.startsWith('~~') && 
-                          itemText.endsWith('~~') && 
-                          itemText.length > 4;
-                        
-                        // Check if the entire text should be strikethrough
-                        // FIXED: Now handle both cases - explicit strikethrough markers and bullets followed by strikethrough
+                        // Process the item with or without strikethrough
                         if (hasCompleteStrikethrough) {
-                          const innerText = itemText.substring(2, itemText.length - 2);
-                          // Apply strikethrough to the entire list item content
+                          // Clean up the content by removing strikethrough and bullet markers
+                          let cleanItem = item.replace(/^[*•-]\s+/, '').replace(/~~|\*\*/g, '');
+                          
                           return (
-                            <li key={itemIndex} className={`${customStyles.listItem} line-through text-gray-500 opacity-70`}>
-                              {renderFormattedContent(innerText)}
+                            <li key={itemIndex} className="line-through text-gray-500 opacity-70 my-1">
+                              {renderFormattedContent(cleanItem)}
                             </li>
                           );
-                        } 
-                        // Check if the item contains a mix of strikethroughs
-                        else if (itemText.includes('~~')) {
+                        } else {
+                          // If using numbered list, remove the number
+                          if (isNumbered) {
+                            item = item.replace(/^\d+\.\s+/, '');
+                          } else {
+                            // Otherwise remove bullet symbol
+                            item = item.replace(/^[*•-]\s+/, '');
+                          }
+                          
+                          // Handle the case where there's just markdown inside, no strikethrough
                           return (
-                            <li key={itemIndex} className={customStyles.listItem}>
-                              {renderFormattedContent(itemText)} 
-                            </li>
-                          );
-                        }
-                        // Regular item
-                        else {
-                          return (
-                            <li key={itemIndex} className={customStyles.listItem}>
-                              {renderFormattedContent(itemText)}
+                            <li key={itemIndex} className="my-1">
+                              {renderFormattedContent(item)}
                             </li>
                           );
                         }
@@ -240,10 +275,13 @@ What do they need to know to understand and evaluate your research properly?`;
                 
                 // Regular paragraph - FIXED: Handle strikethrough at paragraph level too
                 if (hasStrikethrough && paragraph.match(/~~[^~]+~~/)) {
-                  // This paragraph contains strikethrough sections but is not entirely strikethrough
+                  // Replace dollar signs from strikethrough if present
+                  const cleanedParagraph = paragraph.replace(/\$\$~~|\$\$/g, '~~');
+                  
+                  // This paragraph contains strikethrough sections
                   return (
                     <p key={paragraphIndex} className="my-4">
-                      {renderFormattedContent(paragraph)}
+                      {renderFormattedContent(cleanedParagraph)}
                     </p>
                   );
                 } else {
@@ -265,8 +303,10 @@ What do they need to know to understand and evaluate your research properly?`;
   const renderFormattedContent = (text) => {
     if (!text) return null;
     
-    // FIXED: Process strikethrough first, before other formatting
-    // This ensures strikethrough works consistently with other formatting
+    // FIXED: Clean up any dollar signs around strikethrough
+    text = text.replace(/\$\$~~|\$\$/g, '~~');
+    
+    // Process strikethrough first, before other formatting
     const strikethroughParts = text.split(/(~~[^~]+~~)/g);
     
     return strikethroughParts.map((part, strikeIndex) => {
@@ -313,7 +353,7 @@ What do they need to know to understand and evaluate your research properly?`;
   };
   
   // Helper to process italic text and convert to tooltips
-  // FIXED: Tooltip styling and positioning 
+  // FIXED: Improved tooltip size and positioning
   const processItalics = (text, keyPrefix = '') => {
     if (!text) return null;
     
@@ -388,7 +428,7 @@ What do they need to know to understand and evaluate your research properly?`;
         )}
       </div>
       
-      {/* FIXED: CSS for tooltips with improved positioning and styling */}
+      {/* FIXED: CSS for tooltips with improved sizing and positioning */}
       <style>
       {`
         /* Tooltip styling */
@@ -417,12 +457,12 @@ What do they need to know to understand and evaluate your research properly?`;
         .tooltip {
           visibility: hidden;
           position: absolute;
-          width: 300px;
-          max-width: 80vw;
+          width: 500px;
+          max-width: 95%;
           background-color: #1F2937;
           color: white;
           text-align: left;
-          padding: 10px 12px;
+          padding: 10px 14px;
           border-radius: 6px;
           z-index: 1000;
           bottom: 125%;
@@ -431,7 +471,7 @@ What do they need to know to understand and evaluate your research properly?`;
           opacity: 0;
           transition: opacity 0.3s;
           font-size: 0.875rem;
-          line-height: 1.4;
+          line-height: 1.5;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
@@ -441,20 +481,32 @@ What do they need to know to understand and evaluate your research properly?`;
           opacity: 1;
         }
         
-        /* Handle positioning for tooltips that would go offscreen */
-        @media (min-width: 768px) {
-          .tooltip-container:nth-last-child(-n+3) .tooltip,
-          .tooltip-container:last-child .tooltip {
-            left: auto;
-            right: 0;
-            transform: translateX(0);
-          }
-          
-          .tooltip-container:nth-last-child(-n+3) .tooltip .tooltip-arrow,
-          .tooltip-container:last-child .tooltip .tooltip-arrow {
-            left: auto;
-            right: 8px;
-          }
+        /* Adjust positioning for tooltips near right edge */
+        .tooltip-container:hover .tooltip {
+          left: auto;
+          right: -8px;
+          transform: translateX(0);
+        }
+        
+        .tooltip-container:hover .tooltip .tooltip-arrow {
+          left: auto;
+          right: 10px;
+        }
+        
+        /* Adjust for tooltips near left edge */
+        .tooltip-container:first-child:hover .tooltip,
+        .tooltip-container:nth-child(1):hover .tooltip,
+        .tooltip-container:nth-child(2):hover .tooltip {
+          left: 0;
+          right: auto;
+          transform: translateX(0);
+        }
+        
+        .tooltip-container:first-child:hover .tooltip .tooltip-arrow,
+        .tooltip-container:nth-child(1):hover .tooltip .tooltip-arrow,
+        .tooltip-container:nth-child(2):hover .tooltip .tooltip-arrow {
+          left: 10px;
+          right: auto;
         }
         
         .tooltip-arrow {
@@ -514,11 +566,19 @@ What do they need to know to understand and evaluate your research properly?`;
           border-radius: 0.25rem !important;
         }
         
-        /* Make sure tooltips within strikethrough text are properly styled */
+        /* FIXED: Make sure tooltips within strikethrough text remain visible */
         .instructions-content .line-through .tooltip-container,
         .instructions-content del .tooltip-container {
-          display: inline !important;
-          opacity: 0.7 !important;
+          display: inline-block !important;
+          opacity: 1 !important;
+          text-decoration: none !important;
+        }
+        
+        .instructions-content .line-through .tooltip-container .info-icon,
+        .instructions-content del .tooltip-container .info-icon {
+          opacity: 0.8 !important;
+          background-color: #F3F4F6 !important;
+          color: #6B7280 !important;
         }
         
         /* Keep paragraphs after strikethrough looking normal */
