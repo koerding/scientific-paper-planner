@@ -707,9 +707,8 @@ body, html {
 * Tooltip fixes */
 .tooltip {
   /* Force exact width */
-  width: 400px !important;
+  width: 600px !important;
   min-width: 400px !important;
-  max-width: 400px !important;
   /* Allow overflow with scrolling */
   overflow-y: auto !important;
   max-height: 300px !important;
