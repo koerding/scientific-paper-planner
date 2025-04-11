@@ -2,16 +2,12 @@
 
 /**
  * Modernized OpenAI service using JSON mode for structured responses
- * Uses OpenAI's native JSON mode for reliable parsing
- * UPDATED: Comprehensive logging of requests and responses
- * UPDATED: Updated to use GPT-4o model by default
- * UPDATED: Refined JSON mode prompt/parsing for batch instructions to ensure array output
- * UPDATED: Now includes instructions for using strikethrough instead of deleting completed items
+ * UPDATED: Now optimized for the new structured JSON approach
  */
 import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
 
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
-const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4o"; // Updated to use GPT-4o by default
+const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4o";
 const API_TIMEOUT_MS = 180000; // 180 seconds timeout
 
 /**
@@ -52,15 +48,6 @@ const logApiData = (label, data, isSensitive = false) => {
     }
   }
   
-  // For request body, also log full system prompt for debugging
-  if (label.includes("Request") && logData.messages) {
-    // If first message is system, log it separately
-    const systemMsg = logData.messages.find(m => m.role === 'system');
-    if (systemMsg) {
-      console.log(`${label} - SYSTEM PROMPT:`, systemMsg.content);
-    }
-  }
-  
   // Log the data
   console.log(`${label}:`, logData);
   
@@ -94,39 +81,11 @@ export const callOpenAI = async (
     throw new Error("OpenAI API key not configured.");
   }
 
-  // --- Updated System Prompt for Batch Instructions JSON Mode ---
-  // Ask for a JSON object containing a 'results' array and explicitly mention strikethrough
-  if (contextType === "improve_instructions_batch" && useJsonMode) {
-    systemPrompt = (systemPrompt || "") + `
-
-    IMPORTANT: Your response MUST be a valid JSON object. Format your response exactly as:
-    {
-      "results": [
-        {
-          "id": "section_id_1",
-          "editedInstructions": "Full instructions text for this section, with completed items marked with ~~strikethrough~~ (not deleted).",
-          "feedback": "**Strengths:**\\nSpecific, constructive feedback on their work.\\n\\n**Weaknesses:**\\nAreas that need improvement.\\n\\n**Comments:**\\nSuggestions for enhancement.",
-          "completionStatus": "complete" // or "unstarted" or "progress" based on analysis
-        },
-        // Include one object here for EACH section provided in the input data
-      ]
-    }
-    Return ONLY this single JSON object with no additional text, comments, or explanations outside the JSON structure. Ensure the 'results' array contains an entry for every section processed.
-    
-    Important note about instructions format: 
-    - Use ~~strikethrough~~ to mark completed items (do NOT delete them)
-    - Keep all original bullet points but cross out the completed ones
-    - Add congratulatory messages for good progress
-    - Make sure to include line breaks between feedback sections for better readability
-    `;
-  }
-  // --- End System Prompt Update ---
-
   const apiUrl = "https://api.openai.com/v1/chat/completions";
   const messages = buildMessages(prompt, contextType, chatHistory, systemPrompt);
   const isResearchSectionType = isResearchApproachSection(contextType);
   const temperature = isResearchSectionType ? 0.9 : (options.temperature ?? 0.7);
-  const max_tokens = options.max_tokens ?? 2048; // Increased slightly for potentially larger batch response
+  const max_tokens = options.max_tokens ?? 2048;
 
   const requestBody = {
     model: model,
@@ -148,7 +107,6 @@ export const callOpenAI = async (
   console.log(`Temperature: ${temperature}`);
   console.log(`Max Tokens: ${max_tokens}`);
   console.log(`Use JSON Mode: ${useJsonMode}`);
-  console.log(`Messages:`, messages);
   console.log(`Request Body:`, JSON.stringify(requestBody, null, 2));
 
   let timeoutId;
@@ -202,44 +160,18 @@ export const callOpenAI = async (
     // Log the full response content
     console.log("[openaiService] Response Content:", responseContent);
 
-    // --- Updated JSON Parsing Logic ---
+    // Parse JSON response
     if (useJsonMode) {
       try {
-        // Always parse the response as an object first
         console.log("[openaiService] Parsing JSON response...");
         const jsonObj = JSON.parse(responseContent);
         console.log("[openaiService] Successfully parsed JSON:", jsonObj);
-
-        // Special handling for improve_instructions_batch context
-        if (contextType === "improve_instructions_batch") {
-          // Look specifically for the 'results' array within the object
-          if (jsonObj && Array.isArray(jsonObj.results)) {
-              console.log(`[openaiService] Found 'results' array with ${jsonObj.results.length} items.`);
-              return jsonObj.results; // Return the array directly
-          } else if (Array.isArray(jsonObj)) {
-              // Handle case where the API directly returns an array (shouldn't happen with json_object mode)
-              console.log(`[openaiService] Response is already an array with ${jsonObj.length} items.`);
-              return jsonObj;
-          } else {
-              // If the expected structure isn't found, log a warning and return empty array
-              console.warn("[openaiService] Response JSON object did not contain expected 'results' array. Response:", jsonObj);
-              return []; // Return empty array to indicate failure to get batch results
-          }
-        }
-
-        // Standard JSON object return for other contexts (if any use json_object)
         return jsonObj;
-
       } catch (error) {
         console.error("[openaiService] Error parsing JSON response:", error, "Raw:", responseContent);
-        // If parsing fails for batch, return empty array
-        if (contextType === "improve_instructions_batch") {
-          return [];
-        }
         throw new Error(`Failed to parse JSON response: ${error.message}`);
       }
     }
-    // --- End JSON Parsing Update ---
 
     // Return raw string for non-JSON mode (e.g., general chat)
     return responseContent;
