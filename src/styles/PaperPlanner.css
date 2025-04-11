@@ -1,4 +1,4 @@
-/* Safe CSS for Paper Planner - minification friendly */
+ /* Safe CSS for Paper Planner - minification friendly */
 
 /* FIXED: Simplified section card layout with reduced spacing */
 .section-card {
@@ -451,61 +451,68 @@ body, html {
   align-items: center !important;
 }
 
-/* Ensure strikethrough text is properly styled */
+/* Enhanced strikethrough styles to add to PaperPlanner.css */
+
+/* Make sure all strikethrough text has the right appearance */
 .instructions-content del,
 .instructions-content s,
-.strikethrough-text,
-.prose del,
-.prose s,
-.instructions-content *[style*="text-decoration: line-through"],
-.line-through,
-[data-strikethrough="true"],
-.right-panel .line-through,
-.markdown-content del {
-  text-decoration: line-through !important;
-  color: #6B7280 !important; /* gray-500 */
-  opacity: 0.7 !important;
-}
-
-/* Style for instructions (bold) and feedback (regular) */
-.instructions-content li {
-  margin-bottom: 0.75rem;
-}
-
-/* Make sure bold text is actually bold */
-.instructions-content strong {
-  font-weight: 700 !important;
-  color: #1e3a8a !important; /* Dark blue for instructions */
-}
-
-/* Style for regular text feedback */
-.instructions-content li + p,
-.instructions-content li + br + p {
-  margin-top: 0.25rem !important;
-  margin-bottom: 1rem !important;
-  margin-left: 1.5rem !important;
-  color: #4b5563 !important; /* Gray-600 for feedback */
-  font-size: 0.95rem !important;
-}
-
-/* Ensure strikethrough inside bold is visible */
+.instructions-content .line-through,
 .instructions-content strong del,
 .instructions-content del strong,
-.instructions-content strong.strikethrough-text {
+.instructions-content strong.line-through,
+.instructions-content li.line-through,
+.instructions-content p.line-through {
   text-decoration: line-through !important;
   color: #6B7280 !important; /* gray-500 */
   opacity: 0.7 !important;
+}
+
+/* Ensure the line goes through bold text */
+.instructions-content strong del,
+.instructions-content del strong,
+.instructions-content strong.line-through {
+  text-decoration: line-through !important;
   font-weight: 700 !important;
 }
 
-/* Make completed instructions more distinct */
+/* Visual indication of completed instructions with subtle background */
 .instructions-content li strong del,
-.instructions-content li del strong {
+.instructions-content li del strong,
+.instructions-content li .line-through strong,
+.instructions-content li strong.line-through {
   background-color: rgba(209, 250, 229, 0.3) !important; /* Light green background */
   padding: 0.1rem 0.25rem !important;
   border-radius: 0.25rem !important;
 }
 
+/* Make sure tooltips within strikethrough text are properly styled */
+.instructions-content .line-through .tooltip-container,
+.instructions-content del .tooltip-container {
+  display: inline !important;
+  opacity: 0.7 !important;
+}
+
+/* Keep paragraphs after strikethrough looking normal */
+.instructions-content li.line-through + p,
+.instructions-content li.line-through ~ p,
+.instructions-content li + p {
+  text-decoration: none !important;
+  color: #4b5563 !important; /* Gray-600 for feedback */
+  opacity: 1 !important;
+}
+
+/* Line break handling to ensure separation between instruction and feedback */
+.instructions-content li {
+  margin-bottom: 0.5rem !important;
+}
+
+.instructions-content li + br + p,
+.instructions-content li + p {
+  margin-top: 0.25rem !important;
+  margin-bottom: 1rem !important;
+  margin-left: 1.5rem !important;
+  color: #4b5563 !important; /* Gray-600 for feedback */
+}
 /* Animation for the improvement reminder toast */
 @keyframes fadeIn {
   from {
