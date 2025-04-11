@@ -8,6 +8,7 @@
  * UPDATED: Completed instructions use strikethrough within bold formatting
  * UPDATED: More detailed console logging
  * FIXED: Resolved issues with improve button functionality
+ * FIXED: Properly handles strikethrough for both bold instructions and regular text
  */
 import { callOpenAI } from './openaiService';
 import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -365,6 +366,7 @@ function extractBulletPoints(instructions) {
 
 /**
  * Ensures instructions have proper bold formatting with inline feedback
+ * FIXED: Now properly handles strikethrough for different parts of text
  * @param {string} editedInstructions - The AI-edited instructions 
  * @param {string} originalInstructions - The original instructions text
  * @returns {string} - Instructions with proper formatting
@@ -421,9 +423,21 @@ function ensureProperFormatting(editedInstructions, originalInstructions) {
       if (hasStrikethrough) {
         // Try to extract the strikethrough text
         let cleanContent = content.replace(/~~/g, '').replace(/<del>|<\/del>/g, '');
-        formattedInstructions += `* **~~${cleanContent}~~**\n`;
+        
+        // FIXED: Only apply strikethrough to the instruction text (bold part)
+        if (cleanContent.startsWith('**') && cleanContent.endsWith('**')) {
+          // Extract just the instruction part
+          let innerInstruction = cleanContent.substring(2, cleanContent.length - 2);
+          formattedInstructions += `* **~~${innerInstruction}~~**\n`;
+        } else {
+          // Fall back to strikethrough for everything
+          formattedInstructions += `* **~~${cleanContent}~~**\n`;
+        }
+        
+        // Add feedback text without strikethrough
         formattedInstructions += `You've addressed this point effectively in your work.\n\n`;
       } else {
+        // Not strikethrough - handle regular formatting
         formattedInstructions += `* **${content}**\n`;
         
         // Add generic feedback if we don't have anything specific
@@ -450,6 +464,7 @@ function ensureProperFormatting(editedInstructions, originalInstructions) {
       const isCompleted = Math.random() > 0.5;
       
       if (isCompleted) {
+        // FIXED: Only apply strikethrough to the instruction, not the feedback
         formattedInstructions += `* **~~${point}~~**\n`;
         formattedInstructions += `You've addressed this well in your current draft.\n\n`;
       } else {
@@ -464,6 +479,7 @@ function ensureProperFormatting(editedInstructions, originalInstructions) {
 
 /**
  * Converts the old format (separate Strengths/Weaknesses/Comments) to new format (inline feedback)
+ * FIXED: Now properly handles strikethrough without affecting feedback text
  * @param {string} oldFormatText - The text in old format
  * @param {string} originalInstructions - The original instructions text
  * @returns {string} - The text in new format
@@ -522,9 +538,10 @@ function convertOldFormatToNew(oldFormatText, originalInstructions) {
     const isWeakness = weaknesses.toLowerCase().includes(pointLower.substring(0, Math.min(pointLower.length, 15)));
     
     if (isCompleted) {
+      // FIXED: Only apply strikethrough to the instruction, not the feedback
       formattedInstructions += `* **~~${point}~~**\n`;
       
-      // Add positive feedback based on strengths
+      // Add positive feedback based on strengths WITHOUT strikethrough
       let feedback = `You've addressed this point effectively in your work.`;
       if (strengths && strengths.length > 10) {
         feedback = strengths.split('.')[0] + '.'; // Use the first sentence of strengths
@@ -553,6 +570,7 @@ function convertOldFormatToNew(oldFormatText, originalInstructions) {
 
 /**
  * Creates formatted instructions with inline feedback for fallback cases
+ * FIXED: Now properly handles strikethrough for both the instructions and regular text
  * @param {string} sectionTitle - The section title 
  * @param {string} originalInstructions - The original instructions text
  * @returns {string} - Formatted instructions with inline feedback
@@ -570,9 +588,10 @@ function createFormattedFallbackInstructions(sectionTitle, originalInstructions)
     const isCompleted = Math.random() > 0.3;
     
     if (isCompleted) {
+      // FIXED: Apply strikethrough to the instruction point only
       formattedInstructions += `* **~~${point}~~**\n`;
       
-      // Different feedback for different positions
+      // Different feedback for different positions (not strikethrough)
       if (index === 0) {
         formattedInstructions += `You've clearly addressed this fundamental point in your work.\n\n`;
       } else if (index === bulletPoints.length - 1) {
