@@ -3,11 +3,11 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 /**
- * Enhanced full-height instructions panel with improved tooltip system
- * - Replaced tooltips with click-to-open modal dialog
- * - Preserves bold formatting
+ * Enhanced full-height instructions panel
+ * - Preserves existing tooltip functionality
+ * - Adds click functionality to view tooltip content in a modal
  * - Fixed strikethrough rendering to work with all content
- * - Simple, self-contained implementation (no external components)
+ * - Self-contained implementation (no external components)
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -20,7 +20,7 @@ const FullHeightInstructionsPanel = ({
   const [modalContent, setModalContent] = useState('');
   const modalRef = useRef(null);
 
-  // Add event listener to handle outside clicks and escape key
+  // Close modal on escape key or outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -143,13 +143,7 @@ What do they need to know to understand and evaluate your research properly?`;
     ? instructionsText.replace(/\n\* /g, "\n• ")
     : '';
 
-  // Handler for info icon clicks - opens modal with tooltip content
-  const handleInfoIconClick = (content) => {
-    setModalContent(content);
-    setShowInfoModal(true);
-  };
-
-  // Helper to process italic text and convert to clickable info icons
+  // Helper to process italic text and convert to tooltips
   const processItalics = (text, keyPrefix = '') => {
     if (!text) return null;
     
@@ -161,18 +155,21 @@ What do they need to know to understand and evaluate your research properly?`;
       
       // Check if this is italic text
       if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-        // Extract the italic text and convert to clickable info icon
+        // Extract the italic text and convert to tooltip
         const tooltipText = part.substring(1, part.length - 1);
         
         return (
-          <span key={key} className="info-container inline-block mx-1 align-middle">
-            <button 
-              className="info-icon-button"
-              onClick={() => handleInfoIconClick(tooltipText)}
-              title="Click for more information"
-            >
-              ⓘ
-            </button>
+          <span key={key} className="tooltip-container" onClick={(e) => {
+            // Show modal on click while preserving hover tooltip
+            e.stopPropagation();
+            setModalContent(tooltipText);
+            setShowInfoModal(true);
+          }}>
+            <span className="info-icon">ⓘ</span>
+            <span className="tooltip">
+              {tooltipText}
+              <span className="tooltip-arrow"></span>
+            </span>
           </span>
         );
       } else {
@@ -206,7 +203,7 @@ What do they need to know to understand and evaluate your research properly?`;
     });
   };
   
-  // Main helper for rendering formatted content with bold, italic (info icons), strikethrough
+  // Main helper for rendering formatted content with bold, italic (tooltips), strikethrough
   const renderFormattedContent = (text) => {
     if (!text) return null;
     
@@ -288,7 +285,7 @@ What do they need to know to understand and evaluate your research properly?`;
   };
 
   // Improved manual markdown renderer that preserves all formatting,
-  // converts *italic* to info icons, and handles strikethrough properly
+  // converts *italic* to tooltips, and handles strikethrough properly
   const renderCustomMarkdown = (content) => {
     if (!content) return null;
     
@@ -438,7 +435,7 @@ What do they need to know to understand and evaluate your research properly?`;
         </div>
       </div>
       
-      {/* Info Modal - Simple, self-contained implementation */}
+      {/* Info Modal - Appears when a tooltip is clicked */}
       {showInfoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" style={{ backdropFilter: 'blur(2px)' }}>
           <div 
@@ -467,59 +464,101 @@ What do they need to know to understand and evaluate your research properly?`;
         </div>
       )}
       
-      {/* Inline styles - self-contained for easy integration */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+      {/* Preserving original tooltip CSS */}
+      <style>{`
+        /* Tooltip container */
+        .tooltip-container {
+          position: relative;
+          display: inline-block;
+          cursor: help;
+          margin: 0 2px;
+          vertical-align: middle;
         }
         
-        /* Info button styling */
-        .info-icon-button {
+        /* Info icon styling */
+        .info-icon {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 18px;
-          height: 18px;
+          width: 16px;
+          height: 16px;
           border-radius: 50%;
           background-color: #EEF2FF;
           color: #4F46E5;
           font-size: 12px;
           font-weight: bold;
-          cursor: pointer;
-          border: none;
-          transition: all 0.2s ease;
-          margin: 0 2px;
           vertical-align: middle;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
-        .info-icon-button:hover {
-          background-color: #E0E7FF;
-          transform: scale(1.1);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        /* Tooltip styling */
+        .tooltip {
+          visibility: hidden;
+          position: absolute;
+          width: 400px;
+          background-color: #1F2937;
+          color: white;
+          text-align: left;
+          padding: 10px 14px;
+          border-radius: 6px;
+          z-index: 1000;
+          bottom: 125%;
+          left: -20px;
+          opacity: 0;
+          transition: opacity 0.3s;
+          font-size: 0.875rem;
+          line-height: 1.5;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          
+          /* Handle overflow with scrolling */
+          overflow-y: auto;
+          max-height: 300px;
         }
         
-        /* Modal styling */
-        .prose p {
-          margin-top: 1em;
-          margin-bottom: 1em;
+        /* Show tooltip on hover */
+        .tooltip-container:hover .tooltip {
+          visibility: visible;
+          opacity: 1;
         }
         
-        /* Styles for strikethrough items */
-        .line-through {
-          text-decoration: line-through !important;
-          color: #6B7280 !important;
-          opacity: 0.7 !important;
+        /* Tooltip arrow */
+        .tooltip-arrow {
+          position: absolute;
+          top: 100%;
+          left: 25px;
+          border-width: 5px;
+          border-style: solid;
+          border-color: #1F2937 transparent transparent transparent;
         }
         
-        /* Ensure the line goes through bold text */
-        strong.line-through,
-        .line-through strong {
-          text-decoration: line-through !important;
-          color: #6B7280 !important;
-          opacity: 0.7 !important;
-          font-weight: 700 !important;
+        /* Modal animation */
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Fix right-side tooltip positioning */
+        @media (min-width: 1024px) {
+          .tooltip-container:nth-last-child(-n+3) .tooltip {
+            left: auto;
+            right: 0;
+          }
+          
+          .tooltip-container:nth-last-child(-n+3) .tooltip .tooltip-arrow {
+            left: auto;
+            right: 25px;
+          }
+        }
+        
+        /* Make sure tooltips within strikethrough text remain visible */
+        .line-through .tooltip-container,
+        .line-through .tooltip-container .info-icon {
+          text-decoration: none !important;
+          opacity: 0.8 !important;
+        }
+        
+        /* Ensure the line goes through text but not through icon */
+        .line-through .tooltip-container {
+          display: inline-block !important;
         }
       `}</style>
     </>
