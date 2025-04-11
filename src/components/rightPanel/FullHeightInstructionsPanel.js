@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 /**
- * Enhanced full-height instructions panel
- * - Replaces hover tooltips with clickable popups
- * - Preserves tooltip content during AI improvement
- * - Displays AI feedback as italics instead of bullets
+ * Enhanced full-height instructions panel with support for structured content and tooltips
+ * UPDATED: Added support for the new subsection-based content structure
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -15,39 +12,66 @@ const FullHeightInstructionsPanel = ({
   userInputs
 }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  const [modalContent, setModalContent] = useState('');
-  const modalRef = useRef(null);
+  const [activeTooltip, setActiveTooltip] = useState(null);
+  const tooltipRef = useRef(null);
 
-  // Close modal on escape key or outside click
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        setShowInfoModal(false);
+    // Debug logging to help diagnose instruction content issues
+    if (currentSection) {
+      console.log("[PANEL] Current section data:", currentSection);
+      console.log("[PANEL] Intro text:", currentSection?.introText);
+      console.log("[PANEL] Subsections:", currentSection?.subsections?.length || 0);
+    }
+    
+    // Reset active tooltip when section changes
+    setActiveTooltip(null);
+  }, [currentSection]);
+
+  // Handle clicks outside of tooltips to dismiss them
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target)) {
+        setActiveTooltip(null);
       }
-    }
+    };
 
-    function handleEscapeKey(event) {
-      if (event.key === 'Escape') {
-        setShowInfoModal(false);
-      }
-    }
-
-    // Only add listeners if the modal is showing
-    if (showInfoModal) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscapeKey);
-    }
-
-    // Clean up listeners
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [showInfoModal]);
+  }, []);
+
+  // Enhanced magic handler
+  const handleMagicClick = () => {
+    console.log("Magic button clicked!", new Date().toISOString());
+    const now = Date.now();
+    if (now - lastClickTime < 1500) { // Increase debounce slightly
+      console.log("Prevented rapid double-click");
+      return;
+    }
+    setLastClickTime(now);
+
+    if (typeof improveInstructions === 'function') {
+      try {
+        improveInstructions();
+      } catch (error) {
+        console.error("Error triggering magic:", error);
+        // Optionally show an error message to the user here
+      }
+    } else {
+      console.error("improveInstructions is not a function");
+    }
+  };
+
+  // Toggle tooltip visibility
+  const toggleTooltip = (subsectionId) => {
+    setActiveTooltip(activeTooltip === subsectionId ? null : subsectionId);
+  };
 
   /**
    * Returns fallback instructions based on section ID
+   * @param {Object} section - The current section object
+   * @returns {string} - Appropriate instructions for the section
    */
   function getFallbackInstructions(section) {
     if (!section || !section.id) return '';
@@ -63,505 +87,298 @@ const FullHeightInstructionsPanel = ({
       case 'question':
         return `${baseInstructions}
 
-* **Specify your question clearly.**
-This helps readers immediately understand your research focus.
+* Specify your question clearly.
 
-* **Be clear about the logic.**
-Are you asking how something is? Why it is the way it is? What gives rise to something? How it got their over time?
+* Be clear about the logic. Are you asking how something is? Why it is the way it is? What gives rise to something? How it got their over time?
 
-* **Explain why the question matters to the field.**
-How will science be different after your work? Include both theoretical and practical significance.
+* Explain why the question matters to the field. How will science be different after your work?
 
-* **Ensure your question is answerable with your anticipated resources.**
-Consider what data, methods, and skills you'll need to address it properly.`;
+* Ensure your question is answerable with your anticipated resources.`;
+      
+      case 'audience':
+        return `${baseInstructions}
+
+* Identify primary academic communities who would benefit most directly.
+
+* For each community, note how your research might impact their work.
+
+* Then, specify 3-5 individual researchers or research groups representing your audience.`;
+      
+      case 'hypothesis':
+        return `${baseInstructions}
+
+* Formulate at least two distinct, testable hypotheses.
+
+* Ensure each hypothesis is specific and clearly stated.
+
+* Your experiment must be able to differentiate between these hypotheses.
+
+* Explain why distinguishing between these hypotheses matters to the field.
+
+* Explain how data can help you decide between these hypotheses.`;
+
+      // ...other cases for different section types
       
       default:
         return `${baseInstructions}
 
-* **Be specific and clear in your writing.**
-Vague statements reduce the impact of your work and may confuse readers.
+* Be specific and clear in your writing.
 
-* **Consider how this section connects to your overall research goals.**
-Every part of your paper should contribute to answering your research question.
+* Consider how this section connects to your overall research goals.
 
-* **Ensure this section addresses the key requirements for your project.**
-Different research approaches have different expectations for how information should be presented.
-
-* **Think about how readers will use this information.**
-What do they need to know to understand and evaluate your research properly?`;
+* Ensure this section addresses the key requirements for your project.`;
     }
   }
 
-  // Check if the text is a placeholder or too short to be useful
-  const isPlaceholder = (text) => {
-    if (!text || text.trim() === '') return true;
-    if (text.length < 40) return true; // Too short to be real instructions
-    
-    const knownPlaceholders = [
-      "Remove points",
-      "addressed all key points",
-      "remove points the user has already addressed",
-      "congratulatory message"
-    ];
-    
-    return knownPlaceholders.some(phrase => 
-      text.toLowerCase().includes(phrase.toLowerCase())
-    );
-  };
-
-  // Safely access instruction text - use fallback if it's a placeholder
-  const getInstructionsText = () => {
-    const rawText = currentSection?.instructions?.text || '';
-    
-    if (isPlaceholder(rawText)) {
-      return getFallbackInstructions(currentSection);
-    }
-    
-    return rawText;
-  };
+  // Check if the subsections are empty or missing
+  const hasValidSubsections = 
+    currentSection?.subsections && 
+    Array.isArray(currentSection.subsections) && 
+    currentSection.subsections.length > 0;
 
   // Create a title that includes the section name
   const sectionTitle = currentSection?.title || "Instructions";
   const panelTitle = `${sectionTitle} Instructions & Feedback`;
 
-  // Updated styles
+  // Custom styles for markdown content to match left side fonts
   const customStyles = {
-    fontSize: 'text-base leading-relaxed', 
-    content: 'prose-base prose-blue max-w-none',
-    heading: 'text-lg font-semibold my-2',
-    divider: 'border-t border-blue-200 my-3',
-    listItem: 'my-1',
-    strikethrough: 'line-through text-gray-500 opacity-70'
+    fontSize: 'text-xl leading-relaxed', // Larger font to match left side
+    content: 'prose-xl prose-blue max-w-none', // Increase prose size
+    heading: 'text-2xl font-semibold my-4', // Larger headings
+    divider: 'border-t border-blue-200 my-6', // Style for dividers (---)
+    listItem: 'my-3', // Add more space between list items
   };
 
-  // Get the appropriate instructions text (with fallback if needed)
-  const instructionsText = getInstructionsText();
-
-  // Process content for consistent bullet points
-  const processedContent = instructionsText
-    ? instructionsText.replace(/\n\* /g, "\n• ")
-    : '';
-
-  // Handle info icon click to show popup
-  const handleInfoIconClick = (tooltipText) => {
-    setModalContent(tooltipText);
-    setShowInfoModal(true);
-  };
-
-  // Helper to process italic text and convert to clickable info icons
-  const processItalics = (text, keyPrefix = '') => {
-    if (!text) return null;
-    
-    // Split by italic markers
-    const italicParts = text.split(/(\*[^*\n]+\*)/g);
-    
-    return italicParts.map((part, italicIndex) => {
-      const key = `${keyPrefix}-italic-${italicIndex}`;
-      
-      // Check if this is italic text
-      if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-        // Extract the italic text and convert to clickable icon
-        const tooltipText = part.substring(1, part.length - 1);
-        
-        return (
-          <span key={key} className="inline-block mx-1 align-middle">
-            <button 
-              className="info-icon-button"
-              onClick={() => handleInfoIconClick(tooltipText)}
-              title="Click for more information"
-            >
-              ⓘ
-            </button>
-          </span>
-        );
-      } else {
-        // Return regular text
-        return <span key={key}>{part}</span>;
-      }
-    });
-  };
-  
-  // Process bold and italic formatting, but not strikethrough
-  const processFormattingExceptStrikethrough = (text, keyPrefix) => {
-    if (!text) return null;
-    
-    // First look for AI feedback in bullet point format and transform to italics
-    let processedText = text;
-    
-    // Process text for replacing AI feedback bullets with italics
-    // But only if it's a standalone bullet, not part of a list
-    if (/^\s*[\*•]\s+(?!\*\*)/.test(processedText)) {
-      const feedbackText = processedText.replace(/^\s*[\*•]\s+/, '');
-      processedText = `_${feedbackText}_`;
-    }
-    
-    // We'll process the text in chunks to handle nested formatting
-    // First, split by bold markers
-    const boldParts = processedText.split(/(\*\*[^*]+\*\*)/g);
-    
-    // Process each part - either bold or regular text
-    return boldParts.map((part, boldIndex) => {
-      const partKey = `${keyPrefix}-bold-${boldIndex}`;
-      
-      // Check if this is bold text
-      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
-        // Extract the bold text and return as strong
-        const boldText = part.substring(2, part.length - 2);
-        return <strong key={partKey} className="font-bold">{processItalics(boldText, partKey)}</strong>;
-      } else if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
-        // This is AI feedback in italics format
-        const feedbackText = part.substring(1, part.length - 1);
-        return <em key={partKey} className="block mt-1 text-gray-600">{feedbackText}</em>;
-      } else {
-        // Regular text, check for italics (tooltip markers)
-        return processItalics(part, partKey);
-      }
-    });
-  };
-  
-  // Main helper for rendering formatted content with bold, italic, strikethrough
-  const renderFormattedContent = (text) => {
-    if (!text) return null;
-    
-    // Clean up any dollar signs around strikethrough
-    const cleanedText = text.replace(/\$\$~~|\$\$/g, '~~');
-    
-    // Process strikethrough first, before other formatting
-    const strikethroughParts = cleanedText.split(/(~~[^~]+~~)/g);
-    
-    return strikethroughParts.map((part, strikeIndex) => {
-      // Check if this is strikethrough text
-      if (part.startsWith('~~') && part.endsWith('~~') && part.length > 4) {
-        // Extract the strikethrough text and process remaining formatting
-        const strikeText = part.substring(2, part.length - 2);
-        return (
-          <span key={`strike-${strikeIndex}`} className="line-through text-gray-500 opacity-70">
-            {processFormattingExceptStrikethrough(strikeText, `strike-${strikeIndex}`)}
-          </span>
-        );
-      } else {
-        // Regular text, process other formatting
-        return processFormattingExceptStrikethrough(part, `regular-${strikeIndex}`);
-      }
-    });
-  };
-
-  // Custom processor for list items to handle bullet points and strikethrough correctly
-  const processListItems = (listItems, isNumbered) => {
-    return listItems.map((item, index) => {
-      // First, clean up the item by removing the bullet or number prefix
-      let itemText = item.trim();
-      if (isNumbered) {
-        itemText = itemText.replace(/^\d+\.\s+/, '');
-      } else {
-        itemText = itemText.replace(/^[*•-]\s+/, '');
-      }
-      
-      // Check if this is a completed/strikethrough item
-      const hasStrikethrough = 
-        itemText.includes('~~') || 
-        (itemText.includes('**~~') && itemText.includes('~~**'));
-      
-      // Handle the case where we have both bold instruction and following text
-      const boldRegex = /\*\*([^*]+)\*\*/;
-      const boldMatch = itemText.match(boldRegex);
-      
-      if (hasStrikethrough) {
-        // Clean up strikethrough markers and extract content
-        let cleanedItem = itemText.replace(/\$\$~~|\$\$/g, '~~');
-        
-        // For items with strikethrough, apply strikethrough to the entire content
-        return (
-          <li key={index} className="line-through text-gray-500 opacity-70 my-1">
-            {renderFormattedContent(cleanedItem.replace(/~~([^~]+)~~/g, '$1'))}
-          </li>
-        );
-      } else if (boldMatch) {
-        // For items with bold formatting but no strikethrough
-        // Split into the bold instruction and the following text
-        const instruction = boldMatch[1];
-        const textAfterBold = itemText.replace(boldRegex, '').trim();
-        
-        // Check if there's a bullet point after the bold text for AI feedback
-        let processedAfterText = textAfterBold;
-        if (textAfterBold.match(/^\s*[\*•]\s+/)) {
-          const feedbackText = textAfterBold.replace(/^\s*[\*•]\s+/, '');
-          processedAfterText = `_${feedbackText}_`;
-        }
-        
-        // Return a single list item with the bold instruction followed by text
-        return (
-          <li key={index} className="my-1">
-            <strong className="font-bold">{processItalics(instruction, `item-${index}-bold`)}</strong>
-            {processedAfterText && (
-              processedAfterText.startsWith('_') && processedAfterText.endsWith('_') ? (
-                <em className="block mt-1 text-gray-600">
-                  {processedAfterText.substring(1, processedAfterText.length - 1)}
-                </em>
-              ) : (
-                processItalics(processedAfterText, `item-${index}-text`)
-              )
-            )}
-          </li>
-        );
-      } else {
-        // Regular item with no special formatting
-        return (
-          <li key={index} className="my-1">
-            {renderFormattedContent(itemText)}
-          </li>
-        );
-      }
-    });
-  };
-
-  // Improved manual markdown renderer that preserves all formatting,
-  // converts *italic* to clickable info icons, and handles strikethrough properly
-  const renderCustomMarkdown = (content) => {
-    if (!content) return null;
-    
-    // First, create segments by splitting on code blocks, so we don't process markdown inside code
-    const segments = content.split(/(```[\s\S]*?```)/g);
-    
-    return (
-      <div>
-        {segments.map((segment, segmentIndex) => {
-          // If this is a code block, render it directly without processing
-          if (segment.startsWith('```') && segment.endsWith('```')) {
-            const code = segment.slice(3, -3);
-            return (
-              <pre key={segmentIndex} className="bg-gray-100 p-3 rounded overflow-auto my-4">
-                <code>{code}</code>
-              </pre>
-            );
-          }
-          
-          // Split the segment into paragraphs first
-          const paragraphs = segment.split(/\n\n+/);
-          
-          return (
-            <div key={segmentIndex}>
-              {paragraphs.map((paragraph, paragraphIndex) => {
-                // Skip empty paragraphs
-                if (!paragraph.trim()) return null;
-                
-                // Check if paragraph has strikethrough (~~text~~)
-                const hasStrikethrough = paragraph.includes('~~');
-                
-                // Process strikethrough for entire paragraph if needed
-                if (hasStrikethrough) {
-                  // Check if the entire paragraph is strikethrough
-                  if (paragraph.startsWith('~~') && paragraph.endsWith('~~')) {
-                    const innerContent = paragraph.substring(2, paragraph.length - 2);
-                    return (
-                      <p key={paragraphIndex} className="my-4 line-through text-gray-500 opacity-70">
-                        {renderFormattedContent(innerContent)}
-                      </p>
-                    );
-                  }
-                }
-                
-                // Check if this is a heading
-                if (paragraph.startsWith('# ')) {
-                  const headingText = paragraph.substring(2);
-                  return <h1 key={paragraphIndex} className="text-3xl font-bold my-5">{renderFormattedContent(headingText)}</h1>;
-                }
-                
-                if (paragraph.startsWith('## ')) {
-                  const headingText = paragraph.substring(3);
-                  return <h2 key={paragraphIndex} className="text-2xl font-bold my-4">{renderFormattedContent(headingText)}</h2>;
-                }
-                
-                if (paragraph.startsWith('### ')) {
-                  const headingText = paragraph.substring(4);
-                  return <h3 key={paragraphIndex} className="text-xl font-bold my-3">{renderFormattedContent(headingText)}</h3>;
-                }
-                
-                // Check if this is a standalone bullet point that should be AI feedback
-                if (paragraph.match(/^\s*[\*•]\s+(?!\*\*)/)) {
-                  const feedbackText = paragraph.replace(/^\s*[\*•]\s+/, '');
-                  return (
-                    <p key={paragraphIndex} className="my-4">
-                      <em className="block text-gray-600">{feedbackText}</em>
-                    </p>
-                  );
-                }
-                
-                // Better handling of list items with strikethrough
-                // Check if this is a list item
-                if (paragraph.startsWith('* ') || paragraph.startsWith('-') || paragraph.startsWith('• ') || /^\d+\.\s/.test(paragraph)) {
-                  // For list items, we'll split by line and create a list
-                  const listItems = paragraph.split(/\n/).filter(item => item.trim());
-                  
-                  // Check if this is a numbered list
-                  const isNumbered = /^\d+\.\s/.test(listItems[0]);
-                  
-                  const ListTag = isNumbered ? 'ol' : 'ul';
-                  const listClasses = isNumbered ? 'list-decimal pl-5 my-4' : 'list-disc pl-5 my-4';
-                  
-                  // Use custom list item processor to ensure proper formatting
-                  return (
-                    <ListTag key={paragraphIndex} className={listClasses}>
-                      {processListItems(listItems, isNumbered)}
-                    </ListTag>
-                  );
-                }
-                
-                // Regular paragraph - Handle strikethrough at paragraph level too
-                if (hasStrikethrough && paragraph.match(/~~[^~]+~~/)) {
-                  // Replace dollar signs from strikethrough if present
-                  const cleanedParagraph = paragraph.replace(/\$\$~~|\$\$/g, '~~');
-                  
-                  // This paragraph contains strikethrough sections
-                  return (
-                    <p key={paragraphIndex} className="my-4">
-                      {renderFormattedContent(cleanedParagraph)}
-                    </p>
-                  );
-                } else {
-                  return (
-                    <p key={paragraphIndex} className="my-4">
-                      {renderFormattedContent(paragraph)}
-                    </p>
-                  );
-                }
-              })}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
+  // Check if we have feedback from the AI
+  const feedbackText = currentSection?.instructions?.feedback || '';
 
   return (
-    <>
-      <div
-        className="bg-blue-50 border-4 border-blue-500 rounded-lg overflow-y-auto right-panel"
-        style={{
-          position: 'fixed',
-          right: '1rem',
-          width: 'calc(50% - 1rem)',
-          top: '150px',
-          bottom: '50px',
-          zIndex: 10,
-          boxSizing: 'border-box',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
+    <div
+      className="bg-blue-50 border-l-4 border-blue-500 h-full overflow-y-auto"
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        width: '50%',
+        paddingTop: '120px', // Adjusted for header height
+        paddingBottom: '2rem',
+        zIndex: 10 // Ensure it's below header buttons if they overlap
+      }}
+    >
+      <div className="px-6 py-4 relative">
+        {!currentSection ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-blue-600 text-xl">Select a section to view instructions</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-3xl font-semibold text-blue-800 flex-grow mr-4">
+                {panelTitle}
+              </h3>
+              <button
+                onClick={handleMagicClick}
+                disabled={loading || !currentSection}
+                className={`px-4 py-2 rounded-lg text-base font-medium transition-all flex-shrink-0 ${ // Prevent button shrinking
+                  loading || !currentSection
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-purple-600 text-white hover:bg-purple-700 shadow hover:shadow-md'
+                  }`}
+              >
+                {loading ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Magic in progress...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                    Magic
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Render Intro Text (if available) */}
+            {currentSection.introText && (
+              <div className={`${customStyles.content} mb-6`}>
+                <StyledMarkdown 
+                  content={currentSection.introText} 
+                  customStyles={customStyles}
+                />
+              </div>
+            )}
+
+            {/* Render Subsections with Tooltips */}
+            {hasValidSubsections ? (
+              <div className="space-y-6">
+                {currentSection.subsections.map((subsection, index) => (
+                  <div key={subsection.id || index} className="subsection-container">
+                    <div className="flex items-center">
+                      <h4 className={`${customStyles.heading} flex-grow`}>
+                        {subsection.title}
+                        {subsection.tooltip && (
+                          <button 
+                            onClick={() => toggleTooltip(subsection.id)}
+                            className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-blue-500 rounded-full hover:bg-blue-600"
+                            aria-label="Show tooltip"
+                          >
+                            ?
+                          </button>
+                        )}
+                      </h4>
+                    </div>
+                    
+                    {/* Tooltip */}
+                    {subsection.tooltip && activeTooltip === subsection.id && (
+                      <div 
+                        ref={tooltipRef}
+                        className="relative bg-white border border-blue-200 rounded-md p-4 my-2 shadow-md"
+                      >
+                        <button 
+                          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                          onClick={() => setActiveTooltip(null)}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                        <p className="text-sm text-gray-700 pr-5">{subsection.tooltip}</p>
+                      </div>
+                    )}
+                    
+                    {/* Subsection instruction content */}
+                    <div className={`${customStyles.content}`}>
+                      <StyledMarkdown 
+                        content={subsection.instruction} 
+                        customStyles={customStyles}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Fallback for old format or when no subsections are available
+              <div className={`${customStyles.content} mb-6`}>
+                <StyledMarkdown 
+                  content={getFallbackInstructions(currentSection)} 
+                  customStyles={customStyles}
+                />
+              </div>
+            )}
+
+            {/* Render Feedback Section if it exists and is meaningful */}
+            {feedbackText && feedbackText.length > 5 && (
+              <div className="mt-6 pt-4 border-t border-blue-300">
+                {/* Use h3 or h4 for semantic structure */}
+                <h4 className="text-2xl font-semibold text-blue-700 mb-3">Feedback</h4>
+                <div className={`${customStyles.content} feedback-content`}>
+                  <StyledMarkdown 
+                    content={fixNumberedLists(feedbackText)} 
+                    customStyles={customStyles}
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Fixes numbered lists by ensuring they start at 1 and increment properly
+ * @param {string} text - Markdown text to process
+ * @returns {string} - Processed text with fixed numbering
+ */
+function fixNumberedLists(text) {
+  if (!text) return text;
+  
+  // Split text into lines
+  const lines = text.split('\n');
+  
+  // Find and group numbered list items
+  let inNumberedList = false;
+  let currentListItems = [];
+  let result = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isNumberedItem = /^\d+\.\s/.test(line.trim());
+    
+    if (isNumberedItem) {
+      // Extract the content after the number
+      const content = line.replace(/^\d+\.\s/, '');
+      
+      if (!inNumberedList) {
+        // Starting a new list
+        inNumberedList = true;
+        currentListItems = [content];
+      } else {
+        // Continuing the current list
+        currentListItems.push(content);
+      }
+    } else {
+      // Not a numbered item
+      if (inNumberedList) {
+        // End of a list, add renumbered items to result
+        for (let j = 0; j < currentListItems.length; j++) {
+          result.push(`${j + 1}. ${currentListItems[j]}`);
+        }
+        currentListItems = [];
+        inNumberedList = false;
+      }
+      
+      // Add the current non-list line
+      result.push(line);
+    }
+  }
+  
+  // Add any remaining list items
+  if (inNumberedList && currentListItems.length > 0) {
+    for (let j = 0; j < currentListItems.length; j++) {
+      result.push(`${j + 1}. ${currentListItems[j]}`);
+    }
+  }
+  
+  return result.join('\n');
+}
+
+// Custom component to render markdown with enhanced styling
+const StyledMarkdown = ({ content, customStyles }) => {
+  // Process content to enhance list item styling
+  const processedContent = content
+    // Replace asterisks with bullet points for consistency
+    .replace(/\n\* /g, "\n• ");
+  
+  return (
+    <div className={`${customStyles.fontSize}`}>
+      <ReactMarkdown
+        components={{
+          // Customize heading styles
+          h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-5" {...props} />,
+          h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-4" {...props} />,
+          h3: ({ node, ...props }) => <h3 className="text-xl font-bold my-4" {...props} />,
+          
+          // Style paragraphs and lists
+          p: ({ node, ...props }) => <p className="my-4" {...props} />,
+          ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-4" {...props} />,
+          ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-4" {...props} />,
+          li: ({ node, ...props }) => <li className={customStyles.listItem} {...props} />,
+          
+          // Style horizontal rules as dividers
+          hr: ({ node, ...props }) => <hr className={customStyles.divider} {...props} />,
         }}
       >
-        <div className="px-4 py-3 h-full">
-          {!currentSection ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-blue-600 text-base">Select a section to view instructions</p>
-            </div>
-          ) : (
-            <>
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="text-lg font-semibold text-blue-800 flex-grow mr-3">
-                  {panelTitle}
-                </h3>
-              </div>
-
-              {/* Instructions content */}
-              <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
-                {instructionsText ? (
-                  <div className={`${customStyles.content} instructions-content mb-4`}>
-                    {renderCustomMarkdown(processedContent)}
-                  </div>
-                ) : (
-                  <p className="text-blue-600 text-base mb-4">Instructions not available for this section.</p>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-      
-      {/* Info Modal/Popup - Appears when an info icon is clicked */}
-      {showInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" style={{ backdropFilter: 'blur(2px)' }}>
-          <div 
-            ref={modalRef}
-            className="bg-white rounded-lg shadow-xl mx-auto w-full relative"
-            style={{ maxHeight: 'calc(100vh - 8rem)', width: '500px', animation: 'fadeIn 0.2s ease-out forwards' }}
-          >
-            {/* Close button */}
-            <button 
-              onClick={() => setShowInfoModal(false)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 focus:outline-none"
-              aria-label="Close"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            
-            {/* Modal content */}
-            <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 10rem)' }}>
-              <div className="prose prose-blue max-w-none text-gray-700">
-                {modalContent}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Styling for info icons and modals */}
-      <style>{`
-        /* Info icon button styling */
-        .info-icon-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background-color: #EEF2FF;
-          color: #4F46E5;
-          font-size: 12px;
-          font-weight: bold;
-          cursor: pointer;
-          border: none;
-          transition: all 0.2s ease;
-          margin: 0 2px;
-          vertical-align: middle;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        
-        .info-icon-button:hover {
-          background-color: #E0E7FF;
-          transform: scale(1.1);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Animation for popup modal */
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Styling for strikethrough text */
-        .line-through {
-          text-decoration: line-through !important;
-          color: #6B7280 !important;
-          opacity: 0.7 !important;
-        }
-        
-        /* Ensure the line goes through bold text */
-        .instructions-content strong.line-through,
-        .instructions-content .line-through strong {
-          text-decoration: line-through !important;
-          color: #6B7280 !important;
-          opacity: 0.7 !important;
-          font-weight: 700 !important;
-        }
-        
-        /* Make sure buttons in strikethrough text remain visible */
-        .line-through .info-icon-button {
-          text-decoration: none !important;
-          opacity: 0.8 !important;
-        }
-      `}</style>
-    </>
+        {processedContent}
+      </ReactMarkdown>
+    </div>
   );
 };
 
