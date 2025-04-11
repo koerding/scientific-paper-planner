@@ -1,5 +1,7 @@
 // FILE: scripts/convertSectionContent.js
-// Complete conversion script to migrate from the old text-based format to the new structured format
+// Improved conversion script to migrate from the old text-based format to the new structured format
+// - Extracts italicized text (*text*) as tooltips for each subsection
+// - Removes llmInstructions fields that are no longer used
 // Run this script from the project root: node scripts/convertSectionContent.js
 
 const fs = require('fs');
@@ -23,6 +25,19 @@ function generateSafeId(title, sectionId, index) {
 }
 
 /**
+ * Extract italicized text (marked with * *) for use as tooltip
+ * @param {string} text - The instruction text
+ * @returns {string} - Extracted tooltip text or empty string
+ */
+function extractTooltipFromText(text) {
+  if (!text) return '';
+  
+  // Look for text enclosed in single asterisks: *tooltip text*
+  const tooltipMatch = text.match(/\*([^*]+)\*/);
+  return tooltipMatch ? tooltipMatch[1].trim() : '';
+}
+
+/**
  * Extract subsections from a text-based instruction format
  * @param {string} text - The instruction text
  * @param {string} sectionId - The parent section ID
@@ -40,7 +55,6 @@ function extractSubsections(text, sectionId) {
   let currentTitle = '';
   let currentInstruction = '';
   let currentTooltip = '';
-  let collectingTooltip = false;
   let subsectionIndex = 0;
   
   // Process each paragraph
@@ -69,18 +83,28 @@ function extractSubsections(text, sectionId) {
       // Extract new subsection title and instruction
       currentTitle = boldHeadingMatch[1].trim();
       currentInstruction = boldHeadingMatch[2].trim();
-      collectingTooltip = false;
+      
+      // Look for an italicized paragraph following this heading for tooltip
+      if (i + 1 < paragraphs.length) {
+        const nextParagraph = paragraphs[i + 1].trim();
+        // Check if it's enclosed in asterisks (italics)
+        if (nextParagraph.startsWith('*') && nextParagraph.endsWith('*')) {
+          // Extract tooltip text (remove the * markers)
+          currentTooltip = nextParagraph.substring(1, nextParagraph.length - 1).trim();
+          // Skip this paragraph in the next iteration
+          i++;
+        }
+      }
     }
-    // If paragraph is in italics, it's likely a tooltip
-    else if (paragraph.startsWith('*') && paragraph.endsWith('*') && !paragraph.startsWith('**')) {
-      // Extract the tooltip content (remove the * markers)
-      currentTooltip = paragraph.substring(1, paragraph.length - 1).trim();
-      collectingTooltip = false;
-    }
-    // If we're not in any special case, it could be additional instruction text
-    else if (currentTitle && !collectingTooltip && !currentTooltip) {
-      // Append to current instruction if we haven't found a tooltip yet
+    // If the paragraph is not a heading and we're in a subsection
+    else if (currentTitle && !paragraph.startsWith('*') && !paragraph.endsWith('*')) {
+      // Append to current instruction
       currentInstruction += ' ' + paragraph;
+    }
+    // If it's an italicized paragraph and we don't have a tooltip yet
+    else if (currentTitle && paragraph.startsWith('*') && paragraph.endsWith('*') && !currentTooltip) {
+      // Extract tooltip text (remove the * markers)
+      currentTooltip = paragraph.substring(1, paragraph.length - 1).trim();
     }
   }
   
@@ -100,7 +124,7 @@ function extractSubsections(text, sectionId) {
 /**
  * Extract the introductory text (content before first subsection)
  * @param {string} text - The full instruction text
- * @returns {string} - The intro text
+ * @returns {string} - The intro text without any italicized content
  */
 function extractIntroText(text) {
   if (!text) return '';
@@ -113,7 +137,12 @@ function extractIntroText(text) {
   if (firstBoldHeadingIndex <= 0) return '';
   
   // Extract everything before the first heading
-  return text.substring(0, firstBoldHeadingIndex).trim();
+  let introText = text.substring(0, firstBoldHeadingIndex).trim();
+  
+  // Remove any italicized paragraphs (tooltips) from the intro
+  introText = introText.replace(/\*[^*]+\*/g, '').trim();
+  
+  return introText;
 }
 
 /**
@@ -127,7 +156,7 @@ function convertSection(section) {
   // Extract the text-based instructions
   const instructionsText = section.instructions?.text || '';
   
-  // Create the new section structure with intro text and subsections
+  // Create a new section object without the llmInstructions field
   const newSection = {
     ...section,
     introText: extractIntroText(instructionsText),
@@ -142,6 +171,11 @@ function convertSection(section) {
     if (Object.keys(newSection.instructions).length === 0) {
       delete newSection.instructions;
     }
+  }
+  
+  // Remove the llmInstructions field that's no longer used
+  if (newSection.hasOwnProperty('llmInstructions')) {
+    delete newSection.llmInstructions;
   }
   
   return newSection;
@@ -173,18 +207,28 @@ async function convertSectionContent() {
     // Generate statistics for logging
     const sectionStats = newData.sections.map(section => ({
       id: section.id,
-      subsectionCount: section.subsections?.length || 0
+      subsectionCount: section.subsections?.length || 0,
+      hasTooltips: section.subsections?.some(sub => sub.tooltip && sub.tooltip.length > 0) || false
     }));
     
     console.log('\nConversion statistics:');
     console.log('---------------------');
     sectionStats.forEach(stat => {
-      console.log(`Section ${stat.id}: ${stat.subsectionCount} subsections`);
+      console.log(`Section ${stat.id}: ${stat.subsectionCount} subsections | Tooltips: ${stat.hasTooltips ? 'Yes' : 'No'}`);
     });
     console.log(`Total sections: ${newData.sections.length}`);
     console.log(`Total subsections: ${sectionStats.reduce((sum, stat) => sum + stat.subsectionCount, 0)}`);
     
-    // Write the new JSON file (replacing the old one)
+    // Check for sections without tooltips
+    const sectionsWithoutTooltips = sectionStats.filter(stat => !stat.hasTooltips && stat.subsectionCount > 0);
+    if (sectionsWithoutTooltips.length > 0) {
+      console.warn('\nWARNING: The following sections have subsections without tooltips:');
+      sectionsWithoutTooltips.forEach(stat => {
+        console.warn(`- ${stat.id}`);
+      });
+    }
+    
+    // Write the new JSON file
     const jsonOutputPath = path.join(__dirname, '../src/data/sectionContent.json');
     fs.writeFileSync(jsonOutputPath, JSON.stringify(newData, null, 2));
     console.log(`\nNew JSON file created at: ${jsonOutputPath}`);
@@ -192,8 +236,10 @@ async function convertSectionContent() {
     // Also create a JavaScript module version
     const jsOutputPath = path.join(__dirname, '../src/data/sectionContent.js');
     const jsContent = `// FILE: src/data/sectionContent.js
-// Restructured data format with explicit subsections for cleaner AI processing
+// Restructured data format with explicit subsections and tooltips extracted from italicized text
 // Generated by conversion script on ${new Date().toISOString()}
+// - Removed llmInstructions fields that are no longer used
+// - Extracted italicized text as tooltips for each subsection
 
 export const sectionContent = ${JSON.stringify(newData, null, 2)};
 
