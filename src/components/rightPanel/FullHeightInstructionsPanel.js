@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
  * Enhanced full-height instructions panel
  * Fixed to properly render tooltips only for italicized text
  * Preserves bold formatting
- * Wider tooltips for better content display
+ * Extra-wide tooltips for better content display
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -343,12 +343,12 @@ What do they need to know to understand and evaluate your research properly?`;
         .tooltip {
           visibility: hidden;
           position: absolute;
-          width: 400px;
-          max-width: 60vw;
+          width: 650px;
+          max-width: 80vw;
           background-color: #1F2937;
           color: white;
           text-align: left;
-          padding: 10px 15px;
+          padding: 12px 16px;
           border-radius: 6px;
           z-index: 1000;
           bottom: 125%;
@@ -357,10 +357,10 @@ What do they need to know to understand and evaluate your research properly?`;
           opacity: 0;
           transition: opacity 0.3s, visibility 0.3s;
           font-size: 0.9rem;
-          line-height: 1.4;
+          line-height: 1.5;
           overflow-y: auto;
-          max-height: 300px;
-          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+          max-height: 350px;
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
         
         .tooltip-container:hover .tooltip {
