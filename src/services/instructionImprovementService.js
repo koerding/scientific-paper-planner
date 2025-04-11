@@ -51,47 +51,44 @@ function extractBulletPoints(instructions) {
 }
 
 /**
- * Extracts tooltips from text and replaces them with numbered placeholders
- * @param {string} text - Original text with tooltips
- * @returns {object} - Object with processed text and extracted tooltips map
+ * Simple solution to extract and replace tooltips with placeholders
+ * @param {string} text - Text with tooltip markers
+ * @returns {object} - Object with processed text and map of placeholders to tooltips
  */
 function extractTooltipsBeforeAI(text) {
-  if (!text) return { text: '', tooltipsMap: {} };
+  if (!text) return { text: '', tooltips: {} };
   
-  const tooltipsMap = {};
+  const tooltips = {};
   let counter = 0;
   
-  // Replace *italic* with numbered placeholders __TOOLTIP_0__, __TOOLTIP_1__, etc.
+  // Replace *italic* with unique placeholders
   const processedText = text.replace(/\*([^*\n]+)\*/g, (match, content) => {
     const placeholder = `__TOOLTIP_${counter}__`;
-    tooltipsMap[placeholder] = content.trim();
+    tooltips[placeholder] = content.trim();
     counter++;
     return placeholder;
   });
   
-  return { 
-    text: processedText, 
-    tooltipsMap 
-  };
+  return { text: processedText, tooltips };
 }
 
 /**
- * Restores tooltips from placeholders
+ * Put the tooltips back in place after AI processing
  * @param {string} text - Text with tooltip placeholders
- * @param {Object} tooltipsMap - Map of placeholders to tooltip contents
+ * @param {object} tooltips - Map of placeholders to tooltips
  * @returns {string} - Text with tooltips restored
  */
-function restoreTooltipsAfterAI(text, tooltipsMap) {
-  if (!text || !tooltipsMap || Object.keys(tooltipsMap).length === 0) return text;
+function restoreTooltipsAfterAI(text, tooltips) {
+  if (!text || !tooltips || Object.keys(tooltips).length === 0) return text;
   
-  // Replace each __TOOLTIP_N__ with *original content*
-  let restoredText = text;
-  for (const [placeholder, content] of Object.entries(tooltipsMap)) {
-    restoredText = restoredText.replace(new RegExp(placeholder, 'g'), `*${content}*`);
+  let result = text;
+  for (const [placeholder, content] of Object.entries(tooltips)) {
+    result = result.replace(new RegExp(placeholder, 'g'), `*${content}*`);
   }
   
-  return restoredText;
+  return result;
 }
+
 
 /**
  * Improves instructions for multiple sections, providing inline feedback after each instruction point.
