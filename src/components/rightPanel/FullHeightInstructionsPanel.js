@@ -10,6 +10,7 @@ import remarkGfm from 'remark-gfm';
  * - Fixed strikethrough rendering to work with all content
  * - Removed example tooltip
  * - FIXED: Properly handles strikethrough for both bold and regular text
+ * - FIXED: Tooltip positioning and styling corrected
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -312,6 +313,7 @@ What do they need to know to understand and evaluate your research properly?`;
   };
   
   // Helper to process italic text and convert to tooltips
+  // FIXED: Tooltip styling and positioning 
   const processItalics = (text, keyPrefix = '') => {
     if (!text) return null;
     
@@ -386,7 +388,7 @@ What do they need to know to understand and evaluate your research properly?`;
         )}
       </div>
       
-      {/* CSS for tooltips */}
+      {/* FIXED: CSS for tooltips with improved positioning and styling */}
       <style>
       {`
         /* Tooltip styling */
@@ -394,7 +396,8 @@ What do they need to know to understand and evaluate your research properly?`;
           position: relative;
           display: inline-block;
           cursor: help;
-          margin-right: 4px;
+          margin: 0 2px;
+          vertical-align: middle;
         }
         
         .info-icon {
@@ -408,70 +411,49 @@ What do they need to know to understand and evaluate your research properly?`;
           color: #4F46E5;
           font-size: 12px;
           font-weight: bold;
-          margin-left: 0;
           vertical-align: middle;
         }
         
         .tooltip {
           visibility: hidden;
           position: absolute;
-          width: 650px;
+          width: 300px;
           max-width: 80vw;
           background-color: #1F2937;
           color: white;
           text-align: left;
-          padding: 12px 16px;
+          padding: 10px 12px;
           border-radius: 6px;
           z-index: 1000;
           bottom: 125%;
-          opacity: 0;
-          transition: opacity 0.3s, visibility 0.3s;
-          font-size: 0.9rem;
-          line-height: 1.5;
-          overflow-y: auto;
-          max-height: 350px;
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Position adjustment for tooltips to ensure they don't go off-screen */
-        .tooltip-container {
-          position: relative;
-        }
-        
-        .tooltip-container .tooltip {
           left: 50%;
           transform: translateX(-50%);
+          opacity: 0;
+          transition: opacity 0.3s;
+          font-size: 0.875rem;
+          line-height: 1.4;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
-        /* Detect if tooltip container is in the right half of the screen */
-        @media (hover: hover) {
-          .tooltip-container:hover {
-            /* This empty rule enables detecting hover state */
-          }
-        }
-        
-        /* Special positioning for tooltips near the right edge */
+        /* Show tooltip on hover */
         .tooltip-container:hover .tooltip {
           visibility: visible;
           opacity: 1;
         }
         
-        /* This ensures tooltips that would go off the right side of the screen 
-           are shifted to the left instead */
-        @media (min-width: 1024px) {
-          .tooltip-container:hover .tooltip {
+        /* Handle positioning for tooltips that would go offscreen */
+        @media (min-width: 768px) {
+          .tooltip-container:nth-last-child(-n+3) .tooltip,
+          .tooltip-container:last-child .tooltip {
             left: auto;
             right: 0;
             transform: translateX(0);
           }
-        }
-        
-        /* For very small screens, center the tooltip */
-        @media (max-width: 640px) {
-          .tooltip-container .tooltip {
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 90vw;
+          
+          .tooltip-container:nth-last-child(-n+3) .tooltip .tooltip-arrow,
+          .tooltip-container:last-child .tooltip .tooltip-arrow {
+            left: auto;
+            right: 8px;
           }
         }
         
@@ -499,7 +481,7 @@ What do they need to know to understand and evaluate your research properly?`;
           color: #6B7280 !important;
           opacity: 0.7 !important;
         }
-
+        
         /* Make sure all strikethrough text has the right appearance */
         .instructions-content del,
         .instructions-content s,
@@ -513,7 +495,7 @@ What do they need to know to understand and evaluate your research properly?`;
           color: #6B7280 !important; /* gray-500 */
           opacity: 0.7 !important;
         }
-
+        
         /* Ensure the line goes through bold text */
         .instructions-content strong del,
         .instructions-content del strong,
@@ -521,7 +503,7 @@ What do they need to know to understand and evaluate your research properly?`;
           text-decoration: line-through !important;
           font-weight: 700 !important;
         }
-
+        
         /* Visual indication of completed instructions with subtle background */
         .instructions-content li strong del,
         .instructions-content li del strong,
@@ -531,14 +513,14 @@ What do they need to know to understand and evaluate your research properly?`;
           padding: 0.1rem 0.25rem !important;
           border-radius: 0.25rem !important;
         }
-
+        
         /* Make sure tooltips within strikethrough text are properly styled */
         .instructions-content .line-through .tooltip-container,
         .instructions-content del .tooltip-container {
           display: inline !important;
           opacity: 0.7 !important;
         }
-
+        
         /* Keep paragraphs after strikethrough looking normal */
         .instructions-content li.line-through + p,
         .instructions-content li.line-through ~ p,
@@ -547,12 +529,12 @@ What do they need to know to understand and evaluate your research properly?`;
           color: #4b5563 !important; /* Gray-600 for feedback */
           opacity: 1 !important;
         }
-
+        
         /* Line break handling to ensure separation between instruction and feedback */
         .instructions-content li {
           margin-bottom: 0.5rem !important;
         }
-
+        
         .instructions-content li + br + p,
         .instructions-content li + p {
           margin-top: 0.25rem !important;
