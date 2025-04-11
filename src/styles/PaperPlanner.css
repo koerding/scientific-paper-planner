@@ -586,8 +586,8 @@ body, html {
   border-color: #1F2937 transparent transparent transparent;
 }
 
-/* CLEAN TOOLTIP STYLES */
-/* --------------------- */
+/* CLEAN TOOLTIP STYLES - EXTRA WIDE */
+/* ------------------------------ */
 
 /* Tooltip container */
 .tooltip-container {
@@ -612,16 +612,16 @@ body, html {
   vertical-align: middle;
 }
 
-/* Tooltip styling */
+/* Tooltip styling - EXTRA width for better content display */
 .tooltip {
   visibility: hidden;
   position: absolute;
-  width: 300px;
-  max-width: 50vw;
+  width: 650px;
+  max-width: 80vw;
   background-color: #1F2937;
   color: white;
   text-align: left;
-  padding: 8px 12px;
+  padding: 12px 16px;
   border-radius: 6px;
   z-index: 1000;
   bottom: 125%;
@@ -630,10 +630,10 @@ body, html {
   opacity: 0;
   transition: opacity 0.3s, visibility 0.3s;
   font-size: 0.9rem;
-  line-height: 1.4;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  line-height: 1.5;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   overflow-y: auto;
-  max-height: 300px;
+  max-height: 350px;
 }
 
 /* Show tooltip on hover */
