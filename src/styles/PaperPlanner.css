@@ -586,8 +586,8 @@ body, html {
   border-color: #1F2937 transparent transparent transparent;
 }
 
-/* CLEAN TOOLTIP STYLES - EXTRA WIDE */
-/* ------------------------------ */
+/* FINAL TOOLTIP STYLES WITH POSITION ADJUSTMENT */
+/* --------------------------------------------- */
 
 /* Tooltip container */
 .tooltip-container {
@@ -625,8 +625,6 @@ body, html {
   border-radius: 6px;
   z-index: 1000;
   bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
   opacity: 0;
   transition: opacity 0.3s, visibility 0.3s;
   font-size: 0.9rem;
@@ -636,10 +634,35 @@ body, html {
   max-height: 350px;
 }
 
+/* Default tooltip positioning */
+.tooltip-container .tooltip {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 /* Show tooltip on hover */
 .tooltip-container:hover .tooltip {
   visibility: visible;
   opacity: 1;
+}
+
+/* Tooltip adjustment for right side of screen */
+@media (min-width: 1024px) {
+  .tooltip-container:hover .tooltip {
+    left: auto;
+    right: 0;
+    transform: translateX(0);
+  }
+}
+
+/* For small screens, center the tooltip */
+@media (max-width: 640px) {
+  .tooltip-container .tooltip {
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 90vw;
+    width: 90vw;
+  }
 }
 
 /* Tooltip arrow */
@@ -667,6 +690,26 @@ body, html {
 .tooltip .tooltip-container {
   display: inline;
 }
+
 .tooltip .tooltip {
   display: none !important;
+}
+
+/* Enhanced strikethrough styles */
+.instructions-content del,
+.instructions-content s,
+.line-through {
+  text-decoration: line-through !important;
+  color: #6B7280 !important;
+  opacity: 0.7 !important;
+}
+
+/* Make sure the strikethrough applies to bold text too */
+.instructions-content strong.line-through,
+.instructions-content strong del,
+.instructions-content del strong {
+  text-decoration: line-through !important;
+  color: #6B7280 !important;
+  opacity: 0.7 !important;
+  font-weight: 700 !important;
 }
