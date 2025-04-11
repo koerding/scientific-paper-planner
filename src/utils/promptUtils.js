@@ -204,3 +204,112 @@ This way, users can see what they've accomplished while still having the origina
 - These markers will be replaced with actual content later
 - Failure to preserve these markers will break important functionality in the application
 `;
+  }
+  
+  return finalPrompt;
+};
+
+/**
+ * Get random questions for a specific research approach or section
+ * @param {string} sectionId - The section ID or approach type ('hypothesis', 'needsresearch', 'exploratory', or 'general')
+ * @param {number} count - Number of questions to return (default: 2)
+ * @returns {Array<string>} - Array of randomly selected questions
+ */
+export const getRandomQuestionsForApproach = (sectionId, count = 2) => {
+  // Map section IDs to question sets (just 3 approaches plus general)
+  let questionSetKey = 'general'; // Default
+  
+  if (sectionId === 'hypothesis') {
+    questionSetKey = 'hypothesis';
+  } else if (sectionId === 'needsresearch') {
+    questionSetKey = 'needsresearch';
+  } else if (sectionId === 'exploratoryresearch') {
+    questionSetKey = 'exploratory';
+  }
+
+  const questionSet = promptContent.researchApproaches.questions[questionSetKey];
+
+  // If there are no questions, return empty array
+  if (!questionSet || !questionSet.length) {
+    console.warn(`No questions found for approach/section: ${questionSetKey}`);
+    return [];
+  }
+
+  // Shuffle the questions and pick the requested number
+  const shuffled = [...questionSet].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+};
+
+/**
+ * Generate a mock response for testing without API
+ * @param {string} type - Response type ('chat', 'instructionImprovement', 'documentImport')
+ * @param {string} sectionId - The section ID or approach type for context
+ * @returns {string} - A formatted mock response string
+ */
+export const generateMockResponse = (type, sectionId) => {
+  // Handle specific mock types first
+  if (type === 'instructionImprovement') {
+    // Add linebreaks to feedback sections and strikethrough to completed items
+    let response = promptContent.mockResponses.instructionImprovement;
+    response = response.replace(/"\*\*Strengths:\*\* /g, '"**Strengths:**\n');
+    response = response.replace(/\\n\*\*Weaknesses:\*\* /g, '\n\n**Weaknesses:**\n');
+    response = response.replace(/\\n\*\*Comments:\*\* /g, '\n\n**Comments:**\n');
+    
+    // Add strikethrough to some items to simulate completion
+    if (response.includes('editedInstructions')) {
+      response = response.replace(/Great job defining your research question/g, 
+        'Great job defining your research question. Your current work shows good progress:\n\n* ~~Define your research question clearly.~~\n* ~~Articulate scientific significance.~~\n* Consider methodological implications');
+    }
+    
+    return response;
+  }
+  
+  if (type === 'documentImport') {
+    return promptContent.mockResponses.documentImport;
+  }
+
+  // For chat responses, determine the approach type
+  let approachTypeKey = 'general'; // Default
+  if (sectionId === 'hypothesis') {
+    approachTypeKey = 'hypothesis';
+  } else if (sectionId === 'needsresearch') {
+    approachTypeKey = 'needsresearch';
+  } else if (sectionId === 'exploratoryresearch') {
+    approachTypeKey = 'exploratory';
+  }
+
+  // Get the response template
+  let template;
+  if (promptContent.mockResponses.chat && promptContent.mockResponses.chat[approachTypeKey]) {
+     template = promptContent.mockResponses.chat[approachTypeKey];
+  } else {
+     // Fallback if specific template missing
+     console.warn(`Mock response template missing for approach: ${approachTypeKey}. Using general fallback.`);
+     template = promptContent.mockResponses.chat?.general ||
+                `Let's discuss ${sectionId || 'your work'}. What's on your mind?`; // Absolute fallback
+  }
+
+  // Get random questions for this approach if needed by the template
+  if (template.includes('{{question')) {
+    const questions = getRandomQuestionsForApproach(approachTypeKey, 3);
+    const questionParams = {};
+    questions.forEach((q, i) => {
+        questionParams[`question${i + 1}`] = q;
+    });
+    // Use replacePlaceholders to fill in questions
+    template = replacePlaceholders(template, questionParams);
+  }
+
+  // Add other simple replacements if needed by templates
+  template = replacePlaceholders(template, {
+      hypothesis_aspect: 'aspect A',
+      alternative_aspect: 'aspect B',
+      stakeholder: 'the user group',
+      sectionId: sectionId || 'the current section'
+  });
+
+  // Final cleanup of any remaining placeholders
+  template = template.replace(/{{[^}]+}}/g, '');
+
+  return template.trim();
+};
