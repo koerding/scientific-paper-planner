@@ -14,6 +14,8 @@ import remarkGfm from 'remark-gfm';
  * - FIXED: Preserves tooltips in strikethrough text
  * - FIXED: Removed dollar signs from strikethrough rendering
  * - FIXED: Removed extra bullet points before non-bold text
+ * - FIXED: Tooltip width increased to 400px with proper max-width
+ * - FIXED: Tooltip height now adjusts automatically with scrolling
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -319,7 +321,7 @@ What do they need to know to understand and evaluate your research properly?`;
                 
                 // FIXED: Better handling of list items with strikethrough
                 // Check if this is a list item
-                if (paragraph.startsWith('* ') || paragraph.startsWith('- ') || paragraph.startsWith('• ') || /^\d+\.\s/.test(paragraph)) {
+                if (paragraph.startsWith('* ') || paragraph.startsWith('-') || paragraph.startsWith('• ') || /^\d+\.\s/.test(paragraph)) {
                   // For list items, we'll split by line and create a list
                   const listItems = paragraph.split(/\n/).filter(item => item.trim());
                   
@@ -433,12 +435,13 @@ What do they need to know to understand and evaluate your research properly?`;
           vertical-align: middle;
         }
         
-        /* FIXED: Make tooltips 60% of panel width */
+        /* FIXED: Make tooltips 400px with proper max width */
         .tooltip {
           visibility: hidden;
           position: absolute;
-          width: 60%;
+          width: 400px;
           min-width: 300px;
+          max-width: 60%;
           background-color: #1F2937;
           color: white;
           text-align: left;
@@ -452,12 +455,22 @@ What do they need to know to understand and evaluate your research properly?`;
           font-size: 0.875rem;
           line-height: 1.5;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          overflow-y: auto;
+          max-height: 300px;
         }
         
         /* Show tooltip on hover */
         .tooltip-container:hover .tooltip {
           visibility: visible;
           opacity: 1;
+        }
+        
+        /* FIXED: Adjust position for tooltips near right edge */
+        @media (min-width: 1024px) {
+          .tooltip-container:nth-last-child(-n+3) .tooltip {
+            left: auto;
+            right: 0;
+          }
         }
         
         .tooltip-arrow {
@@ -506,7 +519,7 @@ What do they need to know to understand and evaluate your research properly?`;
           font-weight: 700 !important;
         }
         
-        /* Make sure tooltips within strikethrough text remain visible */
+        /* FIXED: Make sure tooltips within strikethrough text remain visible */
         .instructions-content .line-through .tooltip-container,
         .instructions-content del .tooltip-container {
           display: inline-block !important;
@@ -540,6 +553,13 @@ What do they need to know to understand and evaluate your research properly?`;
         /* FIXED: Make sure list items don't have extra bullet points */
         .instructions-content li::before {
           content: none !important;
+        }
+
+        /* FIXED: Ensure tooltips are properly styled in all contexts */
+        .tooltip p, .tooltip em, .tooltip i, .tooltip b, .tooltip strong {
+          color: white !important;
+          font-size: inherit;
+          line-height: inherit;
         }
       `}
       </style>
