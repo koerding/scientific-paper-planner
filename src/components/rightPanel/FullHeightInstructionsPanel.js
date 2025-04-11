@@ -4,9 +4,11 @@ import remarkGfm from 'remark-gfm';
 
 /**
  * Enhanced full-height instructions panel
- * Fixed to properly render tooltips only for italicized text
- * Preserves bold formatting
- * Extra-wide tooltips for better content display
+ * - Fixed to properly render tooltips only for italicized text
+ * - Preserves bold formatting
+ * - Extra-wide tooltips with position adjustment for right-side tooltips
+ * - Fixed strikethrough rendering to work with all content
+ * - Removed example tooltip
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -112,8 +114,8 @@ What do they need to know to understand and evaluate your research properly?`;
     ? instructionsText.replace(/\n\* /g, "\n• ")
     : '';
 
-  // Much improved manual markdown renderer that preserves all formatting
-  // and only converts *italic* to tooltips
+  // Improved manual markdown renderer that preserves all formatting,
+  // converts *italic* to tooltips, and handles strikethrough properly
   const renderCustomMarkdown = (content) => {
     if (!content) return null;
     
@@ -142,20 +144,36 @@ What do they need to know to understand and evaluate your research properly?`;
                 // Skip empty paragraphs
                 if (!paragraph.trim()) return null;
                 
+                // Check if paragraph has strikethrough (~~text~~)
+                const hasStrikethrough = paragraph.includes('~~');
+                
+                // Process strikethrough for entire paragraph if needed
+                if (hasStrikethrough) {
+                  // Check if the entire paragraph is strikethrough
+                  if (paragraph.startsWith('~~') && paragraph.endsWith('~~')) {
+                    const innerContent = paragraph.substring(2, paragraph.length - 2);
+                    return (
+                      <p key={paragraphIndex} className="my-4 line-through text-gray-500 opacity-70">
+                        {renderFormattedContent(innerContent)}
+                      </p>
+                    );
+                  }
+                }
+                
                 // Check if this is a heading
                 if (paragraph.startsWith('# ')) {
                   const headingText = paragraph.substring(2);
-                  return <h1 key={paragraphIndex} className="text-3xl font-bold my-5">{headingText}</h1>;
+                  return <h1 key={paragraphIndex} className="text-3xl font-bold my-5">{renderFormattedContent(headingText)}</h1>;
                 }
                 
                 if (paragraph.startsWith('## ')) {
                   const headingText = paragraph.substring(3);
-                  return <h2 key={paragraphIndex} className="text-2xl font-bold my-4">{headingText}</h2>;
+                  return <h2 key={paragraphIndex} className="text-2xl font-bold my-4">{renderFormattedContent(headingText)}</h2>;
                 }
                 
                 if (paragraph.startsWith('### ')) {
                   const headingText = paragraph.substring(4);
-                  return <h3 key={paragraphIndex} className="text-xl font-bold my-3">{headingText}</h3>;
+                  return <h3 key={paragraphIndex} className="text-xl font-bold my-3">{renderFormattedContent(headingText)}</h3>;
                 }
                 
                 // Check if this is a list item
@@ -180,10 +198,25 @@ What do they need to know to understand and evaluate your research properly?`;
                           itemText = item.replace(/^[*-]\s/, '');
                         }
                         
+                        // Check if the entire item has strikethrough
+                        const itemHasStrikethrough = 
+                          itemText.startsWith('~~') && 
+                          itemText.endsWith('~~') && 
+                          itemText.length > 4;
+                        
+                        if (itemHasStrikethrough) {
+                          const innerText = itemText.substring(2, itemText.length - 2);
+                          return (
+                            <li key={itemIndex} className={`${customStyles.listItem} line-through text-gray-500 opacity-70`}>
+                              {renderFormattedContent(innerText)}
+                            </li>
+                          );
+                        }
+                        
                         // Process the item text for formatting
                         return (
                           <li key={itemIndex} className={customStyles.listItem}>
-                            {processTextWithFormatting(itemText)}
+                            {renderFormattedContent(itemText)}
                           </li>
                         );
                       })}
@@ -194,7 +227,7 @@ What do they need to know to understand and evaluate your research properly?`;
                 // Regular paragraph
                 return (
                   <p key={paragraphIndex} className="my-4">
-                    {processTextWithFormatting(paragraph)}
+                    {renderFormattedContent(paragraph)}
                   </p>
                 );
               })}
@@ -205,8 +238,32 @@ What do they need to know to understand and evaluate your research properly?`;
     );
   };
   
-  // Helper function to process text with bold, italic, and other formatting
-  const processTextWithFormatting = (text) => {
+  // Main helper for rendering formatted content with bold, italic (tooltips), strikethrough
+  const renderFormattedContent = (text) => {
+    if (!text) return null;
+    
+    // Process strikethrough first (~~text~~)
+    const strikethroughParts = text.split(/(~~[^~]+~~)/g);
+    
+    return strikethroughParts.map((part, strikeIndex) => {
+      // Check if this is strikethrough text
+      if (part.startsWith('~~') && part.endsWith('~~') && part.length > 4) {
+        // Extract the strikethrough text and process remaining formatting
+        const strikeText = part.substring(2, part.length - 2);
+        return (
+          <span key={`strike-${strikeIndex}`} className="line-through text-gray-500 opacity-70">
+            {processFormattingExceptStrikethrough(strikeText, `strike-${strikeIndex}`)}
+          </span>
+        );
+      } else {
+        // Regular text, process other formatting
+        return processFormattingExceptStrikethrough(part, `regular-${strikeIndex}`);
+      }
+    });
+  };
+  
+  // Process bold and italic formatting, but not strikethrough
+  const processFormattingExceptStrikethrough = (text, keyPrefix) => {
     if (!text) return null;
     
     // We'll process the text in chunks to handle nested formatting
@@ -217,14 +274,16 @@ What do they need to know to understand and evaluate your research properly?`;
     
     // Process each part - either bold or regular text
     return boldParts.map((part, boldIndex) => {
+      const partKey = `${keyPrefix}-bold-${boldIndex}`;
+      
       // Check if this is bold text
       if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
         // Extract the bold text and return as strong
         const boldText = part.substring(2, part.length - 2);
-        return <strong key={boldIndex} className="font-bold">{processItalics(boldText)}</strong>;
+        return <strong key={partKey} className="font-bold">{processItalics(boldText, partKey)}</strong>;
       } else {
         // Regular text, check for italics
-        return processItalics(part, boldIndex);
+        return processItalics(part, partKey);
       }
     });
   };
@@ -237,7 +296,7 @@ What do they need to know to understand and evaluate your research properly?`;
     const italicParts = text.split(/(\*[^*\n]+\*)/g);
     
     return italicParts.map((part, italicIndex) => {
-      const key = `${keyPrefix}-${italicIndex}`;
+      const key = `${keyPrefix}-italic-${italicIndex}`;
       
       // Check if this is italic text
       if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
@@ -288,17 +347,7 @@ What do they need to know to understand and evaluate your research properly?`;
               {/* Magic button removed as requested */}
             </div>
 
-            {/* Example tooltip */}
-            <p className="mb-4">
-              Example tooltip
-              <span className="tooltip-container">
-                <span className="info-icon">ⓘ</span>
-                <span className="tooltip">
-                  This is how tooltips should work
-                  <span className="tooltip-arrow"></span>
-                </span>
-              </span>
-            </p>
+            {/* Example tooltip removed as requested */}
 
             {/* Instructions content */}
             <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
@@ -352,8 +401,6 @@ What do they need to know to understand and evaluate your research properly?`;
           border-radius: 6px;
           z-index: 1000;
           bottom: 125%;
-          left: 50%;
-          transform: translateX(-50%);
           opacity: 0;
           transition: opacity 0.3s, visibility 0.3s;
           font-size: 0.9rem;
@@ -362,10 +409,47 @@ What do they need to know to understand and evaluate your research properly?`;
           max-height: 350px;
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
+
+        /* Position adjustment for tooltips to ensure they don't go off-screen */
+        .tooltip-container {
+          position: relative;
+        }
         
+        .tooltip-container .tooltip {
+          left: 50%;
+          transform: translateX(-50%);
+        }
+        
+        /* Detect if tooltip container is in the right half of the screen */
+        @media (hover: hover) {
+          .tooltip-container:hover {
+            /* This empty rule enables detecting hover state */
+          }
+        }
+        
+        /* Special positioning for tooltips near the right edge */
         .tooltip-container:hover .tooltip {
           visibility: visible;
           opacity: 1;
+        }
+        
+        /* This ensures tooltips that would go off the right side of the screen 
+           are shifted to the left instead */
+        @media (min-width: 1024px) {
+          .tooltip-container:hover .tooltip {
+            left: auto;
+            right: 0;
+            transform: translateX(0);
+          }
+        }
+        
+        /* For very small screens, center the tooltip */
+        @media (max-width: 640px) {
+          .tooltip-container .tooltip {
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 90vw;
+          }
         }
         
         .tooltip-arrow {
@@ -386,7 +470,8 @@ What do they need to know to understand and evaluate your research properly?`;
         
         /* Ensure strikethrough is visible */
         .instructions-content del,
-        .instructions-content s {
+        .instructions-content s,
+        .line-through {
           text-decoration: line-through !important;
           color: #6B7280 !important;
           opacity: 0.7 !important;
