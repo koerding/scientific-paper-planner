@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import InfoModal from '../modals/InfoModal'; // Import the new InfoModal component
 
 /**
  * Enhanced full-height instructions panel with improved tooltip system
  * - Replaced tooltips with click-to-open modal dialog
  * - Preserves bold formatting
  * - Fixed strikethrough rendering to work with all content
- * - Fixed rendering to properly handle strikethrough formatting
+ * - Simple, self-contained implementation (no external components)
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -19,6 +18,34 @@ const FullHeightInstructionsPanel = ({
   const [lastClickTime, setLastClickTime] = useState(0);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [modalContent, setModalContent] = useState('');
+  const modalRef = useRef(null);
+
+  // Add event listener to handle outside clicks and escape key
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setShowInfoModal(false);
+      }
+    }
+
+    function handleEscapeKey(event) {
+      if (event.key === 'Escape') {
+        setShowInfoModal(false);
+      }
+    }
+
+    // Only add listeners if the modal is showing
+    if (showInfoModal) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    // Clean up listeners
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [showInfoModal]);
 
   /**
    * Returns fallback instructions based on section ID
@@ -140,7 +167,7 @@ What do they need to know to understand and evaluate your research properly?`;
         return (
           <span key={key} className="info-container inline-block mx-1 align-middle">
             <button 
-              className="info-icon-button bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full w-5 h-5 inline-flex items-center justify-center text-xs font-semibold"
+              className="info-icon-button"
               onClick={() => handleInfoIconClick(tooltipText)}
               title="Click for more information"
             >
@@ -411,28 +438,26 @@ What do they need to know to understand and evaluate your research properly?`;
         </div>
       </div>
       
-      {/* InfoModal component - used for displaying tooltip content */}
+      {/* Info Modal - Simple, self-contained implementation */}
       {showInfoModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-800 bg-opacity-50 flex items-start justify-center" style={{ backdropFilter: 'blur(2px)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" style={{ backdropFilter: 'blur(2px)' }}>
           <div 
-            className="bg-white rounded-lg shadow-xl mt-16 max-w-xl w-full relative transition-all duration-300 transform"
-            style={{ 
-              maxHeight: 'calc(100vh - 8rem)',
-              width: '500px',
-              animation: 'fadeIn 0.2s ease-out forwards'
-            }}
+            ref={modalRef}
+            className="bg-white rounded-lg shadow-xl max-w-xl mx-auto w-full relative"
+            style={{ maxHeight: 'calc(100vh - 8rem)', width: '500px', animation: 'fadeIn 0.2s ease-out forwards' }}
           >
             {/* Close button */}
             <button 
               onClick={() => setShowInfoModal(false)}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 focus:outline-none"
+              aria-label="Close"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
             
-            {/* Content */}
+            {/* Modal content */}
             <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 10rem)' }}>
               <div className="prose prose-blue max-w-none text-gray-700">
                 {modalContent}
@@ -442,19 +467,46 @@ What do they need to know to understand and evaluate your research properly?`;
         </div>
       )}
       
-      <style>{`
+      {/* Inline styles - self-contained for easy integration */}
+      <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
         }
         
-        /* Line breaks inside info modal content */
+        /* Info button styling */
+        .info-icon-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background-color: #EEF2FF;
+          color: #4F46E5;
+          font-size: 12px;
+          font-weight: bold;
+          cursor: pointer;
+          border: none;
+          transition: all 0.2s ease;
+          margin: 0 2px;
+          vertical-align: middle;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-icon-button:hover {
+          background-color: #E0E7FF;
+          transform: scale(1.1);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Modal styling */
         .prose p {
           margin-top: 1em;
           margin-bottom: 1em;
         }
         
-        /* Styles for completed/strikethrough items */
+        /* Styles for strikethrough items */
         .line-through {
           text-decoration: line-through !important;
           color: #6B7280 !important;
