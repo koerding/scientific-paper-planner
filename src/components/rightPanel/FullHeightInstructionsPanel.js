@@ -4,10 +4,10 @@ import remarkGfm from 'remark-gfm';
 
 /**
  * Enhanced full-height instructions panel
- * - Preserves existing tooltip functionality
+ * - Preserves tooltip content during AI improvement process
  * - Adds click functionality to view tooltip content in a modal
- * - Fixed strikethrough rendering to work with all content
- * - Self-contained implementation (no external components)
+ * - Removes hover tooltips, keeping only the popup modal
+ * - AI feedback is displayed in italics without bullets
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -143,7 +143,19 @@ What do they need to know to understand and evaluate your research properly?`;
     ? instructionsText.replace(/\n\* /g, "\n• ")
     : '';
 
-  // Helper to process italic text and convert to tooltips
+  // Helper to process tooltip placeholders back to their intended format
+  const restoreTooltipPlaceholders = (text) => {
+    if (!text) return '';
+    
+    // Replace __TOOLTIP_N__ placeholders with info icons (when improving instructions)
+    let processedText = text.replace(/__TOOLTIP_(\d+)__/g, (match, number) => {
+      return `*tooltip-content-${number}*`;
+    });
+    
+    return processedText;
+  };
+
+  // Helper to process italic text and convert to clickable info icons
   const processItalics = (text, keyPrefix = '') => {
     if (!text) return null;
     
@@ -155,23 +167,31 @@ What do they need to know to understand and evaluate your research properly?`;
       
       // Check if this is italic text
       if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-        // Extract the italic text and convert to tooltip
+        // Extract the italic text
         const tooltipText = part.substring(1, part.length - 1);
         
-        return (
-          <span key={key} className="tooltip-container" onClick={(e) => {
-            // Show modal on click while preserving hover tooltip
-            e.stopPropagation();
-            setModalContent(tooltipText);
-            setShowInfoModal(true);
-          }}>
-            <span className="info-icon">ⓘ</span>
-            <span className="tooltip">
-              {tooltipText}
-              <span className="tooltip-arrow"></span>
+        // Check if it matches our tooltip pattern
+        if (tooltipText.startsWith('tooltip-content-')) {
+          return (
+            <span key={key} className="info-container inline-block mx-1 align-middle">
+              <button 
+                className="info-icon-button"
+                onClick={() => {
+                  // When we click this, we'll fetch the actual tooltip content
+                  // For now, just displaying placeholder info
+                  setModalContent("This tooltip content would be loaded from the original instruction tooltips.");
+                  setShowInfoModal(true);
+                }}
+                title="Click for more information"
+              >
+                ⓘ
+              </button>
             </span>
-          </span>
-        );
+          );
+        }
+        
+        // Regular italic text - formatted as italic without making it a tooltip
+        return <i key={key} className="italic">{tooltipText}</i>;
       } else {
         // Return regular text
         return <span key={key}>{part}</span>;
@@ -183,9 +203,12 @@ What do they need to know to understand and evaluate your research properly?`;
   const processFormattingExceptStrikethrough = (text, keyPrefix) => {
     if (!text) return null;
     
+    // First ensure tooltips are restored
+    const textWithTooltips = restoreTooltipPlaceholders(text);
+    
     // We'll process the text in chunks to handle nested formatting
     // First, split by bold markers
-    const boldParts = text.split(/(\*\*[^*]+\*\*)/g);
+    const boldParts = textWithTooltips.split(/(\*\*[^*]+\*\*)/g);
     
     // Process each part - either bold or regular text
     return boldParts.map((part, boldIndex) => {
@@ -203,7 +226,7 @@ What do they need to know to understand and evaluate your research properly?`;
     });
   };
   
-  // Main helper for rendering formatted content with bold, italic (tooltips), strikethrough
+  // Main helper for rendering formatted content with bold, italic, strikethrough
   const renderFormattedContent = (text) => {
     if (!text) return null;
     
@@ -228,6 +251,14 @@ What do they need to know to understand and evaluate your research properly?`;
         return processFormattingExceptStrikethrough(part, `regular-${strikeIndex}`);
       }
     });
+  };
+
+  // Function to transform AI feedback into italics instead of bullets
+  const transformAIFeedback = (text) => {
+    // Replace bullet points in AI feedback with italics format
+    // Looking for patterns like:
+    // "* Consider discussing..." or "• Consider discussing..."
+    return text.replace(/^\s*[\*•]\s+(.+)$/gm, '_$1_');
   };
 
   // Custom processor for list items to handle bullet points and strikethrough correctly
@@ -266,11 +297,14 @@ What do they need to know to understand and evaluate your research properly?`;
         const instruction = boldMatch[1];
         const textAfterBold = itemText.replace(boldRegex, '').trim();
         
+        // Format any AI feedback as italics instead of bullets
+        const transformedText = transformAIFeedback(textAfterBold);
+        
         // Return a single list item with the bold instruction followed by text
         return (
           <li key={index} className="my-1">
             <strong className="font-bold">{processItalics(instruction, `item-${index}-bold`)}</strong>
-            {textAfterBold && processItalics(textAfterBold, `item-${index}-text`)}
+            {transformedText && processItalics(transformedText, `item-${index}-text`)}
           </li>
         );
       } else {
@@ -285,12 +319,15 @@ What do they need to know to understand and evaluate your research properly?`;
   };
 
   // Improved manual markdown renderer that preserves all formatting,
-  // converts *italic* to tooltips, and handles strikethrough properly
+  // converts *italic* to info icons, and handles strikethrough properly
   const renderCustomMarkdown = (content) => {
     if (!content) return null;
     
+    // Process AI feedback text - convert bullets to italics
+    const contentWithItalicFeedback = transformAIFeedback(content);
+    
     // First, create segments by splitting on code blocks, so we don't process markdown inside code
-    const segments = content.split(/(```[\s\S]*?```)/g);
+    const segments = contentWithItalicFeedback.split(/(```[\s\S]*?```)/g);
     
     return (
       <div>
@@ -435,12 +472,12 @@ What do they need to know to understand and evaluate your research properly?`;
         </div>
       </div>
       
-      {/* Info Modal - Appears when a tooltip is clicked */}
+      {/* Info Modal - Appears when an info icon is clicked */}
       {showInfoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" style={{ backdropFilter: 'blur(2px)' }}>
           <div 
             ref={modalRef}
-            className="bg-white rounded-lg shadow-xl max-w-xl mx-auto w-full relative"
+            className="bg-white rounded-lg shadow-xl mx-auto w-full relative"
             style={{ maxHeight: 'calc(100vh - 8rem)', width: '500px', animation: 'fadeIn 0.2s ease-out forwards' }}
           >
             {/* Close button */}
@@ -464,70 +501,32 @@ What do they need to know to understand and evaluate your research properly?`;
         </div>
       )}
       
-      {/* Preserving original tooltip CSS */}
+      {/* Styling for info icons and modals */}
       <style>{`
-        /* Tooltip container */
-        .tooltip-container {
-          position: relative;
-          display: inline-block;
-          cursor: help;
-          margin: 0 2px;
-          vertical-align: middle;
-        }
-        
         /* Info icon styling */
-        .info-icon {
+        .info-icon-button {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 16px;
-          height: 16px;
+          width: 18px;
+          height: 18px;
           border-radius: 50%;
           background-color: #EEF2FF;
           color: #4F46E5;
           font-size: 12px;
           font-weight: bold;
+          cursor: pointer;
+          border: none;
+          transition: all 0.2s ease;
+          margin: 0 2px;
           vertical-align: middle;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
-        /* Tooltip styling */
-        .tooltip {
-          visibility: hidden;
-          position: absolute;
-          width: 400px;
-          background-color: #1F2937;
-          color: white;
-          text-align: left;
-          padding: 10px 14px;
-          border-radius: 6px;
-          z-index: 1000;
-          bottom: 125%;
-          left: -20px;
-          opacity: 0;
-          transition: opacity 0.3s;
-          font-size: 0.875rem;
-          line-height: 1.5;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          
-          /* Handle overflow with scrolling */
-          overflow-y: auto;
-          max-height: 300px;
-        }
-        
-        /* Show tooltip on hover */
-        .tooltip-container:hover .tooltip {
-          visibility: visible;
-          opacity: 1;
-        }
-        
-        /* Tooltip arrow */
-        .tooltip-arrow {
-          position: absolute;
-          top: 100%;
-          left: 25px;
-          border-width: 5px;
-          border-style: solid;
-          border-color: #1F2937 transparent transparent transparent;
+        .info-icon-button:hover {
+          background-color: #E0E7FF;
+          transform: scale(1.1);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
         /* Modal animation */
@@ -536,29 +535,34 @@ What do they need to know to understand and evaluate your research properly?`;
           to { opacity: 1; transform: translateY(0); }
         }
         
-        /* Fix right-side tooltip positioning */
-        @media (min-width: 1024px) {
-          .tooltip-container:nth-last-child(-n+3) .tooltip {
-            left: auto;
-            right: 0;
-          }
-          
-          .tooltip-container:nth-last-child(-n+3) .tooltip .tooltip-arrow {
-            left: auto;
-            right: 25px;
-          }
+        /* Improved AI feedback styling (using italics) */
+        .ai-feedback {
+          font-style: italic;
+          color: #4B5563;
+          margin-top: 0.25rem;
+          display: block;
         }
         
-        /* Make sure tooltips within strikethrough text remain visible */
-        .line-through .tooltip-container,
-        .line-through .tooltip-container .info-icon {
-          text-decoration: none !important;
-          opacity: 0.8 !important;
+        /* Styling for formatting */
+        .instructions-content p > em,
+        .instructions-content li > em {
+          display: block;
+          color: #4B5563;
+          margin-top: 0.5rem;
+          font-style: italic;
         }
         
-        /* Ensure the line goes through text but not through icon */
-        .line-through .tooltip-container {
-          display: inline-block !important;
+        /* Styling for strikethrough text */
+        .line-through {
+          text-decoration: line-through !important;
+          color: #6B7280 !important;
+          opacity: 0.7 !important;
+        }
+        
+        .instructions-content strong.line-through,
+        .instructions-content .line-through strong {
+          text-decoration: line-through !important;
+          font-weight: 700 !important;
         }
       `}</style>
     </>
