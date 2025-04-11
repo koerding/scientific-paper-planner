@@ -10,7 +10,7 @@
  * FIXED: Resolved issues with improve button functionality
  * FIXED: Properly handles strikethrough for both bold instructions and regular text
  * FIXED: Added missing extractBulletPoints function definition
- * FIXED: Extracts tooltips before sending to AI and restores them after response
+ * FIXED: Preserves tooltip placeholders during the improvement process
  */
 import { callOpenAI } from './openaiService';
 import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -53,6 +53,7 @@ function extractBulletPoints(instructions) {
 
 /**
  * Extracts tooltips from text and replaces them with numbered placeholders
+ * This is needed to preserve tooltip content during AI processing
  * @param {string} text - Original text with tooltips
  * @returns {object} - Object with processed text and tooltips map
  */
@@ -62,16 +63,22 @@ function extractTooltipsBeforeAI(text) {
   const tooltips = {};
   let counter = 0;
   
-  // Replace *italic* with numbered placeholders __TOOLTIP_0__, __TOOLTIP_1__, etc.
-  const processedText = text.replace(/\*([^*\n]+)\*/g, (match, content) => {
+  // First, protect any existing __TOOLTIP_N__ placeholders
+  const protectedText = text.replace(/__TOOLTIP_(\d+)__/g, '__EXISTING_TOOLTIP_$1__');
+  
+  // Then replace *italic* with numbered placeholders __TOOLTIP_0__, __TOOLTIP_1__, etc.
+  const processedText = protectedText.replace(/\*([^*\n]+)\*/g, (match, content) => {
     const placeholder = `__TOOLTIP_${counter}__`;
     tooltips[placeholder] = content.trim();
     counter++;
     return placeholder;
   });
   
+  // Restore any existing placeholders to their original form
+  const finalText = processedText.replace(/__EXISTING_TOOLTIP_(\d+)__/g, '__TOOLTIP_$1__');
+  
   return { 
-    text: processedText, 
+    text: finalText, 
     tooltips 
   };
 }
@@ -97,6 +104,7 @@ function restoreTooltipsAfterAI(text, tooltips) {
 /**
  * Improves instructions for multiple sections, providing inline feedback after each instruction point.
  * Uses OpenAI's native JSON mode for reliable parsing.
+ * FIXED: Now preserves tooltip content during the improvement process
  * @param {Array} currentSections - Array of section objects from the main state
  * @param {Object} userInputs - User inputs for all sections
  * @param {Object} sectionContent - The full, original section content definition object
@@ -125,7 +133,7 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No sections with progress to improve" };
     }
 
-    // Store extracted tooltips for each section
+    // Store extracted tooltips for each section to restore them later
     const sectionTooltipsMap = {};
 
     // Prepare data for analysis
@@ -146,6 +154,9 @@ export const improveBatchInstructions = async (
       // Store the tooltips for later restoration
       sectionTooltipsMap[sectionId] = tooltips;
 
+      // Log tooltip extraction for debugging
+      console.log(`[Instruction Improvement] Extracted ${Object.keys(tooltips).length} tooltips from section ${sectionId}`);
+
       return {
         id: sectionId,
         title: originalSectionDef.title,
@@ -163,7 +174,7 @@ export const improveBatchInstructions = async (
     // Check if any section needs research context
     const needsOverallResearchContext = sectionsDataForPrompt.some(section => section.needsResearchContext);
 
-    // Build enhanced system prompt that explicitly requests bold instructions with inline feedback
+    // Build enhanced system prompt with specific instructions for preserving tooltips
     const systemPrompt = buildSystemPrompt('instructionImprovement', {
       needsResearchContext: needsOverallResearchContext,
       approachGuidance: ''
@@ -185,6 +196,10 @@ export const improveBatchInstructions = async (
        "Great job on your [section]! You've clearly [specific achievements]."
     
     4. Keep all instructions in bold (**instruction**) and all feedback in regular (non-bold) text
+    
+    5. CRITICAL: PRESERVE ALL __TOOLTIP_N__ PLACEHOLDERS exactly as they appear in the text.
+       Do not modify, remove, or replace any text in the format __TOOLTIP_N__ where N is a number.
+       These are special placeholders that will be replaced with tooltips later.
     
     Remember to return your response as a valid JSON array containing objects with id, editedInstructions, and completionStatus fields.
     `;
@@ -302,6 +317,7 @@ export const improveBatchInstructions = async (
       // Restore tooltips to the output text
       if (instructionsChanged) {
         item.editedInstructions = restoreTooltipsAfterAI(item.editedInstructions, tooltips);
+        console.log(`[Instruction Improvement] Restored ${Object.keys(tooltips).length} tooltips in section ${sectionId}`);
       } else {
         // If AI didn't provide good instructions, use fallback with tooltip restoration
         const sectionData = sectionsDataForPrompt.find(s => s.id === sectionId);
