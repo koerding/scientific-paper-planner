@@ -1,21 +1,14 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import InfoModal from '../modals/InfoModal'; // Import the new InfoModal component
 
 /**
- * Enhanced full-height instructions panel
- * - Fixed to properly render tooltips only for italicized text
+ * Enhanced full-height instructions panel with improved tooltip system
+ * - Replaced tooltips with click-to-open modal dialog
  * - Preserves bold formatting
- * - Extra-wide tooltips with position adjustment for right-side tooltips
  * - Fixed strikethrough rendering to work with all content
- * - Removed example tooltip
- * - FIXED: Properly handles strikethrough for both bold and regular text
- * - FIXED: Tooltip width fixed to 60% of blue panel width
- * - FIXED: Preserves tooltips in strikethrough text
- * - FIXED: Removed dollar signs from strikethrough rendering
- * - FIXED: Removed extra bullet points before non-bold text
- * - FIXED: Tooltip width increased to 400px with proper max-width
- * - FIXED: Tooltip height now adjusts automatically with scrolling
+ * - Fixed rendering to properly handle strikethrough formatting
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -24,6 +17,8 @@ const FullHeightInstructionsPanel = ({
   userInputs
 }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [modalContent, setModalContent] = useState('');
 
   /**
    * Returns fallback instructions based on section ID
@@ -121,7 +116,13 @@ What do they need to know to understand and evaluate your research properly?`;
     ? instructionsText.replace(/\n\* /g, "\n• ")
     : '';
 
-  // Helper to process italic text and convert to tooltips
+  // Handler for info icon clicks - opens modal with tooltip content
+  const handleInfoIconClick = (content) => {
+    setModalContent(content);
+    setShowInfoModal(true);
+  };
+
+  // Helper to process italic text and convert to clickable info icons
   const processItalics = (text, keyPrefix = '') => {
     if (!text) return null;
     
@@ -133,16 +134,18 @@ What do they need to know to understand and evaluate your research properly?`;
       
       // Check if this is italic text
       if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-        // Extract the italic text and convert to tooltip
+        // Extract the italic text and convert to clickable info icon
         const tooltipText = part.substring(1, part.length - 1);
         
         return (
-          <span key={key} className="tooltip-container">
-            <span className="info-icon">ⓘ</span>
-            <span className="tooltip">
-              {tooltipText}
-              <span className="tooltip-arrow"></span>
-            </span>
+          <span key={key} className="info-container inline-block mx-1 align-middle">
+            <button 
+              className="info-icon-button bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full w-5 h-5 inline-flex items-center justify-center text-xs font-semibold"
+              onClick={() => handleInfoIconClick(tooltipText)}
+              title="Click for more information"
+            >
+              ⓘ
+            </button>
           </span>
         );
       } else {
@@ -176,11 +179,11 @@ What do they need to know to understand and evaluate your research properly?`;
     });
   };
   
-  // Main helper for rendering formatted content with bold, italic (tooltips), strikethrough
+  // Main helper for rendering formatted content with bold, italic (info icons), strikethrough
   const renderFormattedContent = (text) => {
     if (!text) return null;
     
-    // FIXED: Clean up any dollar signs around strikethrough
+    // Clean up any dollar signs around strikethrough
     const cleanedText = text.replace(/\$\$~~|\$\$/g, '~~');
     
     // Process strikethrough first, before other formatting
@@ -219,7 +222,7 @@ What do they need to know to understand and evaluate your research properly?`;
         itemText.includes('~~') || 
         (itemText.includes('**~~') && itemText.includes('~~**'));
       
-      // FIXED: Handle the case where we have both bold instruction and following text
+      // Handle the case where we have both bold instruction and following text
       const boldRegex = /\*\*([^*]+)\*\*/;
       const boldMatch = itemText.match(boldRegex);
       
@@ -258,7 +261,7 @@ What do they need to know to understand and evaluate your research properly?`;
   };
 
   // Improved manual markdown renderer that preserves all formatting,
-  // converts *italic* to tooltips, and handles strikethrough properly
+  // converts *italic* to info icons, and handles strikethrough properly
   const renderCustomMarkdown = (content) => {
     if (!content) return null;
     
@@ -319,7 +322,7 @@ What do they need to know to understand and evaluate your research properly?`;
                   return <h3 key={paragraphIndex} className="text-xl font-bold my-3">{renderFormattedContent(headingText)}</h3>;
                 }
                 
-                // FIXED: Better handling of list items with strikethrough
+                // Better handling of list items with strikethrough
                 // Check if this is a list item
                 if (paragraph.startsWith('* ') || paragraph.startsWith('-') || paragraph.startsWith('• ') || /^\d+\.\s/.test(paragraph)) {
                   // For list items, we'll split by line and create a list
@@ -331,7 +334,7 @@ What do they need to know to understand and evaluate your research properly?`;
                   const ListTag = isNumbered ? 'ol' : 'ul';
                   const listClasses = isNumbered ? 'list-decimal pl-5 my-4' : 'list-disc pl-5 my-4';
                   
-                  // FIXED: Use custom list item processor to ensure proper formatting
+                  // Use custom list item processor to ensure proper formatting
                   return (
                     <ListTag key={paragraphIndex} className={listClasses}>
                       {processListItems(listItems, isNumbered)}
@@ -339,7 +342,7 @@ What do they need to know to understand and evaluate your research properly?`;
                   );
                 }
                 
-                // Regular paragraph - FIXED: Handle strikethrough at paragraph level too
+                // Regular paragraph - Handle strikethrough at paragraph level too
                 if (hasStrikethrough && paragraph.match(/~~[^~]+~~/)) {
                   // Replace dollar signs from strikethrough if present
                   const cleanedParagraph = paragraph.replace(/\$\$~~|\$\$/g, '~~');
@@ -366,211 +369,108 @@ What do they need to know to understand and evaluate your research properly?`;
   };
 
   return (
-    <div
-      className="bg-blue-50 border-4 border-blue-500 rounded-lg overflow-y-auto right-panel"
-      style={{
-        position: 'fixed',
-        right: '1rem',
-        width: 'calc(50% - 1rem)',
-        top: '150px',
-        bottom: '50px',
-        zIndex: 10,
-        boxSizing: 'border-box',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
-      }}
-    >
-      <div className="px-4 py-3 h-full">
-        {!currentSection ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-blue-600 text-base">Select a section to view instructions</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="text-lg font-semibold text-blue-800 flex-grow mr-3">
-                {panelTitle}
-              </h3>
-              {/* Magic button removed as requested */}
+    <>
+      <div
+        className="bg-blue-50 border-4 border-blue-500 rounded-lg overflow-y-auto right-panel"
+        style={{
+          position: 'fixed',
+          right: '1rem',
+          width: 'calc(50% - 1rem)',
+          top: '150px',
+          bottom: '50px',
+          zIndex: 10,
+          boxSizing: 'border-box',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
+        }}
+      >
+        <div className="px-4 py-3 h-full">
+          {!currentSection ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-blue-600 text-base">Select a section to view instructions</p>
             </div>
+          ) : (
+            <>
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-lg font-semibold text-blue-800 flex-grow mr-3">
+                  {panelTitle}
+                </h3>
+              </div>
 
-            {/* Example tooltip removed as requested */}
-
-            {/* Instructions content */}
-            <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
-              {instructionsText ? (
-                <div className={`${customStyles.content} instructions-content mb-4`}>
-                  {renderCustomMarkdown(processedContent)}
-                </div>
-              ) : (
-                <p className="text-blue-600 text-base mb-4">Instructions not available for this section.</p>
-              )}
-            </div>
-          </>
-        )}
+              {/* Instructions content */}
+              <div className="h-full overflow-y-auto pb-6" style={{ maxHeight: 'calc(100% - 48px)' }}>
+                {instructionsText ? (
+                  <div className={`${customStyles.content} instructions-content mb-4`}>
+                    {renderCustomMarkdown(processedContent)}
+                  </div>
+                ) : (
+                  <p className="text-blue-600 text-base mb-4">Instructions not available for this section.</p>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
       
-      {/* FIXED: CSS for tooltips with improved sizing and positioning */}
- <style>
-{`
-  /* Tooltip styling */
-  .tooltip-container {
-    position: relative;
-    display: inline-block;
-    cursor: help;
-    margin: 0 2px;
-    vertical-align: middle;
-  }
-  
-  .info-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background-color: #EEF2FF;
-    color: #4F46E5;
-    font-size: 12px;
-    font-weight: bold;
-    vertical-align: middle;
-  }
-  
-  /* FIXED: Make tooltips exactly 400px wide */
-  .tooltip {
-    visibility: hidden;
-    position: absolute;
-    width: 400px !important;
-    min-width: 400px !important;
-    max-width: 400px !important;
-    background-color: #1F2937;
-    color: white;
-    text-align: left;
-    padding: 10px 14px;
-    border-radius: 6px;
-    z-index: 1000;
-    bottom: 125%;
-    left: -20px;
-    opacity: 0;
-    transition: opacity 0.3s;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    /* FIXED: Allow height to adjust to content with max-height */
-    overflow-y: auto !important;
-    max-height: 300px !important;
-  }
-  
-  /* Show tooltip on hover */
-  .tooltip-container:hover .tooltip {
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-  
-  /* FIXED: Special handling for right side of panel tooltips */
-  @media (min-width: 1024px) {
-    .tooltip-container:nth-last-child(-n+3) .tooltip {
-      left: auto !important;
-      right: 0 !important;
-    }
-  }
-  
-  .tooltip-arrow {
-    position: absolute;
-    top: 100%;
-    left: 25px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: #1F2937 transparent transparent transparent;
-  }
-  
-  /* FIXED: Make sure tooltips in strikethrough text remain fully visible */
-  .line-through .tooltip-container,
-  .line-through .tooltip-container .info-icon {
-    text-decoration: none !important;
-    opacity: 0.8 !important;
-  }
-  
-  /* Ensure the line goes through text but not through icon */
-  .line-through .tooltip-container {
-    display: inline-block !important;
-  }
-  
-  /* Other styling remains unchanged */
-  .instructions-content strong {
-    font-weight: 700 !important;
-    color: #1e3a8a !important;
-  }
-  
-  /* Ensure strikethrough is visible */
-  .instructions-content del,
-  .instructions-content s,
-  .line-through {
-    text-decoration: line-through !important;
-    color: #6B7280 !important;
-    opacity: 0.7 !important;
-  }
-  
-  /* Make sure all strikethrough text has the right appearance */
-  .instructions-content del,
-  .instructions-content s,
-  .instructions-content .line-through,
-  .instructions-content strong del,
-  .instructions-content del strong,
-  .instructions-content strong.line-through,
-  .instructions-content li.line-through,
-  .instructions-content p.line-through {
-    text-decoration: line-through !important;
-    color: #6B7280 !important; /* gray-500 */
-    opacity: 0.7 !important;
-  }
-  
-  /* Ensure the line goes through bold text */
-  .instructions-content strong del,
-  .instructions-content del strong,
-  .instructions-content strong.line-through {
-    text-decoration: line-through !important;
-    font-weight: 700 !important;
-  }
-  
-  /* FIXED: Make sure tooltips within strikethrough text remain visible */
-  .instructions-content .line-through .tooltip-container,
-  .instructions-content del .tooltip-container {
-    display: inline-block !important;
-    opacity: 1 !important;
-    text-decoration: none !important;
-  }
-  
-  .instructions-content .line-through .tooltip-container .info-icon,
-  .instructions-content del .tooltip-container .info-icon {
-    opacity: 0.8 !important;
-    background-color: #F3F4F6 !important;
-    color: #6B7280 !important;
-    text-decoration: none !important;
-  }
-  
-  /* FIXED: Removed unnecessary bullets for feedback text */
-  .instructions-content li + p {
-    list-style-type: none !important;
-    margin-top: 0.25rem !important;
-    margin-bottom: 0.5rem !important;
-    margin-left: 0 !important;
-    color: #4b5563 !important; /* Gray-600 for feedback */
-    opacity: 1 !important;
-  }
-  
-  /* List styling fixes */
-  .instructions-content ul li,
-  .instructions-content ol li {
-    margin-bottom: 0.75rem !important;
-  }
-  
-  /* FIXED: Make sure list items don't have extra bullet points */
-  .instructions-content li::before {
-    content: none !important;
-  }
-`}
-</style>
-    </div>
+      {/* InfoModal component - used for displaying tooltip content */}
+      {showInfoModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-800 bg-opacity-50 flex items-start justify-center" style={{ backdropFilter: 'blur(2px)' }}>
+          <div 
+            className="bg-white rounded-lg shadow-xl mt-16 max-w-xl w-full relative transition-all duration-300 transform"
+            style={{ 
+              maxHeight: 'calc(100vh - 8rem)',
+              width: '500px',
+              animation: 'fadeIn 0.2s ease-out forwards'
+            }}
+          >
+            {/* Close button */}
+            <button 
+              onClick={() => setShowInfoModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 focus:outline-none"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            {/* Content */}
+            <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 10rem)' }}>
+              <div className="prose prose-blue max-w-none text-gray-700">
+                {modalContent}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Line breaks inside info modal content */
+        .prose p {
+          margin-top: 1em;
+          margin-bottom: 1em;
+        }
+        
+        /* Styles for completed/strikethrough items */
+        .line-through {
+          text-decoration: line-through !important;
+          color: #6B7280 !important;
+          opacity: 0.7 !important;
+        }
+        
+        /* Ensure the line goes through bold text */
+        strong.line-through,
+        .line-through strong {
+          text-decoration: line-through !important;
+          color: #6B7280 !important;
+          opacity: 0.7 !important;
+          font-weight: 700 !important;
+        }
+      `}</style>
+    </>
   );
 };
 
