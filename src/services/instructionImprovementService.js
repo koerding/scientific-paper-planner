@@ -8,9 +8,8 @@
  * UPDATED: Completed instructions use strikethrough within bold formatting
  * UPDATED: More detailed console logging
  * FIXED: Resolved issues with improve button functionality
- * FIXED: Properly handles tooltip preservation for the exact original format (__TOOLTIP_N__)
- * FIXED: Added extensive debugging and validation to ensure tooltips are preserved
- * FIXED: Improved tooltip extraction to detect and preserve italic content
+ * FIXED: Fixed tooltip preservation with segment-based processing
+ * FIXED: Completely reworked tooltip handling to use segmentation instead of markers
  */
 import { callOpenAI } from './openaiService';
 import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -52,188 +51,171 @@ function extractBulletPoints(instructions) {
 }
 
 /**
- * Extracts tooltips from text by identifying italic text blocks
- * FIXED: Now properly identifies and extracts italic text as tooltips
- * @param {string} text - Original text with tooltips in italic format
- * @returns {object} - Object with processed text and tooltips map
+ * Splits text into segments around italic blocks to preserve tooltips
+ * @param {string} text - The original text with tooltips in italic blocks
+ * @returns {Array} - Array of segments, alternating between normal text and tooltips
  */
-function extractTooltipsBeforeAI(text) {
-  if (!text) return { text: '', tooltips: {} };
-
-  // Log a small sample of the input text to verify format
-  console.log(`[extractTooltipsBeforeAI] Text sample: ${text.substring(0, 100).replace(/\n/g, "\\n")}...`);
-
-  // First, look for existing tooltip markers if any
-  const existingMarkers = {};
-  const markerRegexes = [
-    /__TOOLTIP_(\d+)__/g,
-    /\[TOOLTIP_MARKER_(\d+)\]/g,
-    /\[TOOLTIP_ORIG_(\d+)\]/g
-  ];
+function splitAroundTooltips(text) {
+  if (!text) return [];
   
-  // Check for pre-existing markers first
-  let markerFound = false;
-  for (const regex of markerRegexes) {
-    const matches = [...text.matchAll(regex)];
-    if (matches.length > 0) {
-      markerFound = true;
-      matches.forEach(match => {
-        existingMarkers[match[0]] = match[1];  // Store marker and its number
-      });
-      console.log(`[extractTooltipsBeforeAI] Found ${matches.length} existing markers using pattern ${regex}`);
-    }
-  }
+  // Log a snippet of input text for debugging
+  console.log(`[splitAroundTooltips] Input sample: ${text.substring(0, 100).replace(/\n/g, "\\n")}...`);
   
-  // If we already have markers, use them directly
-  if (markerFound) {
-    console.log(`[extractTooltipsBeforeAI] Using ${Object.keys(existingMarkers).length} pre-existing markers`);
-    // We still need to extract the content from italic blocks
-    const italicRegex = /\*((?:[^*]|\*\*[^*]*\*\*)+?)\*/g;
-    const tooltips = {};
-    let modifiedText = text;
-
-    let match;
-    while ((match = italicRegex.exec(text)) !== null) {
-      const fullContent = match[0];  // The full *...* block
-      const innerContent = match[1]; // Just the content between *...*
-      
-      // Check if any of our markers are in this italic block
-      let markerInBlock = false;
-      for (const marker of Object.keys(existingMarkers)) {
-        if (innerContent.includes(marker)) {
-          markerInBlock = true;
-          const markerIndex = innerContent.indexOf(marker);
-          const tooltipContent = innerContent.substring(markerIndex + marker.length).trim();
-          
-          // Store both the marker and its associated content
-          tooltips[marker] = tooltipContent;
-          
-          // Replace the italic block with just the marker
-          modifiedText = modifiedText.replace(fullContent, marker);
-          break;
-        }
-      }
-    }
-    
-    console.log(`[extractTooltipsBeforeAI] Extracted ${Object.keys(tooltips).length} tooltip contents from existing markers`);
-    return { text: modifiedText, tooltips };
-  }
+  // This array will hold all segments in order:
+  // [normal text, tooltip text, normal text, tooltip text, ...]
+  const segments = [];
+  let currentIndex = 0;
   
-  // If no existing markers, we'll create new ones from italic blocks
-  console.log(`[extractTooltipsBeforeAI] No existing markers found, creating new ones from italic text blocks`);
-  
-  // Find all substantial italic blocks (not inside bold formatting)
-  // This regex handles italic text that isn't part of bold-italic
-  const italicRegex = /\*(?!\*)((?:[^*]|(?!\*\*)[^*])+?)\*/g;
-  const tooltips = {};
-  let modifiedText = text;
-  let tooltipCounter = 0;
-
+  // Find italic blocks that are substantial in length (tooltips)
+  const italicRegex = /\*([^*]{30,}?)\*/g;
   let match;
+  
   while ((match = italicRegex.exec(text)) !== null) {
-    const fullMatch = match[0];  // The full *...* block
-    const content = match[1];    // Just the content between *...*
-    
-    // Only consider substantial italic blocks as tooltips (e.g., not just emphasis)
-    if (content && content.length > 30) {
-      // Create a unique marker for this tooltip
-      const markerKey = `[TOOLTIP_MARKER_${tooltipCounter}]`;
-      
-      // Store the tooltip content
-      tooltips[markerKey] = content;
-      
-      // Replace the italic block with just the marker in the modified text
-      modifiedText = modifiedText.replace(fullMatch, markerKey);
-      
-      tooltipCounter++;
+    // Add text segment before the tooltip if it exists
+    if (match.index > currentIndex) {
+      segments.push({
+        type: 'text',
+        content: text.substring(currentIndex, match.index)
+      });
     }
+    
+    // Add the tooltip segment
+    segments.push({
+      type: 'tooltip',
+      content: match[1]  // Just the content between asterisks
+    });
+    
+    // Update current position
+    currentIndex = match.index + match[0].length;
   }
   
-  // Log extraction results
-  console.log(`[extractTooltipsBeforeAI] Created ${Object.keys(tooltips).length} new tooltip markers from italic blocks`);
-  if (Object.keys(tooltips).length > 0) {
-    console.log(`[extractTooltipsBeforeAI] First tooltip sample: ${Object.values(tooltips)[0].substring(0, 50)}...`);
+  // Add remaining text after last tooltip if any
+  if (currentIndex < text.length) {
+    segments.push({
+      type: 'text',
+      content: text.substring(currentIndex)
+    });
   }
   
-  return { 
-    text: modifiedText, 
-    tooltips 
-  };
+  console.log(`[splitAroundTooltips] Split into ${segments.length} segments (${segments.filter(s => s.type === 'tooltip').length} tooltips)`);
+  
+  return segments;
 }
 
 /**
- * Restores tooltips to the original text format after AI processing
- * FIXED: More robust restoration with better logging and fallbacks
- * @param {string} text - Text with tooltip markers
- * @param {Object} tooltips - Map of original tooltips to content
- * @returns {string} - Text with tooltips restored to original format
+ * Recombines text segments and tooltips after AI processing
+ * @param {Array} originalSegments - The original segments
+ * @param {string} improvedText - The improved text from AI without tooltips
+ * @returns {string} - Combined text with tooltips reinserted
  */
-function restoreTooltipsAfterAI(text, tooltips) {
-  if (!text || !tooltips || Object.keys(tooltips).length === 0) {
-    return text;
+function recombineWithTooltips(originalSegments, improvedText) {
+  if (!originalSegments || originalSegments.length === 0) {
+    return improvedText;
   }
   
-  let restoredText = text;
+  console.log(`[recombineWithTooltips] Starting recombination with ${originalSegments.length} segments`);
+  console.log(`[recombineWithTooltips] Improved text sample: ${improvedText.substring(0, 100)}...`);
   
-  // First, log the tooltips we're trying to restore
-  console.log(`[restoreTooltipsAfterAI] Restoring ${Object.keys(tooltips).length} tooltips`);
-  if (Object.keys(tooltips).length > 0) {
-    const sampleMarker = Object.keys(tooltips)[0];
-    const sampleContent = tooltips[sampleMarker].substring(0, 50);
-    console.log(`[restoreTooltipsAfterAI] Sample: ${sampleMarker} -> "${sampleContent}..."`);
+  // Extract just the text segments from original content (without tooltips)
+  const textSegments = originalSegments.filter(s => s.type === 'text');
+  const tooltips = originalSegments.filter(s => s.type === 'tooltip');
+  
+  if (tooltips.length === 0) {
+    console.log(`[recombineWithTooltips] No tooltips to reinsert`);
+    return improvedText;
   }
   
-  // For each tooltip marker, restore the original italic text
-  for (const [marker, content] of Object.entries(tooltips)) {
-    if (restoredText.includes(marker)) {
-      // Replace marker with original italic content
-      restoredText = restoredText.replace(marker, `*${content}*`);
-      console.log(`[restoreTooltipsAfterAI] Restored tooltip for marker: ${marker}`);
-    } else {
-      console.warn(`[restoreTooltipsAfterAI] Marker not found in text: ${marker}`);
-      
-      // Try alternate marker formats as fallback
-      const markerNumber = marker.match(/\d+/)[0];
-      const alternateFormats = [
-        `[TOOLTIP_MARKER_${markerNumber}]`,
-        `[TOOLTIP_ORIG_${markerNumber}]`,
-        `__TOOLTIP_${markerNumber}__`
-      ];
-      
-      let foundAlternate = false;
-      for (const altFormat of alternateFormats) {
-        if (altFormat !== marker && restoredText.includes(altFormat)) {
-          restoredText = restoredText.replace(altFormat, `*${content}*`);
-          console.log(`[restoreTooltipsAfterAI] Used alternate format: ${altFormat}`);
-          foundAlternate = true;
-          break;
-        }
-      }
-      
-      if (!foundAlternate) {
-        console.warn(`[restoreTooltipsAfterAI] No alternate formats found for: ${marker}`);
-      }
+  console.log(`[recombineWithTooltips] Found ${tooltips.length} tooltips to reinsert`);
+  
+  // If there's only one text segment and we're replacing it completely
+  if (textSegments.length === 1 && textSegments[0].content.trim() === originalSegments[0].content.trim()) {
+    // For this simple case, just reinsert all tooltips at the end
+    console.log(`[recombineWithTooltips] Using simple tooltip insertion at the end`);
+    let result = improvedText;
+    tooltips.forEach(tooltip => {
+      result += `\n\n*${tooltip.content}*`;
+    });
+    return result;
+  }
+  
+  // If there are multiple text segments, we need a more complex approach
+  // We'll use a better segment-based approach for reconstructing the text
+  
+  // First, find core instruction points in the improved text
+  const instructionPoints = [];
+  const instructionRegex = /\*\s+\*\*([^*]+)\*\*/g;
+  let match;
+  
+  while ((match = instructionRegex.exec(improvedText)) !== null) {
+    instructionPoints.push({
+      text: match[1],
+      index: match.index
+    });
+  }
+  
+  // If we can't find instruction points, fall back to bullet points
+  if (instructionPoints.length === 0) {
+    const bulletRegex = /^\s*\*\s+/gm;
+    while ((match = bulletRegex.exec(improvedText)) !== null) {
+      instructionPoints.push({
+        text: improvedText.substring(match.index, improvedText.indexOf('\n', match.index + 1)),
+        index: match.index
+      });
     }
   }
   
-  // Check for any remaining unrestored markers
-  const remainingMarkers = [
-    ...restoredText.matchAll(/\[TOOLTIP_MARKER_\d+\]/g),
-    ...restoredText.matchAll(/\[TOOLTIP_ORIG_\d+\]/g),
-    ...restoredText.matchAll(/__TOOLTIP_\d+__/g)
-  ];
+  console.log(`[recombineWithTooltips] Found ${instructionPoints.length} instruction points`);
   
-  if (remainingMarkers.length > 0) {
-    console.warn(`[restoreTooltipsAfterAI] ${remainingMarkers.length} unrestored markers remain in text`);
+  // If we still don't have instruction points, just append tooltips at the end
+  if (instructionPoints.length === 0) {
+    console.log(`[recombineWithTooltips] No instruction points found, appending tooltips at the end`);
+    let result = improvedText;
+    tooltips.forEach(tooltip => {
+      result += `\n\n*${tooltip.content}*`;
+    });
+    return result;
   }
   
-  return restoredText;
+  // Distribute tooltips among instruction points
+  const tooltipsPerPoint = Math.ceil(tooltips.length / instructionPoints.length);
+  
+  // Create a new array to hold the final text
+  let finalText = '';
+  let currentTooltipIndex = 0;
+  
+  // Insert the text before the first instruction point
+  finalText += improvedText.substring(0, instructionPoints[0].index);
+  
+  // Process each instruction point
+  for (let i = 0; i < instructionPoints.length; i++) {
+    const currentPoint = instructionPoints[i];
+    const nextPoint = i < instructionPoints.length - 1 ? instructionPoints[i + 1] : null;
+    
+    // Add this instruction point's text
+    const endIndex = nextPoint ? nextPoint.index : improvedText.length;
+    finalText += improvedText.substring(currentPoint.index, endIndex);
+    
+    // Add tooltips for this section
+    for (let j = 0; j < tooltipsPerPoint && currentTooltipIndex < tooltips.length; j++) {
+      finalText += `\n\n*${tooltips[currentTooltipIndex].content}*\n`;
+      currentTooltipIndex++;
+    }
+  }
+  
+  // Add any remaining tooltips at the end
+  while (currentTooltipIndex < tooltips.length) {
+    finalText += `\n\n*${tooltips[currentTooltipIndex].content}*\n`;
+    currentTooltipIndex++;
+  }
+  
+  console.log(`[recombineWithTooltips] Successfully recombined text with ${tooltips.length} tooltips`);
+  return finalText;
 }
 
 /**
  * Improves instructions for multiple sections, providing inline feedback after each instruction point.
  * Uses OpenAI's native JSON mode for reliable parsing.
- * FIXED: Now properly preserves tooltip content in the original format
+ * FIXED: Now uses segment-based approach to preserve tooltips
  * @param {Array} currentSections - Array of section objects from the main state
  * @param {Object} userInputs - User inputs for all sections
  * @param {Object} sectionContent - The full, original section content definition object
@@ -262,8 +244,8 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No sections with progress to improve" };
     }
 
-    // Store extracted tooltips for each section to restore them later
-    const sectionTooltipsMap = {};
+    // Store original content segments for each section
+    const sectionSegmentsMap = {};
 
     // Prepare data for analysis
     const sectionsDataForPrompt = sectionsWithProgress.map(sectionId => {
@@ -276,21 +258,27 @@ export const improveBatchInstructions = async (
       const userContent = userInputs[sectionId] || '';
       const needsResearchContext = isResearchApproachSection(sectionId, originalSectionDef);
 
-      // EXTRACT TOOLTIPS before sending to AI using the fixed approach
+      // Split the original instructions into segments to preserve tooltips
       const originalInstructionsText = originalSectionDef.instructions.text;
-      console.log(`[Instruction Improvement] Processing tooltips for section ${sectionId}`);
-      const { text: processedInstructions, tooltips } = extractTooltipsBeforeAI(originalInstructionsText);
+      console.log(`[Instruction Improvement] Processing segments for section ${sectionId}`);
+      const segments = splitAroundTooltips(originalInstructionsText);
       
-      // Store the tooltips for later restoration
-      sectionTooltipsMap[sectionId] = tooltips;
-
-      // Log tooltip extraction for debugging
-      console.log(`[Instruction Improvement] Extracted ${Object.keys(tooltips).length} tooltips from section ${sectionId}`);
+      // Store segments for later recombination
+      sectionSegmentsMap[sectionId] = segments;
+      
+      // Extract non-tooltip text for sending to OpenAI
+      const textOnlyInstructions = segments
+        .filter(segment => segment.type === 'text')
+        .map(segment => segment.content)
+        .join(' ');
+      
+      const tooltipCount = segments.filter(segment => segment.type === 'tooltip').length;
+      console.log(`[Instruction Improvement] Section ${sectionId} has ${tooltipCount} tooltips and ${segments.length - tooltipCount} text segments`);
 
       return {
         id: sectionId,
         title: originalSectionDef.title,
-        originalInstructionsText: processedInstructions, // Send tooltip-free instructions
+        originalInstructionsText: textOnlyInstructions, // Send only non-tooltip text
         userContent,
         needsResearchContext
       };
@@ -304,7 +292,7 @@ export const improveBatchInstructions = async (
     // Check if any section needs research context
     const needsOverallResearchContext = sectionsDataForPrompt.some(section => section.needsResearchContext);
 
-    // Build enhanced system prompt with specific instructions for preserving tooltips
+    // Build enhanced system prompt
     const systemPrompt = buildSystemPrompt('instructionImprovement', {
       needsResearchContext: needsOverallResearchContext,
       approachGuidance: ''
@@ -327,10 +315,6 @@ export const improveBatchInstructions = async (
     
     4. Keep all instructions in bold (**instruction**) and all feedback in regular (non-bold) text
     
-    5. ABSOLUTELY CRITICAL: Do not modify or remove any text in [TOOLTIP_MARKER_N] format.
-       These are special placeholders that will be replaced with tooltips later.
-       If you see [TOOLTIP_MARKER_0], [TOOLTIP_MARKER_1], etc. in the text, KEEP THEM EXACTLY AS IS.
-    
     Remember to return your response as a valid JSON array containing objects with id, editedInstructions, and completionStatus fields.
     `;
 
@@ -338,7 +322,7 @@ export const improveBatchInstructions = async (
       sectionsData: JSON.stringify(sectionsDataForPrompt, null, 2)
     });
 
-    // Log request data (truncated for readability)
+    // Log request data
     console.log("[Instruction Improvement] Request to OpenAI:", {
       systemPromptLength: systemPrompt.length,
       taskPromptLength: taskPrompt.length,
@@ -370,7 +354,7 @@ export const improveBatchInstructions = async (
       if (Array.isArray(resultsArray) && resultsArray.length > 0) {
         console.log("[Instruction Improvement] Found results array within response object");
         // Process the results array
-        const validatedData = processImprovedInstructions(resultsArray, sectionTooltipsMap, sectionsDataForPrompt);
+        const validatedData = processImprovedInstructions(resultsArray, sectionSegmentsMap);
         console.timeEnd("instructionImprovementTime");
         return {
           success: true,
@@ -421,12 +405,15 @@ export const improveBatchInstructions = async (
           }
         });
         
-        // RESTORE TOOLTIPS in the fallback response
-        modifiedInstructions = restoreTooltipsAfterAI(modifiedInstructions, sectionTooltipsMap[section.id] || {});
+        // Recombine with the original tooltips
+        const finalInstructions = recombineWithTooltips(
+          sectionSegmentsMap[section.id] || [],
+          modifiedInstructions
+        );
         
         return {
           id: section.id,
-          editedInstructions: modifiedInstructions,
+          editedInstructions: finalInstructions,
           completionStatus: 'complete'
         };
       });
@@ -442,7 +429,7 @@ export const improveBatchInstructions = async (
     }
 
     // Process the improved instructions from the response array
-    const validatedData = processImprovedInstructions(response, sectionTooltipsMap, sectionsDataForPrompt);
+    const validatedData = processImprovedInstructions(response, sectionSegmentsMap);
     
     console.log(`[Instruction Improvement] Successfully processed ${validatedData.length} improved sections with inline feedback`);
     console.timeEnd("instructionImprovementTime");
@@ -471,17 +458,17 @@ export const improveBatchInstructions = async (
         
         const originalInstructions = section.instructions?.text || '';
         
-        // Extract tooltips
-        const { text: processedInstructions, tooltips } = extractTooltipsBeforeAI(originalInstructions);
+        // Split into segments to preserve tooltips
+        const segments = splitAroundTooltips(originalInstructions);
         
         // Create formatted fallback instructions with inline feedback
         let editedInstructions = createFormattedFallbackInstructions(
           section.title || 'section', 
-          processedInstructions
+          segments.filter(s => s.type === 'text').map(s => s.content).join(' ')
         );
         
-        // Restore tooltips
-        editedInstructions = restoreTooltipsAfterAI(editedInstructions, tooltips);
+        // Recombine with tooltips
+        editedInstructions = recombineWithTooltips(segments, editedInstructions);
         
         return {
           id: id,
@@ -503,14 +490,13 @@ export const improveBatchInstructions = async (
 };
 
 /**
- * Process the improved instructions, validating and restoring tooltips
+ * Process the improved instructions, recombining with original tooltips
  * @param {Array} improvedData - Array of improved section data from OpenAI
- * @param {Object} sectionTooltipsMap - Map of section IDs to their tooltip data
- * @param {Array} sectionsDataForPrompt - Original sections data sent to OpenAI
- * @returns {Array} - Validated and processed instructions
+ * @param {Object} sectionSegmentsMap - Map of section IDs to their segment data
+ * @returns {Array} - Processed instructions with tooltips reinserted
  */
-function processImprovedInstructions(improvedData, sectionTooltipsMap, sectionsDataForPrompt) {
-  // Validate and ensure instructions use proper formatting
+function processImprovedInstructions(improvedData, sectionSegmentsMap) {
+  // Validate and process the improved instructions
   return improvedData.map(item => {
     // Get the section ID
     const sectionId = item.id;
@@ -519,55 +505,38 @@ function processImprovedInstructions(improvedData, sectionTooltipsMap, sectionsD
       return null;
     }
     
-    // Get the tooltips for this section
-    const tooltips = sectionTooltipsMap[sectionId] || {};
+    // Get the segments for this section
+    const segments = sectionSegmentsMap[sectionId] || [];
     
     // Determine if instructions were actually changed
     const instructionsChanged = 
       item.editedInstructions && 
       item.editedInstructions.length >= 50;
     
-    // Restore tooltips to the output text
+    // Recombine with original tooltips
+    let finalInstructions;
     if (instructionsChanged) {
-      item.editedInstructions = restoreTooltipsAfterAI(item.editedInstructions, tooltips);
-      console.log(`[Instruction Improvement] Restored ${Object.keys(tooltips).length} tooltips in section ${sectionId}`);
+      finalInstructions = recombineWithTooltips(segments, item.editedInstructions);
+      console.log(`[processImprovedInstructions] Recombined instructions for ${sectionId} (${finalInstructions.length} chars)`);
     } else {
-      // If AI didn't provide good instructions, use fallback with tooltip restoration
-      const sectionData = sectionsDataForPrompt.find(s => s.id === sectionId);
-      if (sectionData) {
-        let editedInstructions = createFormattedFallbackInstructions(
-          sectionData.title || 'section',
-          sectionData.originalInstructionsText
-        );
-        
-        // Restore tooltips
-        editedInstructions = restoreTooltipsAfterAI(editedInstructions, tooltips);
-        item.editedInstructions = editedInstructions;
-      }
+      // If AI didn't provide good instructions, use fallback
+      const textContent = segments
+        .filter(segment => segment.type === 'text')
+        .map(segment => segment.content)
+        .join(' ');
+      
+      const fallbackText = createFormattedFallbackInstructions(sectionId, textContent);
+      finalInstructions = recombineWithTooltips(segments, fallbackText);
+      console.log(`[processImprovedInstructions] Using fallback instructions for ${sectionId}`);
     }
     
-    // Additional validation - look for tooltip placeholder patterns in the text
-    const tooltipPlaceholderPattern = /\[TOOLTIP_MARKER_\d+\]/g;
-    const tooltipMarkerPattern = /\[TOOLTIP_ORIG_\d+\]/g;
-    
-    const originalPlaceholders = (item.editedInstructions.match(tooltipPlaceholderPattern) || []).length;
-    const markerPlaceholders = (item.editedInstructions.match(tooltipMarkerPattern) || []).length;
-    
-    if (originalPlaceholders > 0) {
-      console.log(`[Instruction Improvement] Found ${originalPlaceholders} original placeholders in final output for ${sectionId}`);
-    }
-    
-    if (markerPlaceholders > 0) {
-      console.warn(`[Instruction Improvement] WARNING: ${markerPlaceholders} marker placeholders still present in ${sectionId}`);
-    }
-    
-    // Ensure all required fields exist with appropriate values
+    // Return the processed item
     return {
       id: sectionId,
-      editedInstructions: item.editedInstructions,
+      editedInstructions: finalInstructions,
       completionStatus: item.completionStatus === 'unstarted' ? 'unstarted' : 'complete'
     };
-  }).filter(item => item !== null); // Remove null items
+  }).filter(item => item !== null); // Filter out null items
 }
 
 /**
@@ -683,7 +652,7 @@ function createFormattedFallbackInstructions(sectionTitle, originalInstructions)
     const isCompleted = Math.random() > 0.3;
     
     if (isCompleted) {
-      // FIXED: Apply strikethrough to both instruction and following text
+      // Apply strikethrough to both instruction and following text
       if (boldMatch) {
         formattedInstructions += `* **~~${instruction}~~**${afterInstructionText}\n`;
       } else {
