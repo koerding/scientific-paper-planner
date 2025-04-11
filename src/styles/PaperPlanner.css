@@ -529,15 +529,16 @@ body, html {
   animation: fadeIn 0.5s ease-out;
 }
 
-/* CLEAN TOOLTIP STYLES */
-/* --------------------- */
+/* IMPROVED TOOLTIP STYLES - FIXES WIDTH AND HEIGHT ISSUES */
+/* ------------------------------------------------------ */
 
 /* Tooltip container */
 .tooltip-container {
   position: relative;
   display: inline-block;
   cursor: help;
-  margin-right: 4px;
+  margin: 0 2px;
+  vertical-align: middle;
 }
 
 /* Info icon styling */
@@ -555,76 +556,13 @@ body, html {
   vertical-align: middle;
 }
 
-/* Tooltip styling */
+/* FIXED: Tooltip sizing and overflow handling */
 .tooltip {
   visibility: hidden;
   position: absolute;
-  width: 240px;
-  background-color: #1F2937;
-  color: white;
-  text-align: left;
-  padding: 8px 12px;
-  border-radius: 6px;
-  z-index: 1000;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0;
-  transition: opacity 0.3s, visibility 0.3s;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Show tooltip on hover */
-.tooltip-container:hover .tooltip {
-  visibility: visible;
-  opacity: 1;
-}
-
-/* Tooltip arrow */
-.tooltip-arrow {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #1F2937 transparent transparent transparent;
-}
-
-/* FINAL TOOLTIP STYLES WITH POSITION ADJUSTMENT */
-/* --------------------------------------------- */
-
-/* Tooltip container */
-.tooltip-container {
-  position: relative;
-  display: inline-block;
-  cursor: help;
-  margin-right: 4px;
-}
-
-/* Info icon styling */
-.info-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: #EEF2FF;
-  color: #4F46E5;
-  font-size: 12px;
-  font-weight: bold;
-  vertical-align: middle;
-}
-
-/* Tooltip styling - EXTRA width for better content display */
-.tooltip {
-  visibility: hidden;
-  position: absolute;
-  width: 650px;
-  max-width: 80vw;
+  width: 400px; /* Increased from 300px to 400px as requested */
+  max-width: 60%; /* Set to 60% of container width */
+  min-width: 300px; /* Minimum width to ensure readability */
   background-color: #1F2937;
   color: white;
   text-align: left;
@@ -632,19 +570,16 @@ body, html {
   border-radius: 6px;
   z-index: 1000;
   bottom: 125%;
+  left: -20px;
   opacity: 0;
-  transition: opacity 0.3s, visibility 0.3s;
-  font-size: 0.9rem;
+  transition: opacity 0.3s;
+  font-size: 0.875rem;
   line-height: 1.5;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  
+  /* FIXED: Allow content to determine height with max-height limit */
   overflow-y: auto;
-  max-height: 350px;
-}
-
-/* Default tooltip positioning */
-.tooltip-container .tooltip {
-  left: 50%;
-  transform: translateX(-50%);
+  max-height: 300px;
 }
 
 /* Show tooltip on hover */
@@ -653,22 +588,18 @@ body, html {
   opacity: 1;
 }
 
-/* Tooltip adjustment for right side of screen */
+/* FIXED: Position tooltips that would overflow right edge of panel */
 @media (min-width: 1024px) {
-  .tooltip-container:hover .tooltip {
+  .right-panel .tooltip-container:nth-last-child(-n+3) .tooltip {
     left: auto;
     right: 0;
     transform: translateX(0);
   }
-}
-
-/* For small screens, center the tooltip */
-@media (max-width: 640px) {
-  .tooltip-container .tooltip {
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 90vw;
-    width: 90vw;
+  
+  /* For tooltips near the right edge of the panel */
+  .right-panel .tooltip-container:hover .tooltip {
+    left: auto;
+    right: 0;
   }
 }
 
@@ -676,30 +607,67 @@ body, html {
 .tooltip-arrow {
   position: absolute;
   top: 100%;
-  left: 50%;
-  margin-left: -5px;
+  left: 25px;
   border-width: 5px;
   border-style: solid;
   border-color: #1F2937 transparent transparent transparent;
 }
 
-/* Make sure italic text in tooltips is styled properly */
+/* FIXED: Ensure tooltips in strikethrough text remain properly styled */
+.instructions-content .line-through .tooltip-container,
+.instructions-content del .tooltip-container {
+  display: inline-block !important;
+  opacity: 1 !important;
+  text-decoration: none !important;
+}
+
+.instructions-content .line-through .tooltip-container .info-icon,
+.instructions-content del .tooltip-container .info-icon {
+  opacity: 0.8 !important;
+  background-color: #F3F4F6 !important;
+  color: #6B7280 !important;
+  text-decoration: none !important;
+}
+
+/* Ensure the tooltip style within strikethrough text */
+.instructions-content .line-through .tooltip-container .tooltip,
+.instructions-content del .tooltip-container .tooltip {
+  text-decoration: none !important;
+  color: white !important;
+  opacity: 1 !important;
+}
+
+/* Make sure any text content in the tooltip is readable */
+.tooltip p, 
 .tooltip em, 
-.tooltip i {
-  font-style: italic;
+.tooltip i, 
+.tooltip b, 
+.tooltip strong {
+  color: white !important;
   font-size: inherit;
-  display: inline;
-  color: inherit;
   line-height: inherit;
 }
 
-/* Fix any potential issues with nested tooltips */
-.tooltip .tooltip-container {
-  display: inline;
+/* Make sure the tooltip arrow position adjusts properly */
+.tooltip-container:hover .tooltip[style*="right: 0"] .tooltip-arrow {
+  left: auto;
+  right: 25px;
 }
 
-.tooltip .tooltip {
-  display: none !important;
+/* Responsive adjustments for small screens */
+@media (max-width: 640px) {
+  .tooltip {
+    width: 90vw;
+    max-width: 90vw;
+    min-width: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .tooltip-arrow {
+    left: 50%;
+    margin-left: -5px;
+  }
 }
 
 /* Enhanced strikethrough styles */
