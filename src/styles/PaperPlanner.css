@@ -1,6 +1,6 @@
- /* Safe CSS for Paper Planner - minification friendly */
+/* Safe CSS for Paper Planner - minification friendly */
 
-/* FIXED: Simplified section card layout with reduced spacing */
+/* Simplified section card layout with reduced spacing */
 .section-card {
   margin-bottom: 0.5rem !important;
   transition: border-color 0.3s ease, border-width 0.3s ease, box-shadow 0.3s ease;
@@ -216,7 +216,7 @@
 /* Specific adjustments for magic button highlight */
 .onboarding-highlight-magic {
   position: relative;
-  z-index: 40; /* FIXED: Lower z-index to keep it below chat */
+  z-index: 40; /* Lower z-index to keep it below chat */
 }
 .onboarding-highlight-magic > button {
   animation: pulse-glow 2s infinite;
@@ -234,7 +234,7 @@
   border-radius: 0.375rem;
   font-size: 0.875rem;
   white-space: nowrap;
-  z-index: 41; /* FIXED: Should be above the button but below chat */
+  z-index: 41; /* Should be above the button but below chat */
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -451,68 +451,6 @@ body, html {
   align-items: center !important;
 }
 
-/* Enhanced strikethrough styles to add to PaperPlanner.css */
-
-/* Make sure all strikethrough text has the right appearance */
-.instructions-content del,
-.instructions-content s,
-.instructions-content .line-through,
-.instructions-content strong del,
-.instructions-content del strong,
-.instructions-content strong.line-through,
-.instructions-content li.line-through,
-.instructions-content p.line-through {
-  text-decoration: line-through !important;
-  color: #6B7280 !important; /* gray-500 */
-  opacity: 0.7 !important;
-}
-
-/* Ensure the line goes through bold text */
-.instructions-content strong del,
-.instructions-content del strong,
-.instructions-content strong.line-through {
-  text-decoration: line-through !important;
-  font-weight: 700 !important;
-}
-
-/* Visual indication of completed instructions with subtle background */
-.instructions-content li strong del,
-.instructions-content li del strong,
-.instructions-content li .line-through strong,
-.instructions-content li strong.line-through {
-  background-color: rgba(209, 250, 229, 0.3) !important; /* Light green background */
-  padding: 0.1rem 0.25rem !important;
-  border-radius: 0.25rem !important;
-}
-
-/* Make sure tooltips within strikethrough text are properly styled */
-.instructions-content .line-through .tooltip-container,
-.instructions-content del .tooltip-container {
-  display: inline !important;
-  opacity: 0.7 !important;
-}
-
-/* Keep paragraphs after strikethrough looking normal */
-.instructions-content li.line-through + p,
-.instructions-content li.line-through ~ p,
-.instructions-content li + p {
-  text-decoration: none !important;
-  color: #4b5563 !important; /* Gray-600 for feedback */
-  opacity: 1 !important;
-}
-
-/* Line break handling to ensure separation between instruction and feedback */
-.instructions-content li {
-  margin-bottom: 0.5rem !important;
-}
-
-.instructions-content li + br + p,
-.instructions-content li + p {
-  margin-top: 0.25rem !important;
-  margin-bottom: 1rem !important;
-  margin-left: 1.5rem !important;
-  color: #4b5563 !important; /* Gray-600 for feedback */
-}
 /* Animation for the improvement reminder toast */
 @keyframes fadeIn {
   from {
@@ -529,8 +467,8 @@ body, html {
   animation: fadeIn 0.5s ease-out;
 }
 
-/* IMPROVED TOOLTIP STYLES - FIXES WIDTH AND HEIGHT ISSUES */
-/* ------------------------------------------------------ */
+/* UNIFIED TOOLTIP STYLES */
+/* --------------------- */
 
 /* Tooltip container */
 .tooltip-container {
@@ -556,13 +494,10 @@ body, html {
   vertical-align: middle;
 }
 
-/* FIXED: Tooltip sizing and overflow handling */
+/* Tooltip styling */
 .tooltip {
-  visibility: hidden;
   position: absolute;
-  width: 400px; /* Increased from 300px to 400px as requested */
-  max-width: 60%; /* Set to 60% of container width */
-  min-width: 300px; /* Minimum width to ensure readability */
+  width: 400px;
   background-color: #1F2937;
   color: white;
   text-align: left;
@@ -571,36 +506,24 @@ body, html {
   z-index: 1000;
   bottom: 125%;
   left: -20px;
-  opacity: 0;
-  transition: opacity 0.3s;
   font-size: 0.875rem;
   line-height: 1.5;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   
-  /* FIXED: Allow content to determine height with max-height limit */
+  /* Handle overflow with scrolling */
   overflow-y: auto;
   max-height: 300px;
+  
+  /* Visibility transitions */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 /* Show tooltip on hover */
 .tooltip-container:hover .tooltip {
   visibility: visible;
   opacity: 1;
-}
-
-/* FIXED: Position tooltips that would overflow right edge of panel */
-@media (min-width: 1024px) {
-  .right-panel .tooltip-container:nth-last-child(-n+3) .tooltip {
-    left: auto;
-    right: 0;
-    transform: translateX(0);
-  }
-  
-  /* For tooltips near the right edge of the panel */
-  .right-panel .tooltip-container:hover .tooltip {
-    left: auto;
-    right: 0;
-  }
 }
 
 /* Tooltip arrow */
@@ -613,7 +536,79 @@ body, html {
   border-color: #1F2937 transparent transparent transparent;
 }
 
-/* FIXED: Ensure tooltips in strikethrough text remain properly styled */
+/* Position tooltips that would overflow right edge of panel */
+@media (min-width: 1024px) {
+  .right-panel .tooltip-container:nth-last-child(-n+3) .tooltip {
+    left: auto;
+    right: 0;
+  }
+  
+  /* Adjust arrow for right-aligned tooltips */
+  .right-panel .tooltip-container:nth-last-child(-n+3) .tooltip .tooltip-arrow {
+    left: auto;
+    right: 25px;
+  }
+}
+
+/* Make sure any text content in the tooltip is readable */
+.tooltip p, 
+.tooltip em, 
+.tooltip i, 
+.tooltip b, 
+.tooltip strong {
+  color: white !important;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Responsive adjustments for small screens */
+@media (max-width: 640px) {
+  .tooltip {
+    width: 90vw;
+    max-width: 90vw;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .tooltip-arrow {
+    left: 50%;
+    margin-left: -5px;
+  }
+}
+
+/* IMPROVED STRIKETHROUGH STYLES */
+/* ---------------------------- */
+
+/* Base strikethrough styles */
+.instructions-content del,
+.instructions-content s,
+.instructions-content .line-through {
+  text-decoration: line-through !important;
+  color: #6B7280 !important; /* gray-500 */
+  opacity: 0.7 !important;
+}
+
+/* Ensure the line goes through bold text */
+.instructions-content strong del,
+.instructions-content del strong,
+.instructions-content strong.line-through {
+  text-decoration: line-through !important;
+  color: #6B7280 !important;
+  opacity: 0.7 !important;
+  font-weight: 700 !important;
+}
+
+/* Visual indication of completed instructions with subtle background */
+.instructions-content li strong del,
+.instructions-content li del strong,
+.instructions-content li .line-through strong,
+.instructions-content li strong.line-through {
+  background-color: rgba(209, 250, 229, 0.3) !important; /* Light green background */
+  padding: 0.1rem 0.25rem !important;
+  border-radius: 0.25rem !important;
+}
+
+/* Ensure tooltips within strikethrough text are properly styled */
 .instructions-content .line-through .tooltip-container,
 .instructions-content del .tooltip-container {
   display: inline-block !important;
@@ -637,89 +632,24 @@ body, html {
   opacity: 1 !important;
 }
 
-/* Make sure any text content in the tooltip is readable */
-.tooltip p, 
-.tooltip em, 
-.tooltip i, 
-.tooltip b, 
-.tooltip strong {
-  color: white !important;
-  font-size: inherit;
-  line-height: inherit;
-}
-
-/* Make sure the tooltip arrow position adjusts properly */
-.tooltip-container:hover .tooltip[style*="right: 0"] .tooltip-arrow {
-  left: auto;
-  right: 25px;
-}
-
-/* Responsive adjustments for small screens */
-@media (max-width: 640px) {
-  .tooltip {
-    width: 90vw;
-    max-width: 90vw;
-    min-width: auto;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  
-  .tooltip-arrow {
-    left: 50%;
-    margin-left: -5px;
-  }
-}
-
-/* Enhanced strikethrough styles */
-.instructions-content del,
-.instructions-content s,
-.line-through {
-  text-decoration: line-through !important;
-  color: #6B7280 !important;
-  opacity: 0.7 !important;
-}
-
-/* Make sure the strikethrough applies to bold text too */
-.instructions-content strong.line-through,
-.instructions-content strong del,
-.instructions-content del strong {
-  text-decoration: line-through !important;
-  color: #6B7280 !important;
-  opacity: 0.7 !important;
-  font-weight: 700 !important;
-}
-
-/* HARD OVERRIDE for tooltip width - force exactly 400px */
-.tooltip {
-  width: 400px !important;
-  min-width: 400px !important; 
-  max-width: 400px !important;
-  overflow-y: auto;
-  max-height: 300px;
-}
-
-/* Force tooltip visibility on hover */
-.tooltip-container:hover .tooltip {
-  visibility: visible !important;
+/* Keep paragraphs after strikethrough looking normal */
+.instructions-content li.line-through + p,
+.instructions-content li.line-through ~ p,
+.instructions-content li + p {
+  text-decoration: none !important;
+  color: #4b5563 !important; /* Gray-600 for feedback */
   opacity: 1 !important;
 }
 
-* Tooltip fixes */
-.tooltip {
-  /* Force exact width */
-  width: 600px !important;
-  min-width: 400px !important;
-  /* Allow overflow with scrolling */
-  overflow-y: auto !important;
-  max-height: 300px !important;
-  /* Make sure it appears */
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.3s;
+/* Line break handling to ensure separation between instruction and feedback */
+.instructions-content li {
+  margin-bottom: 0.5rem !important;
 }
 
-.tooltip-container:hover .tooltip {
-  /* Force visibility */
-  visibility: visible !important;
-  opacity: 1 !important;
+.instructions-content li + br + p,
+.instructions-content li + p {
+  margin-top: 0.25rem !important;
+  margin-bottom: 1rem !important;
+  margin-left: 1.5rem !important;
+  color: #4b5563 !important; /* Gray-600 for feedback */
 }
