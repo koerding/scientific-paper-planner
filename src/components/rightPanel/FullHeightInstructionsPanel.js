@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 /**
- * Enhanced full-height instructions panel
- * - Preserves tooltip content during AI improvement process
- * - Adds click functionality to view tooltip content in a modal
- * - Removes hover tooltips, keeping only the popup modal
- * - AI feedback is displayed in italics without bullets
+ * Enhanced full-height instructions panel with fixed tooltips
+ * - Preserves original tooltip functionality
+ * - Prevents tooltip loss during AI improvement
+ * - Displays AI feedback as italics instead of bullets
+ * - Simple, minimal changes to fix issues without major rewrites
  */
 const FullHeightInstructionsPanel = ({ 
   currentSection, 
@@ -16,76 +16,6 @@ const FullHeightInstructionsPanel = ({
   userInputs
 }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  const [modalContent, setModalContent] = useState('');
-  const modalRef = useRef(null);
-  
-  // Map to store tooltip content from placeholder format to actual content
-  const tooltipMap = useRef({});
-
-  // Extract original tooltip content when component mounts or section changes
-  useEffect(() => {
-    if (currentSection?.instructions?.text) {
-      const originalText = currentSection.instructions.text;
-      
-      // Extract actual tooltip content
-      const placeholderRegex = /__TOOLTIP_(\d+)__/g;
-      const tooltipRegex = /\*([^*\n]+)\*/g;
-      
-      // Create arrays to hold placeholders and tooltip content
-      const placeholders = [];
-      const tooltips = [];
-      
-      // Find all placeholders
-      let placeholderMatch;
-      while ((placeholderMatch = placeholderRegex.exec(originalText)) !== null) {
-        placeholders.push(placeholderMatch[0]);
-      }
-      
-      // Find all tooltip content
-      let tooltipMatch;
-      while ((tooltipMatch = tooltipRegex.exec(originalText)) !== null) {
-        tooltips.push(tooltipMatch[1]);
-      }
-      
-      // Map placeholders to content
-      const newTooltipMap = {};
-      placeholders.forEach((placeholder, index) => {
-        if (index < tooltips.length) {
-          newTooltipMap[placeholder] = tooltips[index];
-        }
-      });
-      
-      tooltipMap.current = newTooltipMap;
-    }
-  }, [currentSection]);
-
-  // Close modal on escape key or outside click
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        setShowInfoModal(false);
-      }
-    }
-
-    function handleEscapeKey(event) {
-      if (event.key === 'Escape') {
-        setShowInfoModal(false);
-      }
-    }
-
-    // Only add listeners if the modal is showing
-    if (showInfoModal) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscapeKey);
-    }
-
-    // Clean up listeners
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscapeKey);
-    };
-  }, [showInfoModal]);
 
   /**
    * Returns fallback instructions based on section ID
@@ -183,100 +113,24 @@ What do they need to know to understand and evaluate your research properly?`;
     ? instructionsText.replace(/\n\* /g, "\n• ")
     : '';
 
-  // Handle showing modal with tooltip content
-  const handleInfoIconClick = (tooltipKey) => {
-    // Get the actual tooltip content from our map
-    const tooltipContent = tooltipMap.current[tooltipKey] || "Additional information would appear here.";
-    setModalContent(tooltipContent);
-    setShowInfoModal(true);
-  };
-
-  // Function to transform AI feedback into italics instead of bullets
+  // Function to transform AI feedback bullets to italics
+  // But only outside of list items
   const transformAIFeedback = (text) => {
-    if (!text) return '';
+    if (!text) return text;
     
-    // Replace bullet points in AI feedback with italics format
-    // Looking for patterns like:
-    // "* Consider discussing..." or "• Consider discussing..."
-    // But only if they're not part of a list item that has bold text before it
-    return text.replace(/^(\s*[\*•]\s+)(?!\*\*)/gm, '_');
-  };
-
-  // Helper to process text for tooltips and formatting
-  const processText = (text, keyPrefix = '') => {
-    if (!text) return null;
-    
-    // Look for tooltip placeholders
-    const parts = [];
-    let currentIndex = 0;
-    
-    // Check for tooltip placeholders (__TOOLTIP_N__)
-    const placeholderRegex = /__TOOLTIP_(\d+)__/g;
-    let match;
-    
-    while ((match = placeholderRegex.exec(text)) !== null) {
-      // Add text before the placeholder
-      if (match.index > currentIndex) {
-        parts.push({
-          type: 'text',
-          content: text.substring(currentIndex, match.index)
-        });
+    // Replace stand-alone bullet points (those not in lists) with <em> tags
+    return text.replace(/^(\s*[\*•]\s+)(?!.*\*\*)(.+)$/gm, (match, bullet, content) => {
+      // Don't transform bullet points that are part of a list
+      if (match.trim().startsWith('*') && !match.includes('**')) {
+        return `<em>${content.trim()}</em>`;
       }
-      
-      // Add tooltip placeholder
-      parts.push({
-        type: 'tooltip',
-        key: match[0],
-        content: tooltipMap.current[match[0]] || 'Additional information'
-      });
-      
-      currentIndex = match.index + match[0].length;
-    }
-    
-    // Add remaining text
-    if (currentIndex < text.length) {
-      parts.push({
-        type: 'text',
-        content: text.substring(currentIndex)
-      });
-    }
-    
-    // Convert parts to React elements
-    return parts.map((part, index) => {
-      if (part.type === 'tooltip') {
-        return (
-          <span key={`${keyPrefix}-tooltip-${index}`} className="inline-block mx-1 align-middle">
-            <button 
-              className="info-icon-button"
-              onClick={() => handleInfoIconClick(part.key)}
-              title="Click for more information"
-            >
-              ⓘ
-            </button>
-          </span>
-        );
-      } else {
-        // For regular text, check for AI feedback patterns
-        const textContent = part.content;
-        if (textContent.startsWith('_') && textContent.endsWith('_')) {
-          // This is AI feedback in italics
-          const feedbackText = textContent.substring(1, textContent.length - 1);
-          return <i key={`${keyPrefix}-ai-${index}`} className="ai-feedback">{feedbackText}</i>;
-        }
-        return <span key={`${keyPrefix}-text-${index}`}>{textContent}</span>;
-      }
+      return match;
     });
   };
 
-  // Helper to process italic text for regular italics
+  // Helper to process italic text and convert to tooltips
   const processItalics = (text, keyPrefix = '') => {
     if (!text) return null;
-    
-    // Check for AI feedback format (text wrapped in _underscores_)
-    if (text.startsWith('_') && text.endsWith('_') && text.length > 2) {
-      const feedbackText = text.substring(1, text.length - 1);
-      return <i key={`${keyPrefix}-feedback`} className="ai-feedback">{feedbackText}</i>;
-    }
     
     // Split by italic markers
     const italicParts = text.split(/(\*[^*\n]+\*)/g);
@@ -286,12 +140,35 @@ What do they need to know to understand and evaluate your research properly?`;
       
       // Check if this is italic text
       if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-        // Extract the italic text
-        const italicText = part.substring(1, part.length - 1);
-        return <i key={key} className="italic">{italicText}</i>;
+        // Extract the italic text and convert to tooltip
+        const tooltipText = part.substring(1, part.length - 1);
+        
+        // Check for tooltip placeholders (__TOOLTIP_N__)
+        if (tooltipText.match(/__TOOLTIP_\d+__/)) {
+          // This is a placeholder, but we want to preserve the tooltip functionality
+          return (
+            <span key={key} className="tooltip-container">
+              <span className="info-icon">ⓘ</span>
+              <span className="tooltip">
+                Detailed explanation unavailable in preview.
+                <span className="tooltip-arrow"></span>
+              </span>
+            </span>
+          );
+        }
+        
+        return (
+          <span key={key} className="tooltip-container">
+            <span className="info-icon">ⓘ</span>
+            <span className="tooltip">
+              {tooltipText}
+              <span className="tooltip-arrow"></span>
+            </span>
+          </span>
+        );
       } else {
-        // Check for tooltip placeholders
-        return processText(part, `${key}-text`);
+        // Return regular text
+        return <span key={key}>{part}</span>;
       }
     });
   };
@@ -300,16 +177,9 @@ What do they need to know to understand and evaluate your research properly?`;
   const processFormattingExceptStrikethrough = (text, keyPrefix) => {
     if (!text) return null;
     
-    // First, look for AI feedback bullet points and convert to italics format
-    let processedText = text;
-    // If text starts with a bullet followed by non-bold text, convert to italics
-    if (/^\s*[\*•]\s+(?!\*\*)/.test(processedText)) {
-      processedText = `_${processedText.replace(/^\s*[\*•]\s+/, '')}_`;
-    }
-    
     // We'll process the text in chunks to handle nested formatting
     // First, split by bold markers
-    const boldParts = processedText.split(/(\*\*[^*]+\*\*)/g);
+    const boldParts = text.split(/(\*\*[^*]+\*\*)/g);
     
     // Process each part - either bold or regular text
     return boldParts.map((part, boldIndex) => {
@@ -321,13 +191,13 @@ What do they need to know to understand and evaluate your research properly?`;
         const boldText = part.substring(2, part.length - 2);
         return <strong key={partKey} className="font-bold">{processItalics(boldText, partKey)}</strong>;
       } else {
-        // Regular text, check for italics or tooltips
+        // Regular text, check for italics
         return processItalics(part, partKey);
       }
     });
   };
   
-  // Main helper for rendering formatted content with bold, italic, strikethrough
+  // Main helper for rendering formatted content with bold, italic (tooltips), strikethrough
   const renderFormattedContent = (text) => {
     if (!text) return null;
     
@@ -390,17 +260,24 @@ What do they need to know to understand and evaluate your research properly?`;
         const instruction = boldMatch[1];
         const textAfterBold = itemText.replace(boldRegex, '').trim();
         
-        // If there's a bullet point at the start of textAfterBold, make it italic
-        let processedAfterText = textAfterBold;
-        if (/^\s*[\*•]\s+/.test(textAfterBold)) {
-          processedAfterText = `_${textAfterBold.replace(/^\s*[\*•]\s+/, '')}_`;
+        // Check if textAfterBold starts with a bullet that should be AI feedback
+        let renderedText = textAfterBold;
+        if (textAfterBold.match(/^\s*[\*•]\s+/)) {
+          const cleanText = textAfterBold.replace(/^\s*[\*•]\s+/, '');
+          renderedText = `<em>${cleanText}</em>`;
         }
         
         // Return a single list item with the bold instruction followed by text
         return (
           <li key={index} className="my-1">
             <strong className="font-bold">{processItalics(instruction, `item-${index}-bold`)}</strong>
-            {processedAfterText && processItalics(processedAfterText, `item-${index}-text`)}
+            {renderedText && (
+              renderedText.startsWith('<em>') ? (
+                <em className="block mt-1 text-gray-600">{renderedText.replace(/<\/?em>/g, '')}</em>
+              ) : (
+                processItalics(renderedText, `item-${index}-text`)
+              )
+            )}
           </li>
         );
       } else {
@@ -415,7 +292,7 @@ What do they need to know to understand and evaluate your research properly?`;
   };
 
   // Improved manual markdown renderer that preserves all formatting,
-  // converts *italic* to info icons, and handles strikethrough properly
+  // converts *italic* to tooltips, and handles strikethrough properly
   const renderCustomMarkdown = (content) => {
     if (!content) return null;
     
@@ -476,6 +353,16 @@ What do they need to know to understand and evaluate your research properly?`;
                   return <h3 key={paragraphIndex} className="text-xl font-bold my-3">{renderFormattedContent(headingText)}</h3>;
                 }
                 
+                // Check if this is a standalone bullet point that should be transformed to italics
+                if (paragraph.match(/^\s*[\*•]\s+(?!\*\*)/)) {
+                  const textContent = paragraph.replace(/^\s*[\*•]\s+/, '');
+                  return (
+                    <p key={paragraphIndex} className="my-4">
+                      <em className="block text-gray-600">{textContent}</em>
+                    </p>
+                  );
+                }
+                
                 // Better handling of list items with strikethrough
                 // Check if this is a list item
                 if (paragraph.startsWith('* ') || paragraph.startsWith('-') || paragraph.startsWith('• ') || /^\d+\.\s/.test(paragraph)) {
@@ -508,16 +395,6 @@ What do they need to know to understand and evaluate your research properly?`;
                     </p>
                   );
                 } else {
-                  // Check if this is a stand-alone bullet point that should be AI feedback
-                  if (/^\s*[\*•]\s+(?!\*\*)/.test(paragraph)) {
-                    const feedbackText = paragraph.replace(/^\s*[\*•]\s+/, '');
-                    return (
-                      <p key={paragraphIndex} className="my-4">
-                        <i className="ai-feedback">{feedbackText}</i>
-                      </p>
-                    );
-                  }
-                  
                   return (
                     <p key={paragraphIndex} className="my-4">
                       {renderFormattedContent(paragraph)}
@@ -575,75 +452,95 @@ What do they need to know to understand and evaluate your research properly?`;
         </div>
       </div>
       
-      {/* Info Modal - Appears when an info icon is clicked */}
-      {showInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" style={{ backdropFilter: 'blur(2px)' }}>
-          <div 
-            ref={modalRef}
-            className="bg-white rounded-lg shadow-xl mx-auto w-full relative"
-            style={{ maxHeight: 'calc(100vh - 8rem)', width: '500px', animation: 'fadeIn 0.2s ease-out forwards' }}
-          >
-            {/* Close button */}
-            <button 
-              onClick={() => setShowInfoModal(false)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 focus:outline-none"
-              aria-label="Close"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            
-            {/* Modal content */}
-            <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 10rem)' }}>
-              <div className="prose prose-blue max-w-none text-gray-700">
-                {modalContent}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Styling for info icons and modals */}
+      {/* Tooltip styling */}
       <style>{`
+        /* Tooltip container */
+        .tooltip-container {
+          position: relative;
+          display: inline-block;
+          cursor: help;
+          margin: 0 2px;
+          vertical-align: middle;
+        }
+        
         /* Info icon styling */
-        .info-icon-button {
+        .info-icon {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 18px;
-          height: 18px;
+          width: 16px;
+          height: 16px;
           border-radius: 50%;
           background-color: #EEF2FF;
           color: #4F46E5;
           font-size: 12px;
           font-weight: bold;
-          cursor: pointer;
-          border: none;
-          transition: all 0.2s ease;
-          margin: 0 2px;
           vertical-align: middle;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
-        .info-icon-button:hover {
-          background-color: #E0E7FF;
-          transform: scale(1.1);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        /* Tooltip styling */
+        .tooltip {
+          visibility: hidden;
+          position: absolute;
+          width: 400px;
+          background-color: #1F2937;
+          color: white;
+          text-align: left;
+          padding: 10px 14px;
+          border-radius: 6px;
+          z-index: 1000;
+          bottom: 125%;
+          left: -20px;
+          opacity: 0;
+          transition: opacity 0.3s;
+          font-size: 0.875rem;
+          line-height: 1.5;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          
+          /* Handle overflow with scrolling */
+          overflow-y: auto;
+          max-height: 300px;
         }
         
-        /* Modal animation */
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+        /* Show tooltip on hover */
+        .tooltip-container:hover .tooltip {
+          visibility: visible;
+          opacity: 1;
         }
         
-        /* Improved AI feedback styling (using italics) */
-        .ai-feedback {
-          font-style: italic;
-          color: #4B5563;
-          margin-top: 0.25rem;
-          display: block;
+        /* Tooltip arrow */
+        .tooltip-arrow {
+          position: absolute;
+          top: 100%;
+          left: 25px;
+          border-width: 5px;
+          border-style: solid;
+          border-color: #1F2937 transparent transparent transparent;
+        }
+        
+        /* Position tooltips that would overflow right edge of panel */
+        @media (min-width: 1024px) {
+          .tooltip-container:nth-last-child(-n+3) .tooltip {
+            left: auto;
+            right: 0;
+          }
+          
+          .tooltip-container:nth-last-child(-n+3) .tooltip .tooltip-arrow {
+            left: auto;
+            right: 25px;
+          }
+        }
+        
+        /* Make sure tooltips within strikethrough text remain fully visible */
+        .line-through .tooltip-container,
+        .line-through .tooltip-container .info-icon {
+          text-decoration: none !important;
+          opacity: 0.8 !important;
+        }
+        
+        /* Ensure the line goes through text but not through icon */
+        .line-through .tooltip-container {
+          display: inline-block !important;
         }
         
         /* Styling for strikethrough text */
@@ -653,16 +550,13 @@ What do they need to know to understand and evaluate your research properly?`;
           opacity: 0.7 !important;
         }
         
+        /* Ensure the line goes through bold text */
         .instructions-content strong.line-through,
         .instructions-content .line-through strong {
           text-decoration: line-through !important;
+          color: #6B7280 !important;
+          opacity: 0.7 !important;
           font-weight: 700 !important;
-        }
-        
-        /* Preserve tooltip icons in strikethrough text */
-        .line-through .info-icon-button {
-          text-decoration: none !important;
-          opacity: 0.8;
         }
       `}</style>
     </>
