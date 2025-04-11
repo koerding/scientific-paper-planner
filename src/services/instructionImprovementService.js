@@ -10,13 +10,13 @@
  * FIXED: Resolved issues with improve button functionality
  * FIXED: Properly handles strikethrough for both bold instructions and regular text
  * FIXED: Added missing extractBulletPoints function definition
+ * FIXED: Preserves tooltip markers during instruction improvement
  */
 import { callOpenAI } from './openaiService';
 import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
 
 /**
  * Extracts bullet points from instruction text
- * ADDED: This function was previously undefined - now it's properly defined
  * @param {string} instructions - The original instructions text
  * @returns {Array<string>} - Array of bullet point text without the bullet markers
  */
@@ -49,6 +49,66 @@ function extractBulletPoints(instructions) {
   }
   
   return bulletPoints;
+}
+
+/**
+ * Extracts tooltip markers from text
+ * @param {string} text - The text to extract tooltips from
+ * @returns {object} - Map of tooltip content
+ */
+function extractTooltips(text) {
+  const tooltips = {};
+  if (!text) return tooltips;
+  
+  // Find all *italic* sections which are used for tooltips
+  const tooltipRegex = /\*([^*]+)\*/g;
+  let match;
+  
+  while (match = tooltipRegex.exec(text)) {
+    const tooltipContent = match[1].trim();
+    tooltips[tooltipContent] = true;
+  }
+  
+  return tooltips;
+}
+
+/**
+ * Helper function to preserve tooltip markers in text
+ * @param {string} text - The text that might contain tooltip markers
+ * @param {object} tooltips - The tooltip map from extractTooltips
+ * @returns {string} - Text with tooltip markers preserved
+ */
+function preserveTooltips(text, tooltips) {
+  if (!text || Object.keys(tooltips).length === 0) return text;
+  
+  // Check if the text already has tooltip markers
+  if (text.includes('*') && text.match(/\*([^*]+)\*/)) {
+    return text; // Already has tooltip markers
+  }
+  
+  // Check if any tooltip content is in the text
+  for (const tooltipContent in tooltips) {
+    // Look for the tooltip content without the * markers
+    const cleanContent = tooltipContent.replace(/\*/g, '');
+    if (text.includes(cleanContent)) {
+      // Replace with the proper tooltip markup
+      text = text.replace(
+        new RegExp(escapeRegExp(cleanContent), 'g'), 
+        `*${cleanContent}*`
+      );
+    }
+  }
+  
+  return text;
+}
+
+/**
+ * Helper to escape special chars for RegExp
+ * @param {string} string - String to escape
+ * @returns {string} - Escaped string
+ */
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
@@ -133,6 +193,8 @@ export const improveBatchInstructions = async (
     
     4. Keep all instructions in bold (**instruction**) and all feedback in regular (non-bold) text
     
+    5. CRITICAL: Preserve any italicized text (*text*) in the original instructions, as these are tooltips.
+    
     Remember to return your response as a valid JSON array containing objects with id, editedInstructions, and completionStatus fields.
     `;
 
@@ -175,6 +237,9 @@ export const improveBatchInstructions = async (
         const originalInstructions = section.originalInstructionsText;
         const bulletPoints = extractBulletPoints(originalInstructions);
         
+        // Extract tooltips from original instructions to preserve them
+        const tooltips = extractTooltips(originalInstructions);
+        
         // Create a congratulatory message
         let modifiedInstructions = `Great work on your ${section.title.toLowerCase()}! You've made excellent progress.\n\n`;
         
@@ -189,23 +254,27 @@ export const improveBatchInstructions = async (
           // Get the instruction text (bold part)
           const instruction = boldMatch ? boldMatch[1].trim() : point;
           
+          // FIXED: Preserve tooltip markers in the instruction
+          const preservedInstruction = preserveTooltips(instruction, tooltips);
+          
           // The text after the instruction (contains tooltips if any)
           const afterInstructionText = boldMatch ? point.replace(boldRegex, '').trim() : '';
           
           if (isCompleted) {
             // FIXED: Apply strikethrough to both instruction and following text
+            // while preserving tooltip markers
             if (boldMatch) {
-              modifiedInstructions += `* **~~${instruction}~~**${afterInstructionText}\n`;
+              modifiedInstructions += `* **~~${preservedInstruction}~~**${afterInstructionText}\n`;
             } else {
-              modifiedInstructions += `* ~~${point}~~\n`;
+              modifiedInstructions += `* ~~${preserveTooltips(point, tooltips)}~~\n`;
             }
             modifiedInstructions += `You've addressed this point effectively by focusing on the key elements.\n\n`;
           } else {
             // Not completed
             if (boldMatch) {
-              modifiedInstructions += `* **${instruction}**${afterInstructionText}\n`;
+              modifiedInstructions += `* **${preservedInstruction}**${afterInstructionText}\n`;
             } else {
-              modifiedInstructions += `* ${point}\n`;
+              modifiedInstructions += `* ${preserveTooltips(point, tooltips)}\n`;
             }
             modifiedInstructions += `Consider adding more detail here to strengthen your ${section.title.toLowerCase()}.\n\n`;
           }
@@ -232,6 +301,9 @@ export const improveBatchInstructions = async (
       const sectionData = sectionsDataForPrompt.find(s => s.id === item.id);
       const originalInstructions = sectionData?.originalInstructionsText || '';
       
+      // Extract tooltips from original instructions to preserve them
+      const tooltips = extractTooltips(originalInstructions);
+      
       // Determine if instructions were actually changed
       const instructionsChanged = 
         item.editedInstructions && 
@@ -240,8 +312,8 @@ export const improveBatchInstructions = async (
       
       // If the AI didn't format the instructions properly, ensure we have bold and inline feedback
       let finalInstructions = instructionsChanged 
-        ? ensureProperFormatting(item.editedInstructions, originalInstructions)
-        : createFormattedFallbackInstructions(sectionData?.title || 'section', originalInstructions);
+        ? ensureProperFormatting(item.editedInstructions, originalInstructions, tooltips)
+        : createFormattedFallbackInstructions(sectionData?.title || 'section', originalInstructions, tooltips);
       
       // Ensure all required fields exist with appropriate values
       return {
@@ -278,10 +350,14 @@ export const improveBatchInstructions = async (
         const section = sectionContent?.sections?.find(s => s.id === id);
         const originalInstructions = section?.instructions?.text || '';
         
+        // Extract tooltips from original instructions to preserve them
+        const tooltips = extractTooltips(originalInstructions);
+        
         // Create formatted fallback instructions with inline feedback
         const editedInstructions = createFormattedFallbackInstructions(
           section?.title || 'section', 
-          originalInstructions
+          originalInstructions,
+          tooltips
         );
         
         return {
@@ -393,9 +469,10 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
  * FIXED: Removed dollar signs from strikethrough formatting
  * @param {string} sectionTitle - The section title 
  * @param {string} originalInstructions - The original instructions text
+ * @param {object} tooltips - The tooltip map or null to extract from originalInstructions
  * @returns {string} - Formatted instructions with inline feedback
  */
-function createFormattedFallbackInstructions(sectionTitle, originalInstructions) {
+function createFormattedFallbackInstructions(sectionTitle, originalInstructions, tooltips = null) {
   // Create a congratulatory message
   let formattedInstructions = `Great work on your ${sectionTitle.toLowerCase()}! You've made good progress.\n\n`;
   
@@ -403,14 +480,7 @@ function createFormattedFallbackInstructions(sectionTitle, originalInstructions)
   const bulletPoints = extractBulletPoints(originalInstructions);
   
   // For tracking the tooltip content from original instructions
-  const tooltipRegex = /\*([^*]+)\*/g;
-  const tooltips = {};
-  
-  // Extract tooltips from original instructions to preserve them
-  originalInstructions.replace(tooltipRegex, (match, content, index) => {
-    tooltips[content.trim()] = true;
-    return match;
-  });
+  const tooltipsMap = tooltips || extractTooltips(originalInstructions);
   
   // Format each bullet point with inline feedback
   bulletPoints.forEach((point, index) => {
@@ -420,6 +490,9 @@ function createFormattedFallbackInstructions(sectionTitle, originalInstructions)
     
     // Get the instruction text (bold part)
     const instruction = boldMatch ? boldMatch[1].trim() : point;
+    
+    // FIXED: Preserve tooltip markers in the instruction
+    const preservedInstruction = preserveTooltips(instruction, tooltipsMap);
     
     // The text after the instruction (contains tooltips if any)
     const afterInstructionText = boldMatch ? point.replace(boldRegex, '').trim() : '';
@@ -431,10 +504,10 @@ function createFormattedFallbackInstructions(sectionTitle, originalInstructions)
       // FIXED: Apply strikethrough to both the instruction AND the following text
       if (boldMatch) {
         // For completed item with bold formatting
-        formattedInstructions += `* **~~${instruction}~~**${afterInstructionText}\n`;
+        formattedInstructions += `* **~~${preservedInstruction}~~**${afterInstructionText}\n`;
       } else {
         // For completed item without bold formatting
-        formattedInstructions += `* ~~${point}~~\n`;
+        formattedInstructions += `* ~~${preserveTooltips(point, tooltipsMap)}~~\n`;
       }
       
       // Different feedback for different positions (not strikethrough)
@@ -448,9 +521,9 @@ function createFormattedFallbackInstructions(sectionTitle, originalInstructions)
     } else {
       // For non-completed item
       if (boldMatch) {
-        formattedInstructions += `* **${instruction}**${afterInstructionText}\n`;
+        formattedInstructions += `* **${preservedInstruction}**${afterInstructionText}\n`;
       } else {
-        formattedInstructions += `* ${point}\n`;
+        formattedInstructions += `* ${preserveTooltips(point, tooltipsMap)}\n`;
       }
       
       // Different feedback for different positions
@@ -474,9 +547,13 @@ function createFormattedFallbackInstructions(sectionTitle, originalInstructions)
  * FIXED: Removed dollar signs from strikethrough formatting
  * @param {string} editedInstructions - The AI-edited instructions 
  * @param {string} originalInstructions - The original instructions text
+ * @param {object} tooltips - The tooltip map or null to extract from originalInstructions
  * @returns {string} - Instructions with proper formatting
  */
-function ensureProperFormatting(editedInstructions, originalInstructions) {
+function ensureProperFormatting(editedInstructions, originalInstructions, tooltips = null) {
+  // Extract tooltips if not provided
+  const tooltipsMap = tooltips || extractTooltips(originalInstructions);
+  
   // Check if the AI already used the right formatting (bold instructions, regular feedback)
   const hasProperFormatting = 
     editedInstructions.includes('* **') && // Has bold bullet points
@@ -485,14 +562,37 @@ function ensureProperFormatting(editedInstructions, originalInstructions) {
   
   if (hasProperFormatting) {
     // Clean up any dollar signs in strikethrough formatting
-    return editedInstructions.replace(/\$\$~~|\$\$/g, '~~');
+    // and ensure tooltips are preserved
+    let cleanInstructions = editedInstructions.replace(/\$\$~~|\$\$/g, '~~');
+    
+    // FIXED: Look for missing tooltip markers and add them back
+    const boldRegex = /\*\*([^*]+)\*\*/g;
+    let match;
+    
+    while (match = boldRegex.exec(cleanInstructions)) {
+      const boldContent = match[1];
+      if (!boldContent.includes('*') && Object.keys(tooltipsMap).length > 0) {
+        // This bold text might be missing tooltip markers
+        const preservedContent = preserveTooltips(boldContent, tooltipsMap);
+        
+        if (preservedContent !== boldContent) {
+          // Replace the bold content with the preserved version
+          cleanInstructions = cleanInstructions.replace(
+            `**${boldContent}**`,
+            `**${preservedContent}**`
+          );
+        }
+      }
+    }
+    
+    return cleanInstructions;
   }
   
   // If we have the old format, convert it to the new format
   if (editedInstructions.includes('**Strengths:**') || 
       editedInstructions.includes('**Weaknesses:**') || 
       editedInstructions.includes('**Comments:**')) {
-    return convertOldFormatToNew(editedInstructions, originalInstructions);
+    return convertOldFormatToNew(editedInstructions, originalInstructions, tooltipsMap);
   }
   
   // Extract bullet points from original instructions
@@ -517,16 +617,6 @@ function ensureProperFormatting(editedInstructions, originalInstructions) {
     line.trim().startsWith('*') || line.trim().startsWith('-')
   );
   
-  // For tracking the tooltip content from original instructions
-  const tooltipRegex = /\*([^*]+)\*/g;
-  const tooltips = {};
-  
-  // Extract tooltips from original instructions to preserve them
-  originalInstructions.replace(tooltipRegex, (match, content, index) => {
-    tooltips[content.trim()] = true;
-    return match;
-  });
-  
   // If we found bullet points, format them properly
   if (bulletPointLines.length > 0) {
     bulletPointLines.forEach((line, index) => {
@@ -542,18 +632,23 @@ function ensureProperFormatting(editedInstructions, originalInstructions) {
       
       // Get instruction and following text
       const instructionPart = boldMatch ? boldMatch[1].trim() : content;
+      
+      // FIXED: Preserve tooltip markers in the instruction
+      const preservedInstruction = preserveTooltips(instructionPart, tooltipsMap);
+      
       const afterInstructionText = boldMatch ? content.replace(boldRegex, '').trim() : '';
       
       if (hasStrikethrough) {
         // FIXED: Apply strikethrough to both instruction and following text
-        let cleanInstruction = instructionPart.replace(/~~|<del>|<\/del>/g, '');
+        // while preserving tooltip markers
+        let cleanInstruction = preservedInstruction.replace(/~~|<del>|<\/del>/g, '');
         
         if (boldMatch) {
           // For item with bold formatting that should be strikethrough
           formattedInstructions += `* **~~${cleanInstruction}~~**${afterInstructionText}\n`;
         } else {
           // For item without bold formatting that should be strikethrough
-          formattedInstructions += `* ~~${content.replace(/~~|<del>|<\/del>/g, '')}~~\n`;
+          formattedInstructions += `* ~~${preserveTooltips(content.replace(/~~|<del>|<\/del>/g, ''), tooltipsMap)}~~\n`;
         }
         
         // Add feedback text without strikethrough
@@ -561,9 +656,9 @@ function ensureProperFormatting(editedInstructions, originalInstructions) {
       } else {
         // Not strikethrough - handle regular formatting
         if (boldMatch) {
-          formattedInstructions += `* **${instructionPart}**${afterInstructionText}\n`;
+          formattedInstructions += `* **${preservedInstruction}**${afterInstructionText}\n`;
         } else {
-          formattedInstructions += `* ${content}\n`;
+          formattedInstructions += `* ${preserveTooltips(content, tooltipsMap)}\n`;
         }
         
         // Add generic feedback if we don't have anything specific
@@ -593,6 +688,9 @@ function ensureProperFormatting(editedInstructions, originalInstructions) {
       // Get the instruction text (bold part)
       const instruction = boldMatch ? boldMatch[1].trim() : point;
       
+      // FIXED: Preserve tooltip markers in the instruction
+      const preservedInstruction = preserveTooltips(instruction, tooltipsMap);
+      
       // The text after the instruction (contains tooltips if any)
       const afterInstructionText = boldMatch ? point.replace(boldRegex, '').trim() : '';
       
@@ -601,18 +699,19 @@ function ensureProperFormatting(editedInstructions, originalInstructions) {
       
       if (isCompleted) {
         // FIXED: Apply strikethrough to both instruction and following text
+        // while preserving tooltip markers
         if (boldMatch) {
-          formattedInstructions += `* **~~${instruction}~~**${afterInstructionText}\n`;
+          formattedInstructions += `* **~~${preservedInstruction}~~**${afterInstructionText}\n`;
         } else {
-          formattedInstructions += `* ~~${point}~~\n`;
+          formattedInstructions += `* ~~${preserveTooltips(point, tooltipsMap)}~~\n`;
         }
         formattedInstructions += `You've addressed this well in your current draft.\n\n`;
       } else {
         // Not completed
         if (boldMatch) {
-          formattedInstructions += `* **${instruction}**${afterInstructionText}\n`;
+          formattedInstructions += `* **${preservedInstruction}**${afterInstructionText}\n`;
         } else {
-          formattedInstructions += `* ${point}\n`;
+          formattedInstructions += `* ${preserveTooltips(point, tooltipsMap)}\n`;
         }
         formattedInstructions += `This point needs more attention to fully develop your ideas.\n\n`;
       }
@@ -629,9 +728,10 @@ function ensureProperFormatting(editedInstructions, originalInstructions) {
  * FIXED: Removed dollar signs from strikethrough formatting
  * @param {string} oldFormatText - The text in old format
  * @param {string} originalInstructions - The original instructions text
+ * @param {object} tooltips - The tooltip map or null to extract from originalInstructions
  * @returns {string} - The text in new format
  */
-function convertOldFormatToNew(oldFormatText, originalInstructions) {
+function convertOldFormatToNew(oldFormatText, originalInstructions, tooltips = null) {
   // Extract strengths, weaknesses, and comments
   let strengths = '';
   let weaknesses = '';
@@ -654,6 +754,9 @@ function convertOldFormatToNew(oldFormatText, originalInstructions) {
   
   // Extract bullet points from the original instructions
   const bulletPoints = extractBulletPoints(originalInstructions);
+  
+  // Extract tooltips if not provided
+  const tooltipsMap = tooltips || extractTooltips(originalInstructions);
   
   // Keep any congratulatory message at the top
   let congratsMessage = '';
@@ -682,6 +785,9 @@ function convertOldFormatToNew(oldFormatText, originalInstructions) {
     // Get the instruction text (bold part)
     const instruction = boldMatch ? boldMatch[1].trim() : point;
     
+    // FIXED: Preserve tooltip markers in the instruction
+    const preservedInstruction = preserveTooltips(instruction, tooltipsMap);
+    
     // The text after the instruction (contains tooltips if any)
     const afterInstructionText = boldMatch ? point.replace(boldRegex, '').trim() : '';
     
@@ -696,10 +802,11 @@ function convertOldFormatToNew(oldFormatText, originalInstructions) {
     
     if (isCompleted) {
       // FIXED: Apply strikethrough to both instruction and following text
+      // while preserving tooltip markers
       if (boldMatch) {
-        formattedInstructions += `* **~~${instruction}~~**${afterInstructionText}\n`;
+        formattedInstructions += `* **~~${preservedInstruction}~~**${afterInstructionText}\n`;
       } else {
-        formattedInstructions += `* ~~${point}~~\n`;
+        formattedInstructions += `* ~~${preserveTooltips(point, tooltipsMap)}~~\n`;
       }
       
       // Add positive feedback based on strengths WITHOUT strikethrough
@@ -712,9 +819,9 @@ function convertOldFormatToNew(oldFormatText, originalInstructions) {
     } else {
       // Not completed
       if (boldMatch) {
-        formattedInstructions += `* **${instruction}**${afterInstructionText}\n`;
+        formattedInstructions += `* **${preservedInstruction}**${afterInstructionText}\n`;
       } else {
-        formattedInstructions += `* ${point}\n`;
+        formattedInstructions += `* ${preserveTooltips(point, tooltipsMap)}\n`;
       }
       
       // Add feedback based on weaknesses or comments
