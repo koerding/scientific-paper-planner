@@ -1,6 +1,7 @@
 // FILE: scripts/convertSectionContent.js
-// Improved conversion script to migrate from the old text-based format to the new structured format
-// - Extracts italicized text (*text*) as tooltips for each subsection
+// Fixed conversion script to migrate from the old text-based format to the new structured format
+// - Correctly handles distinction between bold (**) and italic (*) text
+// - Extracts only italic text (*text*) as tooltips for each subsection
 // - Removes llmInstructions fields that are no longer used
 // Run this script from the project root: node scripts/convertSectionContent.js
 
@@ -25,16 +26,31 @@ function generateSafeId(title, sectionId, index) {
 }
 
 /**
- * Extract italicized text (marked with * *) for use as tooltip
- * @param {string} text - The instruction text
- * @returns {string} - Extracted tooltip text or empty string
+ * Check if a paragraph is in italics (starts and ends with a single asterisk)
+ * This carefully avoids matching bold text with double asterisks
+ * @param {string} text - The paragraph to check
+ * @returns {boolean} - True if the text is formatted as italics
  */
-function extractTooltipFromText(text) {
-  if (!text) return '';
+function isItalicText(text) {
+  // Trims the text and checks if it starts with exactly one asterisk and ends with exactly one asterisk
+  const trimmed = text.trim();
+  return trimmed.startsWith('*') && 
+         trimmed.endsWith('*') && 
+         !trimmed.startsWith('**') && 
+         !trimmed.endsWith('**');
+}
+
+/**
+ * Extract tooltip text from an italicized paragraph
+ * @param {string} text - The italicized text (with * markers)
+ * @returns {string} - The extracted tooltip text without the markers
+ */
+function extractTooltipFromItalicText(text) {
+  if (!isItalicText(text)) return '';
   
-  // Look for text enclosed in single asterisks: *tooltip text*
-  const tooltipMatch = text.match(/\*([^*]+)\*/);
-  return tooltipMatch ? tooltipMatch[1].trim() : '';
+  // Remove the first and last asterisk
+  const trimmed = text.trim();
+  return trimmed.substring(1, trimmed.length - 1).trim();
 }
 
 /**
@@ -63,8 +79,8 @@ function extractSubsections(text, sectionId) {
     if (!paragraph) continue;
     
     // Check if this is a subsection heading (bold text with a colon)
-    // Pattern for bold headings like "**Title: Instruction.**"
-    const boldHeadingMatch = paragraph.match(/\s*\*\*([^:*]+):([^*]+)\*\*\s*/);
+    // Pattern specifically for bold headings like "**Title: Instruction.**"
+    const boldHeadingMatch = paragraph.match(/^\s*\*\*([^:*]+):\s*([^*]+)\*\*\s*$/);
     
     if (boldHeadingMatch) {
       // If we were collecting a previous subsection, save it
@@ -84,27 +100,21 @@ function extractSubsections(text, sectionId) {
       currentTitle = boldHeadingMatch[1].trim();
       currentInstruction = boldHeadingMatch[2].trim();
       
-      // Look for an italicized paragraph following this heading for tooltip
-      if (i + 1 < paragraphs.length) {
-        const nextParagraph = paragraphs[i + 1].trim();
-        // Check if it's enclosed in asterisks (italics)
-        if (nextParagraph.startsWith('*') && nextParagraph.endsWith('*')) {
-          // Extract tooltip text (remove the * markers)
-          currentTooltip = nextParagraph.substring(1, nextParagraph.length - 1).trim();
-          // Skip this paragraph in the next iteration
-          i++;
-        }
+      // Look ahead for an italicized paragraph that might be the tooltip
+      if (i + 1 < paragraphs.length && isItalicText(paragraphs[i + 1])) {
+        currentTooltip = extractTooltipFromItalicText(paragraphs[i + 1]);
+        // Skip this paragraph in the next iteration
+        i++;
       }
     }
-    // If the paragraph is not a heading and we're in a subsection
-    else if (currentTitle && !paragraph.startsWith('*') && !paragraph.endsWith('*')) {
-      // Append to current instruction
-      currentInstruction += ' ' + paragraph;
+    // If the paragraph is italic text and we're in a subsection but no tooltip yet
+    else if (currentTitle && isItalicText(paragraph) && !currentTooltip) {
+      currentTooltip = extractTooltipFromItalicText(paragraph);
     }
-    // If it's an italicized paragraph and we don't have a tooltip yet
-    else if (currentTitle && paragraph.startsWith('*') && paragraph.endsWith('*') && !currentTooltip) {
-      // Extract tooltip text (remove the * markers)
-      currentTooltip = paragraph.substring(1, paragraph.length - 1).trim();
+    // If the paragraph is not a heading or italic and we're in a subsection
+    else if (currentTitle && !isItalicText(paragraph)) {
+      // Append to current instruction
+      currentInstruction += (currentInstruction ? ' ' : '') + paragraph;
     }
   }
   
@@ -140,9 +150,10 @@ function extractIntroText(text) {
   let introText = text.substring(0, firstBoldHeadingIndex).trim();
   
   // Remove any italicized paragraphs (tooltips) from the intro
-  introText = introText.replace(/\*[^*]+\*/g, '').trim();
+  // Split into paragraphs and keep only non-italic ones
+  const introParagraphs = introText.split(/\n\n+/).filter(para => !isItalicText(para.trim()));
   
-  return introText;
+  return introParagraphs.join('\n\n').trim();
 }
 
 /**
@@ -208,25 +219,17 @@ async function convertSectionContent() {
     const sectionStats = newData.sections.map(section => ({
       id: section.id,
       subsectionCount: section.subsections?.length || 0,
-      hasTooltips: section.subsections?.some(sub => sub.tooltip && sub.tooltip.length > 0) || false
+      subsectionsWithTooltips: section.subsections?.filter(sub => sub.tooltip && sub.tooltip.length > 0).length || 0
     }));
     
     console.log('\nConversion statistics:');
     console.log('---------------------');
     sectionStats.forEach(stat => {
-      console.log(`Section ${stat.id}: ${stat.subsectionCount} subsections | Tooltips: ${stat.hasTooltips ? 'Yes' : 'No'}`);
+      console.log(`Section ${stat.id}: ${stat.subsectionCount} subsections | With tooltips: ${stat.subsectionsWithTooltips}/${stat.subsectionCount}`);
     });
     console.log(`Total sections: ${newData.sections.length}`);
     console.log(`Total subsections: ${sectionStats.reduce((sum, stat) => sum + stat.subsectionCount, 0)}`);
-    
-    // Check for sections without tooltips
-    const sectionsWithoutTooltips = sectionStats.filter(stat => !stat.hasTooltips && stat.subsectionCount > 0);
-    if (sectionsWithoutTooltips.length > 0) {
-      console.warn('\nWARNING: The following sections have subsections without tooltips:');
-      sectionsWithoutTooltips.forEach(stat => {
-        console.warn(`- ${stat.id}`);
-      });
-    }
+    console.log(`Total tooltips: ${sectionStats.reduce((sum, stat) => sum + stat.subsectionsWithTooltips, 0)}`);
     
     // Write the new JSON file
     const jsonOutputPath = path.join(__dirname, '../src/data/sectionContent.json');
@@ -239,7 +242,8 @@ async function convertSectionContent() {
 // Restructured data format with explicit subsections and tooltips extracted from italicized text
 // Generated by conversion script on ${new Date().toISOString()}
 // - Removed llmInstructions fields that are no longer used
-// - Extracted italicized text as tooltips for each subsection
+// - Extracted only italicized text (*text*) as tooltips for each subsection
+// - Properly distinguished between bold (**text**) and italic (*text*) formatting
 
 export const sectionContent = ${JSON.stringify(newData, null, 2)};
 
