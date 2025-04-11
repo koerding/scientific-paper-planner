@@ -703,3 +703,24 @@ body, html {
   visibility: visible !important;
   opacity: 1 !important;
 }
+
+* Tooltip fixes */
+.tooltip {
+  /* Force exact width */
+  width: 400px !important;
+  min-width: 400px !important;
+  max-width: 400px !important;
+  /* Allow overflow with scrolling */
+  overflow-y: auto !important;
+  max-height: 300px !important;
+  /* Make sure it appears */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip-container:hover .tooltip {
+  /* Force visibility */
+  visibility: visible !important;
+  opacity: 1 !important;
+}
