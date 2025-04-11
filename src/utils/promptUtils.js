@@ -1,4 +1,6 @@
-// src/utils/promptUtils.js
+// FILE: src/utils/promptUtils.js
+// REFACTORED: Simplified to support the new structured JSON approach
+
 import promptContent from '../data/promptContent.json';
 
 /**
@@ -67,7 +69,7 @@ const replacePlaceholders = (template, params = {}) => {
 /**
  * Build a system prompt for the chat AI based on the type and parameters.
  * This focuses specifically on the 'system' role message content.
- * @param {string} promptType - The type of system prompt to build (e.g., 'chat', 'documentImport').
+ * @param {string} promptType - The type of system prompt to build (e.g., 'chat', 'instructionImprovement').
  * @param {object} params - Parameters to insert into the prompt template.
  * @returns {string} - The formatted system prompt string.
  */
@@ -90,7 +92,7 @@ export const buildSystemPrompt = (promptType, params = {}) => {
   const allParams = {
     ...params,
     researchApproachContext: contextText,
-    // Ensure potentially missing params have default values for replacement
+    // Default values for common parameters
     sectionTitle: params.sectionTitle || '',
     instructionsText: params.instructionsText || '',
     feedbackText: params.feedbackText || '',
@@ -99,61 +101,21 @@ export const buildSystemPrompt = (promptType, params = {}) => {
   };
 
   // Replace placeholders in the base template
-  let finalPrompt = replacePlaceholders(basePromptTemplate, allParams);
-  
-  // For instruction improvement, add specific guidance about tooltips,
-  // linebreaks in feedback, and strikethrough for completed items
-  if (promptType === 'instructionImprovement') {
-    finalPrompt += `
-
-IMPORTANT FEEDBACK FORMAT NOTE: When providing feedback, always use this exact structure with linebreaks between sections:
-
-**Strengths:**
-[list specific strengths]
-
-**Weaknesses:**
-[list specific areas for improvement]
-
-**Comments:**
-[specific actionable suggestions]
-
-The linebreaks between sections are essential for readability.
-
-INSTRUCTION FORMATTING: Use ~~strikethrough~~ for completed items instead of removing them. For example, if the original instruction has:
-* Define your research question clearly.
-* Explain why the question matters.
-
-And the user has defined their question clearly but not explained why it matters, change it to:
-* ~~Define your research question clearly.~~
-* Explain why the question matters.
-
-This helps users see their progress while keeping all original instructions visible.
-
-CRITICAL TOOLTIP HANDLING: When processing text with special tooltip markers like [TOOLTIP_MARKER_0], [TOOLTIP_MARKER_1], etc.:
-1. DO NOT modify these markers in any way
-2. DO NOT remove these markers from the text
-3. Simply leave them exactly as they appear
-
-These markers will be replaced later with their actual content. Preserving them exactly is essential for proper tooltip rendering.
-`;
-  }
-  
-  return finalPrompt;
+  return replacePlaceholders(basePromptTemplate, allParams);
 };
 
 /**
- * Build a main task prompt (for the 'user' role) based on the type and parameters.
- * Used for complex tasks like document import or instruction improvement.
- * @param {string} taskType - The type of task prompt (e.g., 'documentImport', 'instructionImprovement').
- * @param {object} params - Parameters to insert into the prompt template.
- * @returns {string} - The formatted task prompt string.
+ * Build a user task prompt for the OpenAI API
+ * @param {string} taskType - The type of task prompt to build
+ * @param {object} params - Parameters for the prompt
+ * @returns {string} - The formatted task prompt
  */
 export const buildTaskPrompt = (taskType, params = {}) => {
   // Get the base task prompt template
   const basePromptTemplate = promptContent.taskPrompts[taskType];
   if (!basePromptTemplate) {
     console.error(`Unknown task prompt type: ${taskType}`);
-    return `System error: Unknown task prompt type ${taskType}`;
+    return `Error: Unknown task prompt type ${taskType}`;
   }
 
   // Add any standard parameters needed, like timestamp
@@ -163,153 +125,26 @@ export const buildTaskPrompt = (taskType, params = {}) => {
   };
 
   // Replace placeholders
-  let finalPrompt = replacePlaceholders(basePromptTemplate, allParams);
-  
-  // For instruction improvement, add specific guidance about preserving tooltips,
-  // linebreaks in feedback, and using strikethrough instead of deletion
-  if (taskType === 'instructionImprovement') {
-    finalPrompt += `
-
-IMPORTANT ADDITIONAL INSTRUCTION: 
-
-1. When providing feedback in the "feedback" field, use linebreaks between the Strengths, Weaknesses, and Comments sections for better readability. For example:
-
-"**Strengths:**
-The question is well-defined and its significance is clearly articulated.
-
-**Weaknesses:**
-The broader scientific context and specific methodologies are not fully addressed.
-
-**Comments:**
-Consider discussing the theoretical implications of your question to enhance its impact."
-
-2. CRITICAL: When updating instructions, DO NOT DELETE completed items. Instead, mark them with strikethrough like this: ~~completed item~~. For example, if the original instructions include:
-
-* Define your research question
-* Explain the significance
-* Identify methodological approach
-
-And the user has completed the first two, your editedInstructions should be:
-
-* ~~Define your research question~~
-* ~~Explain the significance~~
-* Identify methodological approach
-
-This way, users can see what they've accomplished while still having the original instructions visible.
-
-3. CRITICAL TOOLTIP INSTRUCTIONS: When you see text containing special markers like [TOOLTIP_MARKER_0], [TOOLTIP_MARKER_1], etc.:
-
-- DO NOT modify, remove, or change these markers in any way
-- Always preserve them exactly as they appear
-- These markers will be replaced with actual content later
-- Failure to preserve these markers will break important functionality in the application
-`;
-  }
-  
-  return finalPrompt;
+  return replacePlaceholders(basePromptTemplate, allParams);
 };
 
 /**
- * Get random questions for a specific research approach or section
- * @param {string} sectionId - The section ID or approach type ('hypothesis', 'needsresearch', 'exploratory', or 'general')
- * @param {number} count - Number of questions to return (default: 2)
- * @returns {Array<string>} - Array of randomly selected questions
+ * Generate a mock response for structured instruction improvement
+ * Used for testing without making API calls
+ * @param {Array} sectionsForAnalysis - The sections being analyzed
+ * @returns {Array} - Mock analysis results
  */
-export const getRandomQuestionsForApproach = (sectionId, count = 2) => {
-  // Map section IDs to question sets (just 3 approaches plus general)
-  let questionSetKey = 'general'; // Default
-  
-  if (sectionId === 'hypothesis') {
-    questionSetKey = 'hypothesis';
-  } else if (sectionId === 'needsresearch') {
-    questionSetKey = 'needsresearch';
-  } else if (sectionId === 'exploratoryresearch') {
-    questionSetKey = 'exploratory';
-  }
-
-  const questionSet = promptContent.researchApproaches.questions[questionSetKey];
-
-  // If there are no questions, return empty array
-  if (!questionSet || !questionSet.length) {
-    console.warn(`No questions found for approach/section: ${questionSetKey}`);
-    return [];
-  }
-
-  // Shuffle the questions and pick the requested number
-  const shuffled = [...questionSet].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, Math.min(count, shuffled.length));
-};
-
-/**
- * Generate a mock response for testing without API
- * @param {string} type - Response type ('chat', 'instructionImprovement', 'documentImport')
- * @param {string} sectionId - The section ID or approach type for context
- * @returns {string} - A formatted mock response string
- */
-export const generateMockResponse = (type, sectionId) => {
-  // Handle specific mock types first
-  if (type === 'instructionImprovement') {
-    // Add linebreaks to feedback sections and strikethrough to completed items
-    let response = promptContent.mockResponses.instructionImprovement;
-    response = response.replace(/"\*\*Strengths:\*\* /g, '"**Strengths:**\n');
-    response = response.replace(/\\n\*\*Weaknesses:\*\* /g, '\n\n**Weaknesses:**\n');
-    response = response.replace(/\\n\*\*Comments:\*\* /g, '\n\n**Comments:**\n');
-    
-    // Add strikethrough to some items to simulate completion
-    if (response.includes('editedInstructions')) {
-      response = response.replace(/Great job defining your research question/g, 
-        'Great job defining your research question. Your current work shows good progress:\n\n* ~~Define your research question clearly.~~\n* ~~Articulate scientific significance.~~\n* Consider methodological implications');
-    }
-    
-    return response;
-  }
-  
-  if (type === 'documentImport') {
-    return promptContent.mockResponses.documentImport;
-  }
-
-  // For chat responses, determine the approach type
-  let approachTypeKey = 'general'; // Default
-  if (sectionId === 'hypothesis') {
-    approachTypeKey = 'hypothesis';
-  } else if (sectionId === 'needsresearch') {
-    approachTypeKey = 'needsresearch';
-  } else if (sectionId === 'exploratoryresearch') {
-    approachTypeKey = 'exploratory';
-  }
-
-  // Get the response template
-  let template;
-  if (promptContent.mockResponses.chat && promptContent.mockResponses.chat[approachTypeKey]) {
-     template = promptContent.mockResponses.chat[approachTypeKey];
-  } else {
-     // Fallback if specific template missing
-     console.warn(`Mock response template missing for approach: ${approachTypeKey}. Using general fallback.`);
-     template = promptContent.mockResponses.chat?.general ||
-                `Let's discuss ${sectionId || 'your work'}. What's on your mind?`; // Absolute fallback
-  }
-
-  // Get random questions for this approach if needed by the template
-  if (template.includes('{{question')) {
-    const questions = getRandomQuestionsForApproach(approachTypeKey, 3);
-    const questionParams = {};
-    questions.forEach((q, i) => {
-        questionParams[`question${i + 1}`] = q;
-    });
-    // Use replacePlaceholders to fill in questions
-    template = replacePlaceholders(template, questionParams);
-  }
-
-  // Add other simple replacements if needed by templates
-  template = replacePlaceholders(template, {
-      hypothesis_aspect: 'aspect A',
-      alternative_aspect: 'aspect B',
-      stakeholder: 'the user group',
-      sectionId: sectionId || 'the current section'
-  });
-
-  // Final cleanup of any remaining placeholders
-  template = template.replace(/{{[^}]+}}/g, '');
-
-  return template.trim();
+export const generateMockStructuredAnalysis = (sectionsForAnalysis) => {
+  return sectionsForAnalysis.map(section => ({
+    id: section.id,
+    overallFeedback: `Great work on your ${section.title.toLowerCase()}! You've made excellent progress.`,
+    completionStatus: "complete",
+    subsections: (section.subsections || []).map((subsection, index) => ({
+      id: subsection.id,
+      isComplete: index % 3 !== 0, // Mark 2/3 of subsections as complete for testing
+      feedback: index % 3 !== 0
+        ? "You've addressed this point effectively with clear examples."
+        : "Consider elaborating further on this aspect to strengthen your work."
+    }))
+  }));
 };
