@@ -9,7 +9,8 @@
  * UPDATED: More detailed console logging
  * FIXED: Resolved issues with improve button functionality
  * FIXED: Properly handles strikethrough for both bold instructions and regular text
- * FIXED: Now extracts tooltips before sending to AI and restores them afterward
+ * FIXED: Added missing extractBulletPoints function definition
+ * FIXED: Extracts tooltips before sending to AI and restores them after response
  */
 import { callOpenAI } from './openaiService';
 import { isResearchApproachSection, buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -51,9 +52,9 @@ function extractBulletPoints(instructions) {
 }
 
 /**
- * Simple solution to extract and replace tooltips with placeholders
- * @param {string} text - Text with tooltip markers
- * @returns {object} - Object with processed text and map of placeholders to tooltips
+ * Extracts tooltips from text and replaces them with numbered placeholders
+ * @param {string} text - Original text with tooltips
+ * @returns {object} - Object with processed text and tooltips map
  */
 function extractTooltipsBeforeAI(text) {
   if (!text) return { text: '', tooltips: {} };
@@ -61,7 +62,7 @@ function extractTooltipsBeforeAI(text) {
   const tooltips = {};
   let counter = 0;
   
-  // Replace *italic* with unique placeholders
+  // Replace *italic* with numbered placeholders __TOOLTIP_0__, __TOOLTIP_1__, etc.
   const processedText = text.replace(/\*([^*\n]+)\*/g, (match, content) => {
     const placeholder = `__TOOLTIP_${counter}__`;
     tooltips[placeholder] = content.trim();
@@ -69,26 +70,29 @@ function extractTooltipsBeforeAI(text) {
     return placeholder;
   });
   
-  return { text: processedText, tooltips };
+  return { 
+    text: processedText, 
+    tooltips 
+  };
 }
 
 /**
- * Put the tooltips back in place after AI processing
+ * Restores tooltips from placeholders
  * @param {string} text - Text with tooltip placeholders
- * @param {object} tooltips - Map of placeholders to tooltips
+ * @param {Object} tooltips - Map of placeholders to tooltip contents
  * @returns {string} - Text with tooltips restored
  */
 function restoreTooltipsAfterAI(text, tooltips) {
   if (!text || !tooltips || Object.keys(tooltips).length === 0) return text;
   
-  let result = text;
+  // Replace each __TOOLTIP_N__ with *original content*
+  let restoredText = text;
   for (const [placeholder, content] of Object.entries(tooltips)) {
-    result = result.replace(new RegExp(placeholder, 'g'), `*${content}*`);
+    restoredText = restoredText.replace(new RegExp(placeholder, 'g'), `*${content}*`);
   }
   
-  return result;
+  return restoredText;
 }
-
 
 /**
  * Improves instructions for multiple sections, providing inline feedback after each instruction point.
@@ -121,7 +125,7 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No sections with progress to improve" };
     }
 
-    // Store tooltip maps by section ID
+    // Store extracted tooltips for each section
     const sectionTooltipsMap = {};
 
     // Prepare data for analysis
@@ -137,10 +141,10 @@ export const improveBatchInstructions = async (
 
       // EXTRACT TOOLTIPS before sending to AI
       const originalInstructionsText = originalSectionDef.instructions.text;
-      const { text: processedInstructions, tooltipsMap } = extractTooltipsBeforeAI(originalInstructionsText);
+      const { text: processedInstructions, tooltips } = extractTooltipsBeforeAI(originalInstructionsText);
       
       // Store the tooltips for later restoration
-      sectionTooltipsMap[sectionId] = tooltipsMap;
+      sectionTooltipsMap[sectionId] = tooltips;
 
       return {
         id: sectionId,
@@ -221,15 +225,10 @@ export const improveBatchInstructions = async (
       // Create enhanced fallback responses with inline feedback format
       const fallbackData = sectionsDataForPrompt.map(section => {
         // Extract bullet points from original instructions
-        const originalSectionDef = sectionContent?.sections?.find(s => s.id === section.id);
-        const originalInstructions = originalSectionDef?.instructions?.text || '';
-        const tooltipsMap = sectionTooltipsMap[section.id] || {};
+        const bulletPoints = extractBulletPoints(section.originalInstructionsText);
         
         // Create a congratulatory message
         let modifiedInstructions = `Great work on your ${section.title.toLowerCase()}! You've made excellent progress.\n\n`;
-        
-        // Extract bullet points from processed instructions (without tooltips)
-        const bulletPoints = extractBulletPoints(section.originalInstructionsText);
         
         // Add formatted bullet points with inline feedback
         bulletPoints.forEach((point, index) => {
@@ -242,11 +241,11 @@ export const improveBatchInstructions = async (
           // Get the instruction text (bold part)
           const instruction = boldMatch ? boldMatch[1].trim() : point;
           
-          // The text after the instruction
+          // The text after the instruction (contains tooltips if any)
           const afterInstructionText = boldMatch ? point.replace(boldRegex, '').trim() : '';
           
           if (isCompleted) {
-            // FIXED: Apply strikethrough to both instruction and following text
+            // Apply strikethrough to both instruction and following text
             if (boldMatch) {
               modifiedInstructions += `* **~~${instruction}~~**${afterInstructionText}\n`;
             } else {
@@ -265,7 +264,7 @@ export const improveBatchInstructions = async (
         });
         
         // RESTORE TOOLTIPS in the fallback response
-        modifiedInstructions = restoreTooltipsAfterAI(modifiedInstructions, tooltipsMap);
+        modifiedInstructions = restoreTooltipsAfterAI(modifiedInstructions, sectionTooltipsMap[section.id] || {});
         
         return {
           id: section.id,
@@ -285,35 +284,46 @@ export const improveBatchInstructions = async (
 
     // Validate and ensure instructions use proper formatting
     const validatedData = response.map(item => {
+      // Get the section ID
       const sectionId = item.id;
-      const tooltipsMap = sectionTooltipsMap[sectionId] || {};
+      if (!sectionId) {
+        console.warn("Missing ID in response item, skipping", item);
+        return null;
+      }
+      
+      // Get the tooltips for this section
+      const tooltips = sectionTooltipsMap[sectionId] || {};
       
       // Determine if instructions were actually changed
       const instructionsChanged = 
         item.editedInstructions && 
         item.editedInstructions.length >= 50;
       
-      // If the AI provided good instructions, restore tooltips
+      // Restore tooltips to the output text
       if (instructionsChanged) {
-        item.editedInstructions = restoreTooltipsAfterAI(item.editedInstructions, tooltipsMap);
+        item.editedInstructions = restoreTooltipsAfterAI(item.editedInstructions, tooltips);
       } else {
         // If AI didn't provide good instructions, use fallback with tooltip restoration
         const sectionData = sectionsDataForPrompt.find(s => s.id === sectionId);
-        const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
-        item.editedInstructions = createFormattedFallbackInstructions(sectionData?.title || 'section', originalSectionDef?.instructions?.text || '');
-        // Restore tooltips in the fallback instructions
-        item.editedInstructions = restoreTooltipsAfterAI(item.editedInstructions, tooltipsMap);
+        if (sectionData) {
+          let editedInstructions = createFormattedFallbackInstructions(
+            sectionData.title || 'section',
+            sectionData.originalInstructionsText
+          );
+          
+          // Restore tooltips
+          editedInstructions = restoreTooltipsAfterAI(editedInstructions, tooltips);
+          item.editedInstructions = editedInstructions;
+        }
       }
       
       // Ensure all required fields exist with appropriate values
       return {
-        id: item.id || '',
+        id: sectionId,
         editedInstructions: item.editedInstructions,
-        completionStatus: (item.completionStatus === 'unstarted')
-          ? 'unstarted'
-          : 'complete'
+        completionStatus: item.completionStatus === 'unstarted' ? 'unstarted' : 'complete'
       };
-    }).filter(item => item.id); // Remove any items without an ID
+    }).filter(item => item !== null); // Remove null items
 
     console.log(`[Instruction Improvement] Successfully processed ${validatedData.length} improved sections with inline feedback`);
     console.timeEnd("instructionImprovementTime");
@@ -338,26 +348,29 @@ export const improveBatchInstructions = async (
       })
       .map(id => {
         const section = sectionContent?.sections?.find(s => s.id === id);
-        const originalInstructions = section?.instructions?.text || '';
+        if (!section) return null;
         
-        // Extract tooltips before creating fallback
-        const { text: processedInstructions, tooltipsMap } = extractTooltipsBeforeAI(originalInstructions);
+        const originalInstructions = section.instructions?.text || '';
+        
+        // Extract tooltips
+        const { text: processedInstructions, tooltips } = extractTooltipsBeforeAI(originalInstructions);
         
         // Create formatted fallback instructions with inline feedback
         let editedInstructions = createFormattedFallbackInstructions(
-          section?.title || 'section', 
+          section.title || 'section', 
           processedInstructions
         );
         
         // Restore tooltips
-        editedInstructions = restoreTooltipsAfterAI(editedInstructions, tooltipsMap);
+        editedInstructions = restoreTooltipsAfterAI(editedInstructions, tooltips);
         
         return {
           id: id,
           editedInstructions: editedInstructions,
           completionStatus: 'complete'
         };
-      });
+      })
+      .filter(item => item !== null); // Remove null items
     
     console.log("[Instruction Improvement] Using error fallback data with inline feedback format:", fallbackData.length);
     
@@ -476,18 +489,17 @@ function createFormattedFallbackInstructions(sectionTitle, originalInstructions)
     // Get the instruction text (bold part)
     const instruction = boldMatch ? boldMatch[1].trim() : point;
     
-    // The text after the instruction
+    // The text after the instruction (contains tooltips if any)
     const afterInstructionText = boldMatch ? point.replace(boldRegex, '').trim() : '';
     
     // Mark about 70% of points as completed for fallback
     const isCompleted = Math.random() > 0.3;
     
     if (isCompleted) {
-      // For completed item with bold formatting
+      // FIXED: Apply strikethrough to both instruction and following text
       if (boldMatch) {
         formattedInstructions += `* **~~${instruction}~~**${afterInstructionText}\n`;
       } else {
-        // For completed item without bold formatting
         formattedInstructions += `* ~~${point}~~\n`;
       }
       
@@ -500,7 +512,7 @@ function createFormattedFallbackInstructions(sectionTitle, originalInstructions)
         formattedInstructions += `This point is well developed in your current draft.\n\n`;
       }
     } else {
-      // For non-completed item
+      // Not completed
       if (boldMatch) {
         formattedInstructions += `* **${instruction}**${afterInstructionText}\n`;
       } else {
