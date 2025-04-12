@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 /**
- * Enhanced instructions panel with tooltip functionality for subsections
+ * Enhanced instructions panel with properly formatted tooltips and matching font sizes
  */
 const FullHeightInstructionsPanel = ({ currentSection }) => {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -81,11 +81,11 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
       <div className="px-6 py-4 relative">
         {!currentSection ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-blue-600 text-xl">Select a section to view instructions</p>
+            <p className="text-blue-600 text-base">Select a section to view instructions</p>
           </div>
         ) : (
           <>
-            <h3 className="text-3xl font-semibold text-blue-800 mb-4">
+            <h3 className="text-lg font-semibold text-blue-800 mb-4">
               {panelTitle}
             </h3>
 
@@ -93,7 +93,7 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
             <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
               {/* Intro Text */}
               {currentSection.introText && (
-                <div className="text-xl mb-5 leading-relaxed">
+                <div className="text-base mb-5 leading-relaxed">
                   {currentSection.introText}
                 </div>
               )}
@@ -101,11 +101,12 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
               {/* Subsections with tooltips */}
               {currentSection.subsections && currentSection.subsections.map((subsection, index) => (
                 <div key={index} className="mb-5">
-                  <div className="text-2xl font-bold text-blue-800 mb-2">
-                    <strong>{subsection.title}</strong>
+                  <div className="text-base leading-relaxed">
+                    <strong className="font-bold">{subsection.title}</strong> {/* No line break after title */}
+                    {subsection.instruction} {/* Instruction on same line as title */}
                     {subsection.tooltip && (
                       <button 
-                        className="info-icon-button ml-2"
+                        className="info-icon-button ml-1"
                         onClick={(e) => handleInfoClick(subsection.tooltip, e)}
                         aria-label="More information"
                       >
@@ -113,15 +114,12 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
                       </button>
                     )}
                   </div>
-                  <div className="text-xl leading-relaxed">
-                    {subsection.instruction}
-                  </div>
                 </div>
               ))}
               
               {/* If no subsections but has legacy instructions */}
               {!currentSection.subsections && currentSection.instructions?.text && (
-                <div className="text-xl leading-relaxed whitespace-pre-line">
+                <div className="text-base leading-relaxed whitespace-pre-line">
                   {currentSection.instructions.text}
                 </div>
               )}
@@ -130,9 +128,9 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
             {/* Feedback section if it exists */}
             {currentSection.instructions?.feedback && currentSection.instructions.feedback.length > 5 && (
               <div className="mt-6 pt-4 border-t border-blue-300">
-                <h4 className="text-2xl font-semibold text-blue-700 mb-3">Feedback</h4>
+                <h4 className="text-lg font-semibold text-blue-700 mb-3">Feedback</h4>
                 <div className="border-4 border-blue-500 rounded-lg bg-white p-5">
-                  <div className="text-xl leading-relaxed whitespace-pre-line">
+                  <div className="text-base leading-relaxed whitespace-pre-line">
                     {currentSection.instructions.feedback}
                   </div>
                 </div>
@@ -162,7 +160,7 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
           >
             ✕
           </button>
-          <div className="prose prose-blue max-w-none mt-2 text-gray-700">
+          <div className="prose prose-blue max-w-none mt-2 text-gray-700 text-base">
             {tooltipContent}
           </div>
         </div>
