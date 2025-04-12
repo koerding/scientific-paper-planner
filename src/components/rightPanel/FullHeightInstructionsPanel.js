@@ -1,68 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
- * Enhanced instructions panel with properly formatted tooltips and matching font sizes
+ * Enhanced instructions panel with expandable tooltip content
  */
 const FullHeightInstructionsPanel = ({ currentSection }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [tooltipContent, setTooltipContent] = useState('');
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const tooltipRef = useRef(null);
+  // Track which tooltips are expanded
+  const [expandedTooltips, setExpandedTooltips] = useState({});
   
   useEffect(() => {
+    // Reset expanded tooltips when section changes
+    setExpandedTooltips({});
+    
     // Debug logging
     if (currentSection) {
       console.log("[PANEL] Current section data:", currentSection);
       console.log("[PANEL] Has introText:", !!currentSection.introText);
       console.log("[PANEL] Has subsections:", Array.isArray(currentSection.subsections));
     }
-    
-    // Close tooltip when section changes
-    setShowTooltip(false);
   }, [currentSection]);
   
-  // Handle clicks outside the tooltip to close it
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (tooltipRef.current && !tooltipRef.current.contains(event.target)) {
-        setShowTooltip(false);
-      }
-    }
-    
-    function handleEscKey(event) {
-      if (event.key === 'Escape') {
-        setShowTooltip(false);
-      }
-    }
-    
-    if (showTooltip) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscKey);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscKey);
-    };
-  }, [showTooltip]);
-
   // Create a title that includes the section name
   const sectionTitle = currentSection?.title || "Instructions";
   const panelTitle = `${sectionTitle} Instructions & Feedback`;
   
-  // Handle info icon click to show tooltip
-  const handleInfoClick = (content, event) => {
-    setTooltipContent(content);
-    
-    // Calculate position - we want it centered but not off-screen
-    const buttonRect = event.currentTarget.getBoundingClientRect();
-    const position = {
-      top: buttonRect.bottom + window.scrollY + 10,
-      left: buttonRect.left + window.scrollX - 200 + (buttonRect.width / 2) // Center it relative to button
-    };
-    
-    setTooltipPosition(position);
-    setShowTooltip(true);
+  // Toggle a tooltip's expanded state
+  const toggleTooltip = (id) => {
+    setExpandedTooltips(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
   };
 
   return (
@@ -98,7 +64,7 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
                 </div>
               )}
               
-              {/* Subsections with tooltips */}
+              {/* Subsections with expandable tooltips */}
               {currentSection.subsections && currentSection.subsections.map((subsection, index) => (
                 <div key={index} className="mb-5">
                   <div className="text-base leading-relaxed">
@@ -107,13 +73,20 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
                     {subsection.tooltip && (
                       <button 
                         className="info-icon-button ml-1"
-                        onClick={(e) => handleInfoClick(subsection.tooltip, e)}
-                        aria-label="More information"
+                        onClick={() => toggleTooltip(subsection.id)}
+                        aria-label={expandedTooltips[subsection.id] ? "Hide details" : "Show details"}
                       >
-                        ⓘ
+                        {expandedTooltips[subsection.id] ? '−' : 'ⓘ'}
                       </button>
                     )}
                   </div>
+                  
+                  {/* Expandable tooltip content */}
+                  {subsection.tooltip && expandedTooltips[subsection.id] && (
+                    <div className="mt-2 mb-3 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
+                      {subsection.tooltip}
+                    </div>
+                  )}
                 </div>
               ))}
               
@@ -139,32 +112,6 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
           </>
         )}
       </div>
-      
-      {/* Tooltip Modal for displaying long tooltip content */}
-      {showTooltip && (
-        <div 
-          ref={tooltipRef}
-          className="fixed z-50 bg-white rounded-lg shadow-xl p-4 border border-gray-200"
-          style={{
-            top: tooltipPosition.top,
-            left: tooltipPosition.left,
-            maxWidth: '500px',
-            maxHeight: '300px',
-            overflowY: 'auto',
-            animation: 'fadeIn 0.2s ease-out forwards'
-          }}
-        >
-          <button 
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            onClick={() => setShowTooltip(false)}
-          >
-            ✕
-          </button>
-          <div className="prose prose-blue max-w-none mt-2 text-gray-700 text-base">
-            {tooltipContent}
-          </div>
-        </div>
-      )}
       
       {/* Styles from PaperPlanner.css, included inline for direct integration */}
       <style jsx>{`
@@ -194,10 +141,10 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
-        /* Animation for tooltip */
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+        /* Animation for expanding content */
+        @keyframes fadeInExpand {
+          from { opacity: 0; max-height: 0; }
+          to { opacity: 1; max-height: 500px; }
         }
         
         /* Section styling from PaperPlanner.css */
