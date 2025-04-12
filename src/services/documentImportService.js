@@ -54,8 +54,8 @@ const extractTextFromPDF = async (pdfData) => {
         const content = await page.getTextContent();
         const strings = content.items.map(item => item.str);
         fullText += `--- Page ${pageNum} ---\n` + strings.join(' ') + '\n\n';
-        if (fullText.length > 15000) {
-          fullText = fullText.substring(0, 15000) + "... [TRUNCATED]";
+        if (fullText.length > 30000) {
+          fullText = fullText.substring(0, 30000) + "... [TRUNCATED]";
           break;
         }
       } catch (pageError) {
