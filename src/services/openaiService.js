@@ -2,9 +2,9 @@
 
 /**
  * Modernized OpenAI service using JSON mode for structured responses
- * UPDATED: Now optimized for the new structured JSON approach
+ * UPDATED: Removed research approach related code
  */
-import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
+import { buildSystemPrompt } from '../utils/promptUtils';
 
 const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 const model = process.env.REACT_APP_OPENAI_MODEL || "gpt-4o";
@@ -83,8 +83,7 @@ export const callOpenAI = async (
 
   const apiUrl = "https://api.openai.com/v1/chat/completions";
   const messages = buildMessages(prompt, contextType, chatHistory, systemPrompt);
-  const isResearchSectionType = isResearchApproachSection(contextType);
-  const temperature = isResearchSectionType ? 0.9 : (options.temperature ?? 0.7);
+  const temperature = options.temperature ?? 0.7;
   const max_tokens = options.max_tokens ?? 2048;
 
   const requestBody = {
