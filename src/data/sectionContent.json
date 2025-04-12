@@ -69,7 +69,7 @@
           "tooltip": "One of the biggest barriers to disseminating research effectively is failing to account for diverse backgrounds. Engineers might value technical specifications, while psychologists focus on theoretical frameworks. Clinicians may need concise, actionable summaries instead of in-depth statistical detail. By tailoring your message, you ensure each audience can see the value of your work without getting lost or bored. This strategy also extends to how you present data—visual formats, examples, or anecdotal evidence might resonate with one group more than another. Recognizing these differences early helps you build your final deliverables in a flexible, impactful way."
         }
       ],
-      "placeholder": "Target Audience/Community (research fields/disciplines):\n1. \n2. \n3. \n\nSpecific Researchers/Labs (individual scientists or groups):\n1. \n2. \n3. "
+      "placeholder": "Target Audience/Community (research fields/disciplines/groups):\n1. \n2. \n3. \n\n Specific Researchers (individual scientists):\n1. \n2. \n3. "
     },
     {
       "id": "hypothesis",
