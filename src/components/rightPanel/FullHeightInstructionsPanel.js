@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 /**
  * Enhanced instructions panel with expandable tooltip content
- * UPDATED: Now handles crossed out subsections from AI feedback
- * FIXED: Now properly preserves tooltips during instruction improvement
+ * REFACTORED: Now handles structured instruction improvement data properly
+ * FIXED: Tooltip rendering issues
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading, userInputs }) => {
   // Track which tooltips are expanded
@@ -12,6 +12,14 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
   useEffect(() => {
     // Reset expanded tooltips when section changes
     setExpandedTooltips({});
+    
+    // Debug logging
+    if (currentSection) {
+      console.log("[PANEL] Current section data:", currentSection);
+      console.log("[PANEL] Has introText:", !!currentSection.introText);
+      console.log("[PANEL] Has subsections:", Array.isArray(currentSection.subsections));
+      console.log("[PANEL] Has improvement data:", !!currentSection?.instructions?.improvement);
+    }
   }, [currentSection]);
   
   // Create a title that includes the section name
@@ -26,83 +34,127 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
     }));
   };
 
-  // Helper function to render instructions content with proper formatting
-  const renderInstructionsContent = (text) => {
-    if (!text) return null;
+  /**
+   * Renders instruction content based on whether improvement feedback exists
+   */
+  const renderInstructionContent = () => {
+    if (!currentSection) return null;
     
-    // Split the text by lines that start with bullet points
-    const parts = text.split(/(?=\* \*\*)/);
+    // Check if we have improvement feedback data
+    const hasImprovement = !!currentSection?.instructions?.improvement;
     
-    return parts.map((part, index) => {
-      // Check if this is a subsection with crossed out format
-      const isCrossedOut = part.includes('**~~') && part.includes('~~**');
-      
-      // For the first part (usually intro text), just render it directly
-      if (index === 0 && !part.trim().startsWith('*')) {
-        return <div key={`intro-${index}`} className="mb-4">{part}</div>;
-      }
-      
-      // For subsection parts, apply appropriate formatting
-      return (
-        <div 
-          key={`part-${index}`} 
-          className={`mb-4 ${isCrossedOut ? 'text-gray-500' : ''}`}
-        >
-          {/* Process the content with markdown-like formatting */}
-          {processMarkdownLike(part, isCrossedOut)}
-        </div>
-      );
-    });
+    if (hasImprovement) {
+      return renderImprovedInstructions();
+    } else {
+      return renderOriginalInstructions();
+    }
   };
   
-  // Helper to process markdown-like formatting in instruction text
-  const processMarkdownLike = (text, isCrossedOut) => {
-    if (!text) return null;
-    
-    // Extract parts: title/instruction and feedback
-    const titleMatch = text.match(/\* \*\*(?:~~)?(.+?)(?:~~)?\*\*/);
-    const title = titleMatch ? titleMatch[1] : '';
-    
-    // Get the feedback part (everything after the title/instruction)
-    const feedbackStart = text.indexOf('**\n') + 3;
-    const feedback = feedbackStart > 3 ? text.substring(feedbackStart) : '';
+  /**
+   * Renders the original instructions with no AI feedback
+   */
+  const renderOriginalInstructions = () => {
+    if (!currentSection) return null;
     
     return (
       <>
-        {/* Title/instruction with optional strikethrough */}
-        <div className={`font-bold ${isCrossedOut ? 'line-through' : ''}`}>
-          {title}
-        </div>
-        
-        {/* Feedback part */}
-        {feedback && (
-          <div className="ml-4 mt-1 text-gray-700">
-            {feedback}
+        {/* Intro Text */}
+        {currentSection.introText && (
+          <div className="text-base mb-5 leading-relaxed">
+            {currentSection.introText}
           </div>
         )}
+        
+        {/* Subsections with expandable tooltips */}
+        {currentSection.subsections && currentSection.subsections.map((subsection, index) => (
+          <div key={index} className="mb-5">
+            <div className="text-base leading-relaxed">
+              <strong className="font-bold">{subsection.title}</strong> {/* No line break after title */}
+              {subsection.instruction} {/* Instruction on same line as title */}
+              {subsection.tooltip && (
+                <button 
+                  className="info-icon-button ml-1"
+                  onClick={() => toggleTooltip(subsection.id)}
+                  aria-label={expandedTooltips[subsection.id] ? "Hide details" : "Show details"}
+                >
+                  {expandedTooltips[subsection.id] ? '−' : 'ⓘ'}
+                </button>
+              )}
+            </div>
+            
+            {/* Expandable tooltip content */}
+            {subsection.tooltip && expandedTooltips[subsection.id] && (
+              <div className="mt-2 mb-3 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
+                {subsection.tooltip}
+              </div>
+            )}
+          </div>
+        ))}
       </>
     );
   };
-
-  // Helper function to safely process tooltips that may be incorrectly formatted with asterisks
-  const processExpandableTooltips = (subsections) => {
-    if (!Array.isArray(subsections)) return [];
+  
+  /**
+   * Renders improved instructions with AI feedback
+   */
+  const renderImprovedInstructions = () => {
+    if (!currentSection || !currentSection.instructions?.improvement) return null;
     
-    return subsections.map(subsection => {
-      if (!subsection) return null;
-      
-      // If tooltip has asterisks around it, remove them
-      let processedTooltip = subsection.tooltip;
-      if (processedTooltip && 
-          (processedTooltip.startsWith('*') && processedTooltip.endsWith('*'))) {
-        processedTooltip = processedTooltip.substring(1, processedTooltip.length - 1);
-      }
-      
-      return {
-        ...subsection,
-        tooltip: processedTooltip
-      };
-    }).filter(Boolean);
+    const improvement = currentSection.instructions.improvement;
+    
+    return (
+      <>
+        {/* Overall feedback */}
+        <div className="text-base mb-5 leading-relaxed font-medium text-blue-800">
+          {improvement.overallFeedback}
+        </div>
+        
+        {/* Intro Text */}
+        {currentSection.introText && (
+          <div className="text-base mb-5 leading-relaxed">
+            {currentSection.introText}
+          </div>
+        )}
+        
+        {/* Subsections with feedback and expandable tooltips */}
+        {improvement.subsectionFeedback && improvement.subsectionFeedback.map((subsection, index) => (
+          <div key={index} className={`mb-5 ${subsection.isComplete ? 'opacity-70' : ''}`}>
+            <div className="text-base leading-relaxed">
+              {/* Render title and instruction with strikethrough if completed */}
+              <strong className={`font-bold ${subsection.isComplete ? 'line-through text-gray-500' : ''}`}>
+                {subsection.title}:
+              </strong>{' '}
+              <span className={subsection.isComplete ? 'line-through text-gray-500' : ''}>
+                {subsection.instruction}
+              </span>
+              
+              {/* Always show tooltip button */}
+              {subsection.tooltip && (
+                <button 
+                  className="info-icon-button ml-1"
+                  onClick={() => toggleTooltip(subsection.id)}
+                  aria-label={expandedTooltips[subsection.id] ? "Hide details" : "Show details"}
+                >
+                  {expandedTooltips[subsection.id] ? '−' : 'ⓘ'}
+                </button>
+              )}
+            </div>
+            
+            {/* Feedback from AI */}
+            <div className="mt-1 ml-4 text-gray-700">
+              {subsection.feedback}
+            </div>
+            
+            {/* Expandable tooltip content */}
+            {subsection.tooltip && expandedTooltips[subsection.id] && (
+              <div className="mt-2 mb-3 ml-6 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
+                {subsection.tooltip}
+              </div>
+            )}
+          </div>
+        ))}
+      </>
+    );
   };
 
   return (
@@ -131,74 +183,9 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
 
             {/* Instructions panel */}
             <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
-              {/* For backward compatibility, check if we have text directly or need to use structured approach */}
-              {currentSection.instructions?.text ? (
-                // Render with the enhanced processing for crossed-out sections
-                <div className="text-base leading-relaxed instructions-content">
-                  {/* Render the improved instructions with crossed-out formatting */}
-                  {renderInstructionsContent(currentSection.instructions.text)}
-                  
-                  {/* IMPORTANT: Also render tooltips from subsections */}
-                  {currentSection.subsections && processExpandableTooltips(currentSection.subsections).map((subsection, index) => (
-                    <div key={`tooltip-${index}`} className="mb-3">
-                      {subsection.tooltip && (
-                        <div className="flex items-center">
-                          <button 
-                            className="info-icon-button ml-1"
-                            onClick={() => toggleTooltip(subsection.id)}
-                            aria-label={expandedTooltips[subsection.id] ? "Hide details" : "Show details"}
-                          >
-                            {expandedTooltips[subsection.id] ? '−' : 'ⓘ'}
-                          </button>
-                          <span className="ml-2 text-sm text-gray-600">Additional details for {subsection.title}</span>
-                        </div>
-                      )}
-                      
-                      {/* Expandable tooltip content */}
-                      {subsection.tooltip && expandedTooltips[subsection.id] && (
-                        <div className="mt-2 mb-3 ml-6 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
-                          {subsection.tooltip}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  {/* Intro Text */}
-                  {currentSection.introText && (
-                    <div className="text-base mb-5 leading-relaxed">
-                      {currentSection.introText}
-                    </div>
-                  )}
-                  
-                  {/* Subsections with expandable tooltips */}
-                  {currentSection.subsections && processExpandableTooltips(currentSection.subsections).map((subsection, index) => (
-                    <div key={index} className="mb-5">
-                      <div className="text-base leading-relaxed">
-                        <strong className="font-bold">{subsection.title}</strong> {/* No line break after title */}
-                        {subsection.instruction} {/* Instruction on same line as title */}
-                        {subsection.tooltip && (
-                          <button 
-                            className="info-icon-button ml-1"
-                            onClick={() => toggleTooltip(subsection.id)}
-                            aria-label={expandedTooltips[subsection.id] ? "Hide details" : "Show details"}
-                          >
-                            {expandedTooltips[subsection.id] ? '−' : 'ⓘ'}
-                          </button>
-                        )}
-                      </div>
-                      
-                      {/* Expandable tooltip content */}
-                      {subsection.tooltip && expandedTooltips[subsection.id] && (
-                        <div className="mt-2 mb-3 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
-                          {subsection.tooltip}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </>
-              )}
+              <div className="text-base leading-relaxed instructions-content">
+                {renderInstructionContent()}
+              </div>
             </div>
           </>
         )}
@@ -248,7 +235,6 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
         .line-through {
           text-decoration: line-through;
           color: #6B7280;
-          opacity: 0.7;
         }
       `}</style>
     </div>
