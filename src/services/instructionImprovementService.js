@@ -3,10 +3,10 @@
 /**
  * Modern service for improving instructions based on user progress
  * REFACTORED: Now uses structured JSON approach for reliable subsection handling
- * REMOVED: All text parsing, marker handling, and tooltip restoration logic
+ * REMOVED: All research approach related code
  */
 import { callOpenAI } from './openaiService';
-import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
+import { buildSystemPrompt } from '../utils/promptUtils';
 
 /**
  * Improves instructions for multiple sections using a structured JSON approach.
@@ -65,15 +65,8 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No valid sections for analysis" };
     }
 
-    // Check if any section needs research context
-    const needsResearchContext = sectionsForAnalysis.some(section => 
-      isResearchApproachSection(section.id, sectionContent.sections.find(s => s.id === section.id))
-    );
-
-    // Build system prompt
-    const systemPrompt = buildSystemPrompt('instructionImprovement', {
-      needsResearchContext
-    });
+    // Build system prompt - simplified without research context
+    const systemPrompt = buildSystemPrompt('instructionImprovement');
 
     // Create the user prompt with clear JSON structure expectations
     const userPrompt = `
