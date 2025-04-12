@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 /**
  * Enhanced instructions panel with expandable tooltip content
  * REFACTORED: Now handles structured instruction improvement data properly
- * FIXED: Tooltip rendering issues
+ * ENHANCED: All AI-generated content is now consistently purple
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading, userInputs }) => {
   // Track which tooltips are expanded
@@ -96,6 +96,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
   
   /**
    * Renders improved instructions with AI feedback
+   * All AI-generated content is styled with purple text
    */
   const renderImprovedInstructions = () => {
     if (!currentSection || !currentSection.instructions?.improvement) return null;
@@ -104,8 +105,8 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
     
     return (
       <>
-        {/* Overall feedback */}
-        <div className="text-base mb-5 leading-relaxed font-medium text-blue-800">
+        {/* Overall feedback in purple with enhanced styling */}
+        <div className="text-base mb-5 leading-relaxed font-medium text-purple-700 p-2 bg-purple-50 rounded border border-purple-100">
           {improvement.overallFeedback}
         </div>
         
@@ -140,8 +141,8 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
               )}
             </div>
             
-            {/* Feedback from AI */}
-            <div className="mt-1 ml-4 text-gray-700">
+            {/* Feedback from AI in purple with enhanced styling */}
+            <div className="mt-1 ml-4 text-purple-700 p-1 bg-purple-50 rounded">
               {subsection.feedback}
             </div>
             
@@ -235,6 +236,18 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
         .line-through {
           text-decoration: line-through;
           color: #6B7280;
+        }
+        
+        /* Enhanced Purple styling for AI-generated content */
+        .text-purple-700 {
+          color: #6D28D9;
+        }
+        
+        /* Add a subtle background to highlight AI feedback */
+        .instructions-content .text-purple-700 {
+          background-color: rgba(237, 233, 254, 0.3);
+          border-radius: 4px;
+          padding: 2px 4px;
         }
       `}</style>
     </div>
