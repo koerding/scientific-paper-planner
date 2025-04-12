@@ -17,6 +17,9 @@ import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
 } from '../../services/instructionImprovementService';
+// FIXED: Import the documentImportService namespace rather than specific function
+// import { importDocumentContent } from '../../services/documentImportService';
+import * as documentImportService from '../../services/documentImportService';
 import '../../styles/PaperPlanner.css';
 
 /**
