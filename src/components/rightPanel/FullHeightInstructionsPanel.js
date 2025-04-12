@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 /**
  * Enhanced instructions panel with expandable tooltip content
  * UPDATED: Now handles crossed out subsections from AI feedback
+ * FIXED: Now properly preserves tooltips during instruction improvement
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading, userInputs }) => {
   // Track which tooltips are expanded
@@ -11,13 +12,6 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
   useEffect(() => {
     // Reset expanded tooltips when section changes
     setExpandedTooltips({});
-    
-    // Debug logging
-    if (currentSection) {
-      console.log("[PANEL] Current section data:", currentSection);
-      console.log("[PANEL] Has introText:", !!currentSection.introText);
-      console.log("[PANEL] Has subsections:", Array.isArray(currentSection.subsections));
-    }
   }, [currentSection]);
   
   // Create a title that includes the section name
@@ -90,6 +84,27 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
     );
   };
 
+  // Helper function to safely process tooltips that may be incorrectly formatted with asterisks
+  const processExpandableTooltips = (subsections) => {
+    if (!Array.isArray(subsections)) return [];
+    
+    return subsections.map(subsection => {
+      if (!subsection) return null;
+      
+      // If tooltip has asterisks around it, remove them
+      let processedTooltip = subsection.tooltip;
+      if (processedTooltip && 
+          (processedTooltip.startsWith('*') && processedTooltip.endsWith('*'))) {
+        processedTooltip = processedTooltip.substring(1, processedTooltip.length - 1);
+      }
+      
+      return {
+        ...subsection,
+        tooltip: processedTooltip
+      };
+    }).filter(Boolean);
+  };
+
   return (
     <div
       className="bg-blue-50 h-full overflow-y-auto section-instruction-panel"
@@ -124,7 +139,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
                   {renderInstructionsContent(currentSection.instructions.text)}
                   
                   {/* IMPORTANT: Also render tooltips from subsections */}
-                  {currentSection.subsections && currentSection.subsections.map((subsection, index) => (
+                  {currentSection.subsections && processExpandableTooltips(currentSection.subsections).map((subsection, index) => (
                     <div key={`tooltip-${index}`} className="mb-3">
                       {subsection.tooltip && (
                         <div className="flex items-center">
@@ -158,7 +173,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
                   )}
                   
                   {/* Subsections with expandable tooltips */}
-                  {currentSection.subsections && currentSection.subsections.map((subsection, index) => (
+                  {currentSection.subsections && processExpandableTooltips(currentSection.subsections).map((subsection, index) => (
                     <div key={index} className="mb-5">
                       <div className="text-base leading-relaxed">
                         <strong className="font-bold">{subsection.title}</strong> {/* No line break after title */}
