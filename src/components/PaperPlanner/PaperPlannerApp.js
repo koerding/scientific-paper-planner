@@ -3,6 +3,8 @@ import VerticalPaperPlannerApp from './VerticalPaperPlannerApp'; // Using your e
 import sectionContent from '../../data/sectionContent.json';  
 import { callOpenAI } from '../../services/openaiService';
 import { exportProject as exportProjectFunction } from '../../utils/exportUtils';
+// FIXED: Import documentImportService correctly
+import * as documentImportService from '../../services/documentImportService';
 import '../../styles/PaperPlanner.css';
 
 /**
@@ -318,6 +320,22 @@ const PaperPlannerApp = () => {
     }
   };
 
+  // FIXED: Use the function from documentImportService namespace
+  const handleDocumentImport = async (file) => {
+    setLoading(true);
+    try {
+      const importedData = await documentImportService.importDocumentContent(file);
+      loadProject(importedData);
+      return true;
+    } catch (error) {
+      console.error("Error importing document:", error);
+      alert("Error importing document: " + (error.message || "Unknown error"));
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Hook for the Paper Planner
   const usePaperPlannerHook = {
     currentSection,
@@ -337,7 +355,8 @@ const PaperPlannerApp = () => {
     goToNextSection,
     goToPreviousSection,
     exportProject,
-    loadProject
+    loadProject,
+    importDocumentContent: handleDocumentImport
   };
 
   // Use your existing VerticalPaperPlannerApp
