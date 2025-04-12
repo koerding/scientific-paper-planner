@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage, isStorageAvailable } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
-// REMOVED: No more import of documentImportService
-// import * as documentImportService from '../services/documentImportService';
+import * as documentImportService from '../services/documentImportService'; // Import the full service
 import sectionContent from '../data/sectionContent.json';
 import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
@@ -53,36 +52,6 @@ const getInitialState = () => {
   };
 };
 
-// ADDED: Simple example document import function that doesn't rely on the external service
-// This is a minimalist implementation to make the build succeed
-const importDocumentContent = async (file) => {
-  console.log(`Attempting to import document: ${file.name}`);
-  
-  // This is a placeholder implementation that creates a basic structure
-  // based on the file name, without actually processing the file content
-  const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-  const formattedName = fileName
-    .replace(/[_-]/g, " ")
-    .replace(/\b\w/g, c => c.toUpperCase()); // Capitalize words
-  
-  // Create a simple document structure with placeholders based on the filename
-  return {
-    userInputs: {
-      question: `Research Question: How does ${formattedName} affect scientific understanding?\n\nSignificance/Impact: Understanding ${formattedName} could lead to important advances in the field.`,
-      audience: `Target Audience/Community (research fields/disciplines):\n1. Researchers in ${formattedName} field\n2. Applied scientists\n3. Policy makers\n\nSpecific Researchers/Labs (individual scientists or groups):\n1. Leading research groups in ${formattedName}\n2. University departments focusing on related areas\n3. Industry R&D teams`,
-      hypothesis: `Hypothesis 1: ${formattedName} has a significant positive effect on outcome measures.\n\nHypothesis 2: The effect of ${formattedName} is mediated by specific mechanisms.\n\nWhy distinguishing these hypotheses matters:\n- Would clarify causal pathways\n- Could inform intervention design`,
-      relatedpapers: `Most similar papers that test related hypotheses:\n1. Smith et al. (2022) 'Recent advances in ${formattedName}'\n2. Jones & Lee (2021) 'Experimental studies of ${formattedName}'\n3. Zhang et al. (2023) 'Meta-analysis of ${formattedName} effects'\n4. Williams (2020) 'Theoretical framework for ${formattedName}'\n5. Brown et al. (2022) 'Applications of ${formattedName} in practice'`,
-      experiment: `Key Variables:\n- Independent: ${formattedName} levels (high/medium/low)\n- Dependent: Outcome measures (performance, satisfaction)\n- Controlled: Demographics, prior experience\n\nSample & Size Justification: 120 participants based on power analysis\n\nData Collection Methods: Surveys, behavioral measures, physiological indicators\n\nPredicted Results: Higher levels of ${formattedName} will correlate with improved outcomes\n\nPotential Confounds & Mitigations: Selection bias addressed through randomization`,
-      analysis: `Data Cleaning & Exclusions:\nIncomplete responses and statistical outliers (>3SD) will be excluded\n\nPrimary Analysis Method:\nMixed-effects regression models with ${formattedName} as predictor\n\nHow Analysis Addresses Research Question:\nDirect test of relationship between ${formattedName} and outcomes\n\nUncertainty Quantification:\nBootstrap confidence intervals and sensitivity analyses\n\nSpecial Cases Handling:\nSubgroup analyses for different demographic categories`,
-      process: `Skills Needed vs. Skills I Have:\nNeed expertise in statistical modeling and domain knowledge of ${formattedName}\n\nCollaborators & Their Roles:\nMethodologist for advanced analyses, domain expert for interpretation\n\nData/Code Sharing Plan:\nData and analysis code will be shared in a public repository\n\nTimeline & Milestones:\nMonths 1-2: Data collection\nMonths 3-4: Analysis\nMonths 5-6: Writeup\n\nObstacles & Contingencies:\nRecruitment challenges addressed through multiple channels`,
-      abstract: `Background: ${formattedName} represents an important area of scientific inquiry with practical implications.\n\nObjective/Question: This study examines how different levels of ${formattedName} affect key outcome measures.\n\nMethods: 120 participants will be randomly assigned to different ${formattedName} conditions with comprehensive measurements.\n\n(Expected) Results: We anticipate a significant positive relationship between ${formattedName} and outcomes.\n\nConclusion/Implications: Findings will contribute to both theoretical understanding and practical applications of ${formattedName}.`
-    },
-    chatMessages: {},
-    timestamp: new Date().toISOString(),
-    version: "1.0-simple-import"
-  };
-};
-
 const usePaperPlanner = () => {
   // Get initial state with a single useState call to avoid multiple re-renders
   const [initialState] = useState(getInitialState);
@@ -121,8 +90,6 @@ const usePaperPlanner = () => {
 
   // Add state to track if we've loaded from storage
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(hasStoredData);
-
-  // REMOVED: The prompt for using stored data, since we now use it automatically
 
   // Update currentSectionData when currentSection changes
   useEffect(() => {
@@ -361,8 +328,7 @@ const usePaperPlanner = () => {
     }
   }, [storageAvailable]);
 
-  // Import document content using OUR OWN implementation
-  // FIXED: No reliance on external importDocumentContent
+  // Import document content using the FULL documentImportService instead of the fake function
   const handleDocumentImport = useCallback(async (file) => {
     setLoading(true);
 
@@ -370,12 +336,13 @@ const usePaperPlanner = () => {
       // MODIFIED: Only ask once for confirmation
       if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
         setLoading(false);
-        return;
+        return false;
       }
 
-      // Call our local importDocumentContent function
-      const importedData = await importDocumentContent(file);
-
+      // Call the real document import service with the full section content
+      // This passes sectionContent.json to the service for better alignment
+      const importedData = await documentImportService.importDocumentContent(file, sectionContent);
+      
       // Use the loadProject function to handle the imported data
       loadProject(importedData);
 
@@ -420,7 +387,7 @@ const usePaperPlanner = () => {
     exportProject,
     saveProject,
     loadProject,
-    importDocumentContent: handleDocumentImport // Export our function directly
+    importDocumentContent: handleDocumentImport // Use the real document import service
   };
 };
 
