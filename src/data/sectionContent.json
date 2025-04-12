@@ -59,7 +59,7 @@
         {
           "id": "audience_representative_individuals",
           "title": "Representative Individuals",
-          "instruction": "Name specific labs or researchers as examples. This helps you picture your actual audience — and maybe ask them for feedback.",
+          "instruction": "Name specific researchers as examples; it often helps asking yourself who else may write a similar paper. This helps you picture your actual audience — and maybe ask them for feedback.",
           "tooltip": "Selecting concrete examples of who might benefit ensures you're not just imagining a nebulous group. By naming labs, research centers, or influential scholars, you can better envision their needs and expectations. This specificity often leads to more practical research decisions: you can adopt methodologies or data standards that you know these groups use. It may also encourage direct outreach—perhaps sharing a draft with a researcher whose work closely relates. Incorporating feedback from people you've explicitly identified fosters a dynamic, real-world relevance, increasing the chances your final output resonates outside your immediate circle."
         },
         {
