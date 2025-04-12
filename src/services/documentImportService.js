@@ -3,8 +3,8 @@
 /**
  * Document import service for PDF and Word documents
  * Using CDN-based PDF.js for better compatibility
+ * FIXED: Removed research approach references
  * FIXED: Improved validation to ensure all required sections are filled
- * FIXED: Export naming corrected
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -316,9 +316,8 @@ export async function importDocumentContent(file) {
     documentText = await extractTextFromDocument(file);
     console.log(`Extraction successful for ${file.name}. Text length: ${documentText.length}`);
 
-    // Step 2: Build system prompt with research context
+    // Step 2: Build system prompt
     const systemPrompt = buildSystemPrompt('documentImport', {
-      needsResearchContext: true,
       documentText: documentText.substring(0, 500) // First 500 chars for context
     });
 
