@@ -1,5 +1,5 @@
 // FILE: src/utils/promptUtils.js
-// REFACTORED: Simplified to support the new structured JSON approach
+// REFACTORED: Simplified to support the JSON approach, removed all text parsing
 
 import promptContent from '../data/promptContent.json';
 
@@ -64,7 +64,6 @@ const replacePlaceholders = (template, params = {}) => {
   result = result.replace(/{{[^}]+}}/g, '');
   return result;
 };
-
 
 /**
  * Build a system prompt for the chat AI based on the type and parameters.
