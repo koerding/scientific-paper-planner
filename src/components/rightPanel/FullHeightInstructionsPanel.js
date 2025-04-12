@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 /**
- * Simplified instructions panel that directly renders content from sectionContent
+ * Simplified instructions panel that directly renders content from the JSON structure
  */
 const FullHeightInstructionsPanel = ({ currentSection }) => {
   useEffect(() => {
@@ -51,14 +51,16 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
               <div className="text-xl leading-relaxed">
                 <ReactMarkdown
                   components={{
-                    // Make titles bold
+                    // Make strong elements (bold) into section titles
                     strong: ({ node, ...props }) => (
                       <div className="text-2xl font-bold text-blue-800 mb-2">
                         <strong {...props} />
                       </div>
                     ),
-                    // Standard paragraphs
-                    p: ({ node, ...props }) => <div className="mb-5" {...props} />
+                    // Regular paragraphs with proper spacing
+                    p: ({ node, ...props }) => <div className="mb-5" {...props} />,
+                    // List items with proper spacing
+                    li: ({ node, ...props }) => <li className="mb-3" {...props} />
                   }}
                 >
                   {instructionsText}
