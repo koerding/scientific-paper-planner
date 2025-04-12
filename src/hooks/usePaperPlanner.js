@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage, isStorageAvailable } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
-// FIXED: Correct import statement for documentImportService
-import { importDocumentContent } from '../services/documentImportService';
+// Import the documentImportService directly to avoid export issues
+import * as documentImportService from '../services/documentImportService';
 import sectionContent from '../data/sectionContent.json';
 import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
@@ -332,7 +332,7 @@ const usePaperPlanner = () => {
   }, [storageAvailable]);
 
   // Import document content using the service
-  // FIXED: No need to rename the import, use it directly
+  // FIXED: Use the function as imported through the documentImportService namespace
   const handleDocumentImport = useCallback(async (file) => {
     setLoading(true);
 
@@ -344,7 +344,7 @@ const usePaperPlanner = () => {
       }
 
       // Call the document import service directly
-      const importedData = await importDocumentContent(file);
+      const importedData = await documentImportService.importDocumentContent(file);
 
       // Use the loadProject function to handle the imported data
       loadProject(importedData);
