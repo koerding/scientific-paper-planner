@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
 
 /**
- * Simplified instructions panel that directly renders content from the JSON structure
+ * Simplified instructions panel that directly renders the text content without parsing
  */
 const FullHeightInstructionsPanel = ({ currentSection }) => {
   useEffect(() => {
@@ -21,6 +20,28 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
   // Safely access instruction and feedback text
   const instructionsText = currentSection?.instructions?.text || '';
   const feedbackText = currentSection?.instructions?.feedback || '';
+
+  // Simple rendering of intro text and bullet points for maximum compatibility
+  const renderInstructions = () => {
+    if (!instructionsText) return null;
+
+    // Split by divider to get intro and bullets
+    const parts = instructionsText.split('---');
+    const introText = parts[0]?.trim();
+    
+    // Basic HTML rendering from markdown-like text
+    // Handle bold formatting in bullet points
+    const processedText = instructionsText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    return (
+      <div>
+        <div 
+          className="text-xl mb-5 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: processedText }}
+        />
+      </div>
+    );
+  };
 
   return (
     <div
@@ -46,25 +67,11 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
               {panelTitle}
             </h3>
 
-            {/* Instructions panel */}
+            {/* Instructions panel - simple direct rendering */}
             <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
+              {/* Simply display the raw text - sometimes simplest is best */}
               <div className="text-xl leading-relaxed">
-                <ReactMarkdown
-                  components={{
-                    // Make strong elements (bold) into section titles
-                    strong: ({ node, ...props }) => (
-                      <div className="text-2xl font-bold text-blue-800 mb-2">
-                        <strong {...props} />
-                      </div>
-                    ),
-                    // Regular paragraphs with proper spacing
-                    p: ({ node, ...props }) => <div className="mb-5" {...props} />,
-                    // List items with proper spacing
-                    li: ({ node, ...props }) => <li className="mb-3" {...props} />
-                  }}
-                >
-                  {instructionsText}
-                </ReactMarkdown>
+                <div dangerouslySetInnerHTML={{ __html: instructionsText.replace(/\n/g, '<br />').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>') }} />
               </div>
             </div>
 
@@ -74,9 +81,7 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
                 <h4 className="text-2xl font-semibold text-blue-700 mb-3">Feedback</h4>
                 <div className="border-4 border-blue-500 rounded-lg bg-white p-5">
                   <div className="text-xl leading-relaxed">
-                    <ReactMarkdown>
-                      {feedbackText}
-                    </ReactMarkdown>
+                    <div dangerouslySetInnerHTML={{ __html: feedbackText.replace(/\n/g, '<br />') }} />
                   </div>
                 </div>
               </div>
