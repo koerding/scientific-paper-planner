@@ -1,9 +1,10 @@
 // FILE: src/services/documentImportService.js
 
 /**
- * Enhanced document import service for PDF and Word documents
- * UPDATED: Now integrates with sectionContent.json for better alignments
- * IMPROVED: Enhanced prompt construction with section details
+ * Document import service for PDF and Word documents
+ * Using CDN-based PDF.js for better compatibility
+ * FIXED: Removed research approach references
+ * FIXED: Improved validation to ensure all required sections are filled
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -178,18 +179,13 @@ const extractTextFromDocument = async (file) => {
   });
 };
 
-/**
- * Validates loaded project data
- * @param {Object} data - The data to validate
- * @param {Object} sectionContent - The section content to validate against
- * @returns {boolean} - Whether the data is valid
- */
-function validateResearchPaper(paper, sectionContent) {
+// FIXED: Updated validation to ensure all required fields are present
+function validateResearchPaper(paper) {
   // Basic validation
   if (!paper || typeof paper !== 'object') return false;
   if (!paper.userInputs || typeof paper.userInputs !== 'object') return false;
   
-  // Get required fields from sectionContent
+  // Check essential fields
   const requiredFields = ['question', 'audience', 'analysis', 'process', 'abstract'];
   for (const field of requiredFields) {
     if (typeof paper.userInputs[field] !== 'string' || paper.userInputs[field].length < 10) {
@@ -225,16 +221,9 @@ function validateResearchPaper(paper, sectionContent) {
  * Generates placeholder content for missing sections
  * @param {string} sectionId - The section ID needing placeholder content
  * @param {string} fileName - The name of the imported file
- * @param {Object} sectionContent - The full section content structure
  * @returns {string} - Meaningful placeholder content for the section
  */
-function generatePlaceholderContent(sectionId, fileName, sectionContent) {
-  // Try to get the placeholder from sectionContent
-  const section = sectionContent?.sections?.find(s => s.id === sectionId);
-  if (section && section.placeholder) {
-    return section.placeholder;
-  }
-  
+function generatePlaceholderContent(sectionId, fileName) {
   const paperTopic = fileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
   
   switch(sectionId) {
@@ -303,97 +292,13 @@ In case of unexpected data quality issues, we have identified alternative data s
 }
 
 /**
- * Builds an enhanced prompt that includes section structure from sectionContent
- * @param {string} documentText - The extracted document text
- * @param {Object} sectionContent - The section content structure
- * @returns {string} - Enhanced prompt
- */
-function buildEnhancedPrompt(documentText, sectionContent) {
-  // Extract section information from sectionContent to improve prompt
-  let sectionStructure = "SECTION STRUCTURE DETAILS:\n";
-  
-  if (sectionContent && Array.isArray(sectionContent.sections)) {
-    sectionContent.sections.forEach(section => {
-      if (section && section.id) {
-        sectionStructure += `\n${section.title} (${section.id}):\n`;
-        
-        // Add subsection details if available
-        if (Array.isArray(section.subsections)) {
-          section.subsections.forEach(subsection => {
-            sectionStructure += `- ${subsection.title}: ${subsection.instruction}\n`;
-          });
-        }
-        
-        // Add example format from placeholder if available
-        if (section.placeholder) {
-          sectionStructure += `Example format: ${section.placeholder.substring(0, 100)}...\n`;
-        }
-      }
-    });
-  }
-  
-  return `
-    Extract a complete scientific paper structure from this document text.
-    
-    Be VERY GENEROUS in your interpretation - read between the lines, make positive assumptions,
-    and create a high-quality example that students can learn from. The goal is educational, not critical.
-    
-    ${sectionStructure}
-    
-    You MUST choose EXACTLY ONE research approach:
-    - Either hypothesis-driven (testing competing explanations)
-    - OR needs-based (solving a specific problem for stakeholders)
-    - OR exploratory (discovering patterns without predetermined hypotheses)
-    
-    You MUST choose EXACTLY ONE data collection method:
-    - Either experiment (collecting new data)
-    - OR existingdata (analyzing already collected data)
-    - OR theorysimulation (using theory or computational models)
-    
-    Return in this exact JSON format:
-    {
-      "userInputs": {
-        "question": "Research Question: [question from paper]\\n\\nSignificance/Impact: [significance from paper]",
-        "audience": "Target Audience/Community (research fields/disciplines):\\n1. [audience1]\\n2. [audience2]\\n3. [audience3]\\n\\nSpecific Researchers/Labs (individual scientists or groups):\\n1. [researcher1]\\n2. [researcher2]\\n3. [researcher3]",
-        
-        // Include EXACTLY ONE of these research approaches:
-        "hypothesis": "Hypothesis 1: [hypothesis1]\\n\\nHypothesis 2: [hypothesis2]\\n\\nWhy distinguishing these hypotheses matters:\\n- [reason1]\\n- [reason2]",
-        // OR
-        "needsresearch": "Who needs this research:\\n[stakeholders based on text]\\n\\nWhy they need it:\\n[problem description based on text]\\n\\nCurrent approaches and limitations:\\n[existing solutions based on text]\\n\\nSuccess criteria:\\n[evaluation methods based on text]\\n\\nAdvantages of this approach:\\n[benefits based on text]",
-        // OR
-        "exploratoryresearch": "Phenomena explored:\\n[description based on text]\\n\\nPotential discoveries your approach might reveal:\\n1. [finding1 based on text, if unspecified mention]\\n2. [finding2 based on text, if unspecified mention]\\n\\nValue of this exploration to the field:\\n[importance based on text, mention if there is lack of clarity]\\n\\nAnalytical approaches for discovery:\\n[methods based on text]\\n\\nStrategy for validating findings:\\n[validation based on text]",
-        
-        "relatedpapers": "Most similar papers that test related hypotheses:\\n1. [paper1 based on text, ideally give full reference]\\n2. [paper2 based on text, ideally give full reference]\\n3. [paper3 based on text, ideally give full reference]\\n4. [paper4 based on text, ideally give full reference]\\n5. [paper5 based on text, ideally give full reference]",
-        
-        // Include EXACTLY ONE of these data collection methods:
-        "experiment": "Key Variables:\\n- Independent: [variables based on text, mention if the text does not mention any]\\n- Dependent: [variables based on text, mention if the text does not mention any]\\n- Controlled: [variables based on text, mention if the text does not mention any]\\n\\nSample & Size Justification: [simple description based on text, mention if the text does not mention any]\\n\\nData Collection Methods: [simple description based on text, mention if the text does not mention any]\\n\\nPredicted Results: [simple description based on text, mention if the text does not mention any]\\n\\nPotential Confounds & Mitigations: [simple description based on text, mention if the text does not mention any]",
-        // OR
-        "existingdata": "Dataset name and source:\\n[description based on text, mention if the text does not specify]\\n\\nOriginal purpose of data collection:\\n[description based on text, mention if text does not specify]\\n\\nRights/permissions to use the data:\\n[description based on text, mention if the text does not specify]\\n\\nData provenance and quality information:\\n[description based on text, mention if the text does not specify]\\n\\nRelevant variables in the dataset:\\n[description based on text, mention if the text does not specify]\\n\\nPotential limitations of using this dataset:\\n[description based on text, mention if not specified]",
-        // OR
-        "theorysimulation": "Key Theoretical Assumptions:\\n- [assumption1 based on text]\\n- [assumption2 based on text]\\n- [assumption3 based on text]\\n\\nRelationship to Real-world Phenomena:\\n[description based on text]\\n\\nMathematical/Computational Framework:\\n[description based on text]\\n\\nSolution/Simulation Approach:\\n[description based on text]\\n\\nValidation Strategy:\\n[description based on text]\\n\\nPotential Limitations:\\n[description based on text]\\n\\nTheoretical Significance:\\n[description based on text]",
-        
-        "analysis": "Data Cleaning & Exclusions:\\n[simple description based on text, mention if the text does not specify]\\n\\nPrimary Analysis Method:\\n[simple description based on text]\\n\\nHow Analysis Addresses Research Question:\\n[simple description based on text, mention if this is not clear]\\n\\nUncertainty Quantification:\\n[simple description based on text, this includes any statistical method, mention if not specified]\\n\\nSpecial Cases Handling:\\n[simple description based on text]",
-        "process": "Skills Needed vs. Skills I Have:\\n[simple description based on text, guess where necessary]\\n\\nCollaborators & Their Roles:\\n[simple description based on text, guess where necessary]\\n\\nData/Code Sharing Plan:\\n[simple description based on text]\\n\\nTimeline & Milestones:\\n[simple description based on text]\\n\\nObstacles & Contingencies:\\n[simple description based on text, guess where necessary]",
-        "abstract": "Background: [simple description based on text]\\n\\nObjective/Question: [simple description based on text]\\n\\nMethods: [simple description based on text]\\n\\n(Expected) Results: [simple description based on text]\\n\\nConclusion/Implications: [simple description based on text]"
-      },
-      "chatMessages": {},
-      "timestamp": "${new Date().toISOString()}",
-      "version": "1.0-openai-json-extraction"
-    }
-    
-    Document text:
-    ${documentText.substring(0, 8000)}... [truncated]
-  `;
-}
-
-/**
  * Processes extracted scientific paper text and generates structured data using OpenAI's JSON mode.
- * Now integrates with sectionContent.json for better alignment with expected structure.
+ * Uses generous interpretation to extract the most positive examples possible.
+ * FIXED: Ensures all required sections are properly filled
  * @param {File} file - The document file object (used for filename in errors)
- * @param {Object} sectionContent - The section content structure for better alignment
  * @returns {Promise<Object>} - The structured data for loading into the planner
  */
-export async function importDocumentContent(file, sectionContent) {
+export async function importDocumentContent(file) {
   let documentText = '';
   try {
     // Load PDF.js first if this is a PDF
@@ -411,21 +316,15 @@ export async function importDocumentContent(file, sectionContent) {
     documentText = await extractTextFromDocument(file);
     console.log(`Extraction successful for ${file.name}. Text length: ${documentText.length}`);
 
-    // Step 2: Build system prompt with sectionContent awareness
+    // Step 2: Build system prompt
     const systemPrompt = buildSystemPrompt('documentImport', {
       documentText: documentText.substring(0, 500) // First 500 chars for context
     });
 
-    // Step 3: Build the task prompt with section structure incorporated
+    // Step 3: Build the task prompt
     const taskPrompt = buildTaskPrompt('documentImport', {
       documentText: documentText,
-      isoTimestamp: new Date().toISOString(),
-      // Add section structure data for better alignment
-      sectionStructure: JSON.stringify(sectionContent.sections.map(s => ({
-        id: s.id,
-        title: s.title,
-        type: s.type
-      })))
+      isoTimestamp: new Date().toISOString()
     });
 
     // Step 4: Call OpenAI with JSON mode enabled
@@ -433,7 +332,7 @@ export async function importDocumentContent(file, sectionContent) {
       taskPrompt,
       'document_import_task',
       {},
-      sectionContent.sections, // Pass the full sections data
+      [],
       { 
         temperature: 0.3,    // Low temperature for consistency
         max_tokens: 3000     // Generous token count for detailed responses
@@ -443,25 +342,73 @@ export async function importDocumentContent(file, sectionContent) {
       true // Use JSON mode
     );
 
-    // Step 5: Validate the result with sectionContent
-    if (!validateResearchPaper(result, sectionContent)) {
+    // Step 5: Validate the result, ensuring exactly one research approach and one data method
+    if (!validateResearchPaper(result)) {
       console.warn("Received invalid paper structure from OpenAI, attempting to fix...");
       
-      // Enhanced prompt with complete section structure
-      const enhancedPrompt = buildEnhancedPrompt(documentText, sectionContent);
+ const simplifiedPrompt = `
+        Extract a complete scientific paper structure from this document text.
+        
+        Be VERY GENEROUS in your interpretation - read between the lines, make positive assumptions,
+        and create a high-quality example that students can learn from. The goal is educational, not critical.
+        
+        You MUST choose EXACTLY ONE research approach:
+        - Either hypothesis-driven (testing competing explanations)
+        - OR needs-based (solving a specific problem for stakeholders)
+        - OR exploratory (discovering patterns without predetermined hypotheses)
+        
+        You MUST choose EXACTLY ONE data collection method:
+        - Either experiment (collecting new data)
+        - OR existingdata (analyzing already collected data)
+        - OR theorysimulation (using theory or computational models)
+        
+        Return in this exact JSON format:
+        {
+          "userInputs": {
+            "question": "Research Question: [question from paper]\\n\\nSignificance/Impact: [significance from paper]",
+            "audience": "Target Audience/Community (research fields/disciplines):\\n1. [audience1]\\n2. [audience2]\\n3. [audience3]\\n\\nSpecific Researchers/Labs (individual scientists or groups):\\n1. [researcher1]\\n2. [researcher2]\\n3. [researcher3]",
+            
+            // Include EXACTLY ONE of these research approaches:
+            "hypothesis": "Hypothesis 1: [hypothesis1]\\n\\nHypothesis 2: [hypothesis2]\\n\\nWhy distinguishing these hypotheses matters:\\n- [reason1]\\n- [reason2]",
+            // OR
+            "needsresearch": "Who needs this research:\\n[stakeholders based on text]\\n\\nWhy they need it:\\n[problem description based on text]\\n\\nCurrent approaches and limitations:\\n[existing solutions based on text]\\n\\nSuccess criteria:\\n[evaluation methods based on text]\\n\\nAdvantages of this approach:\\n[benefits based on text]",
+            // OR
+            "exploratoryresearch": "Phenomena explored:\\n[description based on text]\\n\\nPotential discoveries your approach might reveal:\\n1. [finding1 based on text, if unspecified mention]\\n2. [finding2 based on text, if unspecified mention]\\n\\nValue of this exploration to the field:\\n[importance based on text, mention if there is lack of clarity]\\n\\nAnalytical approaches for discovery:\\n[methods based on text]\\n\\nStrategy for validating findings:\\n[validation based on text]",
+            
+            "relatedpapers": "Most similar papers that test related hypotheses:\\n1. [paper1 based on text, ideally give full reference]\\n2. [paper2 based on text, ideally give full reference]\\n3. [paper3 based on text, ideally give full reference]\\n4. [paper4 based on text, ideally give full reference]\\n5. [paper5 based on text, ideally give full reference]",
+            
+            // Include EXACTLY ONE of these data collection methods:
+            "experiment": "Key Variables:\\n- Independent: [variables based on text, mention if the text does not mention any]\\n- Dependent: [variables based on text, mention if the text does not mention any]\\n- Controlled: [variables based on text, mention if the text does not mention any]\\n\\nSample & Size Justification: [simple description based on text, mention if the text does not mention any]\\n\\nData Collection Methods: [simple description based on text, mention if the text does not mention any]\\n\\nPredicted Results: [simple description based on text, mention if the text does not mention any]\\n\\nPotential Confounds & Mitigations: [simple description based on text, mention if the text does not mention any]",
+            // OR
+            "existingdata": "Dataset name and source:\\n[description based on text, mention if the text does not specify]\\n\\nOriginal purpose of data collection:\\n[description based on text, mention if text does not specify]\\n\\nRights/permissions to use the data:\\n[description based on text, mention if the text does not specify]\\n\\nData provenance and quality information:\\n[description based on text, mention if the text does not specify]\\n\\nRelevant variables in the dataset:\\n[description based on text, mention if the text does not specify]\\n\\nPotential limitations of using this dataset:\\n[description based on text, mention if not specified]",
+            // OR
+            "theorysimulation": "Key Theoretical Assumptions:\\n- [assumption1 based on text]\\n- [assumption2 based on text]\\n- [assumption3 based on text]\\n\\nRelationship to Real-world Phenomena:\\n[description based on text]\\n\\nMathematical/Computational Framework:\\n[description based on text]\\n\\nSolution/Simulation Approach:\\n[description based on text]\\n\\nValidation Strategy:\\n[description based on text]\\n\\nPotential Limitations:\\n[description based on text]\\n\\nTheoretical Significance:\\n[description based on text]",
+            
+            "analysis": "Data Cleaning & Exclusions:\\n[simple description based on text, mention if the text does not specify]\\n\\nPrimary Analysis Method:\\n[simple description based on text]\\n\\nHow Analysis Addresses Research Question:\\n[simple description based on text, mention if this is not clear]\\n\\nUncertainty Quantification:\\n[simple description based on text, this includes any statistical method, mention if not specified]\\n\\nSpecial Cases Handling:\\n[simple description based on text]",
+            "process": "Skills Needed vs. Skills I Have:\\n[simple description based on text, guess where necessary]\\n\\nCollaborators & Their Roles:\\n[simple description based on text, guess where necessary]\\n\\nData/Code Sharing Plan:\\n[simple description based on text]\\n\\nTimeline & Milestones:\\n[simple description based on text]\\n\\nObstacles & Contingencies:\\n[simple description based on text, guess where necessary]",
+            "abstract": "Background: [simple description based on text]\\n\\nObjective/Question: [simple description based on text]\\n\\nMethods: [simple description based on text]\\n\\n(Expected) Results: [simple description based on text]\\n\\nConclusion/Implications: [simple description based on text]"
+          },
+          "chatMessages": {},
+          "timestamp": "${new Date().toISOString()}",
+          "version": "1.0-openai-json-extraction"
+        }
+        
+        Document text:
+        ${documentText.substring(0, 8000)}... [truncated]
+      `;
       
       const retryResult = await callOpenAI(
-        enhancedPrompt,
-        'document_import_enhanced',
+        simplifiedPrompt,
+        'document_import_simplified',
         {},
-        sectionContent.sections, // Pass sections again
+        [],
         { temperature: 0.3, max_tokens: 3000 },
         [],
-        "You are creating educational examples from scientific papers. Be generous in your interpretation and create high-quality examples that demonstrate good scientific practice. Include EXACTLY ONE research approach and EXACTLY ONE data collection method. Follow the section structure provided.",
+        "You are creating educational examples from scientific papers. Be generous in your interpretation and create high-quality examples that demonstrate good scientific practice. Include EXACTLY ONE research approach and EXACTLY ONE data collection method.",
         true
       );
       
-      if (validateResearchPaper(retryResult, sectionContent)) {
+      if (validateResearchPaper(retryResult)) {
         console.log('Successfully fixed paper structure on second attempt');
         
         // Ensure essential fields exist
@@ -469,21 +416,21 @@ export async function importDocumentContent(file, sectionContent) {
         retryResult.version = retryResult.version || '1.0-openai-json-extraction-retry';
         retryResult.chatMessages = retryResult.chatMessages || {};
         
-        // Validate all required sections against sectionContent
-        const allSectionIds = sectionContent.sections.map(s => s.id);
+        // FIXED: Additional validation for analysis and process sections
+        const requiredSections = ['analysis', 'process'];
         let missingOrEmptySections = false;
         
-        for (const sectionId of allSectionIds) {
-          if (!retryResult.userInputs[sectionId] || retryResult.userInputs[sectionId].length < 20) {
-            console.warn(`Section ${sectionId} is missing or too short after retry, adding placeholder content`);
+        for (const section of requiredSections) {
+          if (!retryResult.userInputs[section] || retryResult.userInputs[section].length < 20) {
+            console.warn(`Section ${section} is missing or too short after retry, adding placeholder content`);
             missingOrEmptySections = true;
-            // Add placeholder content from sectionContent if available
-            retryResult.userInputs[sectionId] = generatePlaceholderContent(sectionId, file.name, sectionContent);
+            // Add placeholder content that's better than nothing
+            retryResult.userInputs[section] = generatePlaceholderContent(section, file.name);
           }
         }
         
         if (missingOrEmptySections) {
-          console.log('Added placeholder content for missing sections from sectionContent.json');
+          console.log('Added placeholder content for missing sections');
         }
         
         return retryResult;
@@ -499,21 +446,21 @@ export async function importDocumentContent(file, sectionContent) {
     result.version = result.version || '1.0-openai-json-extraction';
     result.chatMessages = result.chatMessages || {};
     
-    // Verify all required sections from sectionContent
-    const allSectionIds = sectionContent.sections.map(s => s.id);
+    // FIXED: Verify all required sections (especially analysis and process)
+    const requiredSections = ['analysis', 'process'];
     let missingOrEmptySections = false;
     
-    for (const sectionId of allSectionIds) {
-      if (!result.userInputs[sectionId] || result.userInputs[sectionId].length < 20) {
-        console.warn(`Section ${sectionId} is missing or too short, adding placeholder content`);
+    for (const section of requiredSections) {
+      if (!result.userInputs[section] || result.userInputs[section].length < 20) {
+        console.warn(`Section ${section} is missing or too short, adding placeholder content`);
         missingOrEmptySections = true;
-        // Add placeholder content from sectionContent
-        result.userInputs[sectionId] = generatePlaceholderContent(sectionId, file.name, sectionContent);
+        // Add placeholder content that's better than nothing
+        result.userInputs[section] = generatePlaceholderContent(section, file.name);
       }
     }
     
     if (missingOrEmptySections) {
-      console.log('Added placeholder content for missing sections from sectionContent');
+      console.log('Added placeholder content for missing sections');
     }
     
     return result;
@@ -523,36 +470,38 @@ export async function importDocumentContent(file, sectionContent) {
 
     // Try one more time with a simplified approach focused on creating a positive example
     try {
-      console.log("Attempting final fallback extraction with sectionContent...");
+      console.log("Attempting final fallback extraction...");
       
-      // Use sectionContent to create a more aligned fallback prompt
-      const sectionIds = sectionContent.sections.map(s => s.id).join(', ');
-      const sectionPlaceholders = {};
-      sectionContent.sections.forEach(s => {
-        if (s.placeholder) {
-          sectionPlaceholders[s.id] = s.placeholder.substring(0, 100) + '...';
-        }
-      });
-      
-      // Create a fallback prompt with section structure
+      // Create a bare-minimum example with EXACT field structure
       const simplestPrompt = `
         The document extraction failed. Please create a reasonable scientific paper example
-        based on this document title: "${file.name}" and these sections: ${sectionIds}
+        based on this document title: "${file.name}"
         
         This is for EDUCATIONAL PURPOSES to help students learn scientific paper structure.
-        
-        Create a structure that follows the format used in our sections. Here are some examples:
-        ${JSON.stringify(sectionPlaceholders, null, 2)}
         
         You MUST return JSON with these EXACT field names in the userInputs object:
         - question
         - audience
-        - ONE of: hypothesis, needsresearch, exploratoryresearch
-        - relatedpapers
-        - ONE of: experiment, existingdata, theorysimulation
+        - hypothesis (not "researchApproach")
+        - relatedpapers (not "relatedPapers")
+        - experiment (not "dataCollectionMethod")
         - analysis
         - process
         - abstract
+        
+        Here's an example of the expected structure:
+        {
+          "userInputs": {
+            "question": "Research Question: How does X affect Y?\\n\\nSignificance/Impact: Understanding this relationship is important because...",
+            "audience": "Target Audience/Community (research fields/disciplines):\\n1. Field1\\n2. Field2\\n3. Field3\\n\\nSpecific Researchers/Labs (individual scientists or groups):\\n1. Researcher1\\n2. Researcher2\\n3. Researcher3",
+            "hypothesis": "Hypothesis 1: X increases Y through mechanism A\\n\\nHypothesis 2: X increases Y through mechanism B\\n\\nWhy distinguishing these hypotheses matters:\\n- Reason1\\n- Reason2",
+            "relatedpapers": "Most similar papers that test related hypotheses:\\n1. Author1 et al. (Year) \\"Title1\\"\\n2. Author2 et al. (Year) \\"Title2\\"\\n3. Author3 (Year) \\"Title3\\"\\n4. Author4 & Author5 (Year) \\"Title4\\"\\n5. Author6 et al. (Year) \\"Title5\\"",
+            "experiment": "Key Variables:\\n- Independent: IndependentVar\\n- Dependent: DependentVar\\n- Controlled: ControlledVar\\n\\nSample & Size Justification: Description\\n\\nData Collection Methods: Description\\n\\nPredicted Results: Description\\n\\nPotential Confounds & Mitigations: Description",
+            "analysis": "Data Cleaning & Exclusions:\\nDescription\\n\\nPrimary Analysis Method:\\nDescription\\n\\nHow Analysis Addresses Research Question:\\nDescription\\n\\nUncertainty Quantification:\\nDescription\\n\\nSpecial Cases Handling:\\nDescription",
+            "process": "Skills Needed vs. Skills I Have:\\nDescription\\n\\nCollaborators & Their Roles:\\nDescription\\n\\nData/Code Sharing Plan:\\nDescription\\n\\nTimeline & Milestones:\\nDescription\\n\\nObstacles & Contingencies:\\nDescription",
+            "abstract": "Background: Description\\n\\nObjective/Question: Description\\n\\nMethods: Description\\n\\n(Expected) Results: Description\\n\\nConclusion/Implications: Description"
+          }
+        }
         
         Create a thoughtful, well-structured scientific paper example focusing on the topic in the document title.
       `;
@@ -561,15 +510,15 @@ export async function importDocumentContent(file, sectionContent) {
         simplestPrompt,
         'document_import_fallback',
         {},
-        sectionContent.sections,
+        [],
         { temperature: 0.4, max_tokens: 3000 },
         [],
-        "You are creating educational examples for students. Generate a complete, well-structured scientific paper example with EXACTLY the field names requested. Do not use alternative field names. Follow the structure provided in sectionContent.",
+        "You are creating educational examples for students. Generate a complete, well-structured scientific paper example with EXACTLY the field names requested. Do not use alternative field names.",
         true
       );
       
-      if (validateResearchPaper(fallbackResult, sectionContent)) {
-        console.log('Created fallback example based on document title and sectionContent');
+      if (validateResearchPaper(fallbackResult)) {
+        console.log('Created fallback example based on document');
         
         fallbackResult.timestamp = new Date().toISOString();
         fallbackResult.version = '1.0-fallback-example';
@@ -585,15 +534,15 @@ export async function importDocumentContent(file, sectionContent) {
     const stage = documentText ? 'LLM Processing' : 'Text Extraction';
     const detailedErrorMessage = `Import Error for ${file.name} (Stage: ${stage}):\nType: ${error.name || 'Error'}\nMessage: ${error.message || 'Unknown import error'}`;
     
-    // Use sectionContent placeholder for question if available
-    const questionSection = sectionContent.sections.find(s => s.id === 'question');
-    const questionPlaceholder = questionSection?.placeholder || "Error during import. Please try again with a different file.";
-    
+    const hypothesisTextOnError = documentText
+        ? `--- RAW EXTRACTED TEXT (for debugging) ---\n\n${documentText.substring(0, 5000)}...`
+        : "Text extraction failed. See error details in Question section.";
+
     // Return a structured error object
     return {
       userInputs: {
         question: `Research Question: Error during import\n\nSignificance/Impact: ${detailedErrorMessage}`,
-        hypothesis: "Text extraction failed. See error details in Question section.",
+        hypothesis: hypothesisTextOnError,
         abstract: `Document import failed for ${file.name}. See details in Question section.`,
       },
       chatMessages: {},
