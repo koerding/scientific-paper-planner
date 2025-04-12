@@ -6,16 +6,7 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Modernized chat interface with fixed layout issues
- * FIXES:
- * - Fixed syntax error on line 67
- * - Consistent positioning relative to footer
- * - Improved z-index handling
- * - Fixed transition issues
- * - Better handling of magic button overlap
- * - FIXED: Z-index increased to be on top of the improve instructions button
- * - FIXED: Vertically aligned header icon and text
- * - FIXED: Added thinking indicator where assistant's response will appear
- * - UPDATED: Changed chat icon to button similar to improve instructions with text "Let's talk about this"
+ * UPDATED: Added purple text for AI messages to match FullHeightInstructionsPanel
  */
 const ModernChatInterface = ({
   currentSection,
@@ -155,11 +146,11 @@ const ModernChatInterface = ({
                 {/* Render all existing messages first */}
                 {chatMessages[currentSection].map((msg, index) => (
                   <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-2`}>
-                    <div className={`message-bubble ${msg.role === 'user' ? 'user-message' : 'ai-message'} max-w-3xl`}>
+                    <div className={`message-bubble ${msg.role === 'user' ? 'user-message' : 'ai-message-purple'} max-w-3xl`}>
                       <div className="text-sm mb-1 opacity-75">
                         {msg.role === 'user' ? 'You' : 'AI Assistant'} • {formatTime()}
                       </div>
-                      <div className={`message-content ${msg.role === 'user' ? 'text-white' : 'text-gray-800'}`}>
+                      <div className={`message-content ${msg.role === 'user' ? 'text-white' : 'text-purple-700'}`}>
                         {msg.role === 'user' ? (
                           <p className="whitespace-pre-wrap">{msg.content}</p>
                         ) : (
@@ -175,17 +166,17 @@ const ModernChatInterface = ({
                 {/* FIXED: Show thinking indicator after the last message if loading */}
                 {loading && (
                   <div className="flex justify-start mb-2">
-                    <div className="message-bubble ai-message max-w-3xl">
+                    <div className="message-bubble ai-message-purple max-w-3xl">
                       <div className="text-sm mb-1 opacity-75">
                         AI Assistant • {formatTime()}
                       </div>
-                      <div className="message-content text-gray-800 flex items-center">
+                      <div className="message-content text-purple-700 flex items-center">
                         <div className="typing-indicator">
                           <span></span>
                           <span></span>
                           <span></span>
                         </div>
-                        <span className="ml-2 text-gray-600">Thinking...</span>
+                        <span className="ml-2 text-purple-700">Thinking...</span>
                       </div>
                     </div>
                   </div>
@@ -233,6 +224,41 @@ const ModernChatInterface = ({
           </div>
         </div>
       </div>
+
+      {/* Add custom styles for purple AI chat bubbles */}
+      <style jsx>{`
+        .ai-message-purple {
+          background-color: #f5f3ff;
+          border: 1px solid #e1d9fa;
+          border-top-left-radius: 0;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .text-purple-700 {
+          color: #6D28D9;
+        }
+        
+        /* Override markdown styles to maintain purple text */
+        .prose-sm a, 
+        .prose-sm strong, 
+        .prose-sm h1, 
+        .prose-sm h2, 
+        .prose-sm h3, 
+        .prose-sm h4,
+        .prose-sm code {
+          color: #6D28D9;
+        }
+        
+        /* Make code blocks stand out but still match the theme */
+        .prose-sm pre {
+          background-color: #ede9fe;
+          border: 1px solid #d8d4f0;
+        }
+        
+        .prose-sm pre code {
+          color: #5b21b6;
+        }
+      `}</style>
     </>
   );
 };
