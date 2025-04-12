@@ -17,9 +17,8 @@ import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
 } from '../../services/instructionImprovementService';
-// FIXED: Import the documentImportService namespace rather than specific function
-// import { importDocumentContent } from '../../services/documentImportService';
-import * as documentImportService from '../../services/documentImportService';
+// REMOVED: No need to import documentImportService since we get the function from usePaperPlannerHook
+// import * as documentImportService from '../../services/documentImportService';
 import '../../styles/PaperPlanner.css';
 
 /**
