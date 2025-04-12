@@ -1,49 +1,7 @@
 // FILE: src/utils/promptUtils.js
-// REFACTORED: Simplified to support the JSON approach, removed all text parsing
+// REFACTORED: Removed all research approach related code
 
 import promptContent from '../data/promptContent.json';
-
-/**
- * Check if a section ID is related to research approaches
- * @param {string} sectionId - The section ID to check
- * @param {object} sectionObj - Optional section object with additional metadata
- * @returns {boolean} - True if the section is related to research approaches
- */
-export const isResearchApproachSection = (sectionId, sectionObj = null) => {
-  // Direct match for only the 3 research approach sections
-  if (sectionId === 'hypothesis' ||
-      sectionId === 'needsresearch' ||
-      sectionId === 'exploratoryresearch') {
-    return true;
-  }
-
-  // Check if section title contains "approach"
-  if (sectionObj?.title?.toLowerCase().includes('approach')) {
-    return true;
-  }
-
-  return false;
-};
-
-/**
- * Get approach-specific guidance text for a given section
- * @param {string} sectionId - The section ID to get guidance for
- * @returns {string} - The guidance text or empty string if not applicable
- */
-export const getApproachGuidance = (sectionId) => {
-  // If the section is directly related to a research approach, get its specific guidance
-  if (sectionId === 'hypothesis') {
-    return promptContent.researchApproaches.approachGuidance.hypothesis || '';
-  }
-  if (sectionId === 'needsresearch') {
-    return promptContent.researchApproaches.approachGuidance.needsresearch || '';
-  }
-  if (sectionId === 'exploratoryresearch') {
-    return promptContent.researchApproaches.approachGuidance.exploratory || '';
-  }
-
-  return '';
-};
 
 /**
  * Replaces placeholders in a string with values from a parameters object.
@@ -80,17 +38,9 @@ export const buildSystemPrompt = (promptType, params = {}) => {
     return `System error: Unknown prompt type ${promptType}`;
   }
 
-  // Determine if we need to include research approach context
-  const needsResearchContext = params.needsResearchContext || false;
-  let contextText = '';
-  if (needsResearchContext) {
-    contextText = promptContent.researchApproaches.context || '';
-  }
-
-  // Add the context and other params for replacement
+  // Add params for replacement with defaults for common parameters
   const allParams = {
     ...params,
-    researchApproachContext: contextText,
     // Default values for common parameters
     sectionTitle: params.sectionTitle || '',
     instructionsText: params.instructionsText || '',
