@@ -3,7 +3,7 @@
 /**
  * Modern service for improving instructions based on user progress
  * REFACTORED: Now uses structured JSON approach for reliable subsection handling
- * REMOVED: All complex text parsing, marker handling, and tooltip restoration logic
+ * REMOVED: All text parsing, marker handling, and tooltip restoration logic
  */
 import { callOpenAI } from './openaiService';
 import { isResearchApproachSection, buildSystemPrompt } from '../utils/promptUtils';
@@ -114,7 +114,7 @@ export const improveBatchInstructions = async (
     `;
 
     // Log data for debugging
-    console.log(`[Instruction Improvement] Analyzing ${sectionsForAnalysis.length} sections with new JSON structure.`);
+    console.log(`[Instruction Improvement] Analyzing ${sectionsForAnalysis.length} sections with JSON structure.`);
 
     // Call OpenAI with JSON mode
     const response = await callOpenAI(
@@ -247,46 +247,32 @@ function transformAnalysisToInstructions(analysisResults, originalSections) {
  * @returns {Object} - Transformed instruction data
  */
 function transformSingleAnalysisToInstructions(analysis, originalSection) {
-  // Start with the overall feedback
-  let instructionsText = `${analysis.overallFeedback || `Great work on your ${originalSection.title}!`}\n\n`;
-  
-  // Add the introductory text if available
-  if (originalSection.introText) {
-    instructionsText += `${originalSection.introText}\n\n`;
-  }
-  
-  // Process each subsection
-  originalSection.subsections.forEach(subsection => {
-    // Find the corresponding analysis
-    const subsectionAnalysis = analysis.subsections?.find(s => s.id === subsection.id);
-    const isComplete = subsectionAnalysis?.isComplete || false;
-    const feedback = subsectionAnalysis?.feedback || 
-      (isComplete ? "Well addressed in your current draft." : "Consider addressing this point in more detail.");
-    
-    // Format the instruction based on completion status
-    if (isComplete) {
-      instructionsText += `* **~~${subsection.title}: ${subsection.instruction}~~**\n${feedback}\n\n`;
-    } else {
-      instructionsText += `* **${subsection.title}: ${subsection.instruction}**\n${feedback}\n\n`;
-    }
-    
-    // Add tooltip after each subsection
-    if (subsection.tooltip) {
-      instructionsText += `*${subsection.tooltip}*\n\n`;
-    }
-  });
-  
+  // Create a structured data object that will be rendered by FullHeightInstructionsPanel
   return {
     id: analysis.id,
-    editedInstructions: instructionsText.trim(),
-    completionStatus: analysis.completionStatus || "complete"
+    title: originalSection.title,
+    overallFeedback: analysis.overallFeedback || `Great work on your ${originalSection.title}!`,
+    completionStatus: analysis.completionStatus || "complete",
+    subsectionFeedback: (originalSection.subsections || []).map(subsection => {
+      // Find corresponding feedback from analysis
+      const subsectionAnalysis = analysis.subsections?.find(s => s.id === subsection.id);
+      return {
+        id: subsection.id,
+        title: subsection.title,
+        instruction: subsection.instruction,
+        tooltip: subsection.tooltip, // Keep the original tooltip
+        isComplete: subsectionAnalysis?.isComplete || false,
+        feedback: subsectionAnalysis?.feedback || 
+          (subsectionAnalysis?.isComplete ? "Well addressed in your current draft." : "Consider addressing this point in more detail.")
+      };
+    })
   };
 }
 
 /**
  * Updates section content object with improved instructions.
  * @param {Object} currentSections - The current sections object from state.
- * @param {Array} improvedData - Array of objects { id, editedInstructions, completionStatus }.
+ * @param {Array} improvedData - Array of improved section data objects.
  * @returns {Object} - A new object with updated section content.
  */
 export const updateSectionWithImprovedInstructions = (currentSections, improvedData) => {
@@ -315,18 +301,17 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
     const section = updatedSections.sections[sectionIndex];
     if (!section) return;
 
-    // Initialize instructions object if needed
+    // Create or update the instructions object
     if (!section.instructions) section.instructions = {};
 
-    // Update the instructions text
-    section.instructions.text = improvement.editedInstructions;
-    console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id} (${improvement.editedInstructions.length} chars)`);
-    changesApplied = true;
+    // Store the full improvement data for the panel to render
+    section.instructions.improvement = improvement;
+    
+    // Set the completion status 
+    section.instructions.completionStatus = improvement.completionStatus;
 
-    // Remove any existing separate feedback field
-    if (section.instructions.hasOwnProperty('feedback')) {
-      delete section.instructions.feedback;
-    }
+    console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id}`);
+    changesApplied = true;
   });
 
   if (!changesApplied) {
