@@ -1,113 +1,68 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 /**
- * Debug version to check JSON structure and content access
+ * Enhanced instructions panel with tooltip functionality for subsections
  */
 const FullHeightInstructionsPanel = ({ currentSection }) => {
-  // Extensive debugging on mount and when section changes
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipContent, setTooltipContent] = useState('');
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const tooltipRef = useRef(null);
+  
   useEffect(() => {
-    console.log("=====================================");
-    console.log("FULL HEIGHT PANEL - DETAILED DEBUGGING");
-    console.log("=====================================");
-    
-    if (!currentSection) {
-      console.warn("No currentSection provided to FullHeightInstructionsPanel");
-      return;
+    // Debug logging
+    if (currentSection) {
+      console.log("[PANEL] Current section data:", currentSection);
+      console.log("[PANEL] Has introText:", !!currentSection.introText);
+      console.log("[PANEL] Has subsections:", Array.isArray(currentSection.subsections));
     }
     
-    // Check section structure
-    console.log("Current section ID:", currentSection.id);
-    console.log("Current section title:", currentSection.title);
-    console.log("Full section object structure:", currentSection);
-    
-    // Looking at JSON structure based on what you shared
-    console.log("Does section have 'introText'?", !!currentSection.introText);
-    console.log("introText content:", currentSection.introText);
-    
-    console.log("Does section have 'subsections'?", Array.isArray(currentSection.subsections));
-    if (Array.isArray(currentSection.subsections)) {
-      console.log("Number of subsections:", currentSection.subsections.length);
-      console.log("First subsection sample:", currentSection.subsections[0]);
-    }
-    
-    // Check the legacy structure too
-    console.log("Does section have 'instructions' object?", !!currentSection.instructions);
-    if (currentSection.instructions) {
-      console.log("instructions.text:", currentSection.instructions.text);
-      console.log("instructions.feedback:", currentSection.instructions.feedback);
-    }
-    
-    // Let's see what happens if we try to access both structures
-    const introPart = currentSection.introText || "No introText found";
-    console.log("Intro part (first 50 chars):", introPart.substring(0, 50));
-    
-    // Check what we're actually supposed to render
-    console.log("What we're supposed to render:");
-    if (currentSection.subsections) {
-      console.log("- Intro text + subsection array with titles/instructions");
-    } else if (currentSection.instructions && currentSection.instructions.text) {
-      console.log("- Legacy format with instructions.text");
-    } else {
-      console.log("- UNKNOWN FORMAT - no clear content to render");
-    }
-    
-    console.log("=====================================");
+    // Close tooltip when section changes
+    setShowTooltip(false);
   }, [currentSection]);
+  
+  // Handle clicks outside the tooltip to close it
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target)) {
+        setShowTooltip(false);
+      }
+    }
+    
+    function handleEscKey(event) {
+      if (event.key === 'Escape') {
+        setShowTooltip(false);
+      }
+    }
+    
+    if (showTooltip) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscKey);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [showTooltip]);
 
   // Create a title that includes the section name
   const sectionTitle = currentSection?.title || "Instructions";
   const panelTitle = `${sectionTitle} Instructions & Feedback`;
-
-  // Render function to handle both possible JSON structures
-  const renderContent = () => {
-    if (!currentSection) return null;
+  
+  // Handle info icon click to show tooltip
+  const handleInfoClick = (content, event) => {
+    setTooltipContent(content);
     
-    // NEW JSON STRUCTURE
-    if (currentSection.introText && Array.isArray(currentSection.subsections)) {
-      return (
-        <>
-          {/* Intro Text */}
-          <div className="text-xl mb-5 leading-relaxed">
-            {currentSection.introText}
-          </div>
-          
-          {/* Subsections */}
-          {currentSection.subsections.map((subsection, index) => (
-            <div key={index} className="mb-5">
-              <div className="text-2xl font-bold text-blue-800 mb-2">
-                <strong>{subsection.title}</strong>
-              </div>
-              <div className="text-xl leading-relaxed">
-                {subsection.instruction}
-              </div>
-            </div>
-          ))}
-        </>
-      );
-    }
+    // Calculate position - we want it centered but not off-screen
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+    const position = {
+      top: buttonRect.bottom + window.scrollY + 10,
+      left: buttonRect.left + window.scrollX - 200 + (buttonRect.width / 2) // Center it relative to button
+    };
     
-    // LEGACY JSON STRUCTURE
-    else if (currentSection.instructions && currentSection.instructions.text) {
-      // For legacy structure, just render the raw text with line breaks
-      return (
-        <div className="text-xl leading-relaxed whitespace-pre-line">
-          {currentSection.instructions.text}
-        </div>
-      );
-    }
-    
-    // NO VALID CONTENT STRUCTURE
-    else {
-      return (
-        <div className="text-red-500">
-          <p>No renderable content found in the section data.</p>
-          <p>Debug info:</p>
-          <pre className="bg-gray-100 p-2 text-xs overflow-auto">
-            {JSON.stringify(currentSection, null, 2)}
-          </pre>
-        </div>
-      );
-    }
+    setTooltipPosition(position);
+    setShowTooltip(true);
   };
 
   return (
@@ -134,25 +89,42 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
               {panelTitle}
             </h3>
 
-            {/* Debug information displayed in UI */}
-            <div className="border-2 border-red-300 bg-red-50 rounded-lg p-2 mb-4 text-xs">
-              <p><strong>Debug Info:</strong></p>
-              <p>Section ID: {currentSection.id || 'missing'}</p>
-              <p>Has introText: {currentSection.introText ? 'Yes' : 'No'}</p>
-              <p>Has subsections: {Array.isArray(currentSection.subsections) ? `Yes (${currentSection.subsections?.length})` : 'No'}</p>
-              <p>Has instructions: {currentSection.instructions ? 'Yes' : 'No'}</p>
-              <p>
-                Structure type: {
-                  (currentSection.introText && Array.isArray(currentSection.subsections)) ? 'NEW JSON' :
-                  (currentSection.instructions && currentSection.instructions.text) ? 'LEGACY JSON' : 
-                  'UNKNOWN'
-                }
-              </p>
-            </div>
-
-            {/* Instructions panel - handles both JSON structures */}
+            {/* Instructions panel */}
             <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
-              {renderContent()}
+              {/* Intro Text */}
+              {currentSection.introText && (
+                <div className="text-xl mb-5 leading-relaxed">
+                  {currentSection.introText}
+                </div>
+              )}
+              
+              {/* Subsections with tooltips */}
+              {currentSection.subsections && currentSection.subsections.map((subsection, index) => (
+                <div key={index} className="mb-5">
+                  <div className="text-2xl font-bold text-blue-800 mb-2">
+                    <strong>{subsection.title}</strong>
+                    {subsection.tooltip && (
+                      <button 
+                        className="info-icon-button ml-2"
+                        onClick={(e) => handleInfoClick(subsection.tooltip, e)}
+                        aria-label="More information"
+                      >
+                        ⓘ
+                      </button>
+                    )}
+                  </div>
+                  <div className="text-xl leading-relaxed">
+                    {subsection.instruction}
+                  </div>
+                </div>
+              ))}
+              
+              {/* If no subsections but has legacy instructions */}
+              {!currentSection.subsections && currentSection.instructions?.text && (
+                <div className="text-xl leading-relaxed whitespace-pre-line">
+                  {currentSection.instructions.text}
+                </div>
+              )}
             </div>
 
             {/* Feedback section if it exists */}
@@ -169,6 +141,73 @@ const FullHeightInstructionsPanel = ({ currentSection }) => {
           </>
         )}
       </div>
+      
+      {/* Tooltip Modal for displaying long tooltip content */}
+      {showTooltip && (
+        <div 
+          ref={tooltipRef}
+          className="fixed z-50 bg-white rounded-lg shadow-xl p-4 border border-gray-200"
+          style={{
+            top: tooltipPosition.top,
+            left: tooltipPosition.left,
+            maxWidth: '500px',
+            maxHeight: '300px',
+            overflowY: 'auto',
+            animation: 'fadeIn 0.2s ease-out forwards'
+          }}
+        >
+          <button 
+            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            onClick={() => setShowTooltip(false)}
+          >
+            ✕
+          </button>
+          <div className="prose prose-blue max-w-none mt-2 text-gray-700">
+            {tooltipContent}
+          </div>
+        </div>
+      )}
+      
+      {/* Styles from PaperPlanner.css, included inline for direct integration */}
+      <style jsx>{`
+        /* Info button styling from PaperPlanner.css */
+        .info-icon-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background-color: #EEF2FF;
+          color: #4F46E5;
+          font-size: 12px;
+          font-weight: bold;
+          cursor: pointer;
+          border: none;
+          transition: all 0.2s ease;
+          margin: 0 2px;
+          vertical-align: middle;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-icon-button:hover {
+          background-color: #E0E7FF;
+          transform: scale(1.1);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Animation for tooltip */
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Section styling from PaperPlanner.css */
+        .section-instruction-panel .prose p {
+          margin-top: 1em;
+          margin-bottom: 1em;
+        }
+      `}</style>
     </div>
   );
 };
