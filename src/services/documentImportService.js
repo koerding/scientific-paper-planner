@@ -2,12 +2,11 @@
 
 /**
  * Document import service for PDF and Word documents
- * Using CDN-based PDF.js for better compatibility
- * REFACTORED: Prompts and placeholders are now dynamically generated from sectionContent.json
- * FIXED: Improved validation to ensure all required sections are filled
+ * UPDATED: Now includes sectionContent as explicit grading context for the LLM
+ * UPDATED: Improved prompt to clarify that output will be evaluated based on the grading criteria
  */
 import { callOpenAI } from './openaiService';
-import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils'; // Assuming promptUtils is updated if needed
+import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
 import sectionContentData from '../data/sectionContent.json'; // Load the section content
 
 // Import necessary libraries for document processing
@@ -70,13 +69,11 @@ const extractTextFromPDF = async (pdfData) => {
   }
 };
 
-
 // --- extractTextFromDocument remains the same ---
 
 const extractTextFromDocument = async (file) => {
   console.log(`Attempting to extract text from: ${file.name}, type: ${file.type}`);
-  // ... (rest of the function is unchanged) ...
-    return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
     reader.onload = async (event) => {
@@ -147,7 +144,6 @@ const extractTextFromDocument = async (file) => {
   });
 };
 
-
 // --- validateResearchPaper remains the same ---
 
 function validateResearchPaper(paper) {
@@ -188,24 +184,38 @@ function validateResearchPaper(paper) {
 }
 
 /**
- * REFACTORED: Generates placeholder content for missing sections using sectionContent.json
- * @param {string} sectionId - The section ID needing placeholder content
- * @param {string} fileName - The name of the imported file (used for context if needed)
- * @returns {string} - Placeholder content from sectionContent.json
+ * Function to extract the key criteria from sectionContent for use in prompts
+ * @returns {string} A formatted string containing the grading criteria
  */
-function generatePlaceholderContent(sectionId, fileName) {
-  const section = sectionContentData.sections.find(s => s.id === sectionId);
-  if (section && section.placeholder) {
-    // Optionally, you could add context based on fileName here if needed
-    // const paperTopic = fileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
-    return section.placeholder;
-  }
-  // Fallback if section or placeholder is not found
-  return `Placeholder content for section '${sectionId}'. Please review and update.`;
+function extractGradingCriteria() {
+  const criteria = [];
+  
+  sectionContentData.sections.forEach(section => {
+    if (!section || !section.id || !section.subsections) return;
+    
+    // Add section title
+    criteria.push(`## ${section.title} [id: ${section.id}]`);
+    
+    // Add intro text if available
+    if (section.introText) {
+      criteria.push(`${section.introText.substring(0, 150)}${section.introText.length > 150 ? '...' : ''}`);
+    }
+    
+    // Add subsection criteria
+    section.subsections.forEach(subsection => {
+      if (!subsection || !subsection.id) return;
+      criteria.push(`- ${subsection.title}: ${subsection.instruction.substring(0, 100)}${subsection.instruction.length > 100 ? '...' : ''}`);
+    });
+    
+    criteria.push(''); // Add a blank line between sections
+  });
+  
+  return criteria.join('\n');
 }
 
 /**
  * Helper function to build the JSON structure for prompts dynamically.
+ * UPDATED: Include explicit grading criteria information
  * @param {boolean} isSimplified - Flag to indicate if this is for the simplified retry prompt.
  * @returns {string} - A string representing the JSON structure for the prompt.
  */
@@ -264,11 +274,9 @@ const buildPromptJsonStructure = (isSimplified = false) => {
   return jsonString;
 };
 
-
 /**
  * Processes extracted scientific paper text and generates structured data using OpenAI's JSON mode.
- * Uses generous interpretation to extract the most positive examples possible.
- * REFACTORED: Uses dynamically generated prompts based on sectionContent.json
+ * UPDATED: Now explicitly includes section content grading criteria in the prompt
  * @param {File} file - The document file object (used for filename in errors)
  * @returns {Promise<Object>} - The structured data for loading into the planner
  */
@@ -285,39 +293,91 @@ export async function importDocumentContent(file) {
     documentText = await extractTextFromDocument(file);
     console.log(`Extraction successful for ${file.name}. Text length: ${documentText.length}`);
 
-    // Step 2: Build system prompt (using existing utility)
-    const systemPrompt = buildSystemPrompt('documentImport', {
-      documentTextSnippet: documentText.substring(0, 500)
-    });
+    // Step 2: Extract grading criteria from sectionContent
+    const gradingCriteria = extractGradingCriteria();
+    console.log("Extracted grading criteria for prompt context");
 
-    // Step 3: Build the main task prompt (using existing utility)
-    // This prompt likely already points to promptContent.json which describes the desired output structure
-    const taskPrompt = buildTaskPrompt('documentImport', {
-      documentText: documentText,
-      isoTimestamp: new Date().toISOString() // Pass timestamp here if needed by template
-    });
+    // Step 3: Build system prompt with grading context
+    const enhancedSystemPrompt = `You are analyzing a scientific paper to extract its structure based on specific grading criteria. 
+Be methodical, accurate, and ensure your output aligns with the evaluation standards.
 
-    // Step 4: Call OpenAI with JSON mode
+IMPORTANT: Your output will be graded based on how well it meets the criteria for each section outlined below.
+
+GRADING CRITERIA:
+${gradingCriteria}
+
+Pay particular attention to whether this is a hypothesis-driven, needs-based, or exploratory research paper.
+
+Document text (first part): ${documentText.substring(0, 500)}
+
+Create comprehensive examples that address each criterion from the grading rubric.`;
+
+    // Step 4: Build the main task prompt with clearer instructions
+    // Create a simplified excerpt of the structure with examples
+    const jsonStructureExcerpt = buildPromptJsonStructure(true).substring(0, 500) + "...";
+    
+    const enhancedTaskPrompt = `
+# Scientific Paper Extraction with Grading Criteria
+
+Extract key components from the provided scientific paper text and format them in a JSON structure matching the application's needs.
+
+**ATTENTION:** Your output will be evaluated based on how well it addresses the grading criteria provided. Make sure to create a comprehensive, high-quality example that addresses ALL the evaluation points for each section.
+
+**IMPORTANT:** Be VERY GENEROUS in your interpretation - read between the lines, make positive assumptions, and create content that would score highly on the grading rubric.
+
+## Research Approach Selection
+Determine which research approach the paper likely uses:
+1. Hypothesis-driven (testing competing explanations)
+2. Needs-based (solving a specific problem for stakeholders)
+3. Exploratory (discovering patterns without predetermined hypotheses)
+
+## Data Collection Method Selection
+Determine which data collection method the paper likely uses:
+1. Experiment (collecting new data)
+2. Analysis of Existing Data (analyzing already collected data)
+3. Theory/Simulation (using theory or computational models)
+
+## Grading Criteria to Address
+The output MUST address all the criteria outlined for each section. Key points to cover:
+
+${gradingCriteria}
+
+## Output Format
+Output valid JSON with a single top-level key \`userInputs\`. The structure should follow:
+${jsonStructureExcerpt}
+
+**Constraint Reminder:** Include ONLY ONE key for the research approach and ONLY ONE key for the data collection method within the \`userInputs\` object.
+
+--- DOCUMENT TEXT START ---
+${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated]' : ''}
+--- DOCUMENT TEXT END ---`;
+
+    // Step 5: Call OpenAI with JSON mode and enhanced prompts
     const result = await callOpenAI(
-      taskPrompt, // Use the prompt generated by buildTaskPrompt
+      enhancedTaskPrompt, // Use the enhanced prompt with grading criteria
       'document_import_task',
-      {}, [], { temperature: 0.3, max_tokens: 3000 }, [], systemPrompt, true // Use JSON mode
+      {}, [], { temperature: 0.3, max_tokens: 3000 }, [], enhancedSystemPrompt, true // Use JSON mode
     );
 
-    // Step 5: Validate the result
+    // Step 6: Validate the result
     if (!validateResearchPaper(result)) {
       console.warn("Received invalid paper structure from OpenAI, attempting to fix...");
 
-      // REFACTORED: Build the simplified prompt dynamically
+      // Build the simplified retry prompt with grading criteria
       const simplifiedJsonStructure = buildPromptJsonStructure(true); // Build structure with comments
       const simplifiedPrompt = `
         Extract a complete scientific paper structure from this document text.
-        Be VERY GENEROUS in your interpretation - create a high-quality educational example.
-
+        
+        ATTENTION: Your output will be evaluated against a detailed grading rubric. 
+        Create content that addresses these key evaluation criteria:
+        
+        ${gradingCriteria}
+        
         You MUST choose EXACTLY ONE research approach (hypothesis, needsresearch, or exploratoryresearch).
         You MUST choose EXACTLY ONE data collection method (experiment, existingdata, or theorysimulation).
 
-        Return in this exact JSON format, filling in the fields based on the document text:
+        Return in this exact JSON format, filling in the fields based on the document text
+        and ensuring they meet the grading criteria:
         ${simplifiedJsonStructure}
 
         Document text (first ${Math.min(documentText.length, 8000)} characters):
@@ -328,7 +388,7 @@ export async function importDocumentContent(file) {
         simplifiedPrompt,
         'document_import_simplified',
         {}, [], { temperature: 0.3, max_tokens: 3000 }, [],
-        "You are creating educational examples from scientific papers. Be generous and follow the requested JSON structure precisely, including exactly one research approach and one data method.",
+        "You are creating educational examples from scientific papers that will be graded against specific criteria. Be generous and follow the requested JSON structure precisely, including exactly one research approach and one data method. Your output should address all the evaluation points provided.",
         true // Use JSON mode
       );
 
@@ -373,7 +433,6 @@ export async function importDocumentContent(file) {
     }
     if (missingOrEmptySections) console.log('Added placeholder content for missing sections');
 
-
     return result;
 
   } catch (error) {
@@ -383,36 +442,41 @@ export async function importDocumentContent(file) {
     try {
       console.log("Attempting final fallback extraction...");
 
-      // REFACTORED: Build the simplest prompt structure dynamically
-      const simplestJsonStructure = buildPromptJsonStructure(true); // Build structure with comments
+      // Extract grading criteria for fallback
+      const gradingCriteriaShort = extractGradingCriteria().split('\n').slice(0, 20).join('\n') + '\n... [truncated]';
 
+      // Create a simplified prompt with grading criteria
+      const simplestExampleStructure = { userInputs: {} };
       // Define the essential fields for the simplest fallback
       const essentialFields = ['question', 'audience', 'hypothesis', 'relatedpapers', 'experiment', 'analysis', 'process', 'abstract'];
-      const simplestExampleStructure = { userInputs: {} };
+      
       essentialFields.forEach(fieldId => {
           const section = sectionContentData.sections.find(s => s.id === fieldId);
           simplestExampleStructure.userInputs[fieldId] = section ? section.placeholder : `[${fieldId} placeholder]`;
       });
 
-
       const simplestPrompt = `
         The document extraction failed. Create a reasonable scientific paper example based ONLY on this document title: "${file.name}"
         This is for EDUCATIONAL PURPOSES.
-
+        
+        IMPORTANT: Your output will be graded based on these criteria:
+        ${gradingCriteriaShort}
+        
         Return JSON with these EXACT field names in the userInputs object:
         ${essentialFields.join(', ')}
 
-        Use this structure as a guide, filling it with plausible content related to the title:
+        Use this structure as a guide, filling it with plausible content related to the title
+        that would score well on the grading criteria:
         ${JSON.stringify(simplestExampleStructure, null, 2)}
 
-        Generate a thoughtful, well-structured example based on the title "${file.name}".
+        Generate a thoughtful, well-structured example based on the title "${file.name}" that addresses the grading criteria.
       `;
 
       const fallbackResult = await callOpenAI(
         simplestPrompt,
         'document_import_fallback',
         {}, [], { temperature: 0.4, max_tokens: 3000 }, [],
-        "You are creating educational examples. Generate a complete paper example using ONLY the title provided and the EXACT field names requested in the JSON structure.",
+        "You are creating educational examples that will be graded against specific criteria. Generate a complete paper example using the title provided, addressing all the evaluation points required for each section.",
         true // Use JSON mode
       );
 
@@ -436,7 +500,6 @@ export async function importDocumentContent(file) {
          // If none found, add default ones
          if (foundApproaches.length === 0) fallbackResult.userInputs['hypothesis'] = generatePlaceholderContent('hypothesis', file.name);
          if (foundDataMethods.length === 0) fallbackResult.userInputs['experiment'] = generatePlaceholderContent('experiment', file.name);
-
 
         console.log('Created fallback example based on document title');
         fallbackResult.timestamp = new Date().toISOString();
@@ -462,25 +525,44 @@ export async function importDocumentContent(file) {
       timestamp: new Date().toISOString(),
       version: '1.0-extraction-error',
     };
-     sectionContentData.sections.forEach(section => {
+    
+    // Add placeholder content for each section
+    sectionContentData.sections.forEach(section => {
+      if (section && section.id) {
         errorResult.userInputs[section.id] = generatePlaceholderContent(section.id, file.name);
-     });
-     // Overwrite specific fields with error info
-     errorResult.userInputs.question = `Research Question: Error during import\n\nSignificance/Impact: ${detailedErrorMessage}`;
-     // Put raw text in a relevant field if extraction worked
-     if (documentText) errorResult.userInputs.abstract = errorContent;
-     else errorResult.userInputs.abstract = `Document import failed for ${file.name}. See details in Question section. ${errorContent}`;
-
+      }
+    });
+    
+    // Overwrite specific fields with error info
+    errorResult.userInputs.question = `Research Question: Error during import\n\nSignificance/Impact: ${detailedErrorMessage}`;
+    // Put raw text in a relevant field if extraction worked
+    if (documentText) errorResult.userInputs.abstract = errorContent;
+    else errorResult.userInputs.abstract = `Document import failed for ${file.name}. See details in Question section. ${errorContent}`;
 
     return errorResult;
   }
 }
 
+/**
+ * REFACTORED: Generates placeholder content for missing sections using sectionContent.json
+ * @param {string} sectionId - The section ID needing placeholder content
+ * @param {string} fileName - The name of the imported file (used for context if needed)
+ * @returns {string} - Placeholder content from sectionContent.json
+ */
+function generatePlaceholderContent(sectionId, fileName) {
+  const section = sectionContentData.sections.find(s => s.id === sectionId);
+  if (section && section.placeholder) {
+    // Optionally, you could add context based on fileName here if needed
+    // const paperTopic = fileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+    return section.placeholder;
+  }
+  // Fallback if section or placeholder is not found
+  return `Placeholder content for section '${sectionId}'. Please review and update.`;
+}
 
 // --- testPdfExtraction and window event listener remain the same ---
 window.testPdfExtraction = async function() {
-  // ... (rest of the function is unchanged) ...
-    try {
+  try {
     console.log("Testing PDF extraction...");
     await loadPDFJS();
     let pdfUrl = 'https://arxiv.org/pdf/1409.0473.pdf';
