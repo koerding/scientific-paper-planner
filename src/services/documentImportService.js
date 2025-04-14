@@ -313,7 +313,7 @@ function extractGradingCriteria() {
     
     // Add intro text if available
     if (section.introText) {
-      criteria.push(`${section.introText.substring(0, 150)}${section.introText.length > 150 ? '...' : ''}`);
+      criteria.push(`${section.introText.substring(0, 250)}${section.introText.length > 250 ? '...' : ''}`);
     }
     
     // Add subsection criteria
