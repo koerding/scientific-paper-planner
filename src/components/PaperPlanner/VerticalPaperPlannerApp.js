@@ -1,612 +1,386 @@
-// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
-
-import React, { useState, useEffect, useRef } from 'react';
-import sectionContent from '../../data/sectionContent.json';
-import ConfirmDialog from './ConfirmDialog';
-import ExamplesDialog from './ExamplesDialog';
-import SaveDialog from './SaveDialog';
-import SectionCard from '../sections/SectionCard';
-import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
-import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
-import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
-import ModernChatInterface from '../chat/ModernChatInterface';
-import FloatingMagicButton from '../buttons/FloatingMagicButton';
-import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
-import AppHeader from '../layout/AppHeader';
-import {
-  improveBatchInstructions,
-  updateSectionWithImprovedInstructions
-} from '../../services/instructionImprovementService';
-// REMOVED: No need to import documentImportService since we get the function from usePaperPlannerHook
-// import * as documentImportService from '../../services/documentImportService';
+import React, { useState, useEffect } from 'react';
+import VerticalPaperPlannerApp from './VerticalPaperPlannerApp'; // Using your existing component
+import sectionContent from '../../data/sectionContent.json';  
+import { callOpenAI } from '../../services/openaiService';
+import { exportProject as exportProjectFunction } from '../../utils/exportUtils';
+import * as documentImportService from '../../services/documentImportService';
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Paper Planner with research approach and data acquisition toggles
- * FIXES:
- * - Proper header spacing with paddingTop
- * - Fixed alignment between panels
- * - Improved fixed positioning for instructions panel
- * - Better handling of footer spacing
- * - Added loading animation for PDF import
- * - FIXED: Properly disable Magic button during PDF import
- * - FIXED: Added direct save implementation
- * - FIXED: Reduced overall whitespace and simplified layout
- * - FIXED: Consistent font styles between left and right panels
- * - RESTORED: Left cards layout with proper width/spacing
- * - UPDATED: Moved Target Audience section after Research Approach block
- * - ADDED: Save dialog to prompt for file name when saving
- * - ADDED: Theory/Simulation option in data acquisition methods filter
- * - ADDED: Improvement reminder toast after 3 minutes of editing
+ * Main entry point for the Paper Planner
+ * Contains core state management and API calls
+ * FIXED: Import process now correctly passes sectionContent.json for placeholders
  */
-const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
-  // Destructure the hook data
-  const {
-    currentSection: currentSectionIdForChat,
-    userInputs,
-    chatMessages,
-    currentMessage,
-    loading: chatLoading,
-    showConfirmDialog,
-    showExamplesDialog,
-    setCurrentMessage,
-    setShowConfirmDialog,
-    setShowExamplesDialog,
-    handleSectionChange,
-    handleInputChange,
-    handleSendMessage,
-    resetProject: hookResetProject,
-    exportProject,
-    saveProject: hookSaveProject,
-    loadProject,
-    importDocumentContent
-  } = usePaperPlannerHook;
-
-  const [activeSection, setActiveSection] = useState(currentSectionIdForChat);
-  const [activeApproach, setActiveApproach] = useState('hypothesis');
-  const [activeDataMethod, setActiveDataMethod] = useState('experiment');
-  const [sectionCompletionStatus, setSectionCompletionStatus] = useState({});
-  const [improvingInstructions, setImprovingInstructions] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
-  const [loading, setLoading] = useState(false); // Track overall loading state
-  const [showSaveDialog, setShowSaveDialog] = useState(false); // New state for save dialog
-  const sectionRefs = useRef({});
-  
-  // New states for tracking improvement reminders
-  const [lastImprovementTime, setLastImprovementTime] = useState(Date.now());
-  const [editEvents, setEditEvents] = useState([]);
-  const [significantEditsMade, setSignificantEditsMade] = useState(false);
-
-  // Use local state for instructions potentially modified by AI
-  const [localSectionContent, setLocalSectionContent] = useState(() => {
-    try {
-      return JSON.parse(JSON.stringify(sectionContent));
-    } catch (e) {
-      console.error("Failed to parse initial sectionContent", e);
-      return { sections: [] };
+const PaperPlannerApp = () => {
+  // State - Pre-fill with templates from sectionContent
+  const initialState = {};
+  sectionContent.sections.forEach(section => {
+    if (section && section.id) {
+      // Use placeholder as initial content
+      initialState[section.id] = section.placeholder || '';
     }
   });
 
-  // Effect to map refs
+  // Initialize states
+  const [userInputs, setUserInputs] = useState(initialState);
+  const [currentSection, setCurrentSection] = useState(sectionContent.sections[0].id);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [chatMessages, setChatMessages] = useState({});
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Initialize chat messages for each section
   useEffect(() => {
-    if (localSectionContent?.sections) {
-      localSectionContent.sections.forEach(section => {
-        if (section?.id) {
-          sectionRefs.current[section.id] = sectionRefs.current[section.id] || React.createRef();
-        }
-      });
-    }
-  }, [localSectionContent.sections]);
+    const initialChatMessages = {};
+    sectionContent.sections.forEach(section => {
+      initialChatMessages[section.id] = [];
+    });
+    setChatMessages(initialChatMessages);
+  }, []);
 
-  // Effect for initial active section setting based on hook
+  // Load saved data from localStorage
   useEffect(() => {
-    setActiveSection(currentSectionIdForChat);
-  }, [currentSectionIdForChat]);
-
-  // Effect to update active approach and data method based on user inputs
-  useEffect(() => {
-    // Determine default placeholder content for each section
-    const placeholders = {};
-    if (localSectionContent?.sections) {
-      localSectionContent.sections.forEach(s => {
-        if (s?.id) placeholders[s.id] = s.placeholder || '';
-      });
-    }
-
-    // Helper to check if content is different from placeholder
-    const isModified = (sectionId) => {
-      const content = userInputs[sectionId];
-      return typeof content === 'string' && content.trim() !== '' && content !== placeholders[sectionId];
-    };
-
-    // Set active approach based on modified content
-    if (isModified('hypothesis')) {
-      setActiveApproach('hypothesis');
-    } else if (isModified('needsresearch')) {
-      setActiveApproach('needsresearch');
-    } else if (isModified('exploratoryresearch')) {
-      setActiveApproach('exploratoryresearch');
-    } else {
-      setActiveApproach('hypothesis'); // Default
-    }
-
-    // Set active data method based on modified content
-    if (isModified('experiment')) {
-      setActiveDataMethod('experiment');
-    } else if (isModified('existingdata')) {
-      setActiveDataMethod('existingdata');
-    } else if (isModified('theorysimulation')) {
-      setActiveDataMethod('theorysimulation');
-    } else {
-      setActiveDataMethod('experiment'); // Default
-    }
-  }, [userInputs, localSectionContent.sections]);
-
-  const setActiveSectionWithManualFlag = (sectionId) => {
-    setActiveSection(sectionId);
-    handleSectionChange(sectionId); // Update context for chat/API calls
-  };
-
-  // Helper to check if section has meaningful content beyond placeholder
-  const hasSectionContent = (sectionId) => {
-    const content = userInputs[sectionId];
-    const section = localSectionContent.sections.find(s => s?.id === sectionId);
-    const placeholder = section?.placeholder || '';
-    const stringContent = typeof content === 'string' ? content : JSON.stringify(content);
-    return stringContent && stringContent.trim() !== '' && stringContent !== placeholder;
-  };
-
-  // Section completion status detection
-  const getSectionCompletionStatus = (sectionId) => {
-    // If there's an explicit completion status from the AI, use it
-    if (sectionCompletionStatus[sectionId]) {
-      return sectionCompletionStatus[sectionId];
-    }
-
-    // Get content and template
-    const content = userInputs[sectionId];
-    if (!content || content.trim() === '') {
-      return 'unstarted';
-    }
-
-    const section = localSectionContent.sections.find(s => s?.id === sectionId);
-    const placeholder = section?.placeholder || '';
-
-    // If content is exactly the placeholder, it's unstarted
-    if (content === placeholder) {
-      return 'unstarted';
-    }
-
-    // If it has meaningful content different from the placeholder
-    if (content !== placeholder && content.trim().length > 0) {
-      const lines = content.split('\n').filter(line => line.trim().length > 0);
-
-      // Section-specific checks
-      if (sectionId === 'hypothesis') {
-        const hasH1 = content.includes('Hypothesis 1:');
-        const hasH2 = content.includes('Hypothesis 2:');
-        const hasReason = content.includes('-');
-
-        if (hasH1 && hasH2) {
-          return 'complete';
-        }
-      }
-      else if (sectionId === 'audience') {
-        const communitySection = content.includes('Target Audience/Community');
-        const researcherSection = content.includes('Specific Researchers/Labs');
-        const hasItems = content.includes('1.') && (content.includes('2.') || content.includes('- '));
-
-        if (communitySection && researcherSection && hasItems) {
-          return 'complete';
-        }
-      }
-      else if (sectionId === 'question') {
-        const hasQuestion = content.includes('Research Question:');
-        const hasSignificance = content.includes('Significance/Impact:');
-
-        if (hasQuestion && hasSignificance) {
-          return 'complete';
-        }
-      }
-      else {
-        // For other sections, more generous criteria
-        if (content.length > 50 && lines.length >= 3) {
-          return 'complete';
-        }
-      }
-
-      // If content is substantially longer than template
-      if (content.length > placeholder.length * 1.2) {
-        return 'complete';
-      }
-
-      // Some progress but not complete
-      return 'progress';
-    }
-
-    return 'unstarted';
-  };
-
-  const scrollToSection = (sectionId) => {
-    if (sectionRefs.current[sectionId]?.current) {
-      sectionRefs.current[sectionId].current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-  // Get the current section data from local state for instructions display
-  const getCurrentSectionData = () => {
-    if (!localSectionContent || !Array.isArray(localSectionContent.sections)) {
-      return null;
-    }
-    const sectionData = localSectionContent.sections.find(s => s && s.id === activeSection) || null;
-    return sectionData;
-  };
-
-  // Handle edit events for improvement reminder
-  const handleEdit = (sectionId, timestamp) => {
-    setEditEvents(prev => [...prev, { sectionId, timestamp, type: 'edit' }]);
-  };
-
-  // Handle significant edit events for improvement reminder
-  const handleSignificantEdit = (sectionId, timestamp) => {
-    setEditEvents(prev => [...prev, { sectionId, timestamp, type: 'significant' }]);
-    setSignificantEditsMade(true);
-  };
-
-  // Handle magic (improving instructions)
-  const handleMagic = async () => {
-    // FIXED: Don't allow instruction improvement during loading
-    if (loading) return;
-    
-    // Track when improvement was last used
-    setLastImprovementTime(Date.now());
-    // Reset significant edits flag
-    setSignificantEditsMade(false);
-    // Clear edit events
-    setEditEvents([]);
-    
-    setImprovingInstructions(true);
     try {
-      console.log("Calling improveBatchInstructions...");
-      const result = await improveBatchInstructions(
-        localSectionContent.sections,
-        userInputs,
-        sectionContent
-      );
-
-      console.log("Received result from improveBatchInstructions:", result.success);
-
-      if (result.success && result.improvedData && result.improvedData.length > 0) {
-        console.log("Processing improved data...", result.improvedData.length);
+      const savedInputs = localStorage.getItem('paperPlannerData');
+      const savedChat = localStorage.getItem('paperPlannerChat');
+      
+      if (savedInputs) {
+        const parsedInputs = JSON.parse(savedInputs);
+        // Make sure we're not overwriting templates with empty values
+        const mergedInputs = {...initialState};
         
-        // Update the instruction content
-        const updatedSections = updateSectionWithImprovedInstructions(
-          localSectionContent,
-          result.improvedData
-        );
-        setLocalSectionContent(updatedSections);
-
-        // Process completion status
-        const newCompletionStatuses = {};
-
-        result.improvedData.forEach(item => {
-          // First check for explicit completionStatus field
-          if (item.completionStatus) {
-            newCompletionStatuses[item.id] = item.completionStatus;
-          }
-          // Alternatively, analyze content for completion markers
-          else {
-            const userContent = userInputs[item.id] || '';
-
-            if (userContent.trim() !== '') {
-              // Check if there's any feedback
-              if (item.feedback && item.feedback.length > 20) {
-                newCompletionStatuses[item.id] = 'complete';
-                return;
-              }
-
-              // Check for congratulatory messages
-              const isComplete = item.editedInstructions.includes('Excellent work') ||
-                                item.editedInstructions.includes('Great job') ||
-                                item.editedInstructions.includes('Well done') ||
-                                item.editedInstructions.includes('completed all');
-
-              // Compare with placeholder
-              const section = localSectionContent.sections.find(s => s?.id === item.id);
-              const placeholder = section?.placeholder || '';
-
-              if (isComplete || userContent.length > placeholder.length * 1.2) {
-                newCompletionStatuses[item.id] = 'complete';
-              } else if (userContent.trim() !== '' && userContent !== placeholder) {
-                newCompletionStatuses[item.id] = 'progress';
-              } else {
-                newCompletionStatuses[item.id] = 'unstarted';
-              }
-            }
+        // Only use saved values if they exist and are different from templates
+        Object.keys(parsedInputs).forEach(sectionId => {
+          if (parsedInputs[sectionId] && parsedInputs[sectionId].trim() !== '') {
+            mergedInputs[sectionId] = parsedInputs[sectionId];
           }
         });
-
-        // Set the new completion statuses
-        setSectionCompletionStatus(prevStatus => ({
-          ...prevStatus,
-          ...newCompletionStatuses
-        }));
         
-        console.log("Instruction improvement completed successfully");
-      } else {
-        console.warn("No improved data received from API");
+        setUserInputs(mergedInputs);
+      }
+      
+      if (savedChat) {
+        setChatMessages(JSON.parse(savedChat));
       }
     } catch (error) {
-      console.error("[handleMagic] Error during improvement process:", error);
-    } finally {
-      setImprovingInstructions(false);
+      console.error('Error loading saved data:', error);
     }
-  };
+  }, []);
 
-  // Combine local reset logic with hook's reset logic
-  const handleResetRequest = () => {
-    hookResetProject();
-    // Reset local instructions state
+  // Save to localStorage when data changes
+  useEffect(() => {
     try {
-      setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent)));
-    } catch(e) {
-      console.error("Failed to reset local section content:", e);
-      setLocalSectionContent({ sections: [] });
-    }
-    setActiveSection(sectionContent?.sections?.[0]?.id || 'question');
-    setActiveApproach('hypothesis');
-    setActiveDataMethod('experiment');
-    setSectionCompletionStatus({});
-    
-    // Reset improvement reminder state
-    setLastImprovementTime(Date.now());
-    setEditEvents([]);
-    setSignificantEditsMade(false);
-  };
-
-  // UPDATED: Modified save function to show dialog instead of direct save
-  const handleSaveProject = () => {
-    setShowSaveDialog(true);
-  };
-
-  // NEW: Function to actually save the project with filename from dialog
-  const saveProjectWithFilename = (fileName) => {
-    try {
-      console.log("Save function triggered with filename:", fileName);
-      
-      // Generate a safe filename
-      const safeFileName = fileName.trim() || 'scientific-paper-plan';
-      
-      // Add the .json extension if not present
-      const finalFileName = safeFileName.endsWith('.json') ? safeFileName : `${safeFileName}.json`;
-      
-      const jsonData = {
-        userInputs: userInputs,
-        chatMessages: chatMessages,
-        timestamp: new Date().toISOString(),
-        version: "1.0-direct-from-component"
-      };
-
-      // Create the blob directly
-      const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
-      const jsonUrl = URL.createObjectURL(jsonBlob);
-
-      // Create and trigger download link
-      const link = document.createElement('a');
-      link.href = jsonUrl;
-      link.download = finalFileName;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(jsonUrl);
-      }, 100);
-      
-      console.log("Project saved successfully as:", finalFileName);
-      return true;
+      localStorage.setItem('paperPlannerData', JSON.stringify(userInputs));
+      localStorage.setItem('paperPlannerChat', JSON.stringify(chatMessages));
     } catch (error) {
-      console.error("Error saving project:", error);
-      alert("There was an error saving your project: " + (error.message || "Unknown error"));
-      return false;
+      console.error('Error saving data:', error);
     }
+  }, [userInputs, chatMessages]);
+
+  // Handler functions
+  const handleSectionChange = (sectionId) => {
+    setCurrentSection(sectionId);
+    setCurrentIndex(sectionContent.sections.findIndex(s => s.id === sectionId));
   };
 
-  const sectionDataForPanel = getCurrentSectionData();
-
-  // Check if a section should be displayed based on toggles
-  const shouldDisplaySection = (sectionId) => {
-    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
-      return sectionId === activeApproach;
-    }
-
-    if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
-      return sectionId === activeDataMethod;
-    }
-
-    return true; // All other sections are always displayed
+  const handleInputChange = (section, value) => {
+    setUserInputs({
+      ...userInputs,
+      [section]: value
+    });
   };
 
-  // Handle approach toggle
-  const handleApproachToggle = (approach) => {
-    setActiveApproach(approach);
-    setActiveSectionWithManualFlag(approach);
-  };
-
-  // Handle data method toggle
-  const handleDataMethodToggle = (method) => {
-    setActiveDataMethod(method);
-    setActiveSectionWithManualFlag(method);
-  };
-
-  // Render a section with proper completion status
-  const renderSection = (section) => {
-    if (!section || !section.id) return null;
-
-    const isCurrentActive = activeSection === section.id;
+  // Send regular chat message with full context
+  const handleSendMessage = async () => {
+    if (currentMessage.trim() === '') return;
     
-    // We still calculate completionStatus internally but don't use it for styling
-    const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
-
-    return (
-      <SectionCard
-        key={section.id}
-        section={section}
-        isCurrentSection={isCurrentActive}
-        completionStatus={completionStatus} // Still pass it for internal use if needed
-        userInputs={userInputs}
-        handleInputChange={handleInputChange}
-        loading={chatLoading && currentSectionIdForChat === section.id}
-        sectionRef={sectionRefs.current[section.id]}
-        onClick={() => setActiveSectionWithManualFlag(section.id)}
-        useLargerFonts={false} // FIXED: Use smaller fonts for more compact layout
-        onEdit={handleEdit}
-        onSignificantEdit={handleSignificantEdit}
-      />
-    );
-  };
-
-  // Wrapper for import document content to track loading state
-  const handleDocumentImport = async (file) => {
+    // Add user message to chat
+    const newMessages = [
+      ...chatMessages[currentSection], 
+      { role: 'user', content: currentMessage }
+    ];
+    
+    setChatMessages({
+      ...chatMessages,
+      [currentSection]: newMessages
+    });
+    
+    setCurrentMessage('');
     setLoading(true);
+    
     try {
-      await importDocumentContent(file);
+      // Call OpenAI API with the current message and all context
+      const aiResponse = await callOpenAI(
+        currentMessage, 
+        currentSection, 
+        userInputs, 
+        sectionContent.sections
+      );
+      
+      // Add AI response to chat
+      const updatedMessages = [
+        ...newMessages,
+        { role: 'assistant', content: aiResponse }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: updatedMessages
+      });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      // Add error message to chat
+      const errorMessage = { 
+        role: 'assistant', 
+        content: 'Sorry, there was an error processing your request. Please try again.' 
+      };
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: [...newMessages, errorMessage]
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // FIXED: Combined loading state to properly disable buttons
-  const isAnyLoading = loading || chatLoading || improvingInstructions;
+  // Handle "First version finished" button with llmInstructions and all section context
+  const handleFirstVersionFinished = async () => {
+    // Don't do anything if there's no content yet
+    if (!userInputs[currentSection]) return;
+    
+    setLoading(true);
+    
+    try {
+      // Simple message for the UI
+      const displayMessage = "I've finished my first version. Can you provide feedback?";
+      
+      // Get detailed instructions from JSON
+      const currentSectionObj = sectionContent.sections.find(s => s.id === currentSection);
+      const aiInstructions = currentSectionObj.llmInstructions;
+      
+      // Add the simple message to chat for the user to see
+      const newMessages = [
+        ...chatMessages[currentSection], 
+        { role: 'user', content: displayMessage }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: newMessages
+      });
+      
+      // Call OpenAI API with the detailed instructions
+      const aiResponse = await callOpenAI(
+        aiInstructions, 
+        currentSection, 
+        userInputs, 
+        sectionContent.sections
+      );
+      
+      // Add AI response to chat
+      const updatedMessages = [
+        ...newMessages,
+        { role: 'assistant', content: aiResponse }
+      ];
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: updatedMessages
+      });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      // Add error message to chat
+      const errorMessage = { 
+        role: 'assistant', 
+        content: 'Sorry, there was an error processing your request. Please try again.' 
+      };
+      
+      setChatMessages({
+        ...chatMessages,
+        [currentSection]: [...chatMessages[currentSection], { role: 'user', content: "I've finished my first version. Can you provide feedback?" }, errorMessage]
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const resetProject = () => {
+    // Reset to template values
+    const freshInputs = {};
+    sectionContent.sections.forEach(section => {
+      if (section && section.id) {
+        freshInputs[section.id] = section.placeholder || '';
+      }
+    });
+    setUserInputs(freshInputs);
+    
+    // Clear all chat messages
+    const freshChatMessages = {};
+    sectionContent.sections.forEach(section => {
+      if (section && section.id) {
+        freshChatMessages[section.id] = [];
+      }
+    });
+    
+    setChatMessages(freshChatMessages);
+    setCurrentSection(sectionContent.sections[0].id);
+    
+    // Clear localStorage
+    localStorage.removeItem('paperPlannerData');
+    localStorage.removeItem('paperPlannerChat');
+  };
+
+  const goToNextSection = () => {
+    const newIndex = currentIndex + 1;
+    if (newIndex < sectionContent.sections.length) {
+      handleSectionChange(sectionContent.sections[newIndex].id);
+    }
+  };
+
+  const goToPreviousSection = () => {
+    const newIndex = currentIndex - 1;
+    if (newIndex >= 0) {
+      handleSectionChange(sectionContent.sections[newIndex].id);
+    }
+  };
+
+  // Function to export project
+  const exportProject = () => {
+    exportProjectFunction(userInputs, chatMessages, sectionContent);
+  };
+
+  // Function to load project from imported JSON file - SIMPLIFIED VERSION
+  const loadProject = (data) => {
+    // Simple validation
+    if (!data || !data.userInputs) {
+      alert("Invalid project file format. Please select a valid project file.");
+      return;
+    }
+    
+    // Confirm before loading
+    if (window.confirm("Loading this project will replace your current work. Are you sure you want to continue?")) {
+      try {
+        // Create template values using sectionContent
+        const templateValues = {};
+        sectionContent.sections.forEach(section => {
+          if (section && section.id) {
+            templateValues[section.id] = section.placeholder || '';
+          }
+        });
+        
+        // Merge with loaded data
+        const mergedInputs = {...templateValues};
+        Object.keys(data.userInputs).forEach(sectionId => {
+          if (data.userInputs[sectionId] && typeof data.userInputs[sectionId] === 'string' && 
+              data.userInputs[sectionId].trim() !== '') {
+            mergedInputs[sectionId] = data.userInputs[sectionId];
+          }
+        });
+        
+        // Update user inputs state
+        setUserInputs(mergedInputs);
+        
+        // Create empty chat messages
+        const emptyChat = {};
+        sectionContent.sections.forEach(section => {
+          if (section && section.id) {
+            emptyChat[section.id] = [];
+          }
+        });
+        
+        // Merge with loaded chat messages if they exist
+        const mergedChat = {...emptyChat};
+        if (data.chatMessages) {
+          Object.keys(data.chatMessages).forEach(sectionId => {
+            if (Array.isArray(data.chatMessages[sectionId])) {
+              mergedChat[sectionId] = data.chatMessages[sectionId];
+            }
+          });
+        }
+        
+        // Update chat messages state
+        setChatMessages(mergedChat);
+        
+        // Save to localStorage
+        localStorage.setItem('paperPlannerData', JSON.stringify(mergedInputs));
+        localStorage.setItem('paperPlannerChat', JSON.stringify(mergedChat));
+        
+        // Set to first section
+        setCurrentSection(sectionContent.sections[0].id);
+        setCurrentIndex(0);
+        
+        alert("Project loaded successfully!");
+      } catch (error) {
+        alert("Error loading project: " + (error.message || "Unknown error"));
+      }
+    }
+  };
+
+  // Import document content using the documented import service 
+  // FIXED: Now passes sectionContent to the import service
+  const handleDocumentImport = async (file) => {
+    setLoading(true);
+
+    try {
+      // Only ask once for confirmation
+      if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
+        setLoading(false);
+        return false;
+      }
+
+      // IMPROVED: Pass sectionContent to the import service to ensure it uses
+      // the same placeholders as the main application
+      const importedData = await documentImportService.importDocumentContent(file, sectionContent);
+      
+      // Use the loadProject function to handle the imported data
+      loadProject(importedData);
+
+      return true;
+    } catch (error) {
+      console.error("Error importing document content:", error);
+
+      // More user-friendly error message
+      alert("We had some trouble processing this document. You might want to try a different file format.");
+
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hook for the Paper Planner
+  const usePaperPlannerHook = {
+    currentSection,
+    currentIndex,
+    userInputs,
+    chatMessages,
+    currentMessage,
+    loading,
+    showConfirmDialog,
+    setCurrentMessage,
+    setShowConfirmDialog,
+    handleSectionChange,
+    handleInputChange,
+    handleSendMessage,
+    handleFirstVersionFinished,
+    resetProject,
+    goToNextSection,
+    goToPreviousSection,
+    exportProject,
+    loadProject,
+    importDocumentContent: handleDocumentImport
+  };
+
+  // Use your existing VerticalPaperPlannerApp
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="w-full pb-6"> {/* FIXED: Reduced bottom padding */}
-        {/* Use imported AppHeader component with props */}
-        <AppHeader
-          resetProject={() => setShowConfirmDialog(true)}
-          exportProject={exportProject}
-          saveProject={handleSaveProject} // UPDATED: Now shows save dialog
-          loadProject={loadProject}
-          importDocumentContent={handleDocumentImport}
-          setShowExamplesDialog={setShowExamplesDialog}
-          loading={isAnyLoading}
-        />
-
-        {/* Main content area */}
-        <div style={{ paddingTop: '40px' }}>
-          <div className="flex">
-            {/* RESTORED: Left panel with full half-width */}
-            <div className="w-half px-4 py-2" style={{ width: '50%' }}>
-              {/* Display Research Question first */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'question')
-                .map(section => renderSection(section))}
-
-              {/* Research Approach Toggle */}
-              <ResearchApproachToggle
-                activeApproach={activeApproach}
-                setActiveApproach={handleApproachToggle}
-              />
-
-              {/* Display active approach section */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
-                .map(section => renderSection(section))}
-
-              {/* MOVED: Target Audience section after Research Approach block */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'audience')
-                .map(section => renderSection(section))}
-
-              {/* Related Papers Section */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'relatedpapers')
-                .map(section => renderSection(section))}
-
-              {/* Data Acquisition Toggle */}
-              <DataAcquisitionToggle
-                activeMethod={activeDataMethod}
-                setActiveMethod={handleDataMethodToggle}
-              />
-
-              {/* Display active data acquisition section - FIXED: Added theorysimulation */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
-                .map(section => renderSection(section))}
-
-              {/* Display remaining sections: Analysis, Process, Abstract */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
-                .map(section => renderSection(section))}
-            </div>
-          </div>
-
-          {/* Fixed-height footer */}
-          <div className="text-center text-gray-500 text-sm mt-6 border-t border-gray-200 pt-3 pb-3 bg-white"> {/* FIXED: Reduced padding */}
-            <p>Scientific Paper Planner • Designed with Love for Researchers by Konrad @Kordinglab • {new Date().getFullYear()}</p>
-          </div>
-        </div>
-
-        <FullHeightInstructionsPanel
-          currentSection={sectionDataForPanel}
-          improveInstructions={handleMagic}
-          loading={improvingInstructions}
-          userInputs={userInputs}
-        />
-
-        {/* Improvement Reminder Toast */}
-        <ImprovementReminderToast
-          userInputs={userInputs}
-          lastImprovementTime={lastImprovementTime}
-          editEvents={editEvents}
-          significantEditsMade={significantEditsMade}
-          handleMagicClick={handleMagic}
-        />
-
-        {/* Floating Magic Button - FIXED: Pass proper loading state */}
-        <FloatingMagicButton
-          handleMagicClick={handleMagic}
-          loading={improvingInstructions || loading} // Disable during either loading state
-          onboardingStep={onboardingStep}
-        />
-
-        {/* Chat Interface */}
-        <ModernChatInterface
-          currentSection={currentSectionIdForChat}
-          currentSectionTitle={sectionDataForPanel?.title}
-          chatMessages={chatMessages}
-          currentMessage={currentMessage}
-          setCurrentMessage={setCurrentMessage}
-          handleSendMessage={handleSendMessage}
-          loading={chatLoading}
-          currentSectionData={sectionDataForPanel}
-          onboardingStep={onboardingStep}
-        />
-
-        {/* Dialogs */}
-        <ConfirmDialog
-          showConfirmDialog={showConfirmDialog}
-          setShowConfirmDialog={setShowConfirmDialog}
-          resetProject={handleResetRequest}
-        />
-
-        <ExamplesDialog
-          showExamplesDialog={showExamplesDialog}
-          setShowExamplesDialog={setShowExamplesDialog}
-          loadProject={loadProject}
-        />
-
-        {/* NEW: Save Dialog */}
-        <SaveDialog
-          showSaveDialog={showSaveDialog}
-          setShowSaveDialog={setShowSaveDialog}
-          saveProject={saveProjectWithFilename}
-        />
-      </div>
-    </div>
+    <VerticalPaperPlannerApp 
+      usePaperPlannerHook={usePaperPlannerHook}
+    />
   );
 };
 
-export default VerticalPaperPlannerApp;
+export default PaperPlannerApp;
