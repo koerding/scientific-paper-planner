@@ -479,7 +479,7 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
     // Just show a direct error message - no fallback attempt
     throw new Error(`Unable to import document: ${error.message}. Please try a different file format or check if the PDF contains extractable text.`);
   }
-  
+}  
 // --- PDF.js testing and preloading ---
 window.testPdfExtraction = async function() {
   try {
