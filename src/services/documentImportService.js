@@ -2,8 +2,8 @@
 
 /**
  * Document import service for PDF and Word documents
- * UPDATED: Now includes sectionContent as explicit grading context for the LLM
- * UPDATED: Improved prompt to clarify that output will be evaluated based on the grading criteria
+ * UPDATED: Improved prompt structure and validation for better import success
+ * UPDATED: Enhanced grading criteria integration for more accurate extraction
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -12,7 +12,7 @@ import sectionContentData from '../data/sectionContent.json'; // Load the sectio
 // Import necessary libraries for document processing
 import mammoth from 'mammoth';
 
-// --- PDF Handling Functions (loadPDFJS, extractTextFromPDF) remain the same ---
+// --- PDF Handling Functions ---
 
 export const loadPDFJS = async () => {
   // Only load if it's not already loaded
@@ -69,7 +69,7 @@ const extractTextFromPDF = async (pdfData) => {
   }
 };
 
-// --- extractTextFromDocument remains the same ---
+// --- Document Text Extraction ---
 
 const extractTextFromDocument = async (file) => {
   console.log(`Attempting to extract text from: ${file.name}, type: ${file.type}`);
@@ -81,11 +81,10 @@ const extractTextFromDocument = async (file) => {
         const arrayBuffer = event.target.result;
         let extractedText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n[Content Extraction Skipped - Library Error or Unsupported Type]`; // Default fallback
 
-        // PDF Extraction Logic - using CDN-loaded PDF.js
+        // PDF Extraction Logic
         if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
           console.log("Processing as PDF...");
           try {
-            // Use our CDN-based extraction function
             const pdfText = await extractTextFromPDF(arrayBuffer);
             extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${pdfText}\n\n--- Extracted Text End ---`;
             console.log("PDF text extracted. Length:", extractedText.length);
@@ -144,46 +143,159 @@ const extractTextFromDocument = async (file) => {
   });
 };
 
-// --- validateResearchPaper remains the same ---
+// --- Validation and Fixing Functions ---
 
-function validateResearchPaper(paper) {
+/**
+ * Validates and fixes paper structure to ensure it meets requirements
+ * @param {Object} paper - The paper object to validate and fix
+ * @param {string} fileName - The name of the file for placeholder generation
+ * @returns {Object|null} The fixed paper or null if validation completely fails
+ */
+function validateAndFixResearchPaper(paper, fileName) {
   console.log("VALIDATION - Full paper object structure:", JSON.stringify(paper, null, 2));
   console.log("VALIDATION - Available fields:", paper?.userInputs ? Object.keys(paper.userInputs) : "No userInputs");
-
+  
   // Basic validation
-  if (!paper || typeof paper !== 'object') return false;
-  if (!paper.userInputs || typeof paper.userInputs !== 'object') return false;
+  if (!paper || typeof paper !== 'object') {
+    console.error("VALIDATION - No valid paper object provided");
+    return null;
+  }
+  
+  if (!paper.userInputs || typeof paper.userInputs !== 'object') {
+    console.error("VALIDATION - No valid userInputs object found");
+    return null;
+  }
 
-  // Check essential fields using sectionContentData
-  const essentialSectionIds = ['question', 'audience', 'analysis', 'process', 'abstract'];
+  // Create a fixed copy of the paper object
+  const fixedPaper = {
+    userInputs: { ...paper.userInputs },
+    chatMessages: paper.chatMessages || {},
+    timestamp: paper.timestamp || new Date().toISOString(),
+    version: paper.version || "1.0-fixed-import"
+  };
+
+  // Track whether we had to make any fixes
+  let fixesApplied = false;
+
+  // Step 1: Ensure all essential fields exist with valid content
+  const essentialSectionIds = ['question', 'audience', 'hypothesis', 'relatedpapers', 'analysis', 'process', 'abstract'];
   for (const field of essentialSectionIds) {
-    if (typeof paper.userInputs[field] !== 'string' || paper.userInputs[field].length < 10) {
-      console.warn(`Missing or invalid required field: ${field}`);
-      return false;
+    if (!fixedPaper.userInputs[field] || typeof fixedPaper.userInputs[field] !== 'string' || fixedPaper.userInputs[field].length < 10) {
+      console.warn(`Missing or invalid required field: ${field} - adding placeholder content`);
+      fixedPaper.userInputs[field] = generatePlaceholderContent(field, fileName);
+      fixesApplied = true;
     }
   }
 
-  // Check research approach (exactly one should be present)
+  // Step 2: Check and fix research approach fields
   const approachFields = ['hypothesis', 'needsresearch', 'exploratoryresearch'];
-  const presentApproaches = approachFields.filter(field =>
-    paper.userInputs[field] && typeof paper.userInputs[field] === 'string' && paper.userInputs[field].length > 0
+  let approachFieldsFound = approachFields.filter(field => 
+    fixedPaper.userInputs[field] && 
+    typeof fixedPaper.userInputs[field] === 'string' && 
+    fixedPaper.userInputs[field].length > 0 && 
+    !fixedPaper.userInputs[field].includes('// Choose') && 
+    !fixedPaper.userInputs[field].includes('// Include')
   );
-  if (presentApproaches.length !== 1) {
-    console.warn(`Invalid research approach: ${presentApproaches.length} approaches present`);
-    return false;
+  
+  // Remove instructional comments from approach fields
+  approachFields.forEach(field => {
+    if (fixedPaper.userInputs[field]) {
+      const originalValue = fixedPaper.userInputs[field];
+      const cleanedValue = originalValue
+        .replace(/\/\/ Choose either.*$/gm, '')
+        .replace(/\/\/ Include EXACTLY ONE.*$/gm, '')
+        .trim();
+      
+      if (cleanedValue !== originalValue) {
+        fixedPaper.userInputs[field] = cleanedValue;
+        fixesApplied = true;
+      }
+    }
+  });
+  
+  // Recalculate after cleaning comments
+  approachFieldsFound = approachFields.filter(field => 
+    fixedPaper.userInputs[field] && 
+    typeof fixedPaper.userInputs[field] === 'string' && 
+    fixedPaper.userInputs[field].length > 10
+  );
+  
+  // Fix case where no valid approach is found
+  if (approachFieldsFound.length === 0) {
+    console.warn("Invalid research approach: None found - using hypothesis as default");
+    // Keep hypothesis even if it's short/empty and fill it with placeholder
+    fixedPaper.userInputs['hypothesis'] = fixedPaper.userInputs['hypothesis'] || generatePlaceholderContent('hypothesis', fileName);
+    fixesApplied = true;
+  } 
+  // Fix case where multiple approaches are found
+  else if (approachFieldsFound.length > 1) {
+    // Keep the first research approach and remove others
+    const approachToKeep = approachFieldsFound[0];
+    console.warn(`Invalid research approach: ${approachFieldsFound.length} approaches present - keeping only ${approachToKeep}`);
+    
+    approachFieldsFound.slice(1).forEach(field => {
+      delete fixedPaper.userInputs[field];
+    });
+    fixesApplied = true;
   }
 
-  // Check data collection method (exactly one should be present)
+  // Step 3: Check and fix data collection method fields
   const dataFields = ['experiment', 'existingdata', 'theorysimulation'];
-  const presentDataMethods = dataFields.filter(field =>
-    paper.userInputs[field] && typeof paper.userInputs[field] === 'string' && paper.userInputs[field].length > 0
+  let dataFieldsFound = dataFields.filter(field => 
+    fixedPaper.userInputs[field] && 
+    typeof fixedPaper.userInputs[field] === 'string' && 
+    fixedPaper.userInputs[field].length > 0 && 
+    !fixedPaper.userInputs[field].includes('// Choose') && 
+    !fixedPaper.userInputs[field].includes('// Include')
   );
-  if (presentDataMethods.length !== 1) {
-    console.warn(`Invalid data method: ${presentDataMethods.length} methods present`);
-    return false;
+  
+  // Remove instructional comments from data fields
+  dataFields.forEach(field => {
+    if (fixedPaper.userInputs[field]) {
+      const originalValue = fixedPaper.userInputs[field];
+      const cleanedValue = originalValue
+        .replace(/\/\/ Choose either.*$/gm, '')
+        .replace(/\/\/ Include EXACTLY ONE.*$/gm, '')
+        .trim();
+      
+      if (cleanedValue !== originalValue) {
+        fixedPaper.userInputs[field] = cleanedValue;
+        fixesApplied = true;
+      }
+    }
+  });
+  
+  // Recalculate after cleaning comments
+  dataFieldsFound = dataFields.filter(field => 
+    fixedPaper.userInputs[field] && 
+    typeof fixedPaper.userInputs[field] === 'string' && 
+    fixedPaper.userInputs[field].length > 10
+  );
+  
+  // Fix case where no valid data collection method is found
+  if (dataFieldsFound.length === 0) {
+    console.warn("Invalid data method: None found - using theorysimulation as default");
+    // Prefer theorysimulation as default if the paper seems theoretical
+    fixedPaper.userInputs['theorysimulation'] = generatePlaceholderContent('theorysimulation', fileName);
+    fixesApplied = true;
+  } 
+  // Fix case where multiple data collection methods are found
+  else if (dataFieldsFound.length > 1) {
+    // Keep the first data method and remove others
+    const dataMethodToKeep = dataFieldsFound[0];
+    console.warn(`Invalid data method: ${dataFieldsFound.length} methods present - keeping only ${dataMethodToKeep}`);
+    
+    dataFieldsFound.slice(1).forEach(field => {
+      delete fixedPaper.userInputs[field];
+    });
+    fixesApplied = true;
   }
 
-  return true;
+  if (fixesApplied) {
+    console.log("Fixed paper with corrections");
+  }
+
+  return fixedPaper;
 }
 
 /**
@@ -217,71 +329,25 @@ function extractGradingCriteria() {
 }
 
 /**
- * Helper function to build the JSON structure for prompts dynamically.
- * UPDATED: Include explicit grading criteria information
- * @param {boolean} isSimplified - Flag to indicate if this is for the simplified retry prompt.
- * @returns {string} - A string representing the JSON structure for the prompt.
+ * Generates placeholder content for missing sections
+ * @param {string} sectionId - The section ID needing placeholder content
+ * @param {string} fileName - The name of the imported file (used for context if needed)
+ * @returns {string} - Placeholder content from sectionContent.json
  */
-const buildPromptJsonStructure = (isSimplified = false) => {
-  const structure = {
-    userInputs: {}
-  };
-
-  const approachSections = ['hypothesis', 'needsresearch', 'exploratoryresearch'];
-  const dataSections = ['experiment', 'existingdata', 'theorysimulation'];
-
-  sectionContentData.sections.forEach(section => {
-    const key = section.id;
-    let description = `[${section.title} based on text]`;
-
-    // Use placeholder as a more detailed guide for the AI
-    if (section.placeholder) {
-        description = section.placeholder
-            .replace(/\[.*?\]/g, `[${section.title.toLowerCase()} based on text]`) // Generalize placeholders
-            .replace(/\n\n/g, '\n'); // Reduce excessive newlines for brevity
-    }
-
-    // Add specific instructions for choice sections only in the simplified prompt
-    if (isSimplified) {
-        if (approachSections.includes(key)) {
-            description = `// Include EXACTLY ONE of these research approaches:\n${description}`;
-        } else if (dataSections.includes(key)) {
-            description = `// Include EXACTLY ONE of these data collection methods:\n${description}`;
-        }
-    }
-
-    structure.userInputs[key] = description;
-  });
-
-   // Add timestamp and version outside userInputs if not simplified
-  if (!isSimplified) {
-    structure.chatMessages = {};
-    structure.timestamp = "${new Date().toISOString()}"; // Placeholder for dynamic insertion
-    structure.version = "1.0-openai-json-extraction";
+function generatePlaceholderContent(sectionId, fileName) {
+  const section = sectionContentData.sections.find(s => s.id === sectionId);
+  if (section && section.placeholder) {
+    // Use the placeholder from sectionContent.json
+    return section.placeholder;
   }
-
-
-  // Convert the structure object to a formatted JSON string
-  // Need to handle the EXACTLY ONE comments for simplified version
-  let jsonString = JSON.stringify(structure, null, 2);
-
-  if(isSimplified) {
-      // Remove quotes around the comments to make them actual comments for the LLM
-      jsonString = jsonString.replace('"// Include EXACTLY ONE of these research approaches:', '// Include EXACTLY ONE of these research approaches:');
-      jsonString = jsonString.replace('"// Include EXACTLY ONE of these data collection methods:', '// Include EXACTLY ONE of these data collection methods:');
-  } else {
-     // Ensure timestamp placeholder is not quoted
-     jsonString = jsonString.replace('"${\new Date().toISOString()}"', '${new Date().toISOString()}');
-     console.log("JSON STRUCTURE BEING REQUESTED:", jsonString);
-     return jsonString;
-  }
-
-  return jsonString;
-};
+  
+  // Fallback if section or placeholder is not found
+  return `[${sectionId} content not available]`;
+}
 
 /**
  * Processes extracted scientific paper text and generates structured data using OpenAI's JSON mode.
- * UPDATED: Now explicitly includes section content grading criteria in the prompt
+ * UPDATED: Uses improved prompts with explicit required fields
  * @param {File} file - The document file object (used for filename in errors)
  * @returns {Promise<Object>} - The structured data for loading into the planner
  */
@@ -298,274 +364,160 @@ export async function importDocumentContent(file) {
     documentText = await extractTextFromDocument(file);
     console.log(`Extraction successful for ${file.name}. Text length: ${documentText.length}`);
 
-    // Step 2: Extract grading criteria from sectionContent
+    // Step 2: Extract grading criteria
     const gradingCriteria = extractGradingCriteria();
     console.log("Extracted grading criteria for prompt context");
 
-    // Step 3: Build system prompt with grading context
+    // Step 3: Build improved system prompt with clear requirements
     const enhancedSystemPrompt = `You are analyzing a scientific paper to extract its structure based on specific grading criteria. 
 Be methodical, accurate, and ensure your output aligns with the evaluation standards.
 
 IMPORTANT: Your output will be graded based on how well it meets the criteria for each section outlined below.
 
+CRITICAL REQUIREMENTS:
+1. Your response MUST include ALL of these REQUIRED fields: question, audience, hypothesis, relatedpapers, analysis, process, abstract
+2. You MUST choose EXACTLY ONE research approach: either hypothesis OR needsresearch OR exploratoryresearch
+3. You MUST choose EXACTLY ONE data collection method: either experiment OR existingdata OR theorysimulation
+4. DO NOT include placeholder comments in your response
+5. Each field must contain detailed, relevant content based on the paper
+
 GRADING CRITERIA:
 ${gradingCriteria}
-
-Pay particular attention to whether this is a hypothesis-driven, needs-based, or exploratory research paper.
 
 Document text (first part): ${documentText.substring(0, 500)}
 
 Create comprehensive examples that address each criterion from the grading rubric.`;
 
-    // Step 4: Build the main task prompt with clearer instructions
-    // Create a simplified excerpt of the structure with examples
-    const jsonStructureExcerpt = buildPromptJsonStructure(true).substring(0, 500) + "...";
+    // Step 4: Build JSON structure for the prompt
+    // A simplified structure showing the exact fields required
+    const jsonStructure = {
+      userInputs: {
+        // REQUIRED - these fields must all be populated
+        question: "Research Question: [specific question] \nSignificance/Impact: [why it matters]",
+        audience: "Target Audience/Community: [list relevant fields/disciplines]\nSpecific Researchers: [name specific researchers]",
+        hypothesis: "Hypothesis 1: [specific testable hypothesis]\nHypothesis 2: [alternative testable hypothesis]\nWhy distinguishing these hypotheses matters: [explanation]",
+        relatedpapers: "Most similar papers: [list at least 5 related papers]",
+        analysis: "Data Cleaning & Exclusions: [approach]\nPrimary Analysis Method: [method]\nHow Analysis Addresses Research Question: [explanation]\nUncertainty Quantification: [approach]\nSpecial Cases Handling: [approach]",
+        process: "Skills Needed vs. Skills I Have: [skills assessment]\nCollaborators & Their Roles: [collaboration plan]\nData/Code Sharing Plan: [plan]\nTimeline & Milestones: [timeline]\nObstacles & Contingencies: [risks and mitigation]",
+        abstract: "Background: [context]\nObjective/Question: [question]\nMethods: [approach]\n(Expected) Results: [findings]\nConclusion/Implications: [implications]",
+        
+        // CHOOSE ONE data method (only include one in your output)
+        experiment: "Key Variables: [variables]\nSample & Size Justification: [justification]\nData Collection Methods: [methods]\nPredicted Results: [predictions]\nPotential Confounds & Mitigations: [confounds]",
+        existingdata: "Dataset Source: [source]\nKey Variables Available: [variables]\nData Quality Assessment: [quality]\nEthical/Legal Considerations: [considerations]\nLimitations of Dataset: [limitations]",
+        theorysimulation: "Key Theoretical Assumptions: [assumptions]\nRelationship to Real-world Phenomena: [relevance]\nMathematical/Computational Framework: [framework]\nSolution/Simulation Approach: [approach]\nValidation Strategy: [validation]\nPotential Limitations: [limitations]",
+        
+        // Alternative research approaches - CHOOSE ONLY ONE of these approaches (including hypothesis)
+        // and DELETE the others from your output
+        needsresearch: "Who needs this research: [beneficiaries]\nWhy they need it: [problem statement]\nCurrent approaches and limitations: [gaps]\nSuccess criteria: [metrics]\nAdvantages of proposed approach: [benefits]",
+        exploratoryresearch: "Phenomena to explore: [description]\nPotential discoveries: [list potential findings]\nValue to the field: [significance]\nAnalytical approaches: [methods]\nValidation strategy: [validation approach]"
+      }
+    };
+
+    // Convert to string for the prompt
+    const jsonStructureStr = JSON.stringify(jsonStructure, null, 2);
     
+    // Step 5: Build the enhanced task prompt
     const enhancedTaskPrompt = `
-# Scientific Paper Extraction with Grading Criteria
+# Scientific Paper Extraction with Essential Fields
 
-Extract key components from the provided scientific paper text and format them in a JSON structure matching the application's needs.
+Extract key components from the provided scientific paper text and format them in a JSON structure.
 
-**ATTENTION:** Your output will be evaluated based on how well it addresses the grading criteria provided. Make sure to create a comprehensive, high-quality example that addresses ALL the evaluation points for each section.
+**CRITICAL REQUIREMENTS:**
+1. Your response MUST include ALL of these REQUIRED fields: question, audience, hypothesis, relatedpapers, analysis, process, abstract
+2. You MUST choose EXACTLY ONE research approach: either hypothesis OR needsresearch OR exploratoryresearch
+3. You MUST choose EXACTLY ONE data collection method: either experiment OR existingdata OR theorysimulation
+4. Delete any fields that aren't required or aren't part of your chosen approach/method
+5. Each field must be populated with substantial content
 
-**IMPORTANT:** Be VERY GENEROUS in your interpretation - read between the lines, make positive assumptions, and create content that would score highly on the grading rubric.
-
-## Research Approach Selection
-Determine which research approach the paper likely uses:
-1. Hypothesis-driven (testing competing explanations)
-2. Needs-based (solving a specific problem for stakeholders)
-3. Exploratory (discovering patterns without predetermined hypotheses)
-
-## Data Collection Method Selection
-Determine which data collection method the paper likely uses:
-1. Experiment (collecting new data)
-2. Analysis of Existing Data (analyzing already collected data)
-3. Theory/Simulation (using theory or computational models)
-
-## Grading Criteria to Address
-The output MUST address all the criteria outlined for each section. Key points to cover:
-
-${gradingCriteria}
+**IMPORTANT:** Be VERY GENEROUS in your interpretation - read between the lines and create a high-quality educational example.
 
 ## Output Format
-Output valid JSON with a single top-level key \`userInputs\`. The structure should follow:
-${jsonStructureExcerpt}
-
-**Constraint Reminder:** Include ONLY ONE key for the research approach and ONLY ONE key for the data collection method within the \`userInputs\` object.
+Your output must be valid JSON with this structure (only keep one research approach and one data method):
+${jsonStructureStr}
 
 --- DOCUMENT TEXT START ---
 ${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated]' : ''}
 --- DOCUMENT TEXT END ---`;
 
-    // Step 5: Call OpenAI with JSON mode and enhanced prompts
+    // Step 6: Call OpenAI with improved prompts
+    console.log("Sending request to OpenAI with improved prompts");
     const result = await callOpenAI(
-      enhancedTaskPrompt, // Use the enhanced prompt with grading criteria
+      enhancedTaskPrompt,
       'document_import_task',
       {}, [], { temperature: 0.3, max_tokens: 3000 }, [], enhancedSystemPrompt, true // Use JSON mode
     );
 
-    // Step 6: Validate the result
-    if (!validateResearchPaper(result)) {
-      console.warn("Received invalid paper structure from OpenAI, attempting to fix...");
-
-      // Build the simplified retry prompt with grading criteria
-      const simplifiedJsonStructure = buildPromptJsonStructure(true); // Build structure with comments
-      const simplifiedPrompt = `
-        Extract a complete scientific paper structure from this document text.
-        
-        ATTENTION: Your output will be evaluated against a detailed grading rubric. 
-        Create content that addresses these key evaluation criteria:
-        
-        ${gradingCriteria}
-        
-        You MUST choose EXACTLY ONE research approach (hypothesis, needsresearch, or exploratoryresearch).
-        You MUST choose EXACTLY ONE data collection method (experiment, existingdata, or theorysimulation).
-
-        Return in this exact JSON format, filling in the fields based on the document text
-        and ensuring they meet the grading criteria:
-        ${simplifiedJsonStructure}
-
-        Document text (first ${Math.min(documentText.length, 8000)} characters):
-        ${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated]' : ''}
-      `;
-
-      const retryResult = await callOpenAI(
-        simplifiedPrompt,
-        'document_import_simplified',
-        {}, [], { temperature: 0.3, max_tokens: 3000 }, [],
-        "You are creating educational examples from scientific papers that will be graded against specific criteria. Be generous and follow the requested JSON structure precisely, including exactly one research approach and one data method. Your output should address all the evaluation points provided.",
-        true // Use JSON mode
-      );
-
-      if (validateResearchPaper(retryResult)) {
-        console.log('Successfully fixed paper structure on second attempt');
-        retryResult.timestamp = retryResult.timestamp || new Date().toISOString();
-        retryResult.version = retryResult.version || '1.0-openai-json-extraction-retry';
-        retryResult.chatMessages = retryResult.chatMessages || {};
-
-        // Check essential sections and add placeholders if missing
-        const requiredSections = ['analysis', 'process'];
-        let missingOrEmptySections = false;
-        for (const section of requiredSections) {
-          if (!retryResult.userInputs[section] || String(retryResult.userInputs[section]).length < 20) {
-            console.warn(`Section ${section} is missing or too short after retry, adding placeholder content`);
-            missingOrEmptySections = true;
-            retryResult.userInputs[section] = generatePlaceholderContent(section, file.name); // Use refactored function
-          }
-        }
-        if (missingOrEmptySections) console.log('Added placeholder content for missing sections');
-
-        return retryResult;
-      }
-
-      throw new Error("Failed to extract valid paper structure after multiple attempts");
+    // Step 7: Validate and fix the result rather than rejecting it
+    if (!result || !result.userInputs) {
+      throw new Error("API returned invalid or empty response");
+    }
+    
+    console.log("API response received, proceeding to validation and fixing");
+    
+    // Validate and fix the response
+    const fixedResult = validateAndFixResearchPaper(result, file.name);
+    if (!fixedResult) {
+      throw new Error("Failed to validate and fix paper structure");
     }
 
-    console.log('Successfully processed extracted text to structured data');
-    result.timestamp = result.timestamp || new Date().toISOString();
-    result.version = result.version || '1.0-openai-json-extraction';
-    result.chatMessages = result.chatMessages || {};
+    // Add metadata if needed
+    fixedResult.timestamp = fixedResult.timestamp || new Date().toISOString();
+    fixedResult.version = fixedResult.version || "1.0-extracted-and-fixed";
+    fixedResult.chatMessages = fixedResult.chatMessages || {};
 
-    // Check essential sections and add placeholders if missing
-    const requiredSections = ['analysis', 'process'];
-    let missingOrEmptySections = false;
-    for (const section of requiredSections) {
-       if (!result.userInputs[section] || String(result.userInputs[section]).length < 20) {
-         console.warn(`Section ${section} is missing or too short, adding placeholder content`);
-         missingOrEmptySections = true;
-         result.userInputs[section] = generatePlaceholderContent(section, file.name); // Use refactored function
-       }
-    }
-    if (missingOrEmptySections) console.log('Added placeholder content for missing sections');
-
-    return result;
+    console.log('Successfully processed and fixed paper structure');
+    return fixedResult;
 
   } catch (error) {
     console.error('Error during document import process:', error);
 
-    // Fallback: Try to create a bare-minimum example
+    // Fallback using simplified approach with just the filename
     try {
-      console.log("Attempting final fallback extraction...");
-
-      // Extract grading criteria for fallback
-      const gradingCriteriaShort = extractGradingCriteria().split('\n').slice(0, 20).join('\n') + '\n... [truncated]';
-
-      // Create a simplified prompt with grading criteria
-      const simplestExampleStructure = { userInputs: {} };
-      // Define the essential fields for the simplest fallback
-      const essentialFields = ['question', 'audience', 'hypothesis', 'relatedpapers', 'experiment', 'analysis', 'process', 'abstract'];
+      console.log("Attempting fallback extraction based on filename");
       
-      essentialFields.forEach(fieldId => {
-          const section = sectionContentData.sections.find(s => s.id === fieldId);
-          simplestExampleStructure.userInputs[fieldId] = section ? section.placeholder : `[${fieldId} placeholder]`;
-      });
-
-      const simplestPrompt = `
+      // Build a simplified prompt for fallback extraction
+      const fallbackSystemPrompt = `You are creating educational examples that will be graded against specific criteria. Generate a complete paper example using the title provided, addressing all the evaluation points required for each section.`;
+      
+      // Simple prompt focused on producing a complete example with all required fields
+      const fallbackPrompt = `
         The document extraction failed. Create a reasonable scientific paper example based ONLY on this document title: "${file.name}"
         This is for EDUCATIONAL PURPOSES.
         
         IMPORTANT: Your output will be graded based on these criteria:
-        ${gradingCriteriaShort}
+        ${gradingCriteria.substring(0, 500)}... [truncated]
         
         Return JSON with these EXACT field names in the userInputs object:
-        ${essentialFields.join(', ')}
-
-        Use this structure as a guide, filling it with plausible content related to the title
-        that would score well on the grading criteria:
-        ${JSON.stringify(simplestExampleStructure, null, 2)}
+        question, audience, hypothesis, relatedpapers, experiment, analysis, process, abstract
 
         Generate a thoughtful, well-structured example based on the title "${file.name}" that addresses the grading criteria.
       `;
 
       const fallbackResult = await callOpenAI(
-        simplestPrompt,
+        fallbackPrompt,
         'document_import_fallback',
-        {}, [], { temperature: 0.4, max_tokens: 3000 }, [],
-        "You are creating educational examples that will be graded against specific criteria. Generate a complete paper example using the title provided, addressing all the evaluation points required for each section.",
-        true // Use JSON mode
+        {}, [], { temperature: 0.4, max_tokens: 3000 }, [], fallbackSystemPrompt, true // Use JSON mode
       );
-
-      // Basic validation for fallback
-      if (fallbackResult && fallbackResult.userInputs && fallbackResult.userInputs.question) {
-         // Manually ensure only one approach/data method exists in the fallback
-         const approaches = ['hypothesis', 'needsresearch', 'exploratoryresearch'];
-         const dataMethods = ['experiment', 'existingdata', 'theorysimulation'];
-         
-         // Keep only the first found approach/data method if multiple exist
-         const foundApproaches = approaches.filter(key => fallbackResult.userInputs[key]);
-         const foundDataMethods = dataMethods.filter(key => fallbackResult.userInputs[key]);
-         
-         approaches.forEach((key, index) => {
-             if (index > 0 && foundApproaches.includes(key)) delete fallbackResult.userInputs[key];
-         });
-         dataMethods.forEach((key, index) => {
-             if (index > 0 && foundDataMethods.includes(key)) delete fallbackResult.userInputs[key];
-         });
-         
-         // If none found, add default ones
-         if (foundApproaches.length === 0) fallbackResult.userInputs['hypothesis'] = generatePlaceholderContent('hypothesis', file.name);
-         if (foundDataMethods.length === 0) fallbackResult.userInputs['experiment'] = generatePlaceholderContent('experiment', file.name);
-
-        console.log('Created fallback example based on document title');
-        fallbackResult.timestamp = new Date().toISOString();
-        fallbackResult.version = '1.0-fallback-example';
-        fallbackResult.chatMessages = {};
-        return fallbackResult;
+      
+      // Validate and fix the fallback result
+      const fixedFallbackResult = validateAndFixResearchPaper(fallbackResult, file.name);
+      if (!fixedFallbackResult) {
+        throw new Error("Failed to create valid fallback example");
       }
+
+      console.log('Created fallback example based on document title');
+      fixedFallbackResult.timestamp = new Date().toISOString();
+      fixedFallbackResult.version = '1.0-fallback-example';
+      fixedFallbackResult.chatMessages = {};
+      return fixedFallbackResult;
     } catch (fallbackError) {
       console.error('Fallback extraction also failed:', fallbackError);
+      // Inform the user about the failure without creating a minimal example
+      throw new Error(`Unable to import document. Please try a different file or format. Error: ${error.message}`);
     }
-
-    // Last resort: Return a structured error object
-    const stage = documentText ? 'LLM Processing' : 'Text Extraction';
-    const detailedErrorMessage = `Import Error for ${file.name} (Stage: ${stage}):\nType: ${error.name || 'Error'}\nMessage: ${error.message || 'Unknown import error'}`;
-    const errorContent = documentText
-        ? `--- RAW EXTRACTED TEXT (for debugging) ---\n\n${documentText.substring(0, 5000)}...`
-        : "Text extraction failed. See error details.";
-
-    // Use placeholders from sectionContent for the error structure
-    const errorResult = {
-      userInputs: {},
-      chatMessages: {},
-      timestamp: new Date().toISOString(),
-      version: '1.0-extraction-error',
-    };
-    
-    // Add placeholder content for each section
-    sectionContentData.sections.forEach(section => {
-      if (section && section.id) {
-        errorResult.userInputs[section.id] = generatePlaceholderContent(section.id, file.name);
-      }
-    });
-    
-    // Overwrite specific fields with error info
-    errorResult.userInputs.question = `Research Question: Error during import\n\nSignificance/Impact: ${detailedErrorMessage}`;
-    // Put raw text in a relevant field if extraction worked
-    if (documentText) errorResult.userInputs.abstract = errorContent;
-    else errorResult.userInputs.abstract = `Document import failed for ${file.name}. See details in Question section. ${errorContent}`;
-
-    return errorResult;
   }
 }
 
-/**
- * REFACTORED: Generates placeholder content for missing sections using sectionContent.json
- * @param {string} sectionId - The section ID needing placeholder content
- * @param {string} fileName - The name of the imported file (used for context if needed)
- * @returns {string} - Placeholder content from sectionContent.json
- */
-function generatePlaceholderContent(sectionId, fileName) {
-  const section = sectionContentData.sections.find(s => s.id === sectionId);
-  if (section && section.placeholder) {
-    // Optionally, you could add context based on fileName here if needed
-    // const paperTopic = fileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
-    return section.placeholder;
-  }
-  // Fallback if section or placeholder is not found
-  return `Placeholder content for section '${sectionId}'. Please review and update.`;
-}
-
-// --- testPdfExtraction and window event listener remain the same ---
+// --- PDF.js testing and preloading ---
 window.testPdfExtraction = async function() {
   try {
     console.log("Testing PDF extraction...");
