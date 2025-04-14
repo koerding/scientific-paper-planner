@@ -328,7 +328,8 @@ const usePaperPlanner = () => {
     }
   }, [storageAvailable]);
 
-  // Import document content using the FULL documentImportService instead of the fake function
+  // Import document content using the document import service
+  // FIXED: Now passes sectionContent to ensure consistent placeholders
   const handleDocumentImport = useCallback(async (file) => {
     setLoading(true);
 
@@ -339,8 +340,8 @@ const usePaperPlanner = () => {
         return false;
       }
 
-      // Call the real document import service with the full section content
-      // This passes sectionContent.json to the service for better alignment
+      // FIXED: Pass sectionContent to the import service 
+      // This ensures it uses the same placeholders as the main app
       const importedData = await documentImportService.importDocumentContent(file, sectionContent);
       
       // Use the loadProject function to handle the imported data
@@ -387,7 +388,7 @@ const usePaperPlanner = () => {
     exportProject,
     saveProject,
     loadProject,
-    importDocumentContent: handleDocumentImport // Use the real document import service
+    importDocumentContent: handleDocumentImport // Use the real document import service with sectionContent
   };
 };
 
