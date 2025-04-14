@@ -286,7 +286,7 @@
           "tooltip": "Detailing your search process—like which academic databases or relevant search terms you used—offers transparency and reproducibility. It shows that you didn't cherry-pick papers to fit a narrative. If your exploration turns up conflicting evidence, clarify whether you'll weigh methodological quality, sample sizes, or consensus across multiple studies. This approach frames you as an even-handed investigator open to multiple interpretations. By laying out how you handle discrepancies, you minimize bias and demonstrate readiness to adapt your hypotheses or methods should the literature point in a new direction."
         }
       ],
-      "placeholder": "Most Relevant Papers:\n1. [Paper that tests similar hypothesis - how it relates to yours]\n2. [Paper with related methodology - what you'll adapt]\n3. [Paper with contrasting perspective - how yours differs]\n4. [Paper identifying the gap you'll fill]\n5. [Seminal work in this area - its influence on your approach]"
+      "placeholder": "Most Relevant Papers:\n1. [Papers that tests similar hypothesis - how it relates to yours]\n2. [Papers with related methodology - what you'll adapt]\n3. [Papers with contrasting perspective - how yours differs]\n4. [Papers identifying the gap you'll fill]\n5. [Seminal works in this area - its influence on your approach]"
     },
     {
       "id": "experiment",
