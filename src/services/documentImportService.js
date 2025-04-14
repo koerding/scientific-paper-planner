@@ -397,7 +397,8 @@ IMPORTANT: Your output will be graded based on how well it meets the criteria fo
 4. DO NOT include placeholder comments in your response
 5. Each field must be populated with substantial content
 6. Fill out every component that the placeholders ask for
-7. IMPORTANT: All field values MUST be simple strings, NOT nested objects or arrays
+7. The text should be easily readable for students. Use line feeds and bullet points where useful for readability.
+8. IMPORTANT: All field values MUST be simple strings, NOT nested objects or arrays
 
 
 GRADING CRITERIA:
@@ -475,73 +476,10 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
 
   } catch (error) {
     console.error('Error during document import process:', error);
-
-    // Fallback using simplified approach with just the filename
-    try {
-      console.log("Attempting fallback extraction based on filename");
-      
-      // Build a simplified prompt for fallback extraction
-      const fallbackSystemPrompt = `You are creating educational examples that will be graded against specific criteria. Generate a complete paper example using the title provided, addressing all the evaluation points required for each section.`;
-      
-      // Extract a short version of the grading criteria for the fallback prompt
-      const shortGradingCriteria = extractGradingCriteria().split('\n').slice(0, 10).join('\n') + '\n... [truncated]';
-      
-      // Create examples of placeholder structure from sectionContent.json
-      const placeholderExamples = {};
-      sectionContent.sections.forEach(section => {
-        if (section && section.id && section.placeholder) {
-          placeholderExamples[section.id] = section.placeholder;
-        }
-      });
-      
-      // Simple prompt focused on producing a complete example with all required fields
-      const fallbackPrompt = `
-        The document extraction failed. Create a reasonable scientific paper example based ONLY on this document title: "${file.name}"
-        This is for EDUCATIONAL PURPOSES.
-        
-        IMPORTANT: Your output will be graded based on these criteria:
-        ${shortGradingCriteria}
-        
-        Return JSON with these EXACT field names in the userInputs object.
-        Use these templates from our system as guides:
-        
-        question: ${placeholderExamples.question || "Research Question and Significance"}
-        audience: ${placeholderExamples.audience || "Target Audience and Specific Researchers"}
-        hypothesis: ${placeholderExamples.hypothesis || "Multiple hypotheses and justification"}
-        relatedpapers: ${placeholderExamples.relatedpapers || "List of related papers"}
-        experiment: ${placeholderExamples.experiment || "Experimental design details"}
-        analysis: ${placeholderExamples.analysis || "Analysis approach"}
-        process: ${placeholderExamples.process || "Process and timeline"}
-        abstract: ${placeholderExamples.abstract || "Structured abstract"}
-
-        Generate a thoughtful, well-structured example based on the title "${file.name}" that addresses the grading criteria.
-      `;
-
-      const fallbackResult = await callOpenAI(
-        fallbackPrompt,
-        'document_import_fallback',
-        {}, [], { temperature: 0.4, max_tokens: 3000 }, [], fallbackSystemPrompt, true // Use JSON mode
-      );
-      
-      // Validate and fix the fallback result
-      const fixedFallbackResult = validateAndFixResearchPaper(fallbackResult, file.name);
-      if (!fixedFallbackResult) {
-        throw new Error("Failed to create valid fallback example");
-      }
-
-      console.log('Created fallback example based on document title with sectionContent.json placeholders');
-      fixedFallbackResult.timestamp = new Date().toISOString();
-      fixedFallbackResult.version = '1.0-fallback-example';
-      fixedFallbackResult.chatMessages = {};
-      return fixedFallbackResult;
-    } catch (fallbackError) {
-      console.error('Fallback extraction also failed:', fallbackError);
-      // Inform the user about the failure without creating a minimal example
-      throw new Error(`Unable to import document. Please try a different file or format. Error: ${error.message}`);
-    }
+    // Just show a direct error message - no fallback attempt
+    throw new Error(`Unable to import document: ${error.message}. Please try a different file format or check if the PDF contains extractable text.`);
   }
-}
-
+  
 // --- PDF.js testing and preloading ---
 window.testPdfExtraction = async function() {
   try {
