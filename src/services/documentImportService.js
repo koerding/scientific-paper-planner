@@ -325,7 +325,13 @@ function extractGradingCriteria() {
     criteria.push(''); // Add a blank line between sections
   });
   
-  return criteria.join('\n');
+  const criteriaStr = criteria.join('\n');
+  
+  // Log the full criteria to the console for inspection
+  console.log("FULL GRADING CRITERIA FOR IMPORT:");
+  console.log(criteriaStr);
+  
+  return criteriaStr;
 }
 
 /**
