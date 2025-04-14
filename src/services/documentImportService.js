@@ -224,8 +224,6 @@ function extractGradingCriteria() {
  */
 const buildPromptJsonStructure = (isSimplified = false) => {
   const structure = {
-    console.log("JSON STRUCTURE BEING REQUESTED:", jsonString);
-    return jsonString;
     userInputs: {}
   };
 
@@ -274,6 +272,8 @@ const buildPromptJsonStructure = (isSimplified = false) => {
   } else {
      // Ensure timestamp placeholder is not quoted
      jsonString = jsonString.replace('"${\new Date().toISOString()}"', '${new Date().toISOString()}');
+     console.log("JSON STRUCTURE BEING REQUESTED:", jsonString);
+     return jsonString;
   }
 
   return jsonString;
