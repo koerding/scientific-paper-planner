@@ -224,6 +224,8 @@ function extractGradingCriteria() {
  */
 const buildPromptJsonStructure = (isSimplified = false) => {
   const structure = {
+    console.log("JSON STRUCTURE BEING REQUESTED:", jsonString);
+    return jsonString;
     userInputs: {}
   };
 
