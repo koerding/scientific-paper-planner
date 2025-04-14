@@ -397,7 +397,7 @@ IMPORTANT: Your output will be graded based on how well it meets the criteria fo
 4. DO NOT include placeholder comments in your response
 5. Each field must be populated with substantial content
 6. Fill out every component that the placeholders ask for
-7. The text should be easily readable for students. Use line feeds and bullet points where useful for readability.
+7. The text should be easily readable for students. Use line feeds and bullet points where useful for readability and always when separating distinct placeholder points.
 8. IMPORTANT: All field values MUST be simple strings, NOT nested objects or arrays
 
 
