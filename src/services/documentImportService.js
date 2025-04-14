@@ -396,7 +396,8 @@ IMPORTANT: Your output will be graded based on how well it meets the criteria fo
 3. You MUST choose EXACTLY ONE data collection method: either experiment OR existingdata OR theorysimulation
 4. DO NOT include placeholder comments in your response
 5. Each field must be populated with substantial content
-6. IMPORTANT: All field values MUST be simple strings, NOT nested objects or arrays
+6. Fill out every component that the placeholders ask for
+7. IMPORTANT: All field values MUST be simple strings, NOT nested objects or arrays
 
 
 GRADING CRITERIA:
