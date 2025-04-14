@@ -478,13 +478,16 @@ ${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated
       // Build a simplified prompt for fallback extraction
       const fallbackSystemPrompt = `You are creating educational examples that will be graded against specific criteria. Generate a complete paper example using the title provided, addressing all the evaluation points required for each section.`;
       
+      // Extract a short version of the grading criteria for the fallback prompt
+      const shortGradingCriteria = extractGradingCriteria().split('\n').slice(0, 10).join('\n') + '\n... [truncated]';
+      
       // Simple prompt focused on producing a complete example with all required fields
       const fallbackPrompt = `
         The document extraction failed. Create a reasonable scientific paper example based ONLY on this document title: "${file.name}"
         This is for EDUCATIONAL PURPOSES.
         
         IMPORTANT: Your output will be graded based on these criteria:
-        ${gradingCriteria.substring(0, 500)}... [truncated]
+        ${shortGradingCriteria}
         
         Return JSON with these EXACT field names in the userInputs object:
         question, audience, hypothesis, relatedpapers, experiment, analysis, process, abstract
