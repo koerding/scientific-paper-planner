@@ -4,6 +4,7 @@
  * Document import service for PDF and Word documents
  * UPDATED: Improved prompt structure and validation for better import success
  * UPDATED: Enhanced grading criteria integration for more accurate extraction
+ * FIXED: Now uses sectionContent.json placeholders as the single source of truth
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -146,7 +147,27 @@ const extractTextFromDocument = async (file) => {
 // --- Validation and Fixing Functions ---
 
 /**
+ * Generates placeholder content for missing sections using sectionContent.json
+ * @param {string} sectionId - The section ID needing placeholder content
+ * @param {string} fileName - The name of the imported file (used for context if needed)
+ * @returns {string} - Placeholder content from sectionContent.json
+ */
+function generatePlaceholderContent(sectionId, fileName) {
+  // Find the section in sectionContent.json
+  const section = sectionContentData.sections.find(s => s.id === sectionId);
+  if (section && section.placeholder) {
+    // Use the placeholder from sectionContent.json as the single source of truth
+    return section.placeholder;
+  }
+  
+  // Fallback if section or placeholder is not found in sectionContent.json
+  console.warn(`Placeholder not found for section: ${sectionId}, using default fallback`);
+  return `[${sectionId} content not available]`;
+}
+
+/**
  * Validates and fixes paper structure to ensure it meets requirements
+ * Uses placeholders from sectionContent.json for missing sections
  * @param {Object} paper - The paper object to validate and fix
  * @param {string} fileName - The name of the file for placeholder generation
  * @returns {Object|null} The fixed paper or null if validation completely fails
@@ -181,7 +202,7 @@ function validateAndFixResearchPaper(paper, fileName) {
   const essentialSectionIds = ['question', 'audience', 'hypothesis', 'relatedpapers', 'analysis', 'process', 'abstract'];
   for (const field of essentialSectionIds) {
     if (!fixedPaper.userInputs[field] || typeof fixedPaper.userInputs[field] !== 'string' || fixedPaper.userInputs[field].length < 10) {
-      console.warn(`Missing or invalid required field: ${field} - adding placeholder content`);
+      console.warn(`Missing or invalid required field: ${field} - adding placeholder content from sectionContent.json`);
       fixedPaper.userInputs[field] = generatePlaceholderContent(field, fileName);
       fixesApplied = true;
     }
@@ -223,8 +244,8 @@ function validateAndFixResearchPaper(paper, fileName) {
   // Fix case where no valid approach is found
   if (approachFieldsFound.length === 0) {
     console.warn("Invalid research approach: None found - using hypothesis as default");
-    // Keep hypothesis even if it's short/empty and fill it with placeholder
-    fixedPaper.userInputs['hypothesis'] = fixedPaper.userInputs['hypothesis'] || generatePlaceholderContent('hypothesis', fileName);
+    // Keep hypothesis even if it's short/empty and fill it with placeholder from sectionContent.json
+    fixedPaper.userInputs['hypothesis'] = generatePlaceholderContent('hypothesis', fileName);
     fixesApplied = true;
   } 
   // Fix case where multiple approaches are found
@@ -274,9 +295,9 @@ function validateAndFixResearchPaper(paper, fileName) {
   
   // Fix case where no valid data collection method is found
   if (dataFieldsFound.length === 0) {
-    console.warn("Invalid data method: None found - using theorysimulation as default");
-    // Prefer theorysimulation as default if the paper seems theoretical
-    fixedPaper.userInputs['theorysimulation'] = generatePlaceholderContent('theorysimulation', fileName);
+    console.warn("Invalid data method: None found - using experiment as default");
+    // Use the placeholder from sectionContent.json
+    fixedPaper.userInputs['experiment'] = generatePlaceholderContent('experiment', fileName);
     fixesApplied = true;
   } 
   // Fix case where multiple data collection methods are found
@@ -292,7 +313,7 @@ function validateAndFixResearchPaper(paper, fileName) {
   }
 
   if (fixesApplied) {
-    console.log("Fixed paper with corrections");
+    console.log("Fixed paper with corrections using placeholders from sectionContent.json");
   }
 
   return fixedPaper;
@@ -335,30 +356,18 @@ function extractGradingCriteria() {
 }
 
 /**
- * Generates placeholder content for missing sections
- * @param {string} sectionId - The section ID needing placeholder content
- * @param {string} fileName - The name of the imported file (used for context if needed)
- * @returns {string} - Placeholder content from sectionContent.json
- */
-function generatePlaceholderContent(sectionId, fileName) {
-  const section = sectionContentData.sections.find(s => s.id === sectionId);
-  if (section && section.placeholder) {
-    // Use the placeholder from sectionContent.json
-    return section.placeholder;
-  }
-  
-  // Fallback if section or placeholder is not found
-  return `[${sectionId} content not available]`;
-}
-
-/**
  * Processes extracted scientific paper text and generates structured data using OpenAI's JSON mode.
  * UPDATED: Uses improved prompts with explicit required fields
+ * FIXED: Now uses sectionContent.json placeholders as single source of truth
  * @param {File} file - The document file object (used for filename in errors)
+ * @param {Object} sections - The sectionContent data for context (optional)
  * @returns {Promise<Object>} - The structured data for loading into the planner
  */
-export async function importDocumentContent(file) {
+export async function importDocumentContent(file, sections = null) {
+  // Ensure we have the section content data (either passed in or from import)
+  const sectionContent = sections || sectionContentData;
   let documentText = '';
+  
   try {
     // Load PDF.js first if needed
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
@@ -374,7 +383,6 @@ export async function importDocumentContent(file) {
     const gradingCriteria = extractGradingCriteria();
     console.log("Extracted grading criteria for prompt context");
     console.log("GRADING CRITERIA LENGTH:", gradingCriteria.length, "characters");
-
 
     // Step 3: Build improved system prompt with clear requirements
     const enhancedSystemPrompt = `You are analyzing a scientific paper to extract its structure based on specific grading criteria. 
@@ -396,35 +404,15 @@ Document text (first part): ${documentText.substring(0, 500)}
 
 Create comprehensive examples that address each criterion from the grading rubric.`;
 
-    // Step 4: Build JSON structure for the prompt
-    // A simplified structure showing the exact fields required
-    const jsonStructure = {
-      userInputs: {
-        // REQUIRED - these fields must all be populated
-        question: "Research Question: [specific question] \nSignificance/Impact: [why it matters]",
-        audience: "Target Audience/Community: [list relevant fields/disciplines]\nSpecific Researchers: [name specific researchers]",
-        hypothesis: "Hypothesis 1: [specific testable hypothesis]\nHypothesis 2: [alternative testable hypothesis]\nWhy distinguishing these hypotheses matters: [explanation]",
-        relatedpapers: "Most similar papers: [list at least 5 related papers]",
-        analysis: "Data Cleaning & Exclusions: [approach]\nPrimary Analysis Method: [method]\nHow Analysis Addresses Research Question: [explanation]\nUncertainty Quantification: [approach]\nSpecial Cases Handling: [approach]",
-        process: "Skills Needed vs. Skills I Have: [skills assessment]\nCollaborators & Their Roles: [collaboration plan]\nData/Code Sharing Plan: [plan]\nTimeline & Milestones: [timeline]\nObstacles & Contingencies: [risks and mitigation]",
-        abstract: "Background: [context]\nObjective/Question: [question]\nMethods: [approach]\n(Expected) Results: [findings]\nConclusion/Implications: [implications]",
-        
-        // CHOOSE ONE data method (only include one in your output)
-        experiment: "Key Variables: [variables]\nSample & Size Justification: [justification]\nData Collection Methods: [methods]\nPredicted Results: [predictions]\nPotential Confounds & Mitigations: [confounds]",
-        existingdata: "Dataset Source: [source]\nKey Variables Available: [variables]\nData Quality Assessment: [quality]\nEthical/Legal Considerations: [considerations]\nLimitations of Dataset: [limitations]",
-        theorysimulation: "Key Theoretical Assumptions: [assumptions]\nRelationship to Real-world Phenomena: [relevance]\nMathematical/Computational Framework: [framework]\nSolution/Simulation Approach: [approach]\nValidation Strategy: [validation]\nPotential Limitations: [limitations]",
-        
-        // Alternative research approaches - CHOOSE ONLY ONE of these approaches (including hypothesis)
-        // and DELETE the others from your output
-        needsresearch: "Who needs this research: [beneficiaries]\nWhy they need it: [problem statement]\nCurrent approaches and limitations: [gaps]\nSuccess criteria: [metrics]\nAdvantages of proposed approach: [benefits]",
-        exploratoryresearch: "Phenomena to explore: [description]\nPotential discoveries: [list potential findings]\nValue to the field: [significance]\nAnalytical approaches: [methods]\nValidation strategy: [validation approach]"
+    // Step 4: Create examples of placeholder structure from sectionContent.json
+    const placeholderExamples = {};
+    sectionContent.sections.forEach(section => {
+      if (section && section.id && section.placeholder) {
+        placeholderExamples[section.id] = section.placeholder;
       }
-    };
+    });
 
-    // Convert to string for the prompt
-    const jsonStructureStr = JSON.stringify(jsonStructure, null, 2);
-    
-    // Step 5: Build the enhanced task prompt
+    // Step 5: Build the enhanced task prompt with placeholder examples
     const enhancedTaskPrompt = `
 # Scientific Paper Extraction with Essential Fields
 
@@ -440,8 +428,22 @@ Extract key components from the provided scientific paper text and format them i
 **IMPORTANT:** Be VERY GENEROUS in your interpretation - read between the lines and create a high-quality educational example.
 
 ## Output Format
-Your output must be valid JSON with this structure (only keep one research approach and one data method):
-${jsonStructureStr}
+Your output should follow this general structure for each field (shown here with examples from our template system):
+
+question: ${placeholderExamples.question || "Research Question: [question] and Significance: [why it matters]"}
+audience: ${placeholderExamples.audience || "Target Audience/Community: [fields] and Specific Researchers: [names]"}
+hypothesis: ${placeholderExamples.hypothesis || "Hypothesis 1: [hypothesis] and Hypothesis 2: [alternative]"}
+relatedpapers: ${placeholderExamples.relatedpapers || "List of 5+ related papers"}
+analysis: ${placeholderExamples.analysis || "Data cleaning, methods, and approach"}
+process: ${placeholderExamples.process || "Skills, collaborators, timeline, etc."}
+abstract: ${placeholderExamples.abstract || "Background, objective, methods, results, conclusion"}
+
+For data methods, choose ONE of:
+experiment: ${placeholderExamples.experiment || "Variables, sample, procedures, etc."}
+existingdata: ${placeholderExamples.existingdata || "Dataset source, variables, quality, etc."}
+theorysimulation: ${placeholderExamples.theorysimulation || "Assumptions, framework, validation, etc."}
+
+Your output must be valid JSON with "userInputs" as the top-level key.
 
 --- DOCUMENT TEXT START ---
 ${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated]' : ''}
@@ -462,7 +464,7 @@ ${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated
     
     console.log("API response received, proceeding to validation and fixing");
     
-    // Validate and fix the response
+    // Validate and fix the response using placeholders from sectionContent.json
     const fixedResult = validateAndFixResearchPaper(result, file.name);
     if (!fixedResult) {
       throw new Error("Failed to validate and fix paper structure");
@@ -473,7 +475,7 @@ ${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated
     fixedResult.version = fixedResult.version || "1.0-extracted-and-fixed";
     fixedResult.chatMessages = fixedResult.chatMessages || {};
 
-    console.log('Successfully processed and fixed paper structure');
+    console.log('Successfully processed and fixed paper structure using sectionContent.json placeholders');
     return fixedResult;
 
   } catch (error) {
@@ -489,6 +491,14 @@ ${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated
       // Extract a short version of the grading criteria for the fallback prompt
       const shortGradingCriteria = extractGradingCriteria().split('\n').slice(0, 10).join('\n') + '\n... [truncated]';
       
+      // Create examples of placeholder structure from sectionContent.json
+      const placeholderExamples = {};
+      sectionContent.sections.forEach(section => {
+        if (section && section.id && section.placeholder) {
+          placeholderExamples[section.id] = section.placeholder;
+        }
+      });
+      
       // Simple prompt focused on producing a complete example with all required fields
       const fallbackPrompt = `
         The document extraction failed. Create a reasonable scientific paper example based ONLY on this document title: "${file.name}"
@@ -497,8 +507,17 @@ ${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated
         IMPORTANT: Your output will be graded based on these criteria:
         ${shortGradingCriteria}
         
-        Return JSON with these EXACT field names in the userInputs object:
-        question, audience, hypothesis, relatedpapers, experiment, analysis, process, abstract
+        Return JSON with these EXACT field names in the userInputs object.
+        Use these templates from our system as guides:
+        
+        question: ${placeholderExamples.question || "Research Question and Significance"}
+        audience: ${placeholderExamples.audience || "Target Audience and Specific Researchers"}
+        hypothesis: ${placeholderExamples.hypothesis || "Multiple hypotheses and justification"}
+        relatedpapers: ${placeholderExamples.relatedpapers || "List of related papers"}
+        experiment: ${placeholderExamples.experiment || "Experimental design details"}
+        analysis: ${placeholderExamples.analysis || "Analysis approach"}
+        process: ${placeholderExamples.process || "Process and timeline"}
+        abstract: ${placeholderExamples.abstract || "Structured abstract"}
 
         Generate a thoughtful, well-structured example based on the title "${file.name}" that addresses the grading criteria.
       `;
@@ -515,7 +534,7 @@ ${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated
         throw new Error("Failed to create valid fallback example");
       }
 
-      console.log('Created fallback example based on document title');
+      console.log('Created fallback example based on document title with sectionContent.json placeholders');
       fixedFallbackResult.timestamp = new Date().toISOString();
       fixedFallbackResult.version = '1.0-fallback-example';
       fixedFallbackResult.chatMessages = {};
