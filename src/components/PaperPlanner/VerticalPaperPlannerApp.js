@@ -573,7 +573,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           onboardingStep={onboardingStep}
         />
 
-        {/* Chat Interface */}
         <ModernChatInterface
           currentSection={currentSectionIdForChat}
           currentSectionTitle={sectionDataForPanel?.title}
@@ -581,7 +580,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           currentMessage={currentMessage}
           setCurrentMessage={setCurrentMessage}
           handleSendMessage={handleSendMessage}
-          loading={chatLoading}
+          loading={chatLoading || loading} // Change this line to combine both loading states
           currentSectionData={sectionDataForPanel}
           onboardingStep={onboardingStep}
         />
