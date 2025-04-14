@@ -367,6 +367,8 @@ export async function importDocumentContent(file) {
     // Step 2: Extract grading criteria
     const gradingCriteria = extractGradingCriteria();
     console.log("Extracted grading criteria for prompt context");
+    console.log("GRADING CRITERIA LENGTH:", gradingCriteria.length, "characters");
+
 
     // Step 3: Build improved system prompt with clear requirements
     const enhancedSystemPrompt = `You are analyzing a scientific paper to extract its structure based on specific grading criteria. 
