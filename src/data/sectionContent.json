@@ -34,7 +34,7 @@
           "tooltip": "Before diving into data or experiments, identify whether your question aims to characterize an unknown phenomenon, reveal the processes behind it, or determine cause-effect relationships. This distinction shapes everything: from the design of your study to the analytical tools you use. A descriptive question, for instance, might rely on observational data, while a mechanistic or causal question demands more controlled or comparative studies. By clarifying the nature of your question at the outset, you guide your own research decisions and help readers anticipate the kind of evidence or argument you'll provide. It also keeps you from conflating correlation with causation."
         }
       ],
-      "placeholder": "Research Question:[Write it out] \n\nSignificance/Impact: [Why it matters]\n"
+      "placeholder": "Research Question: [Clear, focused question that guides your research] \nSignificance/Impact: [Why this matters to your field and beyond]"
     },
     {
       "id": "audience",
@@ -69,7 +69,7 @@
           "tooltip": "One of the biggest barriers to disseminating research effectively is failing to account for diverse backgrounds. Engineers might value technical specifications, while psychologists focus on theoretical frameworks. Clinicians may need concise, actionable summaries instead of in-depth statistical detail. By tailoring your message, you ensure each audience can see the value of your work without getting lost or bored. This strategy also extends to how you present data—visual formats, examples, or anecdotal evidence might resonate with one group more than another. Recognizing these differences early helps you build your final deliverables in a flexible, impactful way."
         }
       ],
-      "placeholder": "Target Audience/Community (research fields/disciplines/groups):\n1. \n2. \n3. \n\n Specific Researchers (individual scientists):\n1. \n2. \n3. "
+      "placeholder": "Target Audience/Community (fields/disciplines):\n1. [Primary field]\n2. [Secondary field]\n3. [Interdisciplinary connection]\n\nSpecific Researchers/Labs:\n1. [Key researcher/lab in your area]\n2. [Potential collaborator]\n3. [Someone whose methods you're building on]"
     },
     {
       "id": "hypothesis",
@@ -103,9 +103,9 @@
           "instruction": "Explain why distinguishing between these hypotheses matters to science and to you. What do we learn if hypothesis A is right? What if B is? Why do you care? Why should others?",
           "tooltip": "Hypotheses are most valuable when each potential outcome tells a different and meaningful story. By articulating the importance of each hypothetical result, you demonstrate the intellectual merit of your project. Whether the finding supports one hypothesis or another, the field stands to learn something tangible. This significance can range from resolving a debated mechanism to illuminating an entirely novel phenomenon. For your own motivation, framing the hypotheses' importance also keeps you engaged—knowing that your work might clarify core issues in the literature or inspire new lines of inquiry. Such framing is often persuasive for funding bodies and conference audiences too."
         }
-     ],
-      "placeholder": "Hypothesis 1: [State the first specific, testable hypothesis.]\n\nHypothesis 2: [State the second specific, testable hypothesis, distinct from H1.]\n\nWhy distinguishing these hypotheses matters:\n- \n- "
-    },  
+      ],
+      "placeholder": "Hypothesis 1: [First specific, testable prediction]\n\nHypothesis 2: [Alternative prediction that contrasts with H1]\n\nWhy distinguishing these hypotheses matters:\n- [Scientific implication if H1 is supported]\n- [Different impact if H2 is supported]"
+    },
     {
       "id": "theorysimulation",
       "title": "Theory/Simulation",
@@ -151,7 +151,7 @@
           "tooltip": "Honesty about your model's boundaries increases trust. If you assume a homogenous population but real-world data suggests heterogeneity, note that your results may oversimplify group differences. Simultaneously, highlight where your theory pushes the conversation forward—maybe by capturing a previously neglected interaction or by introducing a novel computational approach. A balanced discussion of limitations and contributions lets readers appreciate the trade-offs you made. They'll understand both the unique insights your model delivers and the conditions under which those insights might fall short, setting the stage for further refinement or collaborative development."
         }
       ],
-      "placeholder": "Key Theoretical Assumptions:\n- \n- \n- \n\nRelationship to Real-world Phenomena:\n\nMathematical/Computational Framework:\n\nSolution/Simulation Approach:\n\nValidation Strategy:\n\nPotential Limitations:\n\nTheoretical Significance:"
+      "placeholder": "Key Theoretical Assumptions:\n- [Core assumption 1]\n- [Core assumption 2]\n\nRelationship to Real-world Phenomena: [How theory connects to reality]\n\nMathematical/Computational Framework: [Key equations or algorithms]\n\nValidation Strategy: [How you'll test against known data]\n\nLimitations: [Where your theory might not apply]\n\nTheoretical Significance: [Why this advances understanding]"
     },
     {
       "id": "needsresearch",
@@ -198,7 +198,7 @@
           "tooltip": "Nothing is more convincing than direct confirmation from the people facing the issue. Engaging stakeholders through interviews, surveys, or focus groups provides firsthand validation of your project's importance. Alternatively, referencing official reports, academic literature, or usage data can also confirm that the need is significant and widespread. This step prevents you from \"solving\" a problem that doesn't actually exist or is already well-resolved. Verification also safeguards your resources and time, channeling them into a line of investigation that truly addresses a recognized gap. Plus, credible evidence of need makes your argument far more compelling to peers and funders."
         }
       ],
-      "placeholder": "Who needs this research:\n\nWhy they need it (specific problem to solve):\n\nCurrent approaches and their limitations:\n\nSuccess criteria (how will you measure if your solution works):\n\nAdvantages of your proposed approach:"
+      "placeholder": "Beneficiaries: [Who specifically needs this research]\n\nProblem Statement: [Concrete problem they experience]\n\nCurrent Solutions & Limitations: [What exists and why it's inadequate]\n\nSuccess Criteria: [How you'll measure if your solution works]\n\nVerification: [How you know this need is real and important]"
     },
     {
       "id": "exploratoryresearch",
@@ -245,7 +245,7 @@
           "tooltip": "Exploratory projects can easily stumble into spurious correlations or patterns driven by random variation. Explicitly stating how you'll validate or check the robustness of any emerging patterns mitigates this risk. Cross-validation techniques, consultation with domain experts, or significance tests each provide different forms of evidence to confirm that what you're seeing isn't just noise. Declaring these strategies early on also keeps you honest, ensuring you don't overinterpret convenient coincidences. Ultimately, building in mechanisms to guard against false positives enriches your exploration, making it more credible and beneficial for subsequent in-depth research."
         }
       ],
-      "placeholder": "Phenomena/data/system to explore:\n\nPotential discoveries your approach might reveal:\n1. \n2. \n3. \n\nValue of this exploration to the field:\n\nAnalytical approaches for discovery:\n\nStrategy for validating findings:"
+      "placeholder": "Phenomena/Dataset to Explore: [What you're investigating and why it's novel]\n\nPotential Discoveries:\n1. [Pattern you might find]\n2. [Relationship you might uncover]\n3. [Unexpected insight that could emerge]\n\nValue to Field: [How these discoveries would advance knowledge]\n\nAnalytical Approaches: [Methods for finding patterns, e.g., clustering]\n\nValidation Strategy: [How you'll distinguish real patterns from noise]"
     },
     {
       "id": "relatedpapers",
@@ -286,7 +286,7 @@
           "tooltip": "Detailing your search process—like which academic databases or relevant search terms you used—offers transparency and reproducibility. It shows that you didn't cherry-pick papers to fit a narrative. If your exploration turns up conflicting evidence, clarify whether you'll weigh methodological quality, sample sizes, or consensus across multiple studies. This approach frames you as an even-handed investigator open to multiple interpretations. By laying out how you handle discrepancies, you minimize bias and demonstrate readiness to adapt your hypotheses or methods should the literature point in a new direction."
         }
       ],
-      "placeholder": "Most similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. "
+      "placeholder": "Most Relevant Papers:\n1. [Paper that tests similar hypothesis - how it relates to yours]\n2. [Paper with related methodology - what you'll adapt]\n3. [Paper with contrasting perspective - how yours differs]\n4. [Paper identifying the gap you'll fill]\n5. [Seminal work in this area - its influence on your approach]"
     },
     {
       "id": "experiment",
@@ -339,7 +339,7 @@
           "tooltip": "Preregistration means documenting your hypotheses, methods, and analysis plan before you start collecting data. Doing so can be as simple as writing a timestamped document or using an online registry. This practice counters the temptation to tweak hypotheses retroactively based on surprising results. By specifying your approach in advance, you reinforce the integrity of your study and make it simpler for others to follow your reasoning. Preregistration also opens doors for more rigorous meta-analyses in the future, as it clarifies the difference between planned tests and exploratory analyses in published work."
         }
       ],
-      "placeholder": "Key Variables:\n- Independent: \n- Dependent: \n- Controlled: \n\nSample & Size Justification: \n\nData Collection Methods: \n\nPredicted Results: \n\nPotential Confounds & Mitigations:"
+      "placeholder": "Variables:\n- Independent: [What you'll manipulate]\n- Dependent: [What you'll measure]\n- Controlled: [What you'll keep constant]\n\nSample & Size Justification: [Population, sample size, power analysis]\n\nProcedure: [Key steps in data collection]\n\nPredicted Results: [Expected outcomes for each hypothesis]\n\nConfounds & Controls: [Potential issues and how you'll address them]\n\nBlinding/Preregistration: [Measures to reduce bias]"
     },
     {
       "id": "existingdata",
@@ -379,10 +379,10 @@
           "instruction": "Acknowledge downsides of using someone else's data. Be honest about tradeoffs in fit, flexibility, or generalizability.",
           "tooltip": "While reusing existing data is efficient, there are inherent limitations. You can't typically revise the collection protocol if you uncover gaps, and certain key variables might be absent. The sample may not represent the population you care about most. These constraints can impact internal or external validity. Being upfront about these issues allows readers to weigh your findings appropriately and reduces the chance that you'll overclaim. Despite these tradeoffs, well-documented secondary data can still offer meaningful insights—just be sure you're transparent about where it falls short and how that might affect your interpretations."
         }
-        ],
-      "placeholder": "Dataset Source:\n\nKey Variables Available:\n\nData Quality Assessment:\n\nEthical/Legal Considerations:\n\nLimitations of Dataset:"
+      ],
+      "placeholder": "Dataset Source: [Origin, who collected it, original purpose]\n\nKey Variables Available: [Critical measures for your question]\n\nData Quality Assessment: [Missing data, limitations, reliability]\n\nEthical/Legal Considerations: [Permissions, privacy, constraints]\n\nLimitations: [How repurposing affects validity, generalizability]"
     },
-      {
+    {
       "id": "analysis",
       "title": "Data Analysis",
       "type": "text",
@@ -427,7 +427,7 @@
           "tooltip": "Your analytical plan should be a logical extension of the research question, closing the loop from hypotheses to measurable outcomes. If your question is about group differences, ensure your analysis highlights comparisons. If it's about relationships, set up correlation or regression frameworks. Then interpret findings in a way that directly addresses the question. This cohesion helps readers see the thread running through every stage of your project. It also prevents you from drifting into tangential interpretations. When data analysis stays laser-focused on your original goals, your conclusions become more convincing and coherent."
         }
       ],
-      "placeholder": "Data Cleaning & Exclusions:\n\nPrimary Analysis Method:\n\nHow Analysis Addresses Research Question:\n\nUncertainty Quantification:\n\nSpecial Cases Handling:"
+      "placeholder": "Data Cleaning Protocol: [Exclusion criteria, handling outliers/missing data]\n\nPrimary Analysis Method: [Statistical/computational approach and justification]\n\nUncertainty Quantification: [Confidence intervals, sensitivity analysis]\n\nMultiple Comparisons Control: [FDR, Bonferroni, effect sizes]\n\nPlanned vs. Exploratory: [Pre-specified vs. post-hoc analyses]"
     },
     {
       "id": "process",
@@ -474,7 +474,7 @@
           "tooltip": "Open science encompasses sharing data, code, and sometimes even preliminary analyses or registrations. Adopting these practices fosters transparency and collaboration, enabling other researchers to replicate or extend your work. However, not all data can be freely shared—confidentiality, security, or proprietary concerns might limit full openness. Be upfront about these constraints so readers understand why certain materials remain private. Embracing open science where feasible can lead to broader recognition, more citations, and stronger community support. Ultimately, it signals your commitment to rigorous and ethical research."
         }
       ],
-      "placeholder": "Skills Needed vs. Skills I Have:\n\nCollaborators & Their Roles:\n\nData/Code Sharing Plan:\n\nTimeline & Milestones:\n\nObstacles & Contingencies:"
+      "placeholder": "Skills Needed vs. Available: [Required expertise and how to address gaps]\n\nCollaborators & Roles: [Who's involved and their contributions]\n\nData/Code Management: [Version control, sharing, documentation]\n\nTimeline & Milestones: [Realistic schedule with key deliverables]\n\nRisk Assessment: [Potential obstacles and contingency plans]\n\nOpen Science Practices: [Transparency, reproducibility measures]"
     },
     {
       "id": "abstract",
@@ -514,9 +514,8 @@
           "instruction": "State the main expected impact. What should your reader believe, do, or study next after reading your paper?",
           "tooltip": "Wrapping up your abstract with a concise statement of why your study matters leaves a strong impression. Maybe your findings can reshape a clinical protocol, spark an entirely new research direction, or confirm a theoretical stance. By articulating these implications clearly, you encourage readers to think about how they can apply or extend your work. It also frames your study's contribution within the broader scholarly or practical landscape. An impactful conclusion often helps your paper stand out, signaling that your research is more than an isolated investigation—it has tangible takeaways for the field and beyond."
         }
-          ], 
-       "placeholder": "Background: [brief context and problem statement]\n\nObjective/Question: [concise one-sentence research question]\n\nMethods: [key approach and techniques, briefly stated]\n\n(Expected) Results: [anticipated findings or outcomes]\n\nConclusion/Implications: [why these results matter to the field]"
+      ],
+      "placeholder": "Background: [Brief context and problem statement]\n\nObjective: [One-sentence research question/purpose]\n\nMethods: [Key approach and techniques]\n\nExpected Results: [Anticipated findings]\n\nImplications: [Why these results will matter to the field]"
     }
   ]
 }
-    
