@@ -420,15 +420,7 @@ Create comprehensive examples that address each criterion from the grading rubri
 # Scientific Paper Extraction with Essential Fields
 
 Extract key components from the provided scientific paper text and format them in a JSON structure.
-
-**CRITICAL REQUIREMENTS:**
-1. Your response MUST include ALL of these REQUIRED fields: question, audience, hypothesis, relatedpapers, analysis, process, abstract
-2. You MUST choose EXACTLY ONE research approach: either hypothesis OR needsresearch OR exploratoryresearch
-3. You MUST choose EXACTLY ONE data collection method: either experiment OR existingdata OR theorysimulation
-4. Delete any fields that aren't required or aren't part of your chosen approach/method
-5. Each field must be populated with substantial content
-
-**IMPORTANT:** Be VERY GENEROUS in your interpretation - read between the lines and create a high-quality educational example.
+Be VERY GENEROUS in your interpretation - read between the lines and create a high-quality educational example - the student should see how a great scientist thinks about all this.
 
 ## Output Format
 Your output should follow this general structure for each field (shown here with examples from our template system):
@@ -449,7 +441,7 @@ theorysimulation: ${placeholderExamples.theorysimulation || "Assumptions, framew
 Your output must be valid JSON with "userInputs" as the top-level key.
 
 --- DOCUMENT TEXT START ---
-${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated]' : ''}
+${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncated]' : ''}
 --- DOCUMENT TEXT END ---`;
 
     // Step 6: Call OpenAI with improved prompts
