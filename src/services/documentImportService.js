@@ -390,12 +390,14 @@ Be methodical, accurate, and ensure your output aligns with the evaluation stand
 
 IMPORTANT: Your output will be graded based on how well it meets the criteria for each section outlined below.
 
-CRITICAL REQUIREMENTS:
+**CRITICAL REQUIREMENTS:**
 1. Your response MUST include ALL of these REQUIRED fields: question, audience, hypothesis, relatedpapers, analysis, process, abstract
 2. You MUST choose EXACTLY ONE research approach: either hypothesis OR needsresearch OR exploratoryresearch
 3. You MUST choose EXACTLY ONE data collection method: either experiment OR existingdata OR theorysimulation
 4. DO NOT include placeholder comments in your response
-5. Each field must contain detailed, relevant content based on the paper and it should address every part of the relevant placeholders
+5. Each field must be populated with substantial content
+6. IMPORTANT: All field values MUST be simple strings, NOT nested objects or arrays
+
 
 GRADING CRITERIA:
 ${gradingCriteria}
