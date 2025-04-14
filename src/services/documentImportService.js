@@ -395,7 +395,7 @@ CRITICAL REQUIREMENTS:
 2. You MUST choose EXACTLY ONE research approach: either hypothesis OR needsresearch OR exploratoryresearch
 3. You MUST choose EXACTLY ONE data collection method: either experiment OR existingdata OR theorysimulation
 4. DO NOT include placeholder comments in your response
-5. Each field must contain detailed, relevant content based on the paper
+5. Each field must contain detailed, relevant content based on the paper and it should address every part of the relevant placeholders
 
 GRADING CRITERIA:
 ${gradingCriteria}
