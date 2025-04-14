@@ -147,6 +147,9 @@ const extractTextFromDocument = async (file) => {
 // --- validateResearchPaper remains the same ---
 
 function validateResearchPaper(paper) {
+  console.log("VALIDATION - Full paper object structure:", JSON.stringify(paper, null, 2));
+  console.log("VALIDATION - Available fields:", paper?.userInputs ? Object.keys(paper.userInputs) : "No userInputs");
+
   // Basic validation
   if (!paper || typeof paper !== 'object') return false;
   if (!paper.userInputs || typeof paper.userInputs !== 'object') return false;
