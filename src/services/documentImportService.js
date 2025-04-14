@@ -396,13 +396,15 @@ CRITICAL REQUIREMENTS:
 3. You MUST choose EXACTLY ONE data collection method: either experiment OR existingdata OR theorysimulation
 4. DO NOT include placeholder comments in your response
 5. Each field must contain detailed, relevant content based on the paper
+6. Address ALL prompt placeholders in each section - be as thorough as possible
+7. Try to match the format of the placeholders and fill in all expected information
 
 GRADING CRITERIA:
 ${gradingCriteria}
 
 Document text (first part): ${documentText.substring(0, 500)}
 
-Create comprehensive examples that address each criterion from the grading rubric.`;
+Create comprehensive examples that address each criterion from the grading rubric. Be thorough and try to fill in all placeholders with relevant content.`;
 
     // Step 4: Create examples of placeholder structure from sectionContent.json
     const placeholderExamples = {};
@@ -519,7 +521,12 @@ ${documentText.substring(0, 8000)}${documentText.length > 8000 ? '... [truncated
         process: ${placeholderExamples.process || "Process and timeline"}
         abstract: ${placeholderExamples.abstract || "Structured abstract"}
 
-        Generate a thoughtful, well-structured example based on the title "${file.name}" that addresses the grading criteria.
+        CRITICAL REQUIREMENTS:
+        1. Generate a thoughtful, well-structured example based on the title "${file.name}"
+        2. Fill in ALL placeholders for EACH section - don't leave any parts empty
+        3. Try to match the format shown in the templates exactly
+        4. Make sure to include all bullet points, numbering, and structure from the templates
+        5. Be as thorough and comprehensive as possible
       `;
 
       const fallbackResult = await callOpenAI(
