@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
  * Enhanced instructions panel with expandable tooltip content
  * REFACTORED: Now handles structured instruction improvement data properly
  * ENHANCED: All AI-generated content is now consistently purple
+ * UPDATED: Removed blue background for a cleaner, transparent look
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading, userInputs }) => {
   // Track which tooltips are expanded
@@ -160,7 +161,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
 
   return (
     <div
-      className="bg-blue-50 h-full overflow-y-auto section-instruction-panel"
+      className="h-full overflow-y-auto section-instruction-panel"
       style={{
         position: 'fixed',
         top: 0,
@@ -169,6 +170,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
         paddingTop: '120px', // Adjusted for header height
         paddingBottom: '2rem',
         zIndex: 10, // Ensure it's below header buttons if they overlap
+        background: 'transparent' // Removed the blue background color
       }}
     >
       <div className="px-6 py-4 relative">
@@ -182,7 +184,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
               {panelTitle}
             </h3>
 
-            {/* Instructions panel */}
+            {/* Instructions panel - kept the border for clear separation */}
             <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
               <div className="text-base leading-relaxed instructions-content">
                 {renderInstructionContent()}
