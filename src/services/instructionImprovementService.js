@@ -116,7 +116,7 @@ export const improveBatchInstructions = async (
       userInputs,
       currentSections,
       { 
-        temperature: 0.7,
+        temperature: 0.0,
         max_tokens: 3000
       },
       [],
