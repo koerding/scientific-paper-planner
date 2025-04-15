@@ -1,4 +1,3 @@
-
 // FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -14,6 +13,7 @@ import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
 import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 import AppHeader from '../layout/AppHeader';
+import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -39,8 +39,17 @@ import '../../styles/PaperPlanner.css';
  * - ADDED: Save dialog to prompt for file name when saving
  * - ADDED: Theory/Simulation option in data acquisition methods filter
  * - ADDED: Improvement reminder toast after 3 minutes of editing
+ * - ADDED: Splash screen for first-time users
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
+  // Create ref for splash screen manager
+  const splashManagerRef = React.useRef(null);
+
+  // Store the ref globally so it can be accessed from other components
+  React.useEffect(() => {
+    window.splashManagerRef = splashManagerRef;
+  }, []);
+
   // Destructure the hook data
   const {
     currentSection: currentSectionIdForChat,
@@ -70,7 +79,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [improvingInstructions, setImprovingInstructions] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [loading, setLoading] = useState(false); // Track overall loading state
-  const [showSaveDialog, setShowSaveDialog] = useState(false); // New state for save dialog
+  const [showSaveDialog, setShowSaveDialog] = useState(false); // State for save dialog
   const sectionRefs = useRef({});
   
   // New states for tracking improvement reminders
@@ -307,10 +316,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
               }
 
               // Check for congratulatory messages
-              const isComplete = item.editedInstructions.includes('Excellent work') ||
-                                item.editedInstructions.includes('Great job') ||
-                                item.editedInstructions.includes('Well done') ||
-                                item.editedInstructions.includes('completed all');
+              const isComplete = item.editedInstructions?.includes('Excellent work') ||
+                                item.editedInstructions?.includes('Great job') ||
+                                item.editedInstructions?.includes('Well done') ||
+                                item.editedInstructions?.includes('completed all');
 
               // Compare with placeholder
               const section = localSectionContent.sections.find(s => s?.id === item.id);
@@ -341,6 +350,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       console.error("[handleMagic] Error during improvement process:", error);
     } finally {
       setImprovingInstructions(false);
+    }
+  };
+
+  // Function to handle showing welcome splash screen
+  const handleShowHelp = () => {
+    if (splashManagerRef.current) {
+      splashManagerRef.current.showSplash();
     }
   };
 
@@ -492,6 +508,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
           setShowExamplesDialog={setShowExamplesDialog}
+          showHelpSplash={handleShowHelp} // NEW: Prop for showing splash screen
           loading={isAnyLoading}
         />
 
@@ -598,12 +615,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           loadProject={loadProject}
         />
 
-        {/* NEW: Save Dialog */}
+        {/* Save Dialog */}
         <SaveDialog
           showSaveDialog={showSaveDialog}
           setShowSaveDialog={setShowSaveDialog}
           saveProject={saveProjectWithFilename}
         />
+
+        {/* Splash Screen Manager */}
+        <ForwardedSplashScreenManager ref={splashManagerRef} />
       </div>
     </div>
   );
