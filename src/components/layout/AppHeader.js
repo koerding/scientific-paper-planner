@@ -7,6 +7,7 @@ import React, { useState } from 'react';
  * - Smaller logo and text
  * - More compact button styling
  * - Maintained all functionality with a more compact layout
+ * - Added Help button to access splash screen
  */
 const AppHeader = ({
   resetProject,
@@ -15,6 +16,7 @@ const AppHeader = ({
   loadProject,
   importDocumentContent,
   setShowExamplesDialog,
+  showHelpSplash, // New prop for showing the splash screen
   loading
 }) => {
   // Local loading state for import button
@@ -190,6 +192,23 @@ const AppHeader = ({
               </svg>
               Export
             </button>
+            
+            {/* Help/About button (NEW) */}
+            {showHelpSplash && (
+              <button
+                onClick={showHelpSplash}
+                disabled={isImporting}
+                className={`inline-flex items-center px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs font-medium 
+                  ${isImporting 
+                    ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
+                    : 'text-gray-700 bg-white hover:bg-gray-50 cursor-pointer'}`}
+              >
+                <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Help
+              </button>
+            )}
           </div>
         </div>
       </div>
