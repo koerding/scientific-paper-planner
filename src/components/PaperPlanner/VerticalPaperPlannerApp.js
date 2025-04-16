@@ -1,6 +1,7 @@
 // FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
 
 import React, { useState, useEffect, useRef } from 'react';
+import ReactGA from 'react-ga4';
 import sectionContent from '../../data/sectionContent.json';
 import ConfirmDialog from './ConfirmDialog';
 import ExamplesDialog from './ExamplesDialog';
@@ -13,13 +14,19 @@ import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
 import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 import AppHeader from '../layout/AppHeader';
-import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
+import PrivacyPolicyModal from '../modals/PrivacyPolicyModal';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
 } from '../../services/instructionImprovementService';
-// REMOVED: No need to import documentImportService since we get the function from usePaperPlannerHook
-// import * as documentImportService from '../../services/documentImportService';
+import {
+  trackSectionChange,
+  trackInstructionImprovement,
+  trackApproachToggle,
+  trackDataMethodToggle,
+  trackExport,
+  trackSave
+} from '../../utils/analyticsUtils';
 import '../../styles/PaperPlanner.css';
 
 /**
@@ -39,19 +46,9 @@ import '../../styles/PaperPlanner.css';
  * - ADDED: Save dialog to prompt for file name when saving
  * - ADDED: Theory/Simulation option in data acquisition methods filter
  * - ADDED: Improvement reminder toast after 3 minutes of editing
- * - ADDED: Splash screen for first-time users
- * - ADDED: Research Plan header at the top of the left column
- * - UPDATED: Removed blue background from right panel
+ * - ADDED: Google Analytics 4 tracking for user interactions
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
-  // Create ref for splash screen manager
-  const splashManagerRef = React.useRef(null);
-
-  // Store the ref globally so it can be accessed from other components
-  React.useEffect(() => {
-    window.splashManagerRef = splashManagerRef;
-  }, []);
-
   // Destructure the hook data
   const {
     currentSection: currentSectionIdForChat,
@@ -81,7 +78,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [improvingInstructions, setImprovingInstructions] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [loading, setLoading] = useState(false); // Track overall loading state
-  const [showSaveDialog, setShowSaveDialog] = useState(false); // State for save dialog
+  const [showSaveDialog, setShowSaveDialog] = useState(false); // New state for save dialog
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false); // New state for privacy policy
   const sectionRefs = useRef({});
   
   // New states for tracking improvement reminders
@@ -114,6 +112,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   useEffect(() => {
     setActiveSection(currentSectionIdForChat);
   }, [currentSectionIdForChat]);
+
+  // Track initial pageview with GA4
+  useEffect(() => {
+    // Track initial pageview
+    ReactGA.send({ 
+      hitType: "pageview", 
+      page: `/section/${activeSection}` 
+    });
+  }, []);
 
   // Effect to update active approach and data method based on user inputs
   useEffect(() => {
@@ -157,6 +164,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
     handleSectionChange(sectionId); // Update context for chat/API calls
+    
+    // Track this section change in analytics
+    const sectionTitle = localSectionContent.sections.find(s => s?.id === sectionId)?.title || 'Unknown';
+    trackSectionChange(sectionId, sectionTitle);
   };
 
   // Helper to check if section has meaningful content beyond placeholder
@@ -265,10 +276,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setSignificantEditsMade(true);
   };
 
-  // Handle magic (improving instructions)
+  // Handle magic (improving instructions) with analytics tracking
   const handleMagic = async () => {
     // FIXED: Don't allow instruction improvement during loading
     if (loading) return;
+    
+    // Track improvement attempt in analytics
+    trackInstructionImprovement(activeSection);
     
     // Track when improvement was last used
     setLastImprovementTime(Date.now());
@@ -355,15 +369,14 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Function to handle showing welcome splash screen
-  const handleShowHelp = () => {
-    if (splashManagerRef.current) {
-      splashManagerRef.current.showSplash();
-    }
-  };
-
-  // Combine local reset logic with hook's reset logic
+  // Combine local reset logic with hook's reset logic and add analytics
   const handleResetRequest = () => {
+    // Track reset action
+    ReactGA.event({
+      category: 'Document Actions',
+      action: 'Reset Project'
+    });
+    
     hookResetProject();
     // Reset local instructions state
     try {
@@ -383,9 +396,18 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setSignificantEditsMade(false);
   };
 
-  // UPDATED: Modified save function to show dialog instead of direct save
+  // UPDATED: Modified save function to show dialog with analytics
   const handleSaveProject = () => {
+    // Track save action
+    trackSave();
     setShowSaveDialog(true);
+  };
+
+  // Handle export with analytics
+  const handleExportRequest = () => {
+    // Track export action
+    trackExport('any');
+    exportProject();
   };
 
   // NEW: Function to actually save the project with filename from dialog
@@ -447,16 +469,22 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     return true; // All other sections are always displayed
   };
 
-  // Handle approach toggle
+  // Handle approach toggle with analytics
   const handleApproachToggle = (approach) => {
     setActiveApproach(approach);
     setActiveSectionWithManualFlag(approach);
+    
+    // Track approach toggle in analytics
+    trackApproachToggle(approach);
   };
 
-  // Handle data method toggle
+  // Handle data method toggle with analytics
   const handleDataMethodToggle = (method) => {
     setActiveDataMethod(method);
     setActiveSectionWithManualFlag(method);
+    
+    // Track data method toggle in analytics
+    trackDataMethodToggle(method);
   };
 
   // Render a section with proper completion status
@@ -505,12 +533,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         {/* Use imported AppHeader component with props */}
         <AppHeader
           resetProject={() => setShowConfirmDialog(true)}
-          exportProject={exportProject}
+          exportProject={handleExportRequest}
           saveProject={handleSaveProject} // UPDATED: Now shows save dialog
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
           setShowExamplesDialog={setShowExamplesDialog}
-          showHelpSplash={handleShowHelp} // NEW: Prop for showing splash screen
           loading={isAnyLoading}
         />
 
@@ -519,9 +546,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           <div className="flex">
             {/* RESTORED: Left panel with full half-width */}
             <div className="w-half px-4 py-2" style={{ width: '50%' }}>
-              {/* NEW: Research Plan Header */}
-              <h1 className="text-2xl font-bold text-gray-800 mb-4 mt-2">Research Plan</h1>
-              
               {/* Display Research Question first */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => section?.id === 'question')
@@ -566,9 +590,25 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             </div>
           </div>
 
-          {/* Fixed-height footer */}
-          <div className="text-center text-gray-500 text-sm mt-6 border-t border-gray-200 pt-3 pb-3 bg-white"> {/* FIXED: Reduced padding */}
-            <p>Scientific Paper Planner • Designed with Love for Researchers by Konrad @Kordinglab • {new Date().getFullYear()}</p>
+          {/* Fixed-height footer with Privacy Policy link */}
+          <div className="text-center text-gray-500 text-sm mt-6 border-t border-gray-200 pt-3 pb-3 bg-white">
+            <p>
+              Scientific Paper Planner • Designed with Love for Researchers by Konrad @Kordinglab • {new Date().getFullYear()}
+              <span className="mx-2">•</span>
+              <button 
+                onClick={() => {
+                  setShowPrivacyPolicy(true);
+                  // Track when users view the privacy policy
+                  ReactGA.event({
+                    category: 'Footer',
+                    action: 'Open Privacy Policy'
+                  });
+                }}
+                className="text-blue-500 hover:text-blue-700 underline"
+              >
+                Privacy Policy
+              </button>
+            </p>
           </div>
         </div>
 
@@ -620,15 +660,18 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           loadProject={loadProject}
         />
 
-        {/* Save Dialog */}
+        {/* NEW: Privacy Policy Modal */}
+        <PrivacyPolicyModal 
+          showModal={showPrivacyPolicy} 
+          onClose={() => setShowPrivacyPolicy(false)} 
+        />
+
+        {/* NEW: Save Dialog */}
         <SaveDialog
           showSaveDialog={showSaveDialog}
           setShowSaveDialog={setShowSaveDialog}
           saveProject={saveProjectWithFilename}
         />
-
-        {/* Splash Screen Manager */}
-        <ForwardedSplashScreenManager ref={splashManagerRef} />
       </div>
     </div>
   );
