@@ -104,7 +104,7 @@
           "tooltip": "Hypotheses are most valuable when each potential outcome tells a different and meaningful story. By articulating the importance of each hypothetical result, you demonstrate the intellectual merit of your project. Whether the finding supports one hypothesis or another, the field stands to learn something tangible. This significance can range from resolving a debated mechanism to illuminating an entirely novel phenomenon. For your own motivation, framing the hypotheses' importance also keeps you engaged—knowing that your work might clarify core issues in the literature or inspire new lines of inquiry. Such framing is often persuasive for funding bodies and conference audiences too."
         }
       ],
-      "placeholder": "Hypothesis 1: [First specific, testable prediction]\n\nHypothesis 2: [Alternative prediction that contrasts with H1]\n\nWhy distinguishing these hypotheses matters:\n- [Scientific implication if H1 is supported]\n- [Different impact if H2 is supported]"
+      "placeholder": "Hypothesis 1: [First specific, testable prediction]\nHypothesis 2: [Alternative prediction that contrasts with H1]\nWhy distinguishing these hypotheses matters:\n- [Scientific implication if H1 is supported]\n- [Different impact if H2 is supported]"
     },
     {
       "id": "theorysimulation",
@@ -345,7 +345,7 @@
           "tooltip": "Every research project carries ethical dimensions, regardless of discipline. For human subjects research, this includes IRB approval and informed consent. Animal studies require IACUC or equivalent oversight. Environmental research may need permits or impact assessments. In all cases, addressing data integrity, transparency about conflicts of interest, and considering potential societal implications of your work demonstrates scientific responsibility. Documenting these considerations not only satisfies institutional and journal requirements but also builds public trust in scientific work. Thinking through ethics early often improves study design by highlighting potential issues before they become problems."
         }
       ],
-      "placeholder": "Variables:\n- Independent: [What you'll manipulate]\n- Dependent: [What you'll measure]\n- Controlled: [What you'll keep constant]\n\nSample & Size Justification: [Population, sample size, power analysis]\n\nProcedure: [Key steps in data collection]\n\nPredicted Results: [Expected outcomes for each hypothesis]\n\nConfounds & Controls: [Potential issues and how you'll address them]\n\nBlinding/Preregistration: [Measures to reduce bias]\n Ethical Considerations: [Relevant approvals, integrity measures, potential impact considerations]"
+      "placeholder": "Variables:\n- Independent: [What you'll manipulate]\n- Dependent: [What you'll measure]\n- Controlled: [What you'll keep constant]\n\nSample & Size Justification: [Population, sample size, power analysis]\nProcedure: [Key steps in data collection]\nPredicted Results: [Expected outcomes for each hypothesis]\n\nConfounds & Controls: [Potential issues and how you'll address them]\nBlinding/Preregistration: [Measures to reduce bias]\nEthical Considerations: [Relevant approvals, integrity measures, potential impact considerations]"
     },
     {
       "id": "existingdata",
@@ -386,7 +386,7 @@
           "tooltip": "While reusing existing data is efficient, there are inherent limitations. You can't typically revise the collection protocol if you uncover gaps, and certain key variables might be absent. The sample may not represent the population you care about most. These constraints can impact internal or external validity. Being upfront about these issues allows readers to weigh your findings appropriately and reduces the chance that you'll overclaim. Despite these tradeoffs, well-documented secondary data can still offer meaningful insights—just be sure you're transparent about where it falls short and how that might affect your interpretations."
         }
       ],
-      "placeholder": "Dataset Source: [Origin, who collected it, original purpose]\n\nKey Variables Available: [Critical measures for your question]\n\nData Quality Assessment: [Missing data, limitations, reliability]\n\nEthical/Legal Considerations: [Permissions, privacy, constraints]\n\nLimitations: [How repurposing affects validity, generalizability]"
+      "placeholder": "Dataset Source: [Origin, who collected it, original purpose]\nKey Variables Available: [Critical measures for your question]\nData Quality Assessment: [Missing data, limitations, reliability]\nEthical/Legal Considerations: [Permissions, privacy, constraints]\nLimitations: [How repurposing affects validity, generalizability]"
     },
     {
       "id": "analysis",
@@ -445,7 +445,7 @@
           "tooltip": "Publication bias—the tendency to publish only positive results—distorts scientific understanding. Planning how you'll interpret all possible outcomes helps prevent selective reporting. Null results (finding no effect) can be as scientifically valuable as positive ones, particularly when studies are well-powered. Consider what alternative explanations you'll explore if results don't match expectations, and how you'll frame these as contributions rather than failures. This commitment to transparent reporting regardless of outcome bolsters scientific integrity. Remember that disconfirming a hypothesis is still an important scientific contribution, and journals are increasingly recognizing the value of well-conducted studies with null results."
         }
       ],
-      "placeholder": "Data Cleaning Protocol: [Exclusion criteria, handling outliers/missing data]\n\nPrimary Analysis Method: [Statistical/computational approach and justification]\n\nUncertainty Quantification: [Confidence intervals, sensitivity analysis]\n\nMultiple Comparisons Control: [FDR, Bonferroni, effect sizes]\n\nPlanned vs. Exploratory: [Pre-specified vs. post-hoc analyses]\n Reproducibility Validation: [Internal verification methods, computational validation tests]\n Null Result Approach: [How you'll interpret and report non-significant findings]"
+      "placeholder": "Data Cleaning Protocol: [Exclusion criteria, handling outliers/missing data]\nPrimary Analysis Method: [Statistical/computational approach and justification]\nUncertainty Quantification: [Confidence intervals, sensitivity analysis]\nMultiple Comparisons Control: [FDR, Bonferroni, effect sizes]\nPlanned vs. Exploratory: [Pre-specified vs. post-hoc analyses]\nReproducibility Validation: [Internal verification methods, computational validation tests]\nNull Result Approach: [How you'll interpret and report non-significant findings]"
     },
     {
       "id": "process",
@@ -492,7 +492,7 @@
           "tooltip": "Open science encompasses sharing data, code, and sometimes even preliminary analyses or registrations. Adopting these practices fosters transparency and collaboration, enabling other researchers to replicate or extend your work. However, not all data can be freely shared—confidentiality, security, or proprietary concerns might limit full openness. Be upfront about these constraints so readers understand why certain materials remain private. Embracing open science where feasible can lead to broader recognition, more citations, and stronger community support. Ultimately, it signals your commitment to rigorous and ethical research."
         }
       ],
-      "placeholder": "Skills Needed vs. Available: [Required expertise and how to address gaps]\n\nCollaborators & Roles: [Who's involved and their contributions]\n\nData/Code Management: [Version control, sharing, documentation]\n\nTimeline & Milestones: [Realistic schedule with key deliverables]\n\nRisk Assessment: [Potential obstacles and contingency plans]\n\nOpen Science Practices: [Transparency, reproducibility measures]"
+      "placeholder": "Skills Needed vs. Available: [Required expertise and how to address gaps]\nCollaborators & Roles: [Who's involved and their contributions]\nData/Code Management: [Version control, sharing, documentation]\n\nTimeline & Milestones: [Realistic schedule with key deliverables]\nRisk Assessment: [Potential obstacles and contingency plans]\n\nOpen Science Practices: [Transparency, reproducibility measures]"
     },
     {
       "id": "abstract",
@@ -533,7 +533,7 @@
           "tooltip": "Wrapping up your abstract with a concise statement of why your study matters leaves a strong impression. Maybe your findings can reshape a clinical protocol, spark an entirely new research direction, or confirm a theoretical stance. By articulating these implications clearly, you encourage readers to think about how they can apply or extend your work. It also frames your study's contribution within the broader scholarly or practical landscape. An impactful conclusion often helps your paper stand out, signaling that your research is more than an isolated investigation—it has tangible takeaways for the field and beyond."
         }
       ],
-      "placeholder": "Background: [Brief context and problem statement]\n\nObjective: [One-sentence research question/purpose]\n\nMethods: [Key approach and techniques]\n\nExpected Results: [Anticipated findings]\n\nImplications: [Why these results will matter to the field]"
+      "placeholder": "Background: [Brief context and problem statement]\nObjective: [One-sentence research question/purpose]\nMethods: [Key approach and techniques]\nExpected Results: [Anticipated findings]\nImplications: [Why these results will matter to the field]"
     }
   ]
 }
