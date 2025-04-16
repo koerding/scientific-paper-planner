@@ -1,7 +1,7 @@
 // FILE: src/index.js
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import ReactGA from 'react-ga'; // Import the Google Analytics package
+import ReactGA from 'react-ga4'; // Import the Google Analytics package
 import './index.css';
 import App from './App';
 
