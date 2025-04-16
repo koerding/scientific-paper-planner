@@ -42,7 +42,7 @@
       "type": "text",
       "maxLength": 1500,
       "inputPlaceholder": "List the target audience for your research...",
-      "introText": "Knowing your target audience helps ensure your work reaches and resonates with the right people. Identifying relevant communities, researchers, or stakeholders lets you tailor your communication and maximize impact. It also guides choices around framing, methods, and venues for dissemination.",
+      "introText": "Knowing your target audience helps ensure your work reaches and resonates with the right people. Identifying relevant communities, researchers, or stakeholders lets you tailor your communication and maximize impact. It also guides choices around framing, methods, and venues for dissemination. You need to be aware how you will contribute to which communities.",
       "subsections": [
         {
           "id": "audience_key_audiences",
