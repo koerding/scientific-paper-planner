@@ -492,7 +492,7 @@
           "tooltip": "Open science encompasses sharing data, code, and sometimes even preliminary analyses or registrations. Adopting these practices fosters transparency and collaboration, enabling other researchers to replicate or extend your work. However, not all data can be freely shared—confidentiality, security, or proprietary concerns might limit full openness. Be upfront about these constraints so readers understand why certain materials remain private. Embracing open science where feasible can lead to broader recognition, more citations, and stronger community support. Ultimately, it signals your commitment to rigorous and ethical research."
         }
       ],
-      "placeholder": "Skills Needed vs. Available: [Required expertise and how to address gaps]\nCollaborators & Roles: [Who's involved and their contributions]\nData/Code Management: [Version control, sharing, documentation]\nTimeline & Milestones: [Realistic schedule with key deliverables]\nRisk Assessment: [Potential obstacles and contingency plans]\n\nOpen Science Practices: [Transparency, reproducibility measures]"
+      "placeholder": "Skills Needed vs. Available: [Required expertise and how to address gaps]\nCollaborators & Roles: [Who's involved and their contributions]\nData/Code Management: [Version control, sharing, documentation]\nTimeline & Milestones: [Realistic schedule with key deliverables]\nRisk Assessment: [Potential obstacles and contingency plans]\nOpen Science Practices: [Transparency, reproducibility measures]"
     },
     {
       "id": "abstract",
