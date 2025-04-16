@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { trackChatInteraction, trackPageView } from '../../utils/analyticsUtils';
 import '../../styles/PaperPlanner.css';
 
 /**
  * Modernized chat interface with fixed layout issues
  * UPDATED: Added purple text for AI messages to match FullHeightInstructionsPanel
+ * UPDATED: Added GA4 tracking for chat interactions
  */
 const ModernChatInterface = ({
   currentSection,
@@ -44,9 +46,27 @@ const ModernChatInterface = ({
     return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Toggle chat window visibility
+  // Toggle chat window visibility with analytics tracking
   const toggleChat = () => {
-    setIsMinimized(!isMinimized);
+    const newState = !isMinimized;
+    setIsMinimized(newState);
+    
+    // Track chat open/close events
+    if (!newState) { // If opening chat
+      trackPageView(`/chat/${currentSection}`);
+      trackChatInteraction(currentSection, chatMessages[currentSection]?.length || 0);
+    }
+  };
+
+  // Wrapper for send message with analytics
+  const handleSendMessageWithTracking = () => {
+    if (loading || currentMessage.trim() === '') return;
+    
+    // Track the chat interaction
+    trackChatInteraction(currentSection, (chatMessages[currentSection]?.length || 0) + 1);
+    
+    // Call the original handler
+    handleSendMessage();
   };
 
   // Determine if the chat icon should be highlighted
@@ -187,7 +207,7 @@ const ModernChatInterface = ({
             )}
           </div>
 
-          {/* Chat input - improved focus handling */}
+          {/* Chat input - improved focus handling with analytics */}
           <div className="p-3 border-t border-gray-200 bg-white">
             <div className="flex">
               <input
@@ -196,11 +216,11 @@ const ModernChatInterface = ({
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Ask a question..."
-                onKeyPress={(e) => e.key === 'Enter' && !loading && currentMessage.trim() !== '' && handleSendMessage()}
+                onKeyPress={(e) => e.key === 'Enter' && !loading && currentMessage.trim() !== '' && handleSendMessageWithTracking()}
                 disabled={loading}
               />
               <button
-                onClick={handleSendMessage}
+                onClick={handleSendMessageWithTracking}
                 disabled={loading || currentMessage.trim() === ''}
                 className={`px-3 py-2 rounded-r-lg ${
                   loading || currentMessage.trim() === '' 
@@ -223,7 +243,6 @@ const ModernChatInterface = ({
             </div>
           </div>
         </div>
-      </div>
 
       {/* Add custom styles for purple AI chat bubbles */}
       <style jsx>{`
@@ -259,7 +278,8 @@ const ModernChatInterface = ({
           color: #5b21b6;
         }
       `}</style>
-    </>
+    </div>
+  </>
   );
 };
 
