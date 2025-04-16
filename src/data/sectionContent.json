@@ -151,7 +151,7 @@
           "tooltip": "Honesty about your model's boundaries increases trust. If you assume a homogenous population but real-world data suggests heterogeneity, note that your results may oversimplify group differences. Simultaneously, highlight where your theory pushes the conversation forward—maybe by capturing a previously neglected interaction or by introducing a novel computational approach. A balanced discussion of limitations and contributions lets readers appreciate the trade-offs you made. They'll understand both the unique insights your model delivers and the conditions under which those insights might fall short, setting the stage for further refinement or collaborative development."
         }
       ],
-      "placeholder": "Key Theoretical Assumptions:\n- [Core assumption 1]\n- [Core assumption 2]\n\nRelationship to Real-world Phenomena: [How theory connects to reality]\n\nMathematical/Computational Framework: [Key equations or algorithms]\n\nValidation Strategy: [How you'll test against known data]\n\nLimitations: [Where your theory might not apply]\n\nTheoretical Significance: [Why this advances understanding]"
+      "placeholder": "Key Theoretical Assumptions:\n- [Core assumption 1]\n- [Core assumption 2]\n\nRelationship to Real-world Phenomena: [How theory connects to reality]\nMathematical/Computational Framework: [Key equations or algorithms]\nValidation Strategy: [How you'll test against known data]\nLimitations: [Where your theory might not apply]\nTheoretical Significance: [Why this advances understanding]"
     },
     {
       "id": "needsresearch",
@@ -198,7 +198,7 @@
           "tooltip": "Nothing is more convincing than direct confirmation from the people facing the issue. Engaging stakeholders through interviews, surveys, or focus groups provides firsthand validation of your project's importance. Alternatively, referencing official reports, academic literature, or usage data can also confirm that the need is significant and widespread. This step prevents you from \"solving\" a problem that doesn't actually exist or is already well-resolved. Verification also safeguards your resources and time, channeling them into a line of investigation that truly addresses a recognized gap. Plus, credible evidence of need makes your argument far more compelling to peers and funders."
         }
       ],
-      "placeholder": "Beneficiaries: [Who specifically needs this research]\n\nProblem Statement: [Concrete problem they experience]\n\nCurrent Solutions & Limitations: [What exists and why it's inadequate]\n\nSuccess Criteria: [How you'll measure if your solution works]\n\nVerification: [How you know this need is real and important]"
+      "placeholder": "Beneficiaries: [Who specifically needs this research]\nProblem Statement: [Concrete problem they experience]\nCurrent Solutions & Limitations: [What exists and why it's inadequate]\nSuccess Criteria: [How you'll measure if your solution works]\nVerification: [How you know this need is real and important]"
     },
     {
       "id": "exploratoryresearch",
@@ -245,7 +245,7 @@
           "tooltip": "Exploratory projects can easily stumble into spurious correlations or patterns driven by random variation. Explicitly stating how you'll validate or check the robustness of any emerging patterns mitigates this risk. Cross-validation techniques, consultation with domain experts, or significance tests each provide different forms of evidence to confirm that what you're seeing isn't just noise. Declaring these strategies early on also keeps you honest, ensuring you don't overinterpret convenient coincidences. Ultimately, building in mechanisms to guard against false positives enriches your exploration, making it more credible and beneficial for subsequent in-depth research."
         }
       ],
-      "placeholder": "Phenomena/Dataset to Explore: [What you're investigating and why it's novel]\n\nPotential Discoveries:\n1. [Pattern you might find]\n2. [Relationship you might uncover]\n3. [Unexpected insight that could emerge]\n\nValue to Field: [How these discoveries would advance knowledge]\n\nAnalytical Approaches: [Methods for finding patterns, e.g., clustering]\n\nValidation Strategy: [How you'll distinguish real patterns from noise]"
+      "placeholder": "Phenomena/Dataset to Explore: [What you're investigating and why it's novel]\n\nPotential Discoveries:\n1. [Pattern you might find]\n2. [Relationship you might uncover]\n3. [Unexpected insight that could emerge]\n\nValue to Field: [How these discoveries would advance knowledge]\nAnalytical Approaches: [Methods for finding patterns, e.g., clustering]\nValidation Strategy: [How you'll distinguish real patterns from noise]"
     },
     {
       "id": "relatedpapers",
@@ -345,7 +345,7 @@
           "tooltip": "Every research project carries ethical dimensions, regardless of discipline. For human subjects research, this includes IRB approval and informed consent. Animal studies require IACUC or equivalent oversight. Environmental research may need permits or impact assessments. In all cases, addressing data integrity, transparency about conflicts of interest, and considering potential societal implications of your work demonstrates scientific responsibility. Documenting these considerations not only satisfies institutional and journal requirements but also builds public trust in scientific work. Thinking through ethics early often improves study design by highlighting potential issues before they become problems."
         }
       ],
-      "placeholder": "Variables:\n- Independent: [What you'll manipulate]\n- Dependent: [What you'll measure]\n- Controlled: [What you'll keep constant]\n\nSample & Size Justification: [Population, sample size, power analysis]\nProcedure: [Key steps in data collection]\nPredicted Results: [Expected outcomes for each hypothesis]\n\nConfounds & Controls: [Potential issues and how you'll address them]\nBlinding/Preregistration: [Measures to reduce bias]\nEthical Considerations: [Relevant approvals, integrity measures, potential impact considerations]"
+      "placeholder": "Variables:\n- Independent: [What you'll manipulate]\n- Dependent: [What you'll measure]\n- Controlled: [What you'll keep constant]\n\nSample & Size Justification: [Population, sample size, power analysis]\nProcedure: [Key steps in data collection]\nPredicted Results: [Expected outcomes for each hypothesis]\nConfounds & Controls: [Potential issues and how you'll address them]\nBlinding/Preregistration: [Measures to reduce bias]\nEthical Considerations: [Relevant approvals, integrity measures, potential impact considerations]"
     },
     {
       "id": "existingdata",
@@ -492,7 +492,7 @@
           "tooltip": "Open science encompasses sharing data, code, and sometimes even preliminary analyses or registrations. Adopting these practices fosters transparency and collaboration, enabling other researchers to replicate or extend your work. However, not all data can be freely shared—confidentiality, security, or proprietary concerns might limit full openness. Be upfront about these constraints so readers understand why certain materials remain private. Embracing open science where feasible can lead to broader recognition, more citations, and stronger community support. Ultimately, it signals your commitment to rigorous and ethical research."
         }
       ],
-      "placeholder": "Skills Needed vs. Available: [Required expertise and how to address gaps]\nCollaborators & Roles: [Who's involved and their contributions]\nData/Code Management: [Version control, sharing, documentation]\n\nTimeline & Milestones: [Realistic schedule with key deliverables]\nRisk Assessment: [Potential obstacles and contingency plans]\n\nOpen Science Practices: [Transparency, reproducibility measures]"
+      "placeholder": "Skills Needed vs. Available: [Required expertise and how to address gaps]\nCollaborators & Roles: [Who's involved and their contributions]\nData/Code Management: [Version control, sharing, documentation]\nTimeline & Milestones: [Realistic schedule with key deliverables]\nRisk Assessment: [Potential obstacles and contingency plans]\n\nOpen Science Practices: [Transparency, reproducibility measures]"
     },
     {
       "id": "abstract",
