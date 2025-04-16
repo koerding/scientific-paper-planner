@@ -15,6 +15,7 @@ import FloatingMagicButton from '../buttons/FloatingMagicButton';
 import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 import AppHeader from '../layout/AppHeader';
 import PrivacyPolicyModal from '../modals/PrivacyPolicyModal';
+import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -47,6 +48,7 @@ import '../../styles/PaperPlanner.css';
  * - ADDED: Theory/Simulation option in data acquisition methods filter
  * - ADDED: Improvement reminder toast after 3 minutes of editing
  * - ADDED: Google Analytics 4 tracking for user interactions
+ * - FIXED: Properly integrated splash screen manager
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -86,6 +88,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [lastImprovementTime, setLastImprovementTime] = useState(Date.now());
   const [editEvents, setEditEvents] = useState([]);
   const [significantEditsMade, setSignificantEditsMade] = useState(false);
+  
+  // Add ref for splash screen manager
+  const splashManagerRef = useRef(null);
 
   // Use local state for instructions potentially modified by AI
   const [localSectionContent, setLocalSectionContent] = useState(() => {
@@ -96,6 +101,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       return { sections: [] };
     }
   });
+
+  // Make splash screen ref globally available
+  useEffect(() => {
+    window.splashManagerRef = splashManagerRef;
+  }, []);
 
   // Effect to map refs
   useEffect(() => {
@@ -369,6 +379,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
+  // Add function to show splash screen
+  const handleShowHelpSplash = () => {
+    if (splashManagerRef.current) {
+      splashManagerRef.current.showSplash();
+    } else {
+      // Fallback method
+      localStorage.removeItem('hideWelcomeSplash');
+      window.location.reload();
+    }
+  };
+
   // Combine local reset logic with hook's reset logic and add analytics
   const handleResetRequest = () => {
     // Track reset action
@@ -529,6 +550,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
+      {/* Add the splash screen manager */}
+      <ForwardedSplashScreenManager ref={splashManagerRef} />
+      
       <div className="w-full pb-6"> {/* FIXED: Reduced bottom padding */}
         {/* Use imported AppHeader component with props */}
         <AppHeader
@@ -538,6 +562,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
           setShowExamplesDialog={setShowExamplesDialog}
+          showHelpSplash={handleShowHelpSplash} // Pass function to show splash screen
           loading={isAnyLoading}
         />
 
