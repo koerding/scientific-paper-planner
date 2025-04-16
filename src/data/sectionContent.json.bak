@@ -1,0 +1,148 @@
+{
+  "title": "Scientific Paper Planner Sections",
+  "sections": [
+    {
+      "id": "question",
+      "title": "Research Question",
+      "type": "text",
+      "maxLength": 3000,
+      "inputPlaceholder": "Start writing your research question here...",
+      "instructions": {
+        "title": "Formulating Your Research Question"
+      },
+      "placeholder": "Research Question:[Write it out] \n\nSignificance/Impact: [Why it matters]\n",
+      "llmInstructions": "Please review my research question and significance statement and provide feedback. Does my question have clarity, importance, appropriate scope, and a clear type (descriptive, mechanistic, or causal)? What specific improvements would you suggest?"
+    },
+    {
+      "id": "audience",
+      "title": "Target Audience",
+      "type": "text",
+      "maxLength": 1500,
+      "inputPlaceholder": "List the target audience for your research...",
+      "instructions": {
+        "title": "Identifying Your Target Audience"
+      },
+      "placeholder": "Target Audience/Community (research fields/disciplines):\n1. \n2. \n3. \n\nSpecific Researchers/Labs (individual scientists or groups):\n1. \n2. \n3. ",
+      "llmInstructions": "Please review my target audience section. Have I clearly identified key audiences, explained how my work matters to them, named specific researchers/labs, and considered communication strategies? What specific improvements would make this section stronger?"
+    },
+    {
+      "id": "hypothesis",
+      "title": "Hypothesis",
+      "type": "text",
+      "maxLength": 2000,
+      "inputPlaceholder": "Start writing your hypotheses here...",
+      "instructions": {
+        "title": "Hypothesis-driven Research"
+      },
+      "placeholder": "Hypothesis 1: [State the first specific, testable hypothesis.]\n\nHypothesis 2: [State the second specific, testable hypothesis, distinct from H1.]\n\nWhy distinguishing these hypotheses matters:\n- \n- ",
+      "llmInstructions": "Please review my hypothesis section. Do my hypotheses align with my research question? Are they distinct, specific and testable? Have I explained why distinguishing between them matters, and how my data will help decide between them? What improvements would you suggest?"
+    },
+    {
+      "id": "theorysimulation",
+      "title": "Theory/Simulation",
+      "type": "text",
+      "maxLength": 2500,
+      "inputPlaceholder": "Describe your theoretical approach or simulation...",
+      "instructions": {
+        "title": "Theory/Simulation Approach"
+      },
+      "placeholder": "Key Theoretical Assumptions:\n- \n- \n- \n\nRelationship to Real-world Phenomena:\n\nMathematical/Computational Framework:\n\nSolution/Simulation Approach:\n\nValidation Strategy:\n\nPotential Limitations:\n\nTheoretical Significance:"
+    },
+    {
+      "id": "needsresearch",
+      "title": "Needs-Based",
+      "type": "text",
+      "maxLength": 2000,
+      "inputPlaceholder": "Define the needs your research addresses...",
+      "instructions": {
+        "title": "Needs-Based Research"
+      },
+      "placeholder": "Who needs this research:\n\nWhy they need it (specific problem to solve):\n\nCurrent approaches and their limitations:\n\nSuccess criteria (how will you measure if your solution works):\n\nAdvantages of your proposed approach:",
+      "llmInstructions": "Please review my needs-based research section. Have I clearly identified the beneficiaries and their problem? Have I discussed current solutions and their limitations? Are my success criteria clear and relevant to users? What specific improvements would make this section stronger?"
+    },
+    {
+      "id": "exploratoryresearch",
+      "title": "Exploratory",
+      "type": "text",
+      "maxLength": 2000,
+      "inputPlaceholder": "Define your exploratory approach...",
+      "instructions": {
+        "title": "Exploratory Research"
+      },
+      "placeholder": "Phenomena/data/system to explore:\n\nPotential discoveries your approach might reveal:\n1. \n2. \n3. \n\nValue of this exploration to the field:\n\nAnalytical approaches for discovery:\n\nStrategy for validating findings:",
+      "llmInstructions": "Please review my exploratory research approach. Have I clearly identified what I am exploring and why it is interesting? Have I outlined potential patterns I might find and why they matter? Are my analytical tools and validation strategies appropriate? What specific improvements would you suggest?"
+    },
+    {
+      "id": "relatedpapers",
+      "title": "Related Papers",
+      "type": "text",
+      "maxLength": 2000,
+      "inputPlaceholder": "List the related papers here...",
+      "instructions": {
+        "title": "Identifying Relevant Literature"
+      },
+      "placeholder": "Most similar papers that test related hypotheses:\n1. \n2. \n3. \n4. \n5. ",
+      "llmInstructions": "Please review my related papers section. Have I included at least 5 key papers, explained how each relates to my work, identified the gap my project fills, and included contrasting perspectives? What specific improvements would make this section stronger?"
+    },
+    {
+      "id": "experiment",
+      "title": "Experiment",
+      "type": "text",
+      "maxLength": 2500,
+      "inputPlaceholder": "Start designing your experiment here...",
+      "instructions": {
+        "title": "Experiment"
+      },
+      "placeholder": "Key Variables:\n- Independent: \n- Dependent: \n- Controlled: \n\nSample & Size Justification: \n\nData Collection Methods: \n\nPredicted Results: \n\nPotential Confounds & Mitigations:",
+      "llmInstructions": "Please review my experimental design. Does it clearly align with my research question? Have I properly defined variables, sampling, procedures, and predicted results? Have I addressed potential confounds and considered blinding where appropriate? What specific improvements would you suggest?"
+    },
+    {
+      "id": "existingdata",
+      "title": "Acquiring Pre-existing Data",
+      "type": "text",
+      "maxLength": 2500,
+      "inputPlaceholder": "Describe the pre-existing data you plan to use...",
+      "instructions": {
+        "title": "Using Pre-existing Datasets"
+      },
+      "placeholder": "Using existing datasets can save time and resources, but requires careful evaluation. It’s important to confirm that the dataset fits your question, has adequate quality, and was collected ethically. A good fit between data and question supports strong, interpretable conclusions. \n\n **Align With Question: Confirm the dataset fits your question and contains the key variables you need.** Don’t shoehorn an unrelated dataset into your question — or revise your question just to match a dataset. *Leveraging an existing dataset can be cost-effective but only if it genuinely aligns with your research goals. For instance, if you need longitudinal behavioral measures but the dataset only offers cross-sectional snapshots, that mismatch will compromise your ability to answer the question. Ensuring a tight fit prevents wasted effort on partial or unsuitable data that can’t produce the insights you need. This alignment also spares you from contorting your question into something it wasn’t meant to be. Double-check that the necessary variables, time spans, and metadata are all present and consistent with your original aims before diving into analysis.* \n\n **Source & Provenance: Say who collected the data and for what purpose.** This helps reveal potential biases or gaps. *Understanding the data’s origin story clarifies how it was gathered and any implicit assumptions in its structure. For instance, if a government agency collected it, there might be bureaucratic constraints or policy-driven sampling strategies that affect representativeness. If it comes from a private company, business interests could have shaped the variables tracked. Acknowledging these influences guides interpretation. It also flags potential biases—such as systematically missing certain demographics or using outdated measures. Documenting provenance is an ethical and practical necessity, signaling transparency to peers who might later want to replicate or expand upon your work.* \n\n **Access & Permissions: Confirm you can legally and ethically use the data.** Mention licensing, IRB approval, or data agreements as needed. *Data usage can involve strict regulations, especially if it includes personal or sensitive information. By clarifying that you have the right approvals—whether from institutional review boards, data providers, or licensing authorities—you protect both participants’ rights and your own research credibility. This section helps you avoid legal complications and ensures that your dissertation or publications won’t be retracted for unauthorized data use. Detailing how you acquired the dataset, any relevant contracts, or anonymization processes also builds trust with collaborators and reviewers, who want to see that your methods uphold best practices for privacy and compliance.* \n\n  **Data Quality: Assess whether the data is reliable and usable for your purpose.** Mention missing data, measurement noise, or known problems. *Existing data sets often come with “warts” like incomplete entries, variable coding errors, or outdated collection methods. A thorough quality check can include screening for outliers, analyzing missingness patterns, and verifying measurement scales. By documenting these findings, you indicate whether extensive cleaning or transformations are required before robust analysis can begin. This honesty also tempers expectations about the strength and scope of your results. If the dataset isn’t pristine, you can still proceed, but you must explain how you’ll address limitations. Transparency about data quality fosters confidence in your eventual interpretations and conclusions.* \n\n **Limitations of Reuse: Acknowledge downsides of using someone else’s data.** Be honest about tradeoffs in fit, flexibility, or generalizability. *While reusing existing data is efficient, there are inherent limitations. You can’t typically revise the collection protocol if you uncover gaps, and certain key variables might be absent. The sample may not represent the population you care about most. These constraints can impact internal or external validity. Being upfront about these issues allows readers to weigh your findings appropriately and reduces the chance that you’ll overclaim. Despite these tradeoffs, well-documented secondary data can still offer meaningful insights—just be sure you’re transparent about where it falls short and how that might affect your interpretations.*",
+      "llmInstructions": "Please review my plan for using pre-existing data. Does the dataset clearly fit my question? Have I addressed its source, quality, and ethical considerations? Have I been honest about limitations? What specific improvements would make this section stronger?"
+    },
+    {
+      "id": "analysis",
+      "title": "Data Analysis",
+      "type": "text",
+      "maxLength": 3000,
+      "inputPlaceholder": "Start planning your data analysis here...",
+      "instructions": {
+        "title": "Data Analysis Plan"
+      },
+      "placeholder": "Data Cleaning & Exclusions:\n\nPrimary Analysis Method:\n\nHow Analysis Addresses Research Question:\n\nUncertainty Quantification:\n\nSpecial Cases Handling:",
+      "llmInstructions": "Please review my data analysis plan. Have I clearly outlined my data cleaning procedures, statistical methods, and approaches to uncertainty? Have I addressed multiple comparisons and distinguished between planned and exploratory analyses? Does my analysis directly connect to my research question? What improvements would you suggest?"
+    },
+    {
+      "id": "process",
+      "title": "Process",
+      "type": "text",
+      "maxLength": 3000,
+      "inputPlaceholder": "Outline your process, skills, and timeline...",
+      "instructions": {
+        "title": "Research Process"
+      },
+      "placeholder": "Skills Needed vs. Skills I Have:\n\nCollaborators & Their Roles:\n\nData/Code Sharing Plan:\n\nTimeline & Milestones:\n\nObstacles & Contingencies:",
+      "llmInstructions": "Please review my process plan. Have I realistically assessed the skills needed and how to address any gaps? Have I identified collaborators and their roles? Is my timeline realistic with clear milestones? Have I addressed potential risks and open science practices? What specific improvements would strengthen this section?"
+    },
+    {
+      "id": "abstract",
+      "title": "Abstract",
+      "type": "text",
+      "maxLength": 1500,
+      "inputPlaceholder": "Draft your abstract here...",
+      "instructions": {
+        "title": "Drafting an Abstract"
+      },
+      "placeholder": "Background: [simple description based on text]\n\nObjective/Question: [simple description based on text]\n\nMethods: [simple description based on text]\n\n(Expected) Results: [simple description based on text]\n\nConclusion/Implications: [simple description based on text]",
+      "llmInstructions": "Please review my abstract. Does it concisely cover background, objective, methods, expected results, and implications? Is it clear, accessible, and compelling? What specific improvements would make this abstract more effective at drawing in readers and communicating the value of my work?"
+    }
+  ]
+}
