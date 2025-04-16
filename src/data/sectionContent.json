@@ -337,9 +337,15 @@
           "title": "Preregistration",
           "instruction": "Consider preregistering your plan. It helps further protect against unconscious bias and supports transparency.",
           "tooltip": "Preregistration means documenting your hypotheses, methods, and analysis plan before you start collecting data. Doing so can be as simple as writing a timestamped document or using an online registry. This practice counters the temptation to tweak hypotheses retroactively based on surprising results. By specifying your approach in advance, you reinforce the integrity of your study and make it simpler for others to follow your reasoning. Preregistration also opens doors for more rigorous meta-analyses in the future, as it clarifies the difference between planned tests and exploratory analyses in published work."
+        },
+        {
+          "id": "experiment_ethics_considerations",
+          "title": "Ethical Considerations",
+          "instruction": "Identify and address relevant ethical requirements for your research. This may include regulatory approvals, consent procedures, animal welfare, environmental impact, data integrity, or conflicts of interest.",
+          "tooltip": "Every research project carries ethical dimensions, regardless of discipline. For human subjects research, this includes IRB approval and informed consent. Animal studies require IACUC or equivalent oversight. Environmental research may need permits or impact assessments. In all cases, addressing data integrity, transparency about conflicts of interest, and considering potential societal implications of your work demonstrates scientific responsibility. Documenting these considerations not only satisfies institutional and journal requirements but also builds public trust in scientific work. Thinking through ethics early often improves study design by highlighting potential issues before they become problems."
         }
       ],
-      "placeholder": "Variables:\n- Independent: [What you'll manipulate]\n- Dependent: [What you'll measure]\n- Controlled: [What you'll keep constant]\n\nSample & Size Justification: [Population, sample size, power analysis]\n\nProcedure: [Key steps in data collection]\n\nPredicted Results: [Expected outcomes for each hypothesis]\n\nConfounds & Controls: [Potential issues and how you'll address them]\n\nBlinding/Preregistration: [Measures to reduce bias]"
+      "placeholder": "Variables:\n- Independent: [What you'll manipulate]\n- Dependent: [What you'll measure]\n- Controlled: [What you'll keep constant]\n\nSample & Size Justification: [Population, sample size, power analysis]\n\nProcedure: [Key steps in data collection]\n\nPredicted Results: [Expected outcomes for each hypothesis]\n\nConfounds & Controls: [Potential issues and how you'll address them]\n\nBlinding/Preregistration: [Measures to reduce bias]\n Ethical Considerations: [Relevant approvals, integrity measures, potential impact considerations]"
     },
     {
       "id": "existingdata",
@@ -425,9 +431,21 @@
           "title": "Answering the Question",
           "instruction": "Show how your analysis directly supports your question and hypotheses. Make the link between data and logic as tight and transparent as possible.",
           "tooltip": "Your analytical plan should be a logical extension of the research question, closing the loop from hypotheses to measurable outcomes. If your question is about group differences, ensure your analysis highlights comparisons. If it's about relationships, set up correlation or regression frameworks. Then interpret findings in a way that directly addresses the question. This cohesion helps readers see the thread running through every stage of your project. It also prevents you from drifting into tangential interpretations. When data analysis stays laser-focused on your original goals, your conclusions become more convincing and coherent."
+        },
+        {
+          "id": "analysis_reproducibility_checks",
+          "title": "Reproducibility Checks",
+          "instruction": "Describe how you'll validate your analysis pipeline. Consider having team members re-run analyses independently or creating automated verification tests.",
+          "tooltip": "Even well-intentioned analyses can contain errors or depend on undocumented steps. Internal validation—having someone else reproduce your results before publication—catches mistakes early. For computational work, consider implementing automated tests that verify key results remain consistent as code evolves. Detailing your validation approach demonstrates methodological rigor and increases confidence in your findings. This step also prepares you for potential reviewer questions about robustness. Remember that reproducibility goes beyond sharing code—it requires explicitly checking that others can independently arrive at the same conclusions from the same starting point."
+        },
+        {
+          "id": "analysis_interpreting_all_outcomes",
+          "title": "Interpreting All Outcomes",
+          "instruction": "Specify how you'll interpret and report null or negative findings. Commit to transparency regardless of whether hypotheses are supported.",
+          "tooltip": "Publication bias—the tendency to publish only positive results—distorts scientific understanding. Planning how you'll interpret all possible outcomes helps prevent selective reporting. Null results (finding no effect) can be as scientifically valuable as positive ones, particularly when studies are well-powered. Consider what alternative explanations you'll explore if results don't match expectations, and how you'll frame these as contributions rather than failures. This commitment to transparent reporting regardless of outcome bolsters scientific integrity. Remember that disconfirming a hypothesis is still an important scientific contribution, and journals are increasingly recognizing the value of well-conducted studies with null results."
         }
       ],
-      "placeholder": "Data Cleaning Protocol: [Exclusion criteria, handling outliers/missing data]\n\nPrimary Analysis Method: [Statistical/computational approach and justification]\n\nUncertainty Quantification: [Confidence intervals, sensitivity analysis]\n\nMultiple Comparisons Control: [FDR, Bonferroni, effect sizes]\n\nPlanned vs. Exploratory: [Pre-specified vs. post-hoc analyses]"
+      "placeholder": "Data Cleaning Protocol: [Exclusion criteria, handling outliers/missing data]\n\nPrimary Analysis Method: [Statistical/computational approach and justification]\n\nUncertainty Quantification: [Confidence intervals, sensitivity analysis]\n\nMultiple Comparisons Control: [FDR, Bonferroni, effect sizes]\n\nPlanned vs. Exploratory: [Pre-specified vs. post-hoc analyses]\n Reproducibility Validation: [Internal verification methods, computational validation tests]\n Null Result Approach: [How you'll interpret and report non-significant findings]"
     },
     {
       "id": "process",
