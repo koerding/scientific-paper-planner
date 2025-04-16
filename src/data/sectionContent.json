@@ -12,7 +12,7 @@
         {
           "id": "question_question_clarity",
           "title": "Question Clarity",
-          "instruction": "Make sure the research question is clearly and unambiguously stated? A well-formed question should be understandable on its own. Avoid vague terms unless you define them. Ideally, a peer from your program should know what you are asking just by reading this sentence or two.",
+          "instruction": "Make sure the research question is clearly and unambiguously stated? A well-formed question should be understandable on its own. Avoid vague terms unless you define them. Use absolutely no jargon. Ideally, a peer from your program should know what you are asking just by reading this sentence or two.",
           "tooltip": "Clarity anchors your entire research endeavor. When your question is unambiguous, it helps align your methods, data collection, and interpretation. It also gives peers and advisors an immediate grasp of what you're investigating, making their feedback more targeted and constructive. Ambiguity, on the other hand, can lead to misaligned expectations or conflicting interpretations. By defining each term and concept up front, you reduce confusion, create a strong foundation for hypothesis building, and facilitate clearer communication. Ultimately, the clearer your research question, the more coherent and persuasive your final dissertation will be."
         },
         {
