@@ -6,7 +6,7 @@ import './index.css';
 import App from './App';
 
 // Initialize Google Analytics with your tracking ID
-const TRACKING_ID = "G-4QKEE0HDSJ; // Replace with your actual tracking ID
+const TRACKING_ID = "G-4QKEE0HDSJ"; // Replace with your actual tracking ID
 ReactGA.initialize(TRACKING_ID);
 
 // Track the initial pageview
