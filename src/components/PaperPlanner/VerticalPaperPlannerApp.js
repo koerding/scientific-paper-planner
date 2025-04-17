@@ -1,4 +1,4 @@
-// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
+// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Updated version
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
@@ -12,16 +12,14 @@ import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
-// Removed import for ReviewPaperButton since it's not needed
-import ReviewPaperModal from '../modals/ReviewPaperModal';
 import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 import AppHeader from '../layout/AppHeader';
 import PrivacyPolicyModal from '../modals/PrivacyPolicyModal';
+import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
 } from '../../services/instructionImprovementService';
-import { reviewScientificPaper } from '../../services/paperReviewService';
 import {
   trackSectionChange,
   trackInstructionImprovement,
@@ -33,8 +31,12 @@ import {
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Paper Planner with research approach and data acquisition toggles
- * FIXED: Removed duplicate review button, fixed showHelpSplash, updated AppHeader props
+ * Enhanced Project Planner with research approach and data acquisition toggles
+ * FIXES:
+ * - Changed "Paper" to "Project" throughout the component
+ * - Fixed proper handling of AI loading states
+ * - Fixed Help button functionality to show splash screen
+ * - Improved button disabling when any AI feature is loading
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -54,7 +56,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSendMessage,
     resetProject: hookResetProject,
     exportProject,
-    saveProject: hookSaveProject,
     loadProject,
     importDocumentContent
   } = usePaperPlannerHook;
@@ -68,16 +69,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [loading, setLoading] = useState(false); // Track overall loading state
   const [showSaveDialog, setShowSaveDialog] = useState(false); // State for save dialog
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false); // State for privacy policy
-  const [showHelpSplash, setShowHelpSplash] = useState(false); // Added state for help splash
-  const [reviewLoading, setReviewLoading] = useState(false); // State for review loading
-  const [showReviewModal, setShowReviewModal] = useState(false); // State for review modal
-  const [reviewData, setReviewData] = useState(null); // State for review data
   const sectionRefs = useRef({});
   
   // New states for tracking improvement reminders
   const [lastImprovementTime, setLastImprovementTime] = useState(Date.now());
   const [editEvents, setEditEvents] = useState([]);
   const [significantEditsMade, setSignificantEditsMade] = useState(false);
+  
+  // Add ref for splash screen manager
+  const splashManagerRef = useRef(null);
 
   // Use local state for instructions potentially modified by AI
   const [localSectionContent, setLocalSectionContent] = useState(() => {
@@ -88,6 +88,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       return { sections: [] };
     }
   });
+
+  // Make splash screen ref globally available
+  useEffect(() => {
+    window.splashManagerRef = splashManagerRef;
+  }, []);
 
   // Effect to map refs
   useEffect(() => {
@@ -165,20 +170,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Helper to check if section has meaningful content beyond placeholder
   const hasSectionContent = (sectionId) => {
     const content = userInputs[sectionId];
-    const section = localSectionContent?.sections?.find(s => s?.id === sectionId);
+    const section = localSectionContent.sections.find(s => s?.id === sectionId);
     const placeholder = section?.placeholder || '';
     const stringContent = typeof content === 'string' ? content : JSON.stringify(content);
     return stringContent && stringContent.trim() !== '' && stringContent !== placeholder;
-  };
-
-  // Handler for Help Splash button
-  const handleShowHelpSplash = () => {
-    setShowHelpSplash(true);
-    // Track when users view the help splash
-    ReactGA.event({
-      category: 'Help',
-      action: 'Show Help Splash'
-    });
   };
 
   // Section completion status detection
@@ -280,8 +275,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Handle magic (improving instructions) with analytics tracking
   const handleMagic = async () => {
-    // Don't allow instruction improvement during loading
-    if (loading) return;
+    // FIXED: Don't allow instruction improvement during any AI loading state
+    if (isAnyAiLoading) return;
     
     // Track improvement attempt in analytics
     trackInstructionImprovement(activeSection);
@@ -371,58 +366,16 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Handle paper review with tracking
-  const handleReviewPaper = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    setReviewLoading(true);
-    try {
-      // Track review attempt in analytics
-      ReactGA.event({
-        category: 'Paper Review',
-        action: 'Start Review',
-        label: file.type
-      });
-      
-      // Show a loading indicator
-      const result = await reviewScientificPaper(file);
-      
-      if (result.success) {
-        // Set the review data state
-        setReviewData(result);
-        // Show the review modal
-        setShowReviewModal(true);
-        
-        // Track successful review
-        ReactGA.event({
-          category: 'Paper Review',
-          action: 'Review Success',
-          label: file.name
-        });
-      } else {
-        // Handle errors
-        alert(`Error reviewing paper: ${result.error || 'Unknown error'}`);
-        
-        // Track failed review
-        ReactGA.event({
-          category: 'Paper Review',
-          action: 'Review Error',
-          label: result.error || 'Unknown error'
-        });
-      }
-    } catch (error) {
-      console.error("Error in review process:", error);
-      alert(`Failed to review paper: ${error.message || 'Unknown error occurred'}`);
-      
-      // Track exception
-      ReactGA.event({
-        category: 'Paper Review',
-        action: 'Review Exception',
-        label: error.message || 'Unknown error'
-      });
-    } finally {
-      setReviewLoading(false);
+  // FIXED: Add proper function to show splash screen
+  const handleShowHelpSplash = () => {
+    if (splashManagerRef.current) {
+      console.log("Showing splash screen via ref");
+      splashManagerRef.current.showSplash();
+    } else {
+      // Fallback method
+      console.log("Showing splash screen via localStorage fallback");
+      localStorage.removeItem('hideWelcomeSplash');
+      window.location.reload();
     }
   };
 
@@ -453,7 +406,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setSignificantEditsMade(false);
   };
 
-  // Modified save function to show dialog with analytics
+  // UPDATED: Modified save function to show dialog with analytics
   const handleSaveProject = () => {
     // Track save action
     trackSave();
@@ -467,13 +420,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     exportProject();
   };
 
-  // Function to actually save the project with filename from dialog
+  // NEW: Function to actually save the project with filename from dialog
   const saveProjectWithFilename = (fileName) => {
     try {
       console.log("Save function triggered with filename:", fileName);
       
       // Generate a safe filename
-      const safeFileName = fileName.trim() || 'scientific-paper-plan';
+      const safeFileName = fileName.trim() || 'scientific-project-plan';
       
       // Add the .json extension if not present
       const finalFileName = safeFileName.endsWith('.json') ? safeFileName : `${safeFileName}.json`;
@@ -564,7 +517,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         loading={chatLoading && currentSectionIdForChat === section.id}
         sectionRef={sectionRefs.current[section.id]}
         onClick={() => setActiveSectionWithManualFlag(section.id)}
-        useLargerFonts={false} // Use smaller fonts for more compact layout
+        useLargerFonts={false} // FIXED: Use smaller fonts for more compact layout
         onEdit={handleEdit}
         onSignificantEdit={handleSignificantEdit}
       />
@@ -581,30 +534,31 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Combined loading state to properly disable buttons
-  const isAnyLoading = loading || chatLoading || improvingInstructions || reviewLoading;
+  // FIXED: Combined loading state to properly disable ALL buttons when ANY AI feature is loading
+  const isAnyAiLoading = loading || chatLoading || improvingInstructions;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="w-full pb-6"> {/* Reduced bottom padding */}
+      {/* Add the splash screen manager */}
+      <ForwardedSplashScreenManager ref={splashManagerRef} />
+      
+      <div className="w-full pb-6"> {/* FIXED: Reduced bottom padding */}
         {/* Use imported AppHeader component with props */}
         <AppHeader
           resetProject={() => setShowConfirmDialog(true)}
           exportProject={handleExportRequest}
-          saveProject={handleSaveProject}
+          saveProject={handleSaveProject} // UPDATED: Now shows save dialog
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
-          reviewPaper={handleReviewPaper}
-          reviewLoading={reviewLoading} // Pass the reviewLoading state to header
           setShowExamplesDialog={setShowExamplesDialog}
-          showHelpSplash={handleShowHelpSplash} // Pass the handler function
-          loading={isAnyLoading}
+          showHelpSplash={handleShowHelpSplash} // FIXED: Now properly passes the function to show splash screen
+          loading={isAnyAiLoading}
         />
 
         {/* Main content area */}
         <div style={{ paddingTop: '40px' }}>
           <div className="flex">
-            {/* Left panel with full half-width */}
+            {/* RESTORED: Left panel with full half-width */}
             <div className="w-half px-4 py-2" style={{ width: '50%' }}>
               {/* Display Research Question first */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
@@ -622,7 +576,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
                 .map(section => renderSection(section))}
 
-              {/* Target Audience section after Research Approach block */}
+              {/* MOVED: Target Audience section after Research Approach block */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => section?.id === 'audience')
                 .map(section => renderSection(section))}
@@ -638,7 +592,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 setActiveMethod={handleDataMethodToggle}
               />
 
-              {/* Display active data acquisition section */}
+              {/* Display active data acquisition section - FIXED: Added theorysimulation */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
                 .map(section => renderSection(section))}
@@ -650,10 +604,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             </div>
           </div>
 
-          {/* Fixed-height footer with Privacy Policy link */}
+          {/* Fixed-height footer with Privacy Policy link - FIXED: Changed "Paper" to "Project" */}
           <div className="text-center text-gray-500 text-sm mt-6 border-t border-gray-200 pt-3 pb-3 bg-white">
             <p>
-              Scientific Paper Planner • Designed with Love for Researchers by Konrad @Kordinglab • {new Date().getFullYear()}
+              Scientific Project Planner • Designed with Love for Researchers by Konrad @Kordinglab • {new Date().getFullYear()}
               <span className="mx-2">•</span>
               <button 
                 onClick={() => {
@@ -688,14 +642,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           handleMagicClick={handleMagic}
         />
 
-        {/* Floating Magic Button */}
+        {/* Floating Magic Button - FIXED: Use isAnyAiLoading for better loading state handling */}
         <FloatingMagicButton
           handleMagicClick={handleMagic}
-          loading={improvingInstructions || loading}
+          loading={isAnyAiLoading} // FIXED: Disable during any AI loading state
           onboardingStep={onboardingStep}
         />
-
-        {/* ReviewPaperButton removed - only using the one in the AppHeader */}
 
         <ModernChatInterface
           currentSection={currentSectionIdForChat}
@@ -704,7 +656,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           currentMessage={currentMessage}
           setCurrentMessage={setCurrentMessage}
           handleSendMessage={handleSendMessage}
-          loading={chatLoading || loading}
+          loading={isAnyAiLoading} // FIXED: Use combined loading state
           currentSectionData={sectionDataForPanel}
           onboardingStep={onboardingStep}
         />
@@ -722,24 +674,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           loadProject={loadProject}
         />
 
-        {/* Privacy Policy Modal */}
+        {/* NEW: Privacy Policy Modal */}
         <PrivacyPolicyModal 
           showModal={showPrivacyPolicy} 
           onClose={() => setShowPrivacyPolicy(false)} 
         />
 
-        {/* Save Dialog */}
+        {/* NEW: Save Dialog */}
         <SaveDialog
           showSaveDialog={showSaveDialog}
           setShowSaveDialog={setShowSaveDialog}
           saveProject={saveProjectWithFilename}
-        />
-
-        {/* Review Paper Modal */}
-        <ReviewPaperModal
-          showModal={showReviewModal}
-          onClose={() => setShowReviewModal(false)}
-          reviewData={reviewData}
         />
       </div>
     </div>
