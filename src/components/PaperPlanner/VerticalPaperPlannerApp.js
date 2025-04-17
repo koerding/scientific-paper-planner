@@ -79,6 +79,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [editEvents, setEditEvents] = useState([]);
   const [significantEditsMade, setSignificantEditsMade] = useState(false);
 
+  const [showHelpSplash, setShowHelpSplash] = useState(false);
+
+  
   // Use local state for instructions potentially modified by AI
   const [localSectionContent, setLocalSectionContent] = useState(() => {
     try {
@@ -260,6 +263,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Handle edit events for improvement reminder
   const handleEdit = (sectionId, timestamp) => {
     setEditEvents(prev => [...prev, { sectionId, timestamp, type: 'edit' }]);
+  };
+
+  const handleShowHelpSplash = () => {  
+    setShowHelpSplash(true);
+    // Track when users view the help splash
+    ReactGA.event({
+      category: 'Help',
+      action: 'Show Help Splash'  
+    });
   };
 
   // Handle significant edit events for improvement reminder
@@ -556,9 +568,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           saveProject={handleSaveProject}
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
-          reviewPaper={handleReviewPaper} // Add review paper function
+          reviewPaper={handleReviewPaper}
           setShowExamplesDialog={setShowExamplesDialog}
-          showHelpSplash={showHelpSplash}
+          showHelpSplash={handleShowHelpSplash} // Pass the function instead of a boolean
           loading={isAnyLoading}
         />
 
