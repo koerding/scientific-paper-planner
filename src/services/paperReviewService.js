@@ -181,8 +181,7 @@ You want the logic of papers to be clear and tight. Use the following criteria t
 
 ${reviewCriteria}
 
-Use these criteria to evaluate the paper section by section. Start with a brief summary of the paper, focusing on its logic and scientific rigor. 
-Then provide detailed comments for each section, highlighting both strengths and weaknesses.
+Use these criteria to evaluate the paper taking into account all the sections and subsections of the review criteria. 
 
 Format your review as follows:
 1. Paper Summary (1-2 paragraphs)
