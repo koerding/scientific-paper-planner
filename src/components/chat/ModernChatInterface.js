@@ -11,6 +11,7 @@ import '../../styles/PaperPlanner.css';
  * UPDATED: Added GA4 tracking for chat interactions
  * FIXED: Changed "Paper" to "Project" in title
  * FIXED: Better handling of loading states with other AI features
+ * FIXED: Now shows proper loading animation when ANY AI feature is processing
  */
 const ModernChatInterface = ({
   currentSection,
@@ -84,7 +85,7 @@ const ModernChatInterface = ({
           style={{ transform: 'translateZ(0)' }}
         >
           <button
-            onClick={toggleChat}
+            onClick={loading ? null : toggleChat} // Prevent click when loading
             disabled={loading}
             className={`
               flex items-center justify-center 
@@ -102,10 +103,22 @@ const ModernChatInterface = ({
             title="Ask AI for help on this section"
             aria-label="Open chat"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-            </svg>
-            Let's talk about this
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                </svg>
+                Let's talk about this
+              </>
+            )}
           </button>
           {/* Onboarding Tooltip - improved positioning */}
           {showChatHighlight && (
