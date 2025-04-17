@@ -28,8 +28,7 @@ import {
   trackApproachToggle,
   trackDataMethodToggle,
   trackExport,
-  trackSave,
-  trackEvent
+  trackSave
 } from '../../utils/analyticsUtils';
 import '../../styles/PaperPlanner.css';
 
@@ -362,16 +361,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Handle paper review with tracking
+  // NEW: Handle paper review with tracking
   const handleReviewPaper = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
     setReviewLoading(true);
     try {
-      // Track this event in analytics
-      trackEvent('Paper Review', 'Start Review', file.type);
-      
       // Show a loading indicator
       const result = await reviewScientificPaper(file);
       
@@ -380,19 +376,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         setReviewData(result);
         // Show the review modal
         setShowReviewModal(true);
-        // Track successful review
-        trackEvent('Paper Review', 'Review Success', file.name);
       } else {
         // Handle errors
         alert(`Error reviewing paper: ${result.error || 'Unknown error'}`);
-        // Track failed review
-        trackEvent('Paper Review', 'Review Error', result.error || 'Unknown error');
       }
     } catch (error) {
       console.error("Error in review process:", error);
       alert(`Failed to review paper: ${error.message || 'Unknown error occurred'}`);
-      // Track exception
-      trackEvent('Paper Review', 'Exception', error.message || 'Unknown error');
     } finally {
       setReviewLoading(false);
     }
@@ -666,7 +656,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           onboardingStep={onboardingStep}
         />
 
-        {/* Review Paper Button - NEW */}
+        {/* NEW: Review Paper Button */}
         <ReviewPaperButton
           handleReviewPaper={handleReviewPaper}
           loading={reviewLoading}
@@ -711,7 +701,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           saveProject={saveProjectWithFilename}
         />
 
-        {/* Review Paper Modal - NEW */}
+        {/* NEW: Review Paper Modal */}
         <ReviewPaperModal
           showModal={showReviewModal}
           onClose={() => setShowReviewModal(false)}
