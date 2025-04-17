@@ -196,6 +196,7 @@ Format your review as follows:
 Key background.
 The goal of this is to show readers the ins and outs of writing good papers, so clarity is of utmost importance while politeness is less central. 
 Refer to the authors as "the authors".
+Make the section names boldfaced.
 
 
 
