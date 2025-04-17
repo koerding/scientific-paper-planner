@@ -9,6 +9,8 @@ import '../../styles/PaperPlanner.css';
  * Modernized chat interface with fixed layout issues
  * UPDATED: Added purple text for AI messages to match FullHeightInstructionsPanel
  * UPDATED: Added GA4 tracking for chat interactions
+ * FIXED: Changed "Paper" to "Project" in title
+ * FIXED: Better handling of loading states with other AI features
  */
 const ModernChatInterface = ({
   currentSection,
@@ -129,7 +131,7 @@ const ModernChatInterface = ({
           zIndex: 1000 // FIXED: Increased z-index to be higher than the improve instructions button (z-40)
         }}
       >
-        {/* Chat header - FIXED: properly centered alignment */}
+        {/* Chat header - FIXED: properly centered alignment and changed "Paper" to "Project" */}
         <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center chat-header">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold mr-3">
