@@ -190,6 +190,8 @@ Format your review as follows:
 4. Only comment on issues that a paper should comment on. E.g. no reason to ask if the paper explicitly says what its audience is.
 5. However, do make sure that you check if the paper properly cites and relates to its relevant intellectual traditions.
 6. Focus on relations. e.g. Do the hypotheses go with the question? Are they answered? 
+7. Make sure that the paper is experimental, data generation, or theory, and check that it fulfills the key criteria of that section.
+8. Also check if this is hypothesis driven, needs driven, or exploratory research and check if the key criteria for the one that is the best fit are fulfilled.
 
 
 The paper for review:
