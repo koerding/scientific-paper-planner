@@ -5,6 +5,7 @@ import React from 'react';
 /**
  * Updated splash screen component to welcome new users
  * ADDED: Information about new "Review Paper" feature
+ * FIXED: Removed analytics dependencies
  */
 const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   const handleDontShowAgain = () => {
