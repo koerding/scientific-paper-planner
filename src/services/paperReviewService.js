@@ -2,7 +2,7 @@
 
 /**
  * Paper review service for analyzing scientific papers against quality criteria
- * FIXED: Updated to properly use the callOpenAI function
+ * FIXED: Updated to properly use the callOpenAI function without response_format issues
  */
 import { callOpenAI } from './openaiService';
 import sectionContentData from '../data/sectionContent.json';
@@ -198,11 +198,11 @@ ${documentText.substring(0, 50000)}${documentText.length > 50000 ? ' [truncated]
     // Call OpenAI API to generate the review
     console.log("Sending review request to OpenAI...");
     
-    // IMPORTANT CHANGE: Use proper parameters to send to OpenAI consistently with other calls
-    // This was causing the issue with the "I can't read your PDF" response
+    // IMPORTANT CHANGE: Use proper parameters to work with your service
+    // The key change here is NOT to set the response_format or JSON mode flag
     const reviewResult = await callOpenAI(
       userPrompt,                 // The prompt with paper text and criteria
-      "paper_review",             // Context type
+      "general",                  // Use "general" context type to avoid JSON mode
       {},                         // Empty user inputs (not needed)
       sectionContentData.sections, // Section info for context
       {                           // Options
