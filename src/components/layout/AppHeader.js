@@ -202,6 +202,21 @@ const AppHeader = ({
               </svg>
               Export
             </button>
+
+            {/* Paper Review button */}
+            <button
+              onClick={() => alert("Paper review feature will be implemented in the next update")}
+              disabled={isImporting}
+              className={`inline-flex items-center px-2 py-1 border border-green-500 bg-green-600 rounded-md shadow-sm text-xs font-medium 
+                ${isImporting 
+                  ? 'text-gray-200 bg-green-400 cursor-not-allowed opacity-75' 
+                  : 'text-white hover:bg-green-700 cursor-pointer'}`}
+            >
+              <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Review Paper
+            </button>
             
             {/* FIXED: Help button now properly calls the showHelpSplash function */}
             <button
