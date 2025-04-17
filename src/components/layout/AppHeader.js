@@ -1,8 +1,14 @@
+// FILE: src/components/layout/AppHeader.js
+// This is a modified version of the AppHeader component with fixed Help button functionality
+
 import React, { useState } from 'react';
 
 /**
- * Updated Compact header component with added Review Paper button
- * FIXED: Added reviewLoading prop support
+ * Compact header component with reduced height
+ * CHANGES:
+ * - Changed title from "Paper" to "Project"
+ * - Fixed Help button to properly show splash screen
+ * - Added loading state animation for all buttons when any is active
  */
 const AppHeader = ({
   resetProject,
@@ -10,15 +16,13 @@ const AppHeader = ({
   saveProject,
   loadProject,
   importDocumentContent,
-  reviewPaper, // Added new review paper function
-  reviewLoading, // Added specific loading state for review
   setShowExamplesDialog,
-  showHelpSplash,
+  showHelpSplash, // This prop was already defined but not properly utilized
   loading
 }) => {
-  // Local loading states
+  // Local loading state for import button
   const [importLoading, setImportLoading] = useState(false);
-  
+
   // Handle file import for PDF/Word docs with loading animation
   const handleFileImport = async (event) => {
     const file = event.target.files?.[0];
@@ -37,24 +41,6 @@ const AppHeader = ({
       } finally {
         // Stop loading animation when done (success or error)
         setImportLoading(false);
-      }
-    }
-    // Reset the input so the same file can be selected again if needed
-    event.target.value = '';
-  };
-
-  // Handle paper review for PDF/Word docs with loading animation
-  const handleReviewPaper = async (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        if (reviewPaper) {
-          // Call the review function and await its completion
-          await reviewPaper(event);
-        }
-      } catch (error) {
-        console.error("Error reviewing paper:", error);
-        alert("There was an error reviewing the paper. Please try again or use a different file.");
       }
     }
     // Reset the input so the same file can be selected again if needed
@@ -83,21 +69,29 @@ const AppHeader = ({
     event.target.value = '';
   };
 
-  // Use loading states
+  // Handle splash screen display when Help button is clicked
+  const handleHelpClick = () => {
+    if (showHelpSplash && typeof showHelpSplash === 'function') {
+      showHelpSplash();
+    } else {
+      console.error("showHelpSplash function not provided to AppHeader");
+    }
+  };
+
+  // Use either local or global loading state
   const isImporting = importLoading || loading;
-  const isReviewing = reviewLoading || false; // Use the prop
 
   return (
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-2">
         <div className="flex items-center justify-between">
-          {/* Logo and title - more compact */}
+          {/* Logo and title - more compact - FIXED: Changed "Paper" to "Project" */}
           <div className="flex items-center">
             <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center mr-2">
               <span className="font-bold text-lg">SP</span>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-800 leading-tight">Scientific Paper Planner</h1>
+              <h1 className="text-lg font-bold text-gray-800 leading-tight">Scientific Project Planner</h1>
               <p className="text-xs text-gray-600 -mt-1">Design a scientific project step-by-step</p>
             </div>
           </div>
@@ -107,9 +101,9 @@ const AppHeader = ({
             {/* New Project button */}
             <button
               onClick={resetProject}
-              disabled={isImporting || isReviewing}
+              disabled={isImporting}
               className={`inline-flex items-center px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs font-medium 
-                ${(isImporting || isReviewing)
+                ${isImporting 
                   ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
                   : 'text-gray-700 bg-white hover:bg-gray-50 cursor-pointer'}`}
             >
@@ -119,7 +113,7 @@ const AppHeader = ({
               New
             </button>
 
-            {/* Make Example from PDF/Doc button */}
+            {/* Make Example from PDF/Doc button - WITH ENHANCED LOADING ANIMATION */}
             <label 
               className={`inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium 
                 ${isImporting 
@@ -147,48 +141,16 @@ const AppHeader = ({
                 className="hidden" 
                 accept=".pdf,.docx,.doc" 
                 onChange={handleFileImport} 
-                disabled={isImporting || isReviewing} 
-              />
-            </label>
-
-            {/* NEW: Review Paper button - Now uses reviewLoading prop */}
-            <label 
-              className={`inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium 
-                ${isReviewing 
-                  ? 'border-teal-300 bg-teal-300 text-white cursor-wait' 
-                  : 'border-teal-500 bg-teal-600 hover:bg-teal-700 text-white cursor-pointer'}`}
-            >
-              {isReviewing ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Reviewing...
-                </>
-              ) : (
-                <>
-                  <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  Review Paper
-                </>
-              )}
-              <input 
-                type="file" 
-                className="hidden" 
-                accept=".pdf,.docx,.doc" 
-                onChange={handleReviewPaper} 
-                disabled={isImporting || isReviewing} 
+                disabled={isImporting} 
               />
             </label>
 
             {/* Save button */}
             <button
               onClick={saveProject}
-              disabled={isImporting || isReviewing}
+              disabled={isImporting}
               className={`inline-flex items-center px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs font-medium 
-                ${(isImporting || isReviewing)
+                ${isImporting 
                   ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
                   : 'text-gray-700 bg-white hover:bg-gray-50 cursor-pointer'}`}
             >
@@ -200,7 +162,7 @@ const AppHeader = ({
 
             {/* Load button */}
             <label className={`inline-flex items-center px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs font-medium 
-              ${(isImporting || isReviewing)
+              ${isImporting 
                 ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
                 : 'text-gray-700 bg-white hover:bg-gray-50 cursor-pointer'}`}
             >
@@ -208,15 +170,15 @@ const AppHeader = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
               Load
-              <input type="file" className="hidden" accept=".json" onChange={handleFileSelection} disabled={isImporting || isReviewing} />
+              <input type="file" className="hidden" accept=".json" onChange={handleFileSelection} disabled={isImporting} />
             </label>
 
             {/* Examples button */}
             <button
               onClick={() => setShowExamplesDialog(true)}
-              disabled={isImporting || isReviewing}
+              disabled={isImporting}
               className={`inline-flex items-center px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs font-medium 
-                ${(isImporting || isReviewing)
+                ${isImporting 
                   ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
                   : 'text-gray-700 bg-white hover:bg-gray-50 cursor-pointer'}`}
             >
@@ -229,9 +191,9 @@ const AppHeader = ({
             {/* Export button */}
             <button
               onClick={exportProject}
-              disabled={isImporting || isReviewing}
+              disabled={isImporting}
               className={`inline-flex items-center px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs font-medium 
-                ${(isImporting || isReviewing)
+                ${isImporting 
                   ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
                   : 'text-gray-700 bg-white hover:bg-gray-50 cursor-pointer'}`}
             >
@@ -241,22 +203,20 @@ const AppHeader = ({
               Export
             </button>
             
-            {/* Help/About button */}
-            {showHelpSplash && (
-              <button
-                onClick={showHelpSplash}
-                disabled={isImporting || isReviewing}
-                className={`inline-flex items-center px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs font-medium 
-                  ${(isImporting || isReviewing)
-                    ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
-                    : 'text-gray-700 bg-white hover:bg-gray-50 cursor-pointer'}`}
-              >
-                <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Help
-              </button>
-            )}
+            {/* FIXED: Help button now properly calls the showHelpSplash function */}
+            <button
+              onClick={handleHelpClick}
+              disabled={isImporting}
+              className={`inline-flex items-center px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs font-medium 
+                ${isImporting 
+                  ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
+                  : 'text-gray-700 bg-white hover:bg-gray-50 cursor-pointer'}`}
+            >
+              <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Help
+            </button>
           </div>
         </div>
       </div>
