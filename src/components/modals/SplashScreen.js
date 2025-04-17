@@ -110,7 +110,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               </div>
               <div>
                 <p className="font-medium text-gray-800">Review existing papers</p>
-                <p className="text-gray-600 text-sm">Use the paper review feature to see checks for common issues in scientific papers</p>
+                <p className="text-gray-600 text-sm">Use paper review to see checks for the issues you work on here in other papers</p>
               </div>
             </div>
           </div>
