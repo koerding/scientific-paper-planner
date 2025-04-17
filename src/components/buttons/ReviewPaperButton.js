@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 /**
  * Review Paper button component that matches the styling of other AI features
  * Allows users to upload a paper for critical review against scientific standards
+ * FIXED: Removed dependencies
  */
 const ReviewPaperButton = ({ handleReviewPaper, loading, onboardingStep }) => {
   // Determine if the review button should be highlighted based on onboarding step
