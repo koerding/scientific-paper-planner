@@ -12,43 +12,31 @@ import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
+import ReviewPaperButton from '../buttons/ReviewPaperButton';
+import ReviewPaperModal from '../modals/ReviewPaperModal';
 import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 import AppHeader from '../layout/AppHeader';
 import PrivacyPolicyModal from '../modals/PrivacyPolicyModal';
-import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
 } from '../../services/instructionImprovementService';
+import { reviewScientificPaper } from '../../services/paperReviewService';
 import {
   trackSectionChange,
   trackInstructionImprovement,
   trackApproachToggle,
   trackDataMethodToggle,
   trackExport,
-  trackSave
+  trackSave,
+  trackEvent
 } from '../../utils/analyticsUtils';
 import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
- * FIXES:
- * - Proper header spacing with paddingTop
- * - Fixed alignment between panels
- * - Improved fixed positioning for instructions panel
- * - Better handling of footer spacing
- * - Added loading animation for PDF import
- * - FIXED: Properly disable Magic button during PDF import
- * - FIXED: Added direct save implementation
- * - FIXED: Reduced overall whitespace and simplified layout
- * - FIXED: Consistent font styles between left and right panels
- * - RESTORED: Left cards layout with proper width/spacing
- * - UPDATED: Moved Target Audience section after Research Approach block
- * - ADDED: Save dialog to prompt for file name when saving
- * - ADDED: Theory/Simulation option in data acquisition methods filter
- * - ADDED: Improvement reminder toast after 3 minutes of editing
- * - ADDED: Google Analytics 4 tracking for user interactions
- * - FIXED: Properly integrated splash screen manager
+ * REFACTORED: Added "Review Paper" functionality
+ * UPDATED: Added ReviewPaperButton and ReviewPaperModal components
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -80,17 +68,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [improvingInstructions, setImprovingInstructions] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [loading, setLoading] = useState(false); // Track overall loading state
-  const [showSaveDialog, setShowSaveDialog] = useState(false); // New state for save dialog
-  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false); // New state for privacy policy
+  const [showSaveDialog, setShowSaveDialog] = useState(false); // State for save dialog
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false); // State for privacy policy
+  const [reviewLoading, setReviewLoading] = useState(false); // New state for review loading
+  const [showReviewModal, setShowReviewModal] = useState(false); // New state for review modal
+  const [reviewData, setReviewData] = useState(null); // New state for review data
   const sectionRefs = useRef({});
   
   // New states for tracking improvement reminders
   const [lastImprovementTime, setLastImprovementTime] = useState(Date.now());
   const [editEvents, setEditEvents] = useState([]);
   const [significantEditsMade, setSignificantEditsMade] = useState(false);
-  
-  // Add ref for splash screen manager
-  const splashManagerRef = useRef(null);
 
   // Use local state for instructions potentially modified by AI
   const [localSectionContent, setLocalSectionContent] = useState(() => {
@@ -101,11 +89,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       return { sections: [] };
     }
   });
-
-  // Make splash screen ref globally available
-  useEffect(() => {
-    window.splashManagerRef = splashManagerRef;
-  }, []);
 
   // Effect to map refs
   useEffect(() => {
@@ -183,7 +166,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Helper to check if section has meaningful content beyond placeholder
   const hasSectionContent = (sectionId) => {
     const content = userInputs[sectionId];
-    const section = localSectionContent.sections.find(s => s?.id === sectionId);
+    const section = localSectionContent?.sections?.find(s => s?.id === sectionId);
     const placeholder = section?.placeholder || '';
     const stringContent = typeof content === 'string' ? content : JSON.stringify(content);
     return stringContent && stringContent.trim() !== '' && stringContent !== placeholder;
@@ -288,7 +271,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Handle magic (improving instructions) with analytics tracking
   const handleMagic = async () => {
-    // FIXED: Don't allow instruction improvement during loading
+    // Don't allow instruction improvement during loading
     if (loading) return;
     
     // Track improvement attempt in analytics
@@ -379,14 +362,39 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Add function to show splash screen
-  const handleShowHelpSplash = () => {
-    if (splashManagerRef.current) {
-      splashManagerRef.current.showSplash();
-    } else {
-      // Fallback method
-      localStorage.removeItem('hideWelcomeSplash');
-      window.location.reload();
+  // Handle paper review with tracking
+  const handleReviewPaper = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setReviewLoading(true);
+    try {
+      // Track this event in analytics
+      trackEvent('Paper Review', 'Start Review', file.type);
+      
+      // Show a loading indicator
+      const result = await reviewScientificPaper(file);
+      
+      if (result.success) {
+        // Set the review data state
+        setReviewData(result);
+        // Show the review modal
+        setShowReviewModal(true);
+        // Track successful review
+        trackEvent('Paper Review', 'Review Success', file.name);
+      } else {
+        // Handle errors
+        alert(`Error reviewing paper: ${result.error || 'Unknown error'}`);
+        // Track failed review
+        trackEvent('Paper Review', 'Review Error', result.error || 'Unknown error');
+      }
+    } catch (error) {
+      console.error("Error in review process:", error);
+      alert(`Failed to review paper: ${error.message || 'Unknown error occurred'}`);
+      // Track exception
+      trackEvent('Paper Review', 'Exception', error.message || 'Unknown error');
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -417,7 +425,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setSignificantEditsMade(false);
   };
 
-  // UPDATED: Modified save function to show dialog with analytics
+  // Modified save function to show dialog with analytics
   const handleSaveProject = () => {
     // Track save action
     trackSave();
@@ -431,7 +439,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     exportProject();
   };
 
-  // NEW: Function to actually save the project with filename from dialog
+  // Function to actually save the project with filename from dialog
   const saveProjectWithFilename = (fileName) => {
     try {
       console.log("Save function triggered with filename:", fileName);
@@ -528,7 +536,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         loading={chatLoading && currentSectionIdForChat === section.id}
         sectionRef={sectionRefs.current[section.id]}
         onClick={() => setActiveSectionWithManualFlag(section.id)}
-        useLargerFonts={false} // FIXED: Use smaller fonts for more compact layout
+        useLargerFonts={false} // Use smaller fonts for more compact layout
         onEdit={handleEdit}
         onSignificantEdit={handleSignificantEdit}
       />
@@ -545,31 +553,29 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // FIXED: Combined loading state to properly disable buttons
-  const isAnyLoading = loading || chatLoading || improvingInstructions;
+  // Combined loading state to properly disable buttons
+  const isAnyLoading = loading || chatLoading || improvingInstructions || reviewLoading;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Add the splash screen manager */}
-      <ForwardedSplashScreenManager ref={splashManagerRef} />
-      
-      <div className="w-full pb-6"> {/* FIXED: Reduced bottom padding */}
+      <div className="w-full pb-6"> {/* Reduced bottom padding */}
         {/* Use imported AppHeader component with props */}
         <AppHeader
           resetProject={() => setShowConfirmDialog(true)}
           exportProject={handleExportRequest}
-          saveProject={handleSaveProject} // UPDATED: Now shows save dialog
+          saveProject={handleSaveProject}
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
+          reviewPaper={handleReviewPaper} // Add review paper function
           setShowExamplesDialog={setShowExamplesDialog}
-          showHelpSplash={handleShowHelpSplash} // Pass function to show splash screen
+          showHelpSplash={showHelpSplash}
           loading={isAnyLoading}
         />
 
         {/* Main content area */}
         <div style={{ paddingTop: '40px' }}>
           <div className="flex">
-            {/* RESTORED: Left panel with full half-width */}
+            {/* Left panel with full half-width */}
             <div className="w-half px-4 py-2" style={{ width: '50%' }}>
               {/* Display Research Question first */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
@@ -587,7 +593,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
                 .map(section => renderSection(section))}
 
-              {/* MOVED: Target Audience section after Research Approach block */}
+              {/* Target Audience section after Research Approach block */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => section?.id === 'audience')
                 .map(section => renderSection(section))}
@@ -603,7 +609,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 setActiveMethod={handleDataMethodToggle}
               />
 
-              {/* Display active data acquisition section - FIXED: Added theorysimulation */}
+              {/* Display active data acquisition section */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
                 .map(section => renderSection(section))}
@@ -653,10 +659,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           handleMagicClick={handleMagic}
         />
 
-        {/* Floating Magic Button - FIXED: Pass proper loading state */}
+        {/* Floating Magic Button */}
         <FloatingMagicButton
           handleMagicClick={handleMagic}
-          loading={improvingInstructions || loading} // Disable during either loading state
+          loading={improvingInstructions || loading}
+          onboardingStep={onboardingStep}
+        />
+
+        {/* Review Paper Button - NEW */}
+        <ReviewPaperButton
+          handleReviewPaper={handleReviewPaper}
+          loading={reviewLoading}
           onboardingStep={onboardingStep}
         />
 
@@ -667,7 +680,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           currentMessage={currentMessage}
           setCurrentMessage={setCurrentMessage}
           handleSendMessage={handleSendMessage}
-          loading={chatLoading || loading} // Change this line to combine both loading states
+          loading={chatLoading || loading}
           currentSectionData={sectionDataForPanel}
           onboardingStep={onboardingStep}
         />
@@ -685,17 +698,24 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           loadProject={loadProject}
         />
 
-        {/* NEW: Privacy Policy Modal */}
+        {/* Privacy Policy Modal */}
         <PrivacyPolicyModal 
           showModal={showPrivacyPolicy} 
           onClose={() => setShowPrivacyPolicy(false)} 
         />
 
-        {/* NEW: Save Dialog */}
+        {/* Save Dialog */}
         <SaveDialog
           showSaveDialog={showSaveDialog}
           setShowSaveDialog={setShowSaveDialog}
           saveProject={saveProjectWithFilename}
+        />
+
+        {/* Review Paper Modal - NEW */}
+        <ReviewPaperModal
+          showModal={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          reviewData={reviewData}
         />
       </div>
     </div>
