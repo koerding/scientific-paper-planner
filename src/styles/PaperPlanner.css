@@ -910,3 +910,86 @@ body, html {
 .fixed.bottom-6.right-24 {
   right: 16rem !important;
 }
+/* Add this CSS to your PaperPlanner.css file */
+
+/* Enhanced hover effect for all buttons */
+.floating-button-hover-effect {
+  transition: all 0.2s ease-in-out;
+}
+
+.floating-button-hover-effect:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Add this class to all your floating buttons */
+/* For example, update FloatingMagicButton.js */
+
+<button
+  onClick={loading ? null : handleMagicClick}
+  disabled={loading}
+  className={`
+    flex items-center justify-center 
+    px-4 py-5 
+    rounded-full 
+    shadow-lg 
+    transition-colors 
+    text-white 
+    font-medium 
+    floating-button-hover-effect
+    ${loading
+      ? 'bg-purple-400 cursor-wait'
+      : 'bg-purple-600 hover:bg-purple-700'
+    }
+  `}
+  title="Get AI feedback and improve instructions"
+  aria-label="Improve Instructions"
+>
+  {/* Button content */}
+</button>
+
+/* Similarly for other buttons like in ModernChatInterface.js */
+<button
+  onClick={loading ? null : toggleChat}
+  disabled={loading}
+  className={`
+    flex items-center justify-center 
+    px-4 py-5 
+    rounded-full 
+    shadow-lg 
+    transition-colors 
+    text-white 
+    font-medium 
+    floating-button-hover-effect
+    ${loading
+      ? 'bg-indigo-400 cursor-wait'
+      : 'bg-indigo-600 hover:bg-indigo-700'
+    }
+  `}
+  title="Ask AI for help on this section"
+  aria-label="Open chat"
+>
+  {/* Button content */}
+</button>
+
+/* Small header buttons can have a subtler effect */
+.header-button-hover-effect {
+  transition: all 0.2s ease-in-out;
+}
+
+.header-button-hover-effect:hover:not(:disabled) {
+  transform: scale(1.03);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Apply to header buttons in AppHeader.js */
+<button
+  onClick={resetProject}
+  disabled={isImporting}
+  className={`inline-flex items-center px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs font-medium header-button-hover-effect
+    ${isImporting 
+      ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
+      : 'text-gray-700 bg-white hover:bg-gray-50 cursor-pointer'}`}
+>
+  {/* Button content */}
+</button>
