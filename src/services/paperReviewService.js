@@ -2,7 +2,7 @@
 
 /**
  * Paper review service for analyzing scientific papers against quality criteria
- * FIXED: Removed dependency on documentImportService exports
+ * FIXED: Updated to properly use the callOpenAI function
  */
 import { callOpenAI } from './openaiService';
 import sectionContentData from '../data/sectionContent.json';
@@ -197,18 +197,20 @@ ${documentText.substring(0, 50000)}${documentText.length > 50000 ? ' [truncated]
 
     // Call OpenAI API to generate the review
     console.log("Sending review request to OpenAI...");
+    
+    // IMPORTANT CHANGE: Use proper parameters to send to OpenAI consistently with other calls
+    // This was causing the issue with the "I can't read your PDF" response
     const reviewResult = await callOpenAI(
-      userPrompt,
-      "paper_review",
-      {}, 
-      [], 
-      { 
+      userPrompt,                 // The prompt with paper text and criteria
+      "paper_review",             // Context type
+      {},                         // Empty user inputs (not needed)
+      sectionContentData.sections, // Section info for context
+      {                           // Options
         temperature: 0.7,
         max_tokens: 4000
       },
-      [],
-      systemPrompt,
-      false // Don't use JSON mode for the review
+      [],                         // No chat history needed
+      systemPrompt               // System prompt for the reviewer persona
     );
     
     console.log("Review generated successfully.");
