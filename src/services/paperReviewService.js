@@ -186,11 +186,10 @@ Then provide detailed comments for each section, highlighting both strengths and
 
 Format your review as follows:
 1. Paper Summary (1-2 paragraphs)
-2. Overall Assessment (general evaluation of scientific quality)
-3. Section-by-Section Review (using the criteria provided)
-4. Major Strengths (3-5 points)
-5. Major Weaknesses (3-5 points)
-6. Conclusion and Recommendation (whether the paper meets scientific standards)
+2. Section-by-Section Major issues (using the criteria provided). Spend something like 3 sentences on each point if it presents a problem. Only focus on the major issues with the paper. If there are no issues about a subsection or section, do not mention it.
+3. Overall Assessment (general evaluation of scientific quality)
+
+
 
 The paper for review:
 ${documentText.substring(0, 50000)}${documentText.length > 50000 ? ' [truncated]' : ''}`;
