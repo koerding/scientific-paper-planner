@@ -11,31 +11,7 @@
       // Initialize dataLayer first to avoid undefined errors
       window.dataLayer = window.dataLayer || [];
     </script>
-    
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4QKEE0HDSJ"></script>
-    <script>
-      // Use a simple function to ensure GA loads
-      function setupGA() {
-        console.log("Setting up Google Analytics...");
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        window.gtag = gtag; // Make gtag globally available
-        gtag('js', new Date());
-        gtag('config', 'G-4QKEE0HDSJ', {
-          'send_page_view': true,
-          'debug_mode': true
-        });
-        console.log("Google Analytics setup complete");
-      }
-      
-      // Call setup function immediately
-      setupGA();
-      
-      // Also call it after a delay to ensure it runs
-      setTimeout(setupGA, 1000);
-    </script>
-    
+     
     <title>Scientific Paper Planner</title>
   </head>
   
