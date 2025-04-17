@@ -2,14 +2,10 @@
 
 /**
  * Paper review service for analyzing scientific papers against quality criteria
- * Uses the same document extraction as the import service but focuses on evaluation
+ * FIXED: Removed dependency on documentImportService exports
  */
 import { callOpenAI } from './openaiService';
-import { buildSystemPrompt } from '../utils/promptUtils';
 import sectionContentData from '../data/sectionContent.json';
-
-// Reuse the document extraction functions from documentImportService
-import { loadPDFJS, extractTextFromDocument } from './documentImportService';
 
 /**
  * Extracts the section criteria from sectionContent.json for the review prompt
@@ -39,6 +35,119 @@ const extractReviewCriteria = () => {
   });
   
   return criteria.join('\n');
+};
+
+/**
+ * Loads the necessary PDF.js library
+ * @returns {Promise} Resolves when library is loaded
+ */
+const loadPDFJS = async () => {
+  // Only load if it's not already loaded
+  if (window.pdfjsLib) return window.pdfjsLib;
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.async = true;
+    script.onload = () => {
+      console.log("PDF.js loaded from CDN successfully");
+      if (window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        resolve(window.pdfjsLib);
+      } else {
+        reject(new Error("PDF.js loaded but pdfjsLib not found in window"));
+      }
+    };
+    script.onerror = () => {
+      console.error("Failed to load PDF.js from CDN");
+      reject(new Error("Failed to load PDF.js from CDN"));
+    };
+    document.body.appendChild(script);
+  });
+};
+
+/**
+ * Extracts text from a PDF file
+ * @param {ArrayBuffer} pdfData - The PDF data
+ * @returns {Promise<string>} - The extracted text
+ */
+const extractTextFromPDF = async (pdfData) => {
+  try {
+    if (!window.pdfjsLib) await loadPDFJS();
+    const loadingTask = window.pdfjsLib.getDocument({data: pdfData});
+    const pdf = await loadingTask.promise;
+    let fullText = '';
+    const maxPagesToProcess = Math.min(pdf.numPages, 20);
+    for (let pageNum = 1; pageNum <= maxPagesToProcess; pageNum++) {
+      try {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+        const strings = content.items.map(item => item.str);
+        fullText += `--- Page ${pageNum} ---\n` + strings.join(' ') + '\n\n';
+        if (fullText.length > 30000) {
+          fullText = fullText.substring(0, 30000) + "... [TRUNCATED]";
+          break;
+        }
+      } catch (pageError) {
+        console.warn(`Error extracting text from page ${pageNum}:`, pageError);
+        fullText += `[Error extracting page ${pageNum}]\n\n`;
+      }
+    }
+    return fullText;
+  } catch (error) {
+    console.error("Error in PDF extraction:", error);
+    throw error;
+  }
+};
+
+/**
+ * Extract text from a document file
+ * @param {File} file - The document file
+ * @returns {Promise<string>} - The extracted text
+ */
+const extractTextFromDocument = async (file) => {
+  console.log(`Attempting to extract text from: ${file.name}, type: ${file.type}`);
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      try {
+        const arrayBuffer = event.target.result;
+        let extractedText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n`;
+
+        // PDF Extraction Logic
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          console.log("Processing as PDF...");
+          try {
+            const pdfText = await extractTextFromPDF(arrayBuffer);
+            extractedText = `${extractedText}\n\n${pdfText}`;
+            console.log("PDF text extracted. Length:", extractedText.length);
+            resolve(extractedText);
+          } catch (pdfError) {
+            console.error('Error extracting PDF text:', pdfError);
+            extractedText = `${extractedText}\n\n[Error extracting PDF text: ${pdfError.message}]`;
+            resolve(extractedText);
+          }
+        }
+        // Handle other types - just extract filename and metadata
+        else {
+          extractedText = `${extractedText}\n\n[This file format cannot be processed directly. Processing metadata only.]`;
+          resolve(extractedText);
+        }
+      } catch (error) {
+        console.error('Error processing document content:', error);
+        reject(new Error(`Failed to process document content: ${error.message}`));
+      }
+    };
+
+    reader.onerror = (error) => {
+      console.error('Error reading file:', error);
+      reject(new Error(`Failed to read file: ${error.message}`));
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
 };
 
 /**
