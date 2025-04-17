@@ -1,5 +1,5 @@
 // FILE: src/components/layout/AppHeader.js
-// This is a modified version of the AppHeader component with proper Review Paper button integration
+// This is a modified version of the AppHeader component with fixed Help button functionality
 
 import React, { useState } from 'react';
 
@@ -8,8 +8,8 @@ import React, { useState } from 'react';
  * CHANGES:
  * - Changed title from "Paper" to "Project"
  * - Fixed Help button to properly show splash screen
- * - Fixed Paper Review button to use the review handler
  * - Added loading state animation for all buttons when any is active
+ * - Fixed Review Paper button to show loading animation
  */
 const AppHeader = ({
   resetProject,
@@ -17,7 +17,7 @@ const AppHeader = ({
   saveProject,
   loadProject,
   importDocumentContent,
-  handleReviewPaper, // Added the review paper handler
+  handleReviewPaper,
   setShowExamplesDialog,
   showHelpSplash,
   loading
@@ -231,17 +231,30 @@ const AppHeader = ({
               Export
             </button>
 
-            {/* FIXED: Paper Review button now uses handleReviewPaper prop */}
+            {/* FIXED: Paper Review button with proper loading state */}
             <label
-              className={`inline-flex items-center px-2 py-1 border border-green-500 bg-green-600 rounded-md shadow-sm text-xs font-medium 
-                ${isImporting 
-                  ? 'text-gray-200 bg-green-400 cursor-not-allowed opacity-75' 
-                  : 'text-white hover:bg-green-700 cursor-pointer'}`}
+              className={`inline-flex items-center px-2 py-1 border ${
+                isImporting
+                  ? 'border-green-400 bg-green-400 text-white cursor-wait'
+                  : 'border-green-500 bg-green-600 hover:bg-green-700 text-white cursor-pointer'
+              } rounded-md shadow-sm text-xs font-medium`}
             >
-              <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              Review Paper
+              {isImporting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Reviewing...
+                </>
+              ) : (
+                <>
+                  <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  Review Paper
+                </>
+              )}
               <input 
                 type="file" 
                 className="hidden" 
