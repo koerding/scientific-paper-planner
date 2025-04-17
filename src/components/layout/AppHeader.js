@@ -1,5 +1,5 @@
 // FILE: src/components/layout/AppHeader.js
-// This is a modified version of the AppHeader component with fixed Help button functionality
+// This is a modified version of the AppHeader component with proper Review Paper button integration
 
 import React, { useState } from 'react';
 
@@ -8,6 +8,7 @@ import React, { useState } from 'react';
  * CHANGES:
  * - Changed title from "Paper" to "Project"
  * - Fixed Help button to properly show splash screen
+ * - Fixed Paper Review button to use the review handler
  * - Added loading state animation for all buttons when any is active
  */
 const AppHeader = ({
@@ -16,8 +17,9 @@ const AppHeader = ({
   saveProject,
   loadProject,
   importDocumentContent,
+  handleReviewPaper, // Added the review paper handler
   setShowExamplesDialog,
-  showHelpSplash, // This prop was already defined but not properly utilized
+  showHelpSplash,
   loading
 }) => {
   // Local loading state for import button
@@ -76,6 +78,32 @@ const AppHeader = ({
     } else {
       console.error("showHelpSplash function not provided to AppHeader");
     }
+  };
+  
+  // FIXED: Function to handle paper review file selection
+  const handleReviewFileSelection = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file type - currently supporting PDF and Word docs
+      const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+      const isValidExtension = ['pdf', 'docx', 'doc'].includes(fileExtension);
+      
+      if (!validTypes.includes(file.type) && !isValidExtension) {
+        alert("Please upload a PDF or Word document (.pdf, .docx, or .doc).");
+        event.target.value = ''; // Clear the file input
+        return;
+      }
+      
+      // Call the review handler if provided
+      if (handleReviewPaper) {
+        handleReviewPaper(event);
+      } else {
+        alert("Paper review feature will be implemented in the next update");
+      }
+    }
+    // Reset the input so the same file can be selected again if needed
+    event.target.value = '';
   };
 
   // Use either local or global loading state
@@ -203,10 +231,8 @@ const AppHeader = ({
               Export
             </button>
 
-            {/* Paper Review button */}
-            <button
-              onClick={() => alert("Paper review feature will be implemented in the next update")}
-              disabled={isImporting}
+            {/* FIXED: Paper Review button now uses handleReviewPaper prop */}
+            <label
               className={`inline-flex items-center px-2 py-1 border border-green-500 bg-green-600 rounded-md shadow-sm text-xs font-medium 
                 ${isImporting 
                   ? 'text-gray-200 bg-green-400 cursor-not-allowed opacity-75' 
@@ -216,7 +242,14 @@ const AppHeader = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
               Review Paper
-            </button>
+              <input 
+                type="file" 
+                className="hidden" 
+                accept=".pdf,.docx,.doc" 
+                onChange={handleReviewFileSelection} 
+                disabled={isImporting} 
+              />
+            </label>
             
             {/* FIXED: Help button now properly calls the showHelpSplash function */}
             <button
