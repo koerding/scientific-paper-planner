@@ -3,11 +3,10 @@
 import React, { useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { exportReview } from '../../services/paperReviewService';
-import { trackEvent } from '../../utils/analyticsUtils';
 
 /**
  * Modal component that displays the scientific paper review results
- * Allows exporting the review as a text file or copying to clipboard
+ * FIXED: Removed analytics dependency
  */
 const ReviewPaperModal = ({ showModal, onClose, reviewData }) => {
   const [exportLoading, setExportLoading] = useState(false);
@@ -21,8 +20,8 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData }) => {
     setExportLoading(true);
     try {
       const success = exportReview(reviewData.review, reviewData.paperName);
-      if (success) {
-        trackEvent('Paper Review', 'Export Review', reviewData.paperName);
+      if (!success) {
+        alert("There was an error exporting the review. Please try again.");
       }
     } catch (error) {
       console.error("Error exporting review:", error);
@@ -37,7 +36,6 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData }) => {
     try {
       await navigator.clipboard.writeText(reviewData.review);
       setCopySuccess(true);
-      trackEvent('Paper Review', 'Copy Review', reviewData.paperName);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (error) {
       console.error("Error copying to clipboard:", error);
