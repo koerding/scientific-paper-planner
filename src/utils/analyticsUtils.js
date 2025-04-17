@@ -4,21 +4,52 @@ import ReactGA from 'react-ga4';
 /**
  * Analytics utility functions to track user interactions
  * across the Scientific Paper Planner
+ * FIXED: Ensured all value parameters are valid numbers
  */
 
 // Track page views when sections change
 export const trackPageView = (page) => {
-  ReactGA.send({ hitType: "pageview", page });
+  try {
+    ReactGA.send({ hitType: "pageview", page });
+    console.log(`GA4 Pageview tracked: ${page}`);
+  } catch (error) {
+    console.error('Error tracking pageview:', error);
+  }
 };
 
-// Track user interactions as events
+// Track user interactions as events with proper type checking
 export const trackEvent = (category, action, label = null, value = null) => {
-  ReactGA.event({
-    category,
-    action,
-    label,
-    value
-  });
+  try {
+    // Ensure value is a valid number or null
+    let numericValue = null;
+    if (value !== null) {
+      if (typeof value === 'number' && !isNaN(value)) {
+        numericValue = value;
+      } else if (typeof value === 'string') {
+        // Try to convert string to number
+        const parsedValue = parseFloat(value);
+        if (!isNaN(parsedValue)) {
+          numericValue = parsedValue;
+        }
+      }
+    }
+    
+    // Only include value in the event if it's a valid number
+    const eventParams = {
+      category,
+      action,
+      label
+    };
+    
+    if (numericValue !== null) {
+      eventParams.value = numericValue;
+    }
+    
+    ReactGA.event(eventParams);
+    console.log(`GA4 Event tracked: ${category} - ${action} - ${label || 'no label'}${numericValue !== null ? ` - value: ${numericValue}` : ''}`);
+  } catch (error) {
+    console.error('Error tracking event:', error);
+  }
 };
 
 // Common event tracking functions for the Paper Planner
@@ -33,7 +64,9 @@ export const trackInstructionImprovement = (sectionId) => {
 };
 
 export const trackChatInteraction = (sectionId, messageCount) => {
-  trackEvent('Interactions', 'Chat Message', sectionId, messageCount);
+  // Ensure messageCount is a number
+  const count = typeof messageCount === 'number' ? messageCount : 0;
+  trackEvent('Interactions', 'Chat Message', sectionId, count);
 };
 
 export const trackExport = (format) => {
@@ -62,12 +95,15 @@ export const trackInputChange = (sectionId, length) => {
   
   // Set a new timeout to track the input change after 2 seconds of inactivity
   inputTrackingTimeout = setTimeout(() => {
+    // Ensure length is a valid number
+    const numericLength = typeof length === 'number' && !isNaN(length) ? length : 0;
+    
     trackEvent(
       'Content', 
       'Input Change', 
       sectionId, 
       // Round length to nearest 100 to avoid too many unique values
-      Math.round(length / 100) * 100
+      Math.round(numericLength / 100) * 100
     );
   }, 2000);
 };
@@ -84,9 +120,17 @@ export const trackFeatureUsage = (feature, action) => {
 
 // Helper function to measure app performance
 export const trackTiming = (category, variable, value) => {
-  ReactGA.timing({
-    category,
-    variable,
-    value
-  });
+  // Ensure value is a number
+  const numericValue = typeof value === 'number' && !isNaN(value) ? value : 0;
+  
+  try {
+    ReactGA.timing({
+      category,
+      variable,
+      value: numericValue
+    });
+    console.log(`GA4 Timing tracked: ${category} - ${variable} - ${numericValue}ms`);
+  } catch (error) {
+    console.error('Error tracking timing:', error);
+  }
 };
