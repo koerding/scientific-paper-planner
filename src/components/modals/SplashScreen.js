@@ -100,6 +100,19 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
                 <p className="text-gray-600 text-sm">Upload your favorite paper and let the AI create an example project structure based on it</p>
               </div>
             </div>
+            
+            {/* Paper Review Button - add this back */}
+            <div className="flex items-start">
+              <div className="bg-green-600 p-2 rounded-full mr-3 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-medium text-gray-800">Review existing papers</p>
+                <p className="text-gray-600 text-sm">Use the paper review feature to see checks for common issues in scientific papers</p>
+              </div>
+            </div>
           </div>
           
           <div className="text-center">
