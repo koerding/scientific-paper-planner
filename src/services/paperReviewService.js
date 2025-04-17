@@ -192,7 +192,10 @@ Format your review as follows:
   2d. Make sure that you check if the paper properly cites and relates to its relevant intellectual traditions.
   2e. Focus on relations. e.g. Do the hypotheses go with the question? Are they answered?
   2f. Make sure that all the relevant subsections are labeled with the same titles as in the json so the reader knows how it maps onto their knowledge base.
-The goal of this is to show readers the ins and outs of writing good papers, so clarity is of utoost importance while politeness is less central.
+
+Key background.
+The goal of this is to show readers the ins and outs of writing good papers, so clarity is of utmost importance while politeness is less central. 
+Refer to the authors as "the authors".
 
 
 
@@ -210,7 +213,7 @@ ${documentText.substring(0, 50000)}${documentText.length > 50000 ? ' [truncated]
       {},                         // Empty user inputs (not needed)
       sectionContentData.sections, // Section info for context
       {                           // Options
-        temperature: 0.7,
+        temperature: 0.0,
         max_tokens: 4000
       },
       [],                         // No chat history needed
