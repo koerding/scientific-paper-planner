@@ -556,7 +556,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         completionStatus={completionStatus} // Still pass it for internal use if needed
         userInputs={userInputs}
         handleInputChange={handleInputChange}
-        loading={chatLoading && currentSectionIdForChat === section.id}
+        loading={isAnyAiLoading}
         sectionRef={sectionRefs.current[section.id]}
         onClick={() => setActiveSectionWithManualFlag(section.id)}
         useLargerFonts={false} // FIXED: Use smaller fonts for more compact layout
@@ -672,7 +672,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         <FullHeightInstructionsPanel
           currentSection={sectionDataForPanel}
           improveInstructions={handleMagic}
-          loading={improvingInstructions}
+          loading={isAnyAiLoading}
           userInputs={userInputs}
         />
 
