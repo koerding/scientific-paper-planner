@@ -1,13 +1,35 @@
+// FILE: src/components/buttons/ReviewPaperButton.js
+
 import React from 'react';
 
 /**
  * Review Paper button component that matches the styling of other AI features
- * Allows users to upload a paper for critical review against scientific standards
- * FIXED: Removed dependencies
+ * FIXED: Connected to paperReviewService properly
+ * FIXED: Improved file handling
  */
 const ReviewPaperButton = ({ handleReviewPaper, loading, onboardingStep }) => {
   // Determine if the review button should be highlighted based on onboarding step
-  const showReviewHighlight = onboardingStep === 5; // New onboarding step for review
+  const showReviewHighlight = onboardingStep === 5; // Onboarding step for review
+  
+  // Create a handler that validates the file type before calling the main handler
+  const validateAndHandleFile = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Check file type - currently supporting PDF and Word docs
+    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    const isValidExtension = ['pdf', 'docx', 'doc'].includes(fileExtension);
+    
+    if (!validTypes.includes(file.type) && !isValidExtension) {
+      alert("Please upload a PDF or Word document (.pdf, .docx, or .doc).");
+      event.target.value = ''; // Clear the file input
+      return;
+    }
+    
+    // If valid, call the main handler
+    handleReviewPaper(event);
+  };
   
   return (
     <div
@@ -46,7 +68,7 @@ const ReviewPaperButton = ({ handleReviewPaper, loading, onboardingStep }) => {
           type="file" 
           className="hidden" 
           accept=".pdf,.docx,.doc" 
-          onChange={handleReviewPaper}
+          onChange={validateAndHandleFile}
           disabled={loading} 
         />
       </label>
