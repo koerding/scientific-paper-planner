@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 /**
  * Updated Compact header component with added Review Paper button
- * FIXED: Removed dependency on analyticsUtils
+ * FIXED: Added reviewLoading prop support
  */
 const AppHeader = ({
   resetProject,
@@ -11,14 +11,14 @@ const AppHeader = ({
   loadProject,
   importDocumentContent,
   reviewPaper, // Added new review paper function
+  reviewLoading, // Added specific loading state for review
   setShowExamplesDialog,
   showHelpSplash,
   loading
 }) => {
   // Local loading states
   const [importLoading, setImportLoading] = useState(false);
-  const [reviewLoading, setReviewLoading] = useState(false); // New loading state for review
-
+  
   // Handle file import for PDF/Word docs with loading animation
   const handleFileImport = async (event) => {
     const file = event.target.files?.[0];
@@ -47,20 +47,14 @@ const AppHeader = ({
   const handleReviewPaper = async (event) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Start loading animation
-      setReviewLoading(true);
-      
       try {
         if (reviewPaper) {
           // Call the review function and await its completion
-          await reviewPaper(file);
+          await reviewPaper(event);
         }
       } catch (error) {
         console.error("Error reviewing paper:", error);
         alert("There was an error reviewing the paper. Please try again or use a different file.");
-      } finally {
-        // Stop loading animation when done (success or error)
-        setReviewLoading(false);
       }
     }
     // Reset the input so the same file can be selected again if needed
@@ -91,7 +85,7 @@ const AppHeader = ({
 
   // Use loading states
   const isImporting = importLoading || loading;
-  const isReviewing = reviewLoading;
+  const isReviewing = reviewLoading || false; // Use the prop
 
   return (
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
@@ -157,7 +151,7 @@ const AppHeader = ({
               />
             </label>
 
-            {/* NEW: Review Paper button */}
+            {/* NEW: Review Paper button - Now uses reviewLoading prop */}
             <label 
               className={`inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium 
                 ${isReviewing 
