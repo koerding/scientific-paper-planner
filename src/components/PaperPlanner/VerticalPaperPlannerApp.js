@@ -12,7 +12,7 @@ import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
-import ReviewPaperButton from '../buttons/ReviewPaperButton';
+// Removed import for ReviewPaperButton since it's not needed
 import ReviewPaperModal from '../modals/ReviewPaperModal';
 import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 import AppHeader from '../layout/AppHeader';
@@ -34,8 +34,7 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Paper Planner with research approach and data acquisition toggles
- * REFACTORED: Added "Review Paper" functionality
- * UPDATED: Added ReviewPaperButton and ReviewPaperModal components
+ * FIXED: Removed duplicate review button, fixed showHelpSplash, updated AppHeader props
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -69,9 +68,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [loading, setLoading] = useState(false); // Track overall loading state
   const [showSaveDialog, setShowSaveDialog] = useState(false); // State for save dialog
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false); // State for privacy policy
-  const [reviewLoading, setReviewLoading] = useState(false); // New state for review loading
-  const [showReviewModal, setShowReviewModal] = useState(false); // New state for review modal
-  const [reviewData, setReviewData] = useState(null); // New state for review data
+  const [showHelpSplash, setShowHelpSplash] = useState(false); // Added state for help splash
+  const [reviewLoading, setReviewLoading] = useState(false); // State for review loading
+  const [showReviewModal, setShowReviewModal] = useState(false); // State for review modal
+  const [reviewData, setReviewData] = useState(null); // State for review data
   const sectionRefs = useRef({});
   
   // New states for tracking improvement reminders
@@ -79,9 +79,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [editEvents, setEditEvents] = useState([]);
   const [significantEditsMade, setSignificantEditsMade] = useState(false);
 
-  const [showHelpSplash, setShowHelpSplash] = useState(false);
-
-  
   // Use local state for instructions potentially modified by AI
   const [localSectionContent, setLocalSectionContent] = useState(() => {
     try {
@@ -174,6 +171,16 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     return stringContent && stringContent.trim() !== '' && stringContent !== placeholder;
   };
 
+  // Handler for Help Splash button
+  const handleShowHelpSplash = () => {
+    setShowHelpSplash(true);
+    // Track when users view the help splash
+    ReactGA.event({
+      category: 'Help',
+      action: 'Show Help Splash'
+    });
+  };
+
   // Section completion status detection
   const getSectionCompletionStatus = (sectionId) => {
     // If there's an explicit completion status from the AI, use it
@@ -263,15 +270,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Handle edit events for improvement reminder
   const handleEdit = (sectionId, timestamp) => {
     setEditEvents(prev => [...prev, { sectionId, timestamp, type: 'edit' }]);
-  };
-
-  const handleShowHelpSplash = () => {  
-    setShowHelpSplash(true);
-    // Track when users view the help splash
-    ReactGA.event({
-      category: 'Help',
-      action: 'Show Help Splash'  
-    });
   };
 
   // Handle significant edit events for improvement reminder
@@ -373,13 +371,20 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // NEW: Handle paper review with tracking
+  // Handle paper review with tracking
   const handleReviewPaper = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
     setReviewLoading(true);
     try {
+      // Track review attempt in analytics
+      ReactGA.event({
+        category: 'Paper Review',
+        action: 'Start Review',
+        label: file.type
+      });
+      
       // Show a loading indicator
       const result = await reviewScientificPaper(file);
       
@@ -388,13 +393,34 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         setReviewData(result);
         // Show the review modal
         setShowReviewModal(true);
+        
+        // Track successful review
+        ReactGA.event({
+          category: 'Paper Review',
+          action: 'Review Success',
+          label: file.name
+        });
       } else {
         // Handle errors
         alert(`Error reviewing paper: ${result.error || 'Unknown error'}`);
+        
+        // Track failed review
+        ReactGA.event({
+          category: 'Paper Review',
+          action: 'Review Error',
+          label: result.error || 'Unknown error'
+        });
       }
     } catch (error) {
       console.error("Error in review process:", error);
       alert(`Failed to review paper: ${error.message || 'Unknown error occurred'}`);
+      
+      // Track exception
+      ReactGA.event({
+        category: 'Paper Review',
+        action: 'Review Exception',
+        label: error.message || 'Unknown error'
+      });
     } finally {
       setReviewLoading(false);
     }
@@ -569,8 +595,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
           reviewPaper={handleReviewPaper}
+          reviewLoading={reviewLoading} // Pass the reviewLoading state to header
           setShowExamplesDialog={setShowExamplesDialog}
-          showHelpSplash={handleShowHelpSplash} // Pass the function instead of a boolean
+          showHelpSplash={handleShowHelpSplash} // Pass the handler function
           loading={isAnyLoading}
         />
 
@@ -668,12 +695,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           onboardingStep={onboardingStep}
         />
 
-        {/* NEW: Review Paper Button */}
-        <ReviewPaperButton
-          handleReviewPaper={handleReviewPaper}
-          loading={reviewLoading}
-          onboardingStep={onboardingStep}
-        />
+        {/* ReviewPaperButton removed - only using the one in the AppHeader */}
 
         <ModernChatInterface
           currentSection={currentSectionIdForChat}
@@ -713,7 +735,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           saveProject={saveProjectWithFilename}
         />
 
-        {/* NEW: Review Paper Modal */}
+        {/* Review Paper Modal */}
         <ReviewPaperModal
           showModal={showReviewModal}
           onClose={() => setShowReviewModal(false)}
