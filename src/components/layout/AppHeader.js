@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { trackEvent } from '../utils/analyticsUtils';
 
 /**
  * Updated Compact header component with added Review Paper button
+ * FIXED: Removed dependency on analyticsUtils
  */
 const AppHeader = ({
   resetProject,
@@ -30,8 +30,6 @@ const AppHeader = ({
         if (importDocumentContent) {
           // Call the import function and await its completion
           await importDocumentContent(file);
-          // Track the event
-          trackEvent('Document Actions', 'Import Document', file.type);
         }
       } catch (error) {
         console.error("Error importing document:", error);
@@ -56,8 +54,6 @@ const AppHeader = ({
         if (reviewPaper) {
           // Call the review function and await its completion
           await reviewPaper(file);
-          // Track the event
-          trackEvent('Document Actions', 'Review Paper', file.type);
         }
       } catch (error) {
         console.error("Error reviewing paper:", error);
@@ -81,8 +77,6 @@ const AppHeader = ({
           const data = JSON.parse(e.target.result);
           if (loadProject) {
             loadProject(data);
-            // Track the event
-            trackEvent('Document Actions', 'Load Project', 'json');
           }
         } catch (error) {
           console.error('Error parsing project file:', error);
