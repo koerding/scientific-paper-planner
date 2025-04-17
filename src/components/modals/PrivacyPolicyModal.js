@@ -3,6 +3,7 @@ import React from 'react';
 
 /**
  * Privacy Policy modal component for Google Analytics compliance
+ * UPDATED: Changed "Paper" to "Project" in the title and content
  */
 const PrivacyPolicyModal = ({ showModal, onClose }) => {
   if (!showModal) return null;
@@ -24,7 +25,7 @@ const PrivacyPolicyModal = ({ showModal, onClose }) => {
         </div>
 
         <div className="prose max-w-none">
-          <h3>Scientific Paper Planner - Privacy Policy</h3>
+          <h3>Scientific Project Planner - Privacy Policy</h3>
           
           <p>
             Last updated: {new Date().toLocaleDateString()}
@@ -32,7 +33,7 @@ const PrivacyPolicyModal = ({ showModal, onClose }) => {
           
           <h4>1. Introduction</h4>
           <p>
-            This Privacy Policy explains how the Scientific Paper Planner ("we", "us", or "our") 
+            This Privacy Policy explains how the Scientific Project Planner ("we", "us", or "our") 
             collects, uses, and shares information about you when you use our web application.
           </p>
           
