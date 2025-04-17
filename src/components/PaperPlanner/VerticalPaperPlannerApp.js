@@ -1,4 +1,4 @@
-// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Updated version
+// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Updated version with review functionality
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
@@ -12,10 +12,13 @@ import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
+import ReviewPaperButton from '../buttons/ReviewPaperButton';
+import ReviewPaperModal from '../modals/ReviewPaperModal';
 import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 import AppHeader from '../layout/AppHeader';
 import PrivacyPolicyModal from '../modals/PrivacyPolicyModal';
 import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
+import { reviewScientificPaper } from '../../services/paperReviewService';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -26,7 +29,8 @@ import {
   trackApproachToggle,
   trackDataMethodToggle,
   trackExport,
-  trackSave
+  trackSave,
+  trackEvent
 } from '../../utils/analyticsUtils';
 import '../../styles/PaperPlanner.css';
 
@@ -36,6 +40,7 @@ import '../../styles/PaperPlanner.css';
  * - Changed "Paper" to "Project" throughout the component
  * - Fixed proper handling of AI loading states
  * - Fixed Help button functionality to show splash screen
+ * - Added paper review functionality
  * - Improved button disabling when any AI feature is loading
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
@@ -69,6 +74,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [loading, setLoading] = useState(false); // Track overall loading state
   const [showSaveDialog, setShowSaveDialog] = useState(false); // State for save dialog
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false); // State for privacy policy
+  
+  // Add paper review related state
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewData, setReviewData] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  
   const sectionRefs = useRef({});
   
   // New states for tracking improvement reminders
@@ -366,6 +377,38 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
+  // NEW: Handler for the paper review functionality
+  const handleReviewPaper = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setReviewLoading(true);
+    try {
+      // Call the paper review service
+      console.log(`Starting paper review for: ${file.name}`);
+      const result = await reviewScientificPaper(file);
+      
+      if (result.success) {
+        console.log(`Review completed successfully for: ${file.name}`);
+        // Set the review data and show the modal
+        setReviewData(result);
+        setShowReviewModal(true);
+        
+        // Track review completion in analytics
+        trackEvent('Paper Review', 'Complete Review', file.name);
+      } else {
+        console.error(`Review failed for: ${file.name}`, result.error);
+        // Show error message
+        alert(`Error reviewing paper: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Error in paper review:", error);
+      alert(`Error reviewing paper: ${error.message || 'Unknown error'}`);
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
   // FIXED: Add proper function to show splash screen
   const handleShowHelpSplash = () => {
     if (splashManagerRef.current) {
@@ -535,7 +578,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   };
 
   // FIXED: Combined loading state to properly disable ALL buttons when ANY AI feature is loading
-  const isAnyAiLoading = loading || chatLoading || improvingInstructions;
+  const isAnyAiLoading = loading || chatLoading || improvingInstructions || reviewLoading;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -550,6 +593,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           saveProject={handleSaveProject} // UPDATED: Now shows save dialog
           loadProject={loadProject}
           importDocumentContent={handleDocumentImport}
+          handleReviewPaper={handleReviewPaper} // ADDED: Pass the review handler
           setShowExamplesDialog={setShowExamplesDialog}
           showHelpSplash={handleShowHelpSplash} // FIXED: Now properly passes the function to show splash screen
           loading={isAnyAiLoading}
@@ -649,6 +693,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           onboardingStep={onboardingStep}
         />
 
+        {/* ADDED: Review Paper Button */}
+        <ReviewPaperButton
+          handleReviewPaper={handleReviewPaper}
+          loading={isAnyAiLoading} // Use combined loading state
+          onboardingStep={onboardingStep}
+        />
+
         <ModernChatInterface
           currentSection={currentSectionIdForChat}
           currentSectionTitle={sectionDataForPanel?.title}
@@ -672,6 +723,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           showExamplesDialog={showExamplesDialog}
           setShowExamplesDialog={setShowExamplesDialog}
           loadProject={loadProject}
+        />
+
+        {/* ADDED: Review Paper Modal */}
+        <ReviewPaperModal
+          showModal={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          reviewData={reviewData}
         />
 
         {/* NEW: Privacy Policy Modal */}
