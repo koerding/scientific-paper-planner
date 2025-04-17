@@ -197,6 +197,7 @@ Key background.
 The goal of this is to show readers the ins and outs of writing good papers, so clarity is of utmost importance while politeness is less central. 
 Refer to the authors as "the authors".
 Make the section names boldfaced.
+Throughout the review mention papers that should be cited (giving the reference, make sure to only add references when you are sure) and flag papers that are miscited if there should be any.
 
 
 
