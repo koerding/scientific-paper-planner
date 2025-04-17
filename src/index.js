@@ -5,29 +5,24 @@ import ReactGA from 'react-ga4';
 import './index.css';
 import App from './App';
 
-// --- REMOVED: loadGoogleAnalytics function ---
-// --- REMOVED: loadGoogleAnalytics() call ---
-// --- REMOVED: setTimeout wrappers ---
-
 // Initialize Google Analytics directly
 const TRACKING_ID = "G-4QKEE0HDSJ"; // Your Google Analytics Tracking ID
 
 try {
   console.log('GA4: Attempting to initialize with ID:', TRACKING_ID);
-  
+
   // Initialize ReactGA
-  // You can enable debug_mode during development if needed
   ReactGA.initialize(TRACKING_ID, {
-    // gaOptions: { debug_mode: process.env.NODE_ENV === 'development' },
-    // testMode: process.env.NODE_ENV !== 'production' // testMode prevents sending data
+    // You might want debug mode ON for testing
+    // gaOptions: { debug_mode: true }
+    // testMode: process.env.NODE_ENV !== 'production' // <-- EDITED: Commented out to ensure data is sent for testing
   });
-  
+
   console.log('GA4: Initialization called.');
-  
-  // --- REMOVED: Initial pageview send from here ---
-  // Ensure the initial pageview is sent reliably from your main App component
+
+  // Reminder: Ensure the initial pageview is sent reliably from your main App component
   // or router, e.g., within a useEffect hook after the app mounts.
-  
+
 } catch (error) {
   console.error('GA4: Error during initialization:', error);
 }
