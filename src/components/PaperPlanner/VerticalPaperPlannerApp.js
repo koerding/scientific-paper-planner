@@ -18,6 +18,7 @@ import AppHeader from '../layout/AppHeader';
 import PrivacyPolicyModal from '../modals/PrivacyPolicyModal';
 import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
 import { reviewScientificPaper } from '../../services/paperReviewService';
+import HeaderCard from '../sections/HeaderCard';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -603,6 +604,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           <div className="flex">
             {/* RESTORED: Left panel with full half-width */}
             <div className="w-half px-4 py-2" style={{ width: '50%' }}>
+              <HeaderCard />
               {/* Display Research Question first */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => section?.id === 'question')
