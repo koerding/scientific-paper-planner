@@ -3,9 +3,11 @@
 import React from 'react';
 
 /**
- * Updated splash screen component to welcome new users
- * ADDED: Information about new "Review Paper" feature
- * FIXED: Removed analytics dependencies
+ * Splash screen component to welcome new users
+ * Explains key features of the Scientific Project Planner
+ * UPDATED: Changed "Paper" to "Project" throughout
+ * UPDATED: Adjusted icon colors to match actual app interface elements
+ * ADDED: "Feeling stuck" section about PDF import feature
  */
 const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   const handleDontShowAgain = () => {
@@ -17,12 +19,12 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   return (
     <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 overflow-hidden">
-        {/* Header with title and logo */}
+        {/* Header with title and logo - FIXED: Changed "Paper" to "Project" */}
         <div className="bg-purple-600 px-6 py-4 flex items-center">
           <div className="w-10 h-10 bg-white rounded-md flex items-center justify-center mr-3 flex-shrink-0">
             <span className="font-bold text-xl text-purple-600">SP</span>
           </div>
-          <h1 className="text-white text-xl font-bold">Scientific Paper Planner</h1>
+          <h1 className="text-white text-xl font-bold">Scientific Project Planner</h1>
         </div>
         
         {/* Content area */}
@@ -41,7 +43,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               </div>
               <div>
                 <p className="font-medium text-gray-800">Fill out each section systematically</p>
-                <p className="text-gray-600 text-sm">The app guides you through all essential components of a scientific paper</p>
+                <p className="text-gray-600 text-sm">The app guides you through all essential components of a scientific project</p>
               </div>
             </div>
             
@@ -69,19 +71,6 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               <div>
                 <p className="font-medium text-gray-800">Get adaptive guidance as you work</p>
                 <p className="text-gray-600 text-sm">The "Improve Instructions" button analyzes your progress and tailors the guidance to your specific needs</p>
-              </div>
-            </div>
-            
-            {/* NEW: Review Paper - solid teal to match review button */}
-            <div className="flex items-start">
-              <div className="bg-teal-600 p-2 rounded-full mr-3 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Review papers for quality</p>
-                <p className="text-gray-600 text-sm">Upload any scientific paper to get a critical review based on rigorous scientific standards</p>
               </div>
             </div>
             
