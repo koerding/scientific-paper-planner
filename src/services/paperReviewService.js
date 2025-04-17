@@ -187,7 +187,8 @@ Format your review as follows:
 1. Paper Summary (1-2 paragraphs)
 2. Section-by-Section Major issues (using the criteria provided). Spend something like 3 sentences on each point if it presents a problem. Only focus on the major issues with the paper. If there are no issues about a subsection or section, do not mention it.
 3. Overall Assessment (general evaluation of scientific quality)
-
+4. Only comment on issues that a paper should comment on. E.g. no reason to ask if the paper explicitly says what its audience is. 
+5. Focus on relations. e.g. Do the hypotheses go with the question? Are they answered? 
 
 
 The paper for review:
