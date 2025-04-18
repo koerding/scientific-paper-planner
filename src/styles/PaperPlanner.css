@@ -1,21 +1,19 @@
-/* Safe CSS for Paper Planner - minification friendly */
-
-/* Simplified section card layout with reduced spacing */
+/* Core layout and section styles */
 .section-card {
   margin-bottom: 0.5rem !important;
   transition: border-color 0.3s ease, border-width 0.3s ease, box-shadow 0.3s ease;
-  border-color: #e5e7eb !important; /* gray-200 */
+  border-color: #e5e7eb !important;
   border-width: 2px !important;
 }
 
 .section-card:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border-color: #d1d5db !important; /* gray-300 */
+  border-color: #d1d5db !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
 .section-card textarea {
-  background-color: transparent !important; /* Make textarea transparent */
+  background-color: transparent !important;
   border: none !important;
   padding: 0.25rem 0.5rem !important;
   line-height: 1.4 !important;
@@ -26,19 +24,17 @@
   border: none !important;
 }
 
-/* Only the current section gets a blue border */
 .section-card.border-blue-500 {
-  border-color: #3b82f6 !important; /* blue-500 */
+  border-color: #3b82f6 !important;
   border-width: 4px !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Thinner border styles to reduce visual weight */
 .border-2 {
   border-width: 2px !important;
 }
 
-/* Tighter spacing for approach and data toggles */
+/* Research approach and data toggles */
 .approach-toggle, .data-toggle {
   border-radius: 4px;
   padding-top: 0.25rem;
@@ -62,20 +58,18 @@
   font-size: 0.875rem;
 }
 
-/* Subtle active button styles */
 .approach-toggle button.active, .data-toggle button.active {
   font-weight: 600;
   color: #4f46e5;
   background-color: #eef2ff;
 }
 
-/* Better chat styling fixes */
+/* Chat interface styles */
 .prose-sm img {
   margin-top: 0;
   margin-bottom: 0;
 }
 
-/* Fix for AI badge and header styling */
 .chat-header {
   background-color: #4f46e5;
   color: white;
@@ -85,7 +79,7 @@
   align-items: center !important;
   border-top-left-radius: 0.5rem;
   border-top-right-radius: 0.5rem;
-  height: 56px; /* Fixed height to ensure consistency */
+  height: 56px;
 }
 
 .chat-header .flex.items-center {
@@ -124,13 +118,13 @@
   margin-right: 0.75rem;
 }
 
-/* Clean message bubbles */
+/* Message bubbles */
 .message-bubble {
   border-radius: 0.5rem;
   padding: 0.75rem 1rem;
   display: inline-block;
   max-width: 80%;
-  margin-bottom: 8px; /* Consistent spacing between messages */
+  margin-bottom: 8px;
 }
 
 .user-message {
@@ -151,7 +145,6 @@
   border: 1px solid #e1d9fa;
 }
 
-/* Message content styling */
 .message-content {
   word-break: break-word;
 }
@@ -161,12 +154,10 @@
   line-height: 1.5;
 }
 
-/* Text color classes for chat bubbles */
 .text-purple-700 {
   color: #6D28D9;
 }
 
-/* Override markdown styles to maintain purple text */
 .prose-sm a, 
 .prose-sm strong, 
 .prose-sm h1, 
@@ -177,7 +168,6 @@
   color: #6D28D9;
 }
 
-/* Make code blocks stand out but still match the theme */
 .prose-sm pre {
   background-color: #ede9fe;
   border: 1px solid #d8d4f0;
@@ -198,235 +188,27 @@
   }
 }
 
-/* Animation for toggle transitions */
-.toggle-fade-enter {
-  opacity: 0;
-  transform: translateY(10px);
+/* Animation for improvement reminder toast */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.toggle-fade-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 300ms, transform 300ms;
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
 }
 
-.toggle-fade-exit {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.toggle-fade-exit-active {
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 300ms, transform 300ms;
-}
-
-/* Onboarding Highlight and Tooltip Styles */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-  50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
-}
-
-.onboarding-highlight {
-  position: relative;
-  z-index: 1100;
-  animation: pulse-glow 2s infinite;
-  border-radius: 0.375rem;
-}
-
-/* Specific adjustments for chat icon highlight */
-.onboarding-highlight-chat {
-  position: relative;
-  z-index: 1100;
-}
-.onboarding-highlight-chat > div {
-   animation: pulse-glow 2s infinite;
-   border-radius: 9999px;
-}
-
-/* Specific adjustments for magic button highlight */
-.onboarding-highlight-magic {
-  position: relative;
-  z-index: 40; /* Lower z-index to keep it below chat */
-}
-.onboarding-highlight-magic > button {
-  animation: pulse-glow 2s infinite;
-  border-radius: 9999px;
-}
-
-.onboarding-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-8px);
-  background-color: #2d3748;
-  color: white;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  white-space: nowrap;
-  z-index: 41; /* Should be above the button but below chat */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Tooltip arrow */
-.onboarding-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 5px;
-  border-style: solid;
-  border-color: #2d3748 transparent transparent transparent;
-}
-
-/* Adjust tooltip position for chat icon (bottom right) */
-.onboarding-tooltip-chat {
-  bottom: auto;
-  top: 50%;
-  left: auto;
-  right: 100%;
-  transform: translateY(-50%) translateX(-12px);
-  z-index: 1001; /* Higher than chat interface */
-}
-
-.onboarding-tooltip-chat::after {
-  top: 50%;
-  left: 100%;
-  transform: translateY(-50%);
-  border-color: transparent transparent transparent #2d3748;
-}
-
-/* Adjust tooltip position for magic button (left of chat) */
-.onboarding-tooltip-magic {
-  bottom: auto;
-  top: 50%;
-  left: auto;
-  right: 100%;
-  transform: translateY(-50%) translateX(-12px);
-}
-
-.onboarding-tooltip-magic::after {
-  top: 50%;
-  left: 100%;
-  transform: translateY(-50%);
-  border-color: transparent transparent transparent #2d3748;
-}
-
-/* Adjust tooltip position for header buttons (top right) */
-.onboarding-tooltip-header {
-   bottom: 100%;
-   left: auto;
-   right: 0;
-   transform: translateX(0%) translateY(-8px);
-}
-
-.onboarding-tooltip-header::after {
-   left: auto;
-   right: 15px;
-   transform: translateX(0%);
-}
-
-/* Adjust tooltip position for right panel button */
-.onboarding-tooltip-panel {
-  bottom: auto;
-  top: 0;
-  left: auto;
-  right: 100%;
-  transform: translateY(0%) translateX(-12px);
-}
-
-.onboarding-tooltip-panel::after {
-  top: 10px;
-  left: 100%;
-  transform: translateY(0%);
-  border-color: transparent transparent transparent #2d3748;
-}
-
-/* Header fixes */
-header.bg-white.shadow-sm {
-  border-bottom: 1px solid #e5e7eb;
-  height: 100px;
-  box-sizing: border-box;
-}
-
-header.bg-white.shadow-sm .container {
-  max-width: 100%;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-}
-
-/* Ensure content has proper spacing below header */
-.min-h-screen > .w-full {
-  padding-top: 90px;
-  box-sizing: border-box;
-}
-
-/* Footer fixes */
-.text-center.text-gray-500.text-sm.mt-6.border-t {
-  height: 44px;
-  position: relative;
-  z-index: 5;
-  margin-bottom: 0;
-  padding-bottom: 0.5rem;
-  background-color: #ffffff;
-}
-
-/* Fix for floating buttons positioning */
-.fixed.bottom-6.right-6 {
-  bottom: 1.5rem !important;
-}
-
-/* Fixed z-index for chat interface to always be on top when open */
-.fixed.shadow-lg.bg-white.rounded-t-lg.overflow-hidden.transition-all {
-  z-index: 1000 !important;
-}
-
-/* Ensure proper content scrolling with fixed elements */
-.w-half.px-4.py-2 {
-  min-height: calc(100vh - 144px);
-  overflow-y: auto;
-  padding-bottom: 3rem;
-  padding-left: 1rem !important; /* Less padding on left side */
-  padding-right: 1rem !important; /* Less padding on right side */
-  min-width: 50%;
-  width: 50% !important;
-}
-
-/* Fix for instructions panel, this is where the dimensions of the panel are actually set */
-.section-instruction-panel {
-  height: calc(100vh - 304px);
-  top: 80px !important; /* Reduced from 150px */
-  padding-top: 40px !important; /* Reduced from 120px */
-  bottom: 50px !important;
-  z-index: 10;
-}
-
-/* Improve transition for chat window */
-.fixed.z-40.shadow-lg.bg-white.rounded-t-lg {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-/* Prevent horizontal scrolling */
-body, html {
-  overflow-x: hidden;
-}
-
-/* Add these Tailwind-compatible helper classes to fix w-1\/2 issues */
-.w-half {
-  width: 50%;
-}
-
-.mr-half {
-  margin-right: 50%;
-}
-
-/* Typing indicator animation - IMPROVED */
+/* Typing indicator animation */
 .typing-indicator {
   display: inline-flex;
   align-items: center;
-  height: 24px; /* Fixed height */
+  height: 24px;
 }
 
 .typing-indicator span {
@@ -466,31 +248,24 @@ body, html {
   }
 }
 
-/* Override any Tailwind styles that might interfere */
-.bg-indigo-600.text-white.px-4.py-3 {
-  display: flex !important;
-  align-items: center !important;
+/* Edit mode styles */
+.edit-mode-hover {
+  background-color: #f9fafb !important;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
 }
 
-.bg-indigo-600.text-white.px-4.py-3 .flex.items-center {
-  display: flex !important;
-  align-items: center !important;
+.edit-mode-focused {
+  background-color: #ffffff !important;
+  box-shadow: inset 0 0 0 2px #93c5fd;
 }
 
-/* Animation for the improvement reminder toast */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.edit-icon {
+  margin-left: auto;
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out;
+textarea::placeholder {
+  color: #9ca3af;
+  font-style: italic;
 }
 
 /* Info icon styling */
@@ -519,127 +294,66 @@ body, html {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.info-icon-button:focus {
-  outline: none;
-  ring: 2px solid #818CF8;
+/* Layout fixes */
+.w-half {
+  width: 50%;
 }
 
-/* Base strikethrough styles */
-.instructions-content del,
-.instructions-content s,
-.instructions-content .line-through {
-  text-decoration: line-through !important;
-  color: #6B7280 !important; /* gray-500 */
-  opacity: 0.7 !important;
+header.bg-white.shadow-sm {
+  border-bottom: 1px solid #e5e7eb;
+  height: 100px;
+  box-sizing: border-box;
 }
 
-/* Ensure the line goes through bold text */
-.instructions-content strong del,
-.instructions-content del strong,
-.instructions-content strong.line-through {
-  text-decoration: line-through !important;
-  color: #6B7280 !important;
-  opacity: 0.7 !important;
-  font-weight: 700 !important;
+header.bg-white.shadow-sm .container {
+  max-width: 100%;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
-/* Line break handling to ensure separation between instruction and feedback */
-.instructions-content li {
-  margin-bottom: 0.5rem !important;
+.min-h-screen > .w-full {
+  padding-top: 90px;
+  box-sizing: border-box;
 }
 
-.instructions-content li + br + p,
-.instructions-content li + p {
-  margin-top: 0.25rem !important;
-  margin-bottom: 1rem !important;
-  margin-left: 1.5rem !important;
-  color: #4b5563 !important; /* Gray-600 for feedback */
+.text-center.text-gray-500.text-sm.mt-6.border-t {
+  height: 44px;
+  position: relative;
+  z-index: 5;
+  margin-bottom: 0;
+  padding-bottom: 0.5rem;
+  background-color: #ffffff;
 }
 
-/* Enhanced hover effect for buttons */
-.floating-button-hover-effect {
-  transition: all 0.2s ease-in-out;
+.fixed.shadow-lg.bg-white.rounded-t-lg.overflow-hidden.transition-all {
+  z-index: 1000 !important;
 }
 
-.floating-button-hover-effect:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.w-half.px-4.py-2 {
+  min-height: calc(100vh - 144px);
+  overflow-y: auto;
+  padding-bottom: 3rem;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  min-width: 50%;
+  width: 50% !important;
 }
 
-/* Small header buttons can have a subtler effect */
-.header-button-hover-effect {
-  transition: all 0.2s ease-in-out;
-}
-
-.header-button-hover-effect:hover:not(:disabled) {
-  transform: scale(1.03);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-/* Enhanced edit indicators for section cards */
-.section-card textarea {
-  transition: all 0.2s ease;
-  cursor: text !important; /* Always show text cursor */
-}
-
-.section-card:hover textarea {
-  background-color: #f9fafb !important; /* gray-50 */
-  box-shadow: inset 0 0 0 1px #e5e7eb !important; /* gray-200 */
-}
-
-.section-card textarea:focus {
-  background-color: #ffffff !important;
-  box-shadow: inset 0 0 0 2px #93c5fd !important; /* blue-300 */
-}
-
-/* Edit indicator text for empty fields */
-.section-card .edit-placeholder {
-  color: #9ca3af; /* gray-400 */
-  font-style: italic;
-  pointer-events: none;
-  text-align: center;
-  padding: 0.5rem;
-}
-
-/* Pencil edit icon animation */
-.section-card .edit-icon {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.section-card:hover .edit-icon {
-  opacity: 0.7;
-}
-
-/* Pulsing animation for empty textareas */
-@keyframes gentle-pulse {
-  0%, 100% { box-shadow: inset 0 0 0 1px rgba(229, 231, 235, 0.5); }
-  50% { box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.5); }
-}
-
-.section-card textarea:placeholder-shown {
-  animation: gentle-pulse 3s infinite;
-}
-
-/* Darker placeholder text for better visibility */
-.section-card textarea::placeholder {
-  color: #9ca3af !important; /* gray-400 */
-  font-style: italic;
-  opacity: 1;
-}
-/* Fix for instructions panel height to ensure it extends fully */
 .section-instruction-panel {
-  height: auto !important; /* Override the fixed height */
-  min-height: calc(100vh - 170px) !important; /* Adjust minimum height */
-  bottom: 0 !important; /* Ensure it extends to the bottom */
-  padding-bottom: 150px !important; /* Add padding at the bottom for scrolling space */
+  height: auto !important;
+  min-height: calc(100vh - 170px) !important;
+  bottom: 0 !important;
+  padding-bottom: 150px !important;
 }
 
-/* Ensure the content inside the panel can scroll properly */
 .section-instruction-panel .px-6 {
-  padding-bottom: 100px !important; /* Add extra padding to content area */
+  padding-bottom: 100px !important;
 }
 
-/* Fix potential overflow issues */
 .instructions-content {
   overflow-y: visible !important;
+}
+
+body, html {
+  overflow-x: hidden;
 }
