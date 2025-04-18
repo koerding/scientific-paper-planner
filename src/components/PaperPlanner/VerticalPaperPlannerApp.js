@@ -36,8 +36,7 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Project Planner with improved review functionality
- * - Optimized for better performance and maintainability
- * - Enhanced paper review system with past reviews storage
+ * Scientific project planning tool with AI-assisted features
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -502,14 +501,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           currentSection={sectionDataForPanel}
           improveInstructions={handleMagic}
           loading={isAnyAiLoading}
-          userInputs={userInputs}
         />
 
         {/* Interactive UI elements */}
         <ImprovementReminderToast
           userInputs={userInputs}
           lastImprovementTime={lastImprovementTime}
-          editEvents={editEvents}
           significantEditsMade={significantEditsMade}
           handleMagicClick={handleMagic}
         />
