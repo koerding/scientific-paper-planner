@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 /**
  * Section card component for the paper planner
+ * UPDATED: Added visual cues to make editing more obvious
  * UPDATED: Removed color-coding based on completion status
  * UPDATED: Removed "complete/incomplete" status labels
  * UPDATED: Simplified box design with neutral colors
@@ -32,6 +33,10 @@ const SectionCard = ({
   // Track user edits for improvement reminder
   const [lastEditTimestamp, setLastEditTimestamp] = useState(null);
   const [significantChange, setSignificantChange] = useState(false);
+  
+  // State to track focus and hover for edit indication
+  const [isFocused, setIsFocused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Auto-resize textarea height - improved version
   const adjustTextareaHeight = () => {
@@ -121,6 +126,20 @@ const SectionCard = ({
     setTimeout(adjustTextareaHeight, 0);
   };
 
+  // Visual cue styling for the textarea - NEW
+  const getTextareaClasses = () => {
+    const baseClasses = `w-full py-1 px-2 border-0 rounded focus:ring-1 focus:ring-blue-300 outline-none resize-none overflow-hidden text-base leading-relaxed ${getBackgroundColor()} font-normal`;
+    
+    // Add visual cues for editing
+    if (isFocused) {
+      return `${baseClasses} edit-mode-focused`;
+    } else if (isHovered) {
+      return `${baseClasses} edit-mode-hover`;
+    }
+    
+    return baseClasses;
+  };
+
   return (
     <div
       ref={sectionRef}
@@ -132,25 +151,68 @@ const SectionCard = ({
         <h2 className="font-semibold text-lg mr-2 text-gray-800" style={{ fontSize: 'calc(1.4 * 1rem)' }}>
           {section.title}
         </h2>
+        
+        {/* NEW: Edit indicator icon */}
+        <div className={`edit-icon transition-opacity duration-200 ${isHovered || isFocused ? 'opacity-100' : 'opacity-0'}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+          </svg>
+        </div>
       </div>
 
-      {/* Input Area - Simplified with matching background and reduced padding */}
-      <div>
+      {/* Input Area - Enhanced with visual cues */}
+      <div 
+        className="relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Visual edit indicator for empty textareas - NEW */}
+        {textValue.trim() === '' && !isFocused && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-gray-400 text-sm italic">
+            Click to edit...
+          </div>
+        )}
+        
         <textarea
           ref={textareaRef}
-          className={`w-full py-1 px-2 border-0 rounded focus:ring-1 focus:ring-blue-300 outline-none resize-none overflow-hidden text-base leading-relaxed ${getBackgroundColor()} font-normal`}
+          className={getTextareaClasses()}
           value={textValue}
           onChange={handleTextChange}
           onInput={adjustTextareaHeight}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           rows="1"
           maxLength={section.maxLength}
           placeholder={section.inputPlaceholder || "Start writing..."}
           style={{ 
             minHeight: '2rem',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
+            cursor: 'text' // Always show text cursor to indicate editability
           }}
         />
       </div>
+      
+      {/* NEW: Custom styles for edit mode indicators */}
+      <style jsx>{`
+        .edit-mode-hover {
+          background-color: #f9fafb !important; /* gray-50 */
+          box-shadow: inset 0 0 0 1px #e5e7eb; /* gray-200 */
+        }
+        
+        .edit-mode-focused {
+          background-color: #ffffff !important;
+          box-shadow: inset 0 0 0 2px #93c5fd; /* blue-300 */
+        }
+        
+        .edit-icon {
+          margin-left: auto;
+        }
+        
+        textarea::placeholder {
+          color: #9ca3af; /* gray-400 */
+          font-style: italic;
+        }
+      `}</style>
     </div>
   );
 };
