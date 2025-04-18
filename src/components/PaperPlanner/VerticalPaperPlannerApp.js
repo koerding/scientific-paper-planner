@@ -12,7 +12,6 @@ import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
-import ReviewPaperButton from '../buttons/ReviewPaperButton';
 import ReviewPaperModal from '../modals/ReviewPaperModal';
 import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 import AppHeader from '../layout/AppHeader';
@@ -640,12 +639,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
         <FloatingMagicButton
           handleMagicClick={handleMagic}
-          loading={isAnyAiLoading}
-          onboardingStep={onboardingStep}
-        />
-
-        <ReviewPaperButton
-          onOpenReviewModal={handleOpenReviewModal}
           loading={isAnyAiLoading}
           onboardingStep={onboardingStep}
         />
