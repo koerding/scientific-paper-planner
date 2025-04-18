@@ -3,40 +3,22 @@
 import React from 'react';
 
 /**
- * Review Paper button component that matches the styling of other AI features
- * FIXED: Connected to paperReviewService properly
- * FIXED: Improved file handling
+ * Review Papers button component that matches the styling of other AI features
+ * UPDATED: Changed text from "Review Paper" to "Review Papers"
+ * UPDATED: Now only triggers modal show instead of handling files directly
  */
-const ReviewPaperButton = ({ handleReviewPaper, loading, onboardingStep }) => {
+const ReviewPaperButton = ({ onOpenReviewModal, loading, onboardingStep }) => {
   // Determine if the review button should be highlighted based on onboarding step
   const showReviewHighlight = onboardingStep === 5; // Onboarding step for review
-  
-  // Create a handler that validates the file type before calling the main handler
-  const validateAndHandleFile = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    // Check file type - currently supporting PDF and Word docs
-    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
-    const fileExtension = file.name.split('.').pop().toLowerCase();
-    const isValidExtension = ['pdf', 'docx', 'doc'].includes(fileExtension);
-    
-    if (!validTypes.includes(file.type) && !isValidExtension) {
-      alert("Please upload a PDF or Word document (.pdf, .docx, or .doc).");
-      event.target.value = ''; // Clear the file input
-      return;
-    }
-    
-    // If valid, call the main handler
-    handleReviewPaper(event);
-  };
   
   return (
     <div
       className={`fixed bottom-6 right-24 z-40 ${loading ? 'cursor-wait' : 'cursor-pointer'} ${showReviewHighlight ? 'onboarding-highlight-review' : ''}`}
       style={{ transform: 'translateZ(0)' }} /* Force hardware acceleration for smoother animations */
     >
-      <label
+      <button
+        onClick={loading ? null : onOpenReviewModal} // Prevent click when loading
+        disabled={loading}
         className={`
           flex items-center justify-center 
           px-4 py-5 
@@ -50,8 +32,8 @@ const ReviewPaperButton = ({ handleReviewPaper, loading, onboardingStep }) => {
             : 'bg-teal-600 hover:bg-teal-700'
           }
         `}
-        title="Upload a paper for critical review"
-        aria-label="Review Paper"
+        title="Upload and review scientific papers"
+        aria-label="Review Papers"
       >
         {loading ? (
           <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -63,20 +45,13 @@ const ReviewPaperButton = ({ handleReviewPaper, loading, onboardingStep }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
         )}
-        {loading ? 'Reviewing...' : 'Review Paper'}
-        <input 
-          type="file" 
-          className="hidden" 
-          accept=".pdf,.docx,.doc" 
-          onChange={validateAndHandleFile}
-          disabled={loading} 
-        />
-      </label>
+        {loading ? 'Reviewing...' : 'Review Papers'}
+      </button>
       
       {/* Onboarding Tooltip */}
       {showReviewHighlight && (
         <div className="onboarding-tooltip onboarding-tooltip-review" style={{ zIndex: 41 }}>
-          Upload a paper to see how it meets scientific standards
+          Upload and review papers or access past reviews
         </div>
       )}
     </div>
