@@ -170,77 +170,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     trackSectionChange(sectionId, sectionTitle);
   };
 
-  // Section completion status detection
-  const getSectionCompletionStatus = (sectionId) => {
-    // If there's an explicit completion status from the AI, use it
-    if (sectionCompletionStatus[sectionId]) {
-      return sectionCompletionStatus[sectionId];
-    }
-
-    // Get content and template
-    const content = userInputs[sectionId];
-    if (!content || content.trim() === '') {
-      return 'unstarted';
-    }
-
-    const section = localSectionContent.sections.find(s => s?.id === sectionId);
-    const placeholder = section?.placeholder || '';
-
-    // If content is exactly the placeholder, it's unstarted
-    if (content === placeholder) {
-      return 'unstarted';
-    }
-
-    // If it has meaningful content different from the placeholder
-    if (content !== placeholder && content.trim().length > 0) {
-      const lines = content.split('\n').filter(line => line.trim().length > 0);
-
-      // Section-specific checks
-      if (sectionId === 'hypothesis') {
-        const hasH1 = content.includes('Hypothesis 1:');
-        const hasH2 = content.includes('Hypothesis 2:');
-        const hasReason = content.includes('-');
-
-        if (hasH1 && hasH2) {
-          return 'complete';
-        }
-      }
-      else if (sectionId === 'audience') {
-        const communitySection = content.includes('Target Audience/Community');
-        const researcherSection = content.includes('Specific Researchers/Labs');
-        const hasItems = content.includes('1.') && (content.includes('2.') || content.includes('- '));
-
-        if (communitySection && researcherSection && hasItems) {
-          return 'complete';
-        }
-      }
-      else if (sectionId === 'question') {
-        const hasQuestion = content.includes('Research Question:');
-        const hasSignificance = content.includes('Significance/Impact:');
-
-        if (hasQuestion && hasSignificance) {
-          return 'complete';
-        }
-      }
-      else {
-        // For other sections, more generous criteria
-        if (content.length > 50 && lines.length >= 3) {
-          return 'complete';
-        }
-      }
-
-      // If content is substantially longer than template
-      if (content.length > placeholder.length * 1.2) {
-        return 'complete';
-      }
-
-      // Some progress but not complete
-      return 'progress';
-    }
-
-    return 'unstarted';
-  };
-
   // Get the current section data for instructions display
   const getCurrentSectionData = () => {
     if (!localSectionContent || !Array.isArray(localSectionContent.sections)) {
@@ -483,14 +412,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     if (!section || !section.id) return null;
 
     const isCurrentActive = activeSection === section.id;
-    const completionStatus = sectionCompletionStatus[section.id] || getSectionCompletionStatus(section.id);
-
+    
     return (
       <SectionCard
         key={section.id}
         section={section}
         isCurrentSection={isCurrentActive}
-        completionStatus={completionStatus}
+        completionStatus={sectionCompletionStatus[section.id] || 'unstarted'}
         userInputs={userInputs}
         handleInputChange={handleInputChange}
         loading={isAnyAiLoading}
