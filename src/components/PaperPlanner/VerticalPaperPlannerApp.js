@@ -66,7 +66,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [activeApproach, setActiveApproach] = useState('hypothesis');
   const [activeDataMethod, setActiveDataMethod] = useState('experiment');
   const [improvingInstructions, setImprovingInstructions] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
@@ -519,7 +518,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         <FloatingMagicButton
           handleMagicClick={handleMagic}
           loading={isAnyAiLoading}
-          onboardingStep={onboardingStep}
         />
 
         <ModernChatInterface
@@ -531,7 +529,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           handleSendMessage={handleSendMessage}
           loading={isAnyAiLoading}
           currentSectionData={sectionDataForPanel}
-          onboardingStep={onboardingStep}
         />
 
         {/* Dialogs */}
