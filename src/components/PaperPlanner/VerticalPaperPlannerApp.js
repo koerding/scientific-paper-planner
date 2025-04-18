@@ -374,7 +374,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         loading={isAnyAiLoading}
         sectionRef={sectionRefs.current[section.id]}
         onClick={() => setActiveSectionWithManualFlag(section.id)}
-        useLargerFonts={false}
         onEdit={handleEdit}
         onSignificantEdit={handleSignificantEdit}
       />
