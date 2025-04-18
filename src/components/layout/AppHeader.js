@@ -1,5 +1,5 @@
 // FILE: src/components/layout/AppHeader.js
-// Updated the Review Paper button in the header to match our new functionality
+// Updated with teal-colored review button to match the modal's color scheme
 
 import React, { useState } from 'react';
 
@@ -9,7 +9,7 @@ import React, { useState } from 'react';
  * - Changed title from "Paper" to "Project"
  * - Fixed Help button to properly show splash screen
  * - Added loading state animation for all buttons when any is active
- * - UPDATED: Changed Review Paper button to open modal instead of handling files directly
+ * - Updated Review Papers button to use teal color matching the modal
  */
 const AppHeader = ({
   resetProject,
@@ -17,7 +17,7 @@ const AppHeader = ({
   saveProject,
   loadProject,
   importDocumentContent,
-  onOpenReviewModal, // UPDATED: New prop for opening the review modal
+  onOpenReviewModal,
   setShowExamplesDialog,
   showHelpSplash,
   loading
@@ -87,7 +87,7 @@ const AppHeader = ({
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-2">
         <div className="flex items-center justify-between">
-          {/* Logo and title - more compact - FIXED: Changed "Paper" to "Project" */}
+          {/* Logo and title - more compact */}
           <div className="flex items-center">
             <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center mr-2">
               <span className="font-bold text-lg">SP</span>
@@ -205,14 +205,14 @@ const AppHeader = ({
               Export
             </button>
 
-            {/* UPDATED: Review Papers button that opens the modal */}
+            {/* Review Papers button - UPDATED to use teal color to match modal */}
             <button
               onClick={onOpenReviewModal}
               disabled={isImporting}
               className={`inline-flex items-center px-2 py-1 border ${
                 isImporting
-                  ? 'border-green-400 bg-green-400 text-white cursor-wait'
-                  : 'border-green-500 bg-green-600 hover:bg-green-700 text-white cursor-pointer'
+                  ? 'border-teal-400 bg-teal-400 text-white cursor-wait'
+                  : 'border-teal-500 bg-teal-600 hover:bg-teal-700 text-white cursor-pointer'
               } rounded-md shadow-sm text-xs font-medium`}
             >
               {isImporting ? (
@@ -233,7 +233,7 @@ const AppHeader = ({
               )}
             </button>
             
-            {/* FIXED: Help button now properly calls the showHelpSplash function */}
+            {/* Help button */}
             <button
               onClick={handleHelpClick}
               disabled={isImporting}
