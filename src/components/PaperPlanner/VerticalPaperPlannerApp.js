@@ -65,7 +65,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const [activeSection, setActiveSection] = useState(currentSectionIdForChat);
   const [activeApproach, setActiveApproach] = useState('hypothesis');
   const [activeDataMethod, setActiveDataMethod] = useState('experiment');
-  const [sectionCompletionStatus, setSectionCompletionStatus] = useState({});
   const [improvingInstructions, setImprovingInstructions] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -212,52 +211,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           result.improvedData
         );
         setLocalSectionContent(updatedSections);
-
-        // Process completion status
-        const newCompletionStatuses = {};
-
-        result.improvedData.forEach(item => {
-          // First check for explicit completionStatus field
-          if (item.completionStatus) {
-            newCompletionStatuses[item.id] = item.completionStatus;
-          }
-          // Alternatively, analyze content for completion markers
-          else {
-            const userContent = userInputs[item.id] || '';
-
-            if (userContent.trim() !== '') {
-              // Check if there's any feedback
-              if (item.feedback && item.feedback.length > 20) {
-                newCompletionStatuses[item.id] = 'complete';
-                return;
-              }
-
-              // Check for congratulatory messages
-              const isComplete = item.editedInstructions?.includes('Excellent work') ||
-                                item.editedInstructions?.includes('Great job') ||
-                                item.editedInstructions?.includes('Well done') ||
-                                item.editedInstructions?.includes('completed all');
-
-              // Compare with placeholder
-              const section = localSectionContent.sections.find(s => s?.id === item.id);
-              const placeholder = section?.placeholder || '';
-
-              if (isComplete || userContent.length > placeholder.length * 1.2) {
-                newCompletionStatuses[item.id] = 'complete';
-              } else if (userContent.trim() !== '' && userContent !== placeholder) {
-                newCompletionStatuses[item.id] = 'progress';
-              } else {
-                newCompletionStatuses[item.id] = 'unstarted';
-              }
-            }
-          }
-        });
-
-        // Set the new completion statuses
-        setSectionCompletionStatus(prevStatus => ({
-          ...prevStatus,
-          ...newCompletionStatuses
-        }));
       }
     } catch (error) {
       console.error("[handleMagic] Error during improvement process:", error);
@@ -335,7 +288,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setActiveSection(sectionContent?.sections?.[0]?.id || 'question');
     setActiveApproach('hypothesis');
     setActiveDataMethod('experiment');
-    setSectionCompletionStatus({});
     
     // Reset improvement reminder state
     setLastImprovementTime(Date.now());
@@ -418,7 +370,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         key={section.id}
         section={section}
         isCurrentSection={isCurrentActive}
-        completionStatus={sectionCompletionStatus[section.id] || 'unstarted'}
         userInputs={userInputs}
         handleInputChange={handleInputChange}
         loading={isAnyAiLoading}
