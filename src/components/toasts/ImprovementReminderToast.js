@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 
 /**
  * Subtle toast notification that reminds users to use the improvement button
- * after making edits for at least 3 minutes since the last improvement
+ * Simplified version with unused props removed
  */
 const ImprovementReminderToast = ({ 
   userInputs,
   lastImprovementTime,
-  onDismiss,
+  significantEditsMade,
   handleMagicClick
 }) => {
   const [showReminder, setShowReminder] = useState(false);
@@ -23,8 +23,8 @@ const ImprovementReminderToast = ({
   useEffect(() => {
     let timer;
     
-    // Only set timer if we have a valid last improvement time
-    if (lastImprovementTime) {
+    // Only set timer if we have a valid last improvement time and significant edits were made
+    if (lastImprovementTime && significantEditsMade) {
       timer = setInterval(() => {
         const currentTime = Date.now();
         
@@ -43,7 +43,7 @@ const ImprovementReminderToast = ({
     }
     
     return () => clearInterval(timer);
-  }, [lastEditTime, lastImprovementTime, showReminder, reminderDelay]);
+  }, [lastEditTime, lastImprovementTime, showReminder, reminderDelay, significantEditsMade]);
   
   // Auto-dismiss after 15 seconds if not manually dismissed
   useEffect(() => {
@@ -61,7 +61,6 @@ const ImprovementReminderToast = ({
   // Handle manual dismiss
   const handleDismiss = () => {
     setShowReminder(false);
-    if (onDismiss) onDismiss();
   };
   
   // Handle click on improvement button
