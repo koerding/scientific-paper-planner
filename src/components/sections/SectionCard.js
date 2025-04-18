@@ -2,26 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 
 /**
  * Section card component for the paper planner
- * UPDATED: Added visual cues to make editing more obvious
- * UPDATED: Removed color-coding based on completion status
- * UPDATED: Removed "complete/incomplete" status labels
- * UPDATED: Simplified box design with neutral colors
- * FIXED: Made the inner textbox seamless and reduced padding throughout
- * FIXED: Consistent font styles with right panel (instruction panel)
- * FIXED: Increased section title size by 40% as requested
- * FIXED: Properly resize textarea based on content
- * ADDED: Tracking of significant edit events for improvement reminder
+ * Cleaned up and simplified version with unused props removed
  */
 const SectionCard = ({
   section,
   isCurrentSection,
-  completionStatus = 'unstarted',
   userInputs,
   handleInputChange,
   loading,
   sectionRef,
   onClick,
-  useLargerFonts = false,
   onEdit,
   onSignificantEdit
 }) => {
