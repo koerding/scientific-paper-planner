@@ -397,7 +397,8 @@ header.bg-white.shadow-sm .container {
 /* Fix for instructions panel, this is where the dimensions of the panel are actually set */
 .section-instruction-panel {
   height: calc(100vh - 304px);
-  top: 150px !important;
+  top: 80px !important; /* Reduced from 150px */
+  padding-top: 40px !important; /* Reduced from 120px */
   bottom: 50px !important;
   z-index: 10;
 }
