@@ -950,7 +950,7 @@ body, html {
 
 /* Similarly for other buttons like in ModernChatInterface.js */
 <button
-  onClick={loading ? null : toggleChat}
+  onClick={toggleChat}
   disabled={loading}
   className={`
     flex items-center justify-center 
@@ -962,8 +962,8 @@ body, html {
     font-medium 
     floating-button-hover-effect
     ${loading
-      ? 'bg-indigo-400 cursor-wait'
-      : 'bg-indigo-600 hover:bg-indigo-700'
+      ? 'bg-indigo-400 cursor-not-allowed opacity-70' // Added opacity and cursor-not-allowed
+      : 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer'
     }
   `}
   title="Ask AI for help on this section"
