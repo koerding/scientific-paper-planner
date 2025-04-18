@@ -1,5 +1,5 @@
 // FILE: src/components/layout/AppHeader.js
-// This is a modified version of the AppHeader component with fixed Help button functionality
+// Updated the Review Paper button in the header to match our new functionality
 
 import React, { useState } from 'react';
 
@@ -9,7 +9,7 @@ import React, { useState } from 'react';
  * - Changed title from "Paper" to "Project"
  * - Fixed Help button to properly show splash screen
  * - Added loading state animation for all buttons when any is active
- * - Fixed Review Paper button to show loading animation
+ * - UPDATED: Changed Review Paper button to open modal instead of handling files directly
  */
 const AppHeader = ({
   resetProject,
@@ -17,7 +17,7 @@ const AppHeader = ({
   saveProject,
   loadProject,
   importDocumentContent,
-  handleReviewPaper,
+  onOpenReviewModal, // UPDATED: New prop for opening the review modal
   setShowExamplesDialog,
   showHelpSplash,
   loading
@@ -80,32 +80,6 @@ const AppHeader = ({
     }
   };
   
-  // FIXED: Function to handle paper review file selection
-  const handleReviewFileSelection = (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Check file type - currently supporting PDF and Word docs
-      const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
-      const fileExtension = file.name.split('.').pop().toLowerCase();
-      const isValidExtension = ['pdf', 'docx', 'doc'].includes(fileExtension);
-      
-      if (!validTypes.includes(file.type) && !isValidExtension) {
-        alert("Please upload a PDF or Word document (.pdf, .docx, or .doc).");
-        event.target.value = ''; // Clear the file input
-        return;
-      }
-      
-      // Call the review handler if provided
-      if (handleReviewPaper) {
-        handleReviewPaper(event);
-      } else {
-        alert("Paper review feature will be implemented in the next update");
-      }
-    }
-    // Reset the input so the same file can be selected again if needed
-    event.target.value = '';
-  };
-
   // Use either local or global loading state
   const isImporting = importLoading || loading;
 
@@ -231,8 +205,10 @@ const AppHeader = ({
               Export
             </button>
 
-            {/* FIXED: Paper Review button with proper loading state */}
-            <label
+            {/* UPDATED: Review Papers button that opens the modal */}
+            <button
+              onClick={onOpenReviewModal}
+              disabled={isImporting}
               className={`inline-flex items-center px-2 py-1 border ${
                 isImporting
                   ? 'border-green-400 bg-green-400 text-white cursor-wait'
@@ -252,17 +228,10 @@ const AppHeader = ({
                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
-                  Review Paper
+                  Review Papers
                 </>
               )}
-              <input 
-                type="file" 
-                className="hidden" 
-                accept=".pdf,.docx,.doc" 
-                onChange={handleReviewFileSelection} 
-                disabled={isImporting} 
-              />
-            </label>
+            </button>
             
             {/* FIXED: Help button now properly calls the showHelpSplash function */}
             <button
