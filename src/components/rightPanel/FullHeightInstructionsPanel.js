@@ -2,27 +2,15 @@ import React, { useState, useEffect } from 'react';
 
 /**
  * Enhanced instructions panel with expandable tooltip content
- * REFACTORED: Now handles structured instruction improvement data properly
- * ENHANCED: All AI-generated content is now consistently purple
- * UPDATED: Removed blue background for a cleaner, transparent look
- * FIXED: Now uses the global loading state for the improve button
- * FIXED: Removed duplicate improve button
+ * Cleaned up version with unused props removed
  */
-const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading, userInputs }) => {
+const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
   // Track which tooltips are expanded
   const [expandedTooltips, setExpandedTooltips] = useState({});
   
   useEffect(() => {
     // Reset expanded tooltips when section changes
     setExpandedTooltips({});
-    
-    // Debug logging
-    if (currentSection) {
-      console.log("[PANEL] Current section data:", currentSection);
-      console.log("[PANEL] Has introText:", !!currentSection.introText);
-      console.log("[PANEL] Has subsections:", Array.isArray(currentSection.subsections));
-      console.log("[PANEL] Has improvement data:", !!currentSection?.instructions?.improvement);
-    }
   }, [currentSection]);
   
   // Create a title that includes the section name
@@ -192,8 +180,6 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
                 {renderInstructionContent()}
               </div>
             </div>
-            
-            {/* Removed the rectangular Improve Instructions button that was added */}
           </>
         )}
       </div>
