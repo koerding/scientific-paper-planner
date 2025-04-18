@@ -626,3 +626,20 @@ body, html {
   font-style: italic;
   opacity: 1;
 }
+/* Fix for instructions panel height to ensure it extends fully */
+.section-instruction-panel {
+  height: auto !important; /* Override the fixed height */
+  min-height: calc(100vh - 170px) !important; /* Adjust minimum height */
+  bottom: 0 !important; /* Ensure it extends to the bottom */
+  padding-bottom: 150px !important; /* Add padding at the bottom for scrolling space */
+}
+
+/* Ensure the content inside the panel can scroll properly */
+.section-instruction-panel .px-6 {
+  padding-bottom: 100px !important; /* Add extra padding to content area */
+}
+
+/* Fix potential overflow issues */
+.instructions-content {
+  overflow-y: visible !important;
+}
