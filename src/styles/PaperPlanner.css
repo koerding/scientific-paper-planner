@@ -922,33 +922,7 @@ body, html {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Add this class to all your floating buttons */
-/* For example, update FloatingMagicButton.js */
 
-<button
-  onClick={loading ? null : handleMagicClick}
-  disabled={loading}
-  className={`
-    flex items-center justify-center 
-    px-4 py-5 
-    rounded-full 
-    shadow-lg 
-    transition-colors 
-    text-white 
-    font-medium 
-    floating-button-hover-effect
-    ${loading
-      ? 'bg-purple-400 cursor-wait'
-      : 'bg-purple-600 hover:bg-purple-700'
-    }
-  `}
-  title="Get AI feedback and improve instructions"
-  aria-label="Improve Instructions"
->
-  {/* Button content */}
-</button>
-
-/* Similarly for other buttons like in ModernChatInterface.js */
 <button
   onClick={toggleChat}
   disabled={loading}
