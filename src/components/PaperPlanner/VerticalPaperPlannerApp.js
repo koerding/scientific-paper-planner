@@ -1,4 +1,4 @@
-// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Optimized version with enhanced review functionality
+// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Updated with sequential mode
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
@@ -35,7 +35,7 @@ import {
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Project Planner with improved review functionality
+ * Enhanced Project Planner with sequential mode
  * Scientific project planning tool with AI-assisted features
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
@@ -57,7 +57,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     resetProject: hookResetProject,
     exportProject,
     loadProject,
-    importDocumentContent
+    importDocumentContent,
+    // NEW: Sequential mode states and handlers
+    expandedSections,
+    sectionStatus,
+    toggleSectionExpansion,
+    handleSectionFeedback
   } = usePaperPlannerHook;
 
   // Core state
@@ -349,12 +354,18 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setActiveApproach(approach);
     setActiveSectionWithManualFlag(approach);
     trackApproachToggle(approach);
+    
+    // When toggling approach, ensure the section is expanded
+    toggleSectionExpansion(approach);
   };
 
   const handleDataMethodToggle = (method) => {
     setActiveDataMethod(method);
     setActiveSectionWithManualFlag(method);
     trackDataMethodToggle(method);
+    
+    // When toggling data method, ensure the section is expanded
+    toggleSectionExpansion(method);
   };
 
   // Rendering
@@ -362,11 +373,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     if (!section || !section.id) return null;
 
     const isCurrentActive = activeSection === section.id;
+    const isExpanded = !!expandedSections[section.id];
+    const currentStatus = sectionStatus[section.id] || 'none';
     
     return (
       <SectionCard
         key={section.id}
         section={section}
+        isExpanded={isExpanded}
+        onToggleExpand={() => toggleSectionExpansion(section.id)}
         isCurrentSection={isCurrentActive}
         userInputs={userInputs}
         handleInputChange={handleInputChange}
@@ -375,6 +390,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         onClick={() => setActiveSectionWithManualFlag(section.id)}
         onEdit={handleEdit}
         onSignificantEdit={handleSignificantEdit}
+        feedbackStatus={currentStatus}
+        onGetFeedback={handleSectionFeedback}
       />
     );
   };
@@ -392,17 +409,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Combined loading state for all AI features
   const isAnyAiLoading = loading || chatLoading || improvingInstructions || reviewLoading;
 
-  // Section display logic
+  // Section display logic - UPDATED for sequential mode to use expandedSections
   const shouldDisplaySection = (sectionId) => {
-    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
-      return sectionId === activeApproach;
-    }
-
-    if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
-      return sectionId === activeDataMethod;
-    }
-
-    return true; // All other sections are always displayed
+    // All sections are always displayed in the sequential mode,
+    // their expanded/collapsed state is controlled by expandedSections
+    return true;
   };
 
   return (
@@ -442,9 +453,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 setActiveApproach={handleApproachToggle}
               />
 
-              {/* Display active approach section */}
+              {/* Display approach sections (only one is expanded at a time) */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
+                .filter(section => section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch')
                 .map(section => renderSection(section))}
 
               {/* Target Audience section */}
@@ -463,9 +474,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 setActiveMethod={handleDataMethodToggle}
               />
 
-              {/* Display active data acquisition section */}
+              {/* Display data acquisition sections (only one is expanded at a time) */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
+                .filter(section => section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation')
                 .map(section => renderSection(section))}
 
               {/* Display remaining sections */}
@@ -503,17 +514,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           loading={isAnyAiLoading}
         />
 
-        {/* Interactive UI elements */}
+        {/* Interactive UI elements - remove FloatingMagicButton since we have feedback buttons per section now */}
         <ImprovementReminderToast
           userInputs={userInputs}
           lastImprovementTime={lastImprovementTime}
           significantEditsMade={significantEditsMade}
           handleMagicClick={handleMagic}
-        />
-
-        <FloatingMagicButton
-          handleMagicClick={handleMagic}
-          loading={isAnyAiLoading}
         />
 
         <ModernChatInterface
@@ -558,6 +564,30 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           saveProject={saveProjectWithFilename}
         />
       </div>
+      
+      {/* Add additional styles for sequential mode */}
+      <style jsx>{`
+        /* Sequential mode styles */
+        .section-card {
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+
+        .section-card.minimized {
+          max-height: 60px;
+        }
+
+        .section-card.expanded {
+          max-height: 2000px; /* Large value to accommodate any content size */
+        }
+
+        /* Hover effect for minimized cards */
+        .section-card.minimized:hover {
+          background-color: #f9fafb;
+          border-color: #d1d5db;
+        }
+      `}</style>
     </div>
   );
 };
