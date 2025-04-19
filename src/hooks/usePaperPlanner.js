@@ -134,18 +134,54 @@ const usePaperPlanner = () => {
     setCurrentSection(sectionId);
   }, []);
 
-  // NEW: Function to toggle section expansion
+  // Function to toggle section expansion
   const toggleSectionExpansion = useCallback((sectionId) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionId]: !prev[sectionId]
-    }));
+    // Special handling for approach and data method sections
+    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
+      // For approach sections, set them as the active approach
+      setActiveApproach(sectionId);
+      
+      // Update expanded sections for approaches
+      setExpandedSections(prev => {
+        const newState = {...prev};
+        // Collapse all approach sections
+        ['hypothesis', 'needsresearch', 'exploratoryresearch'].forEach(id => {
+          newState[id] = false;
+        });
+        // Expand the selected section
+        newState[sectionId] = true;
+        return newState;
+      });
+    } 
+    else if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
+      // For data method sections, set them as the active data method
+      setActiveDataMethod(sectionId);
+      
+      // Update expanded sections for data methods
+      setExpandedSections(prev => {
+        const newState = {...prev};
+        // Collapse all data method sections
+        ['experiment', 'existingdata', 'theorysimulation'].forEach(id => {
+          newState[id] = false;
+        });
+        // Expand the selected section
+        newState[sectionId] = true;
+        return newState;
+      });
+    }
+    else {
+      // For all other sections, simply toggle expansion
+      setExpandedSections(prev => ({
+        ...prev,
+        [sectionId]: !prev[sectionId]
+      }));
+    }
     
     // If we're expanding this section, make it the current section
     if (!expandedSections[sectionId]) {
       setCurrentSection(sectionId);
     }
-  }, [expandedSections]);
+  }, [expandedSections, setActiveApproach, setActiveDataMethod]);
 
   // NEW: Function to expand only specific sections
   const setExpandedSection = useCallback((sectionId) => {
@@ -159,16 +195,47 @@ const usePaperPlanner = () => {
     setCurrentSection(sectionId);
   }, []);
 
-  // NEW: Get the next section ID in the sequence
+  // Get the next section ID in the sequence, accounting for toggle sections
   const getNextSectionId = useCallback((currentId) => {
     const sections = sectionContent?.sections || [];
     const currentIndex = sections.findIndex(s => s.id === currentId);
     
-    if (currentIndex !== -1 && currentIndex < sections.length - 1) {
-      return sections[currentIndex + 1].id;
+    if (currentIndex === -1 || currentIndex >= sections.length - 1) {
+      return null;
     }
-    return null;
-  }, []);
+    
+    // Get the next section in the array
+    let nextSectionId = sections[currentIndex + 1].id;
+    
+    // Handle approach toggle sections
+    if (currentId === 'hypothesis' || currentId === 'needsresearch' || currentId === 'exploratoryresearch') {
+      // Skip to audience section after any approach section
+      const audienceIndex = sections.findIndex(s => s.id === 'audience');
+      if (audienceIndex !== -1) {
+        nextSectionId = 'audience';
+      }
+    }
+    // Handle approach section when coming from question
+    else if (currentId === 'question') {
+      // Next would be the active approach section, not necessarily hypothesis
+      nextSectionId = activeApproach;
+    }
+    // Handle data method toggle sections
+    else if (currentId === 'experiment' || currentId === 'existingdata' || currentId === 'theorysimulation') {
+      // Skip to analysis section after any data method section
+      const analysisIndex = sections.findIndex(s => s.id === 'analysis');
+      if (analysisIndex !== -1) {
+        nextSectionId = 'analysis';
+      }
+    }
+    // Handle data method when coming from relatedpapers
+    else if (currentId === 'relatedpapers') {
+      // Next would be the active data method, not necessarily experiment
+      nextSectionId = activeDataMethod;
+    }
+    
+    return nextSectionId;
+  }, [activeApproach, activeDataMethod]);
 
   // NEW: Function to get section-specific feedback and determine status
   const handleSectionFeedback = useCallback(async (sectionId) => {
@@ -248,10 +315,43 @@ const usePaperPlanner = () => {
       if (status === 'good') {
         const nextSectionId = getNextSectionId(sectionId);
         if (nextSectionId) {
-          setExpandedSections(prev => ({
-            ...prev,
-            [nextSectionId]: true
-          }));
+          // Special handling for approach and data method sections
+          if (nextSectionId === 'hypothesis' || nextSectionId === 'needsresearch' || nextSectionId === 'exploratoryresearch') {
+            // Set the active approach to this section
+            setActiveApproach(nextSectionId);
+            
+            // Update expanded sections: collapse all approach sections except the active one
+            setExpandedSections(prev => {
+              const newState = {...prev};
+              ['hypothesis', 'needsresearch', 'exploratoryresearch'].forEach(id => {
+                newState[id] = id === nextSectionId;
+              });
+              return newState;
+            });
+          }
+          else if (nextSectionId === 'experiment' || nextSectionId === 'existingdata' || nextSectionId === 'theorysimulation') {
+            // Set the active data method to this section
+            setActiveDataMethod(nextSectionId);
+            
+            // Update expanded sections: collapse all data method sections except the active one
+            setExpandedSections(prev => {
+              const newState = {...prev};
+              ['experiment', 'existingdata', 'theorysimulation'].forEach(id => {
+                newState[id] = id === nextSectionId;
+              });
+              return newState;
+            });
+          }
+          else {
+            // For regular sections, just expand it
+            setExpandedSections(prev => ({
+              ...prev,
+              [nextSectionId]: true
+            }));
+          }
+          
+          // Update current section to the next one
+          setCurrentSection(nextSectionId);
         }
       }
       
