@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage, isStorageAvailable } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
-import * as documentImportService from '../services/documentImportService'; // Import the full service
+import * as documentImportService from '../services/documentImportService';
 import sectionContent from '../data/sectionContent.json';
 import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
@@ -84,6 +84,19 @@ const usePaperPlanner = () => {
   const [currentSectionData, setCurrentSectionData] = useState(null);
   const [sectionCompletionStatus, setSectionCompletionStatus] = useState({});
 
+  // NEW: Sequential mode state variables
+  const [expandedSections, setExpandedSections] = useState(() => {
+    // Initially only first section is expanded
+    const initialExpanded = {};
+    if (sectionContent?.sections?.length > 0) {
+      initialExpanded[sectionContent.sections[0].id] = true;
+    }
+    return initialExpanded;
+  });
+  
+  // NEW: Track section feedback status (none, good, fair, poor)
+  const [sectionStatus, setSectionStatus] = useState({});
+
   // These additional states are used by the VerticalPaperPlannerApp.js but needed in resetProject
   const [activeApproach, setActiveApproach] = useState('hypothesis');
   const [activeDataMethod, setActiveDataMethod] = useState('experiment');
@@ -120,6 +133,145 @@ const usePaperPlanner = () => {
   const handleSectionChange = useCallback((sectionId) => {
     setCurrentSection(sectionId);
   }, []);
+
+  // NEW: Function to toggle section expansion
+  const toggleSectionExpansion = useCallback((sectionId) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+    
+    // If we're expanding this section, make it the current section
+    if (!expandedSections[sectionId]) {
+      setCurrentSection(sectionId);
+    }
+  }, [expandedSections]);
+
+  // NEW: Function to expand only specific sections
+  const setExpandedSection = useCallback((sectionId) => {
+    setExpandedSections(prev => {
+      const newState = { ...prev };
+      Object.keys(newState).forEach(id => {
+        newState[id] = id === sectionId;
+      });
+      return newState;
+    });
+    setCurrentSection(sectionId);
+  }, []);
+
+  // NEW: Get the next section ID in the sequence
+  const getNextSectionId = useCallback((currentId) => {
+    const sections = sectionContent?.sections || [];
+    const currentIndex = sections.findIndex(s => s.id === currentId);
+    
+    if (currentIndex !== -1 && currentIndex < sections.length - 1) {
+      return sections[currentIndex + 1].id;
+    }
+    return null;
+  }, []);
+
+  // NEW: Function to get section-specific feedback and determine status
+  const handleSectionFeedback = useCallback(async (sectionId) => {
+    setLoading(true);
+    
+    try {
+      // Section data for context
+      const sectionsForContext = sectionContent?.sections || [];
+      const currentSectionObj = sectionsForContext.find(s => s && s.id === sectionId) || {};
+      
+      // Get instructions text
+      const instructionsText = currentSectionObj.introText || '';
+      
+      // Get user's current content for this section
+      const userContent = userInputs[sectionId] || '';
+      
+      // Skip if no content
+      if (!userContent.trim()) {
+        alert("Please add some content before requesting feedback.");
+        setLoading(false);
+        return;
+      }
+      
+      // Build system prompt
+      const systemPrompt = `You are evaluating the ${currentSectionObj.title || 'section'} of a scientific project plan. 
+      Provide constructive feedback on the content based on these criteria:
+
+      - Completeness: Does it address all key aspects?
+      - Clarity: Is it well-articulated and understandable?
+      - Relevance: Does it align with the project's focus?
+
+      Your evaluation will be used to determine a status rating: 'good', 'fair', or 'poor'.`;
+      
+      // Build user prompt
+      const userPrompt = `Please review the following ${currentSectionObj.title || 'section'} content and provide specific, actionable feedback. 
+      Begin your response with one of these keywords to indicate quality:
+      - GOOD: If the content is thorough and well-developed
+      - FAIR: If the content needs moderate improvements
+      - POOR: If the content needs substantial work
+
+      Section Instructions: ${instructionsText}
+
+      User's content:
+      ${userContent}
+
+      Provide 3-5 specific points of feedback, focusing on concrete improvements.`;
+      
+      // Call OpenAI API
+      const response = await callOpenAI(
+        userPrompt,
+        sectionId,
+        userInputs,
+        sectionsForContext,
+        { temperature: 0.7 },
+        [],
+        systemPrompt,
+        false
+      );
+      
+      // Determine status based on response
+      let status = 'none';
+      if (response.toUpperCase().startsWith('GOOD')) {
+        status = 'good';
+      } else if (response.toUpperCase().startsWith('FAIR')) {
+        status = 'fair';
+      } else if (response.toUpperCase().startsWith('POOR')) {
+        status = 'poor';
+      }
+      
+      // Update section status
+      setSectionStatus(prevStatus => ({
+        ...prevStatus,
+        [sectionId]: status
+      }));
+      
+      // If status is good, expand the next section
+      if (status === 'good') {
+        const nextSectionId = getNextSectionId(sectionId);
+        if (nextSectionId) {
+          setExpandedSections(prev => ({
+            ...prev,
+            [nextSectionId]: true
+          }));
+        }
+      }
+      
+      // Add feedback to chat messages
+      setChatMessages(prevMessages => ({
+        ...prevMessages,
+        [sectionId]: [
+          ...(prevMessages[sectionId] || []),
+          { role: 'user', content: "Can you evaluate my current progress on this section?" },
+          { role: 'assistant', content: response }
+        ]
+      }));
+      
+    } catch (error) {
+      console.error("Error getting section feedback:", error);
+      alert("There was an error getting feedback. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [userInputs, getNextSectionId]);
 
   // Modernized send message handler using JSON mode for structured data
   const handleSendMessage = useCallback(async (overrideMessage = null) => {
@@ -203,7 +355,7 @@ const usePaperPlanner = () => {
     }
   }, [currentMessage, currentSection, currentSectionData, userInputs, chatMessages]);
 
-  // Reset project function - FIXED to correctly use fresh templates and all required states
+  // Reset project function - UPDATED for sequential mode
   const resetProject = useCallback(() => {
     // Clear localStorage first, if available
     if (storageAvailable) {
@@ -222,10 +374,17 @@ const usePaperPlanner = () => {
     // Set the state to fresh templates
     setUserInputs(freshInputs);
     setChatMessages(freshChat);
-    setCurrentSection(sectionContent?.sections?.[0]?.id || 'question');
+    
+    // Reset section expansion to only first section
+    const firstSectionId = sectionContent?.sections?.[0]?.id || 'question';
+    const initialExpanded = { [firstSectionId]: true };
+    setExpandedSections(initialExpanded);
+    
+    setCurrentSection(firstSectionId);
     setActiveApproach('hypothesis');
     setActiveDataMethod('experiment');
     setSectionCompletionStatus({});
+    setSectionStatus({}); // Reset feedback status
     setShowConfirmDialog(false);
   }, [initialTemplates, storageAvailable]);
 
@@ -264,7 +423,7 @@ const usePaperPlanner = () => {
     return true;
   }, [userInputs, chatMessages]);
 
-  // Function to load project from imported JSON file - SIMPLIFIED VERSION
+  // Function to load project from imported JSON file - UPDATED for sequential mode
   const loadProject = useCallback((data) => {
     if (!validateProjectData(data)) {
       alert("Invalid project file format. Please select a valid project file.");
@@ -314,6 +473,14 @@ const usePaperPlanner = () => {
       // Update chat messages state
       setChatMessages(mergedChat);
       
+      // Reset section expansion to only first section
+      const firstSectionId = sectionContent?.sections?.[0]?.id || 'question';
+      const initialExpanded = { [firstSectionId]: true };
+      setExpandedSections(initialExpanded);
+      
+      // Reset section status
+      setSectionStatus({});
+      
       // Save to localStorage
       if (storageAvailable) {
         saveToStorage(mergedInputs, mergedChat);
@@ -329,7 +496,7 @@ const usePaperPlanner = () => {
   }, [storageAvailable]);
 
   // Import document content using the document import service
-  // FIXED: Now passes sectionContent to ensure consistent placeholders
+  // UPDATED for sequential mode
   const handleDocumentImport = useCallback(async (file) => {
     setLoading(true);
 
@@ -369,18 +536,25 @@ const usePaperPlanner = () => {
     loading,
     showConfirmDialog,
     showExamplesDialog,
-    currentSectionData,  // Provides section data to chat
-    activeApproach,      // Added to expose for VerticalPaperPlannerApp
-    activeDataMethod,    // Added to expose for VerticalPaperPlannerApp
-    sectionCompletionStatus, // Added to expose for VerticalPaperPlannerApp
+    currentSectionData,
+    activeApproach,
+    activeDataMethod,
+    sectionCompletionStatus,
+    // NEW: Sequential mode states
+    expandedSections,
+    sectionStatus,
     setChatMessages,
     setUserInputs,
     setCurrentMessage,
     setShowConfirmDialog,
     setShowExamplesDialog,
-    setActiveApproach,    // Added to expose for VerticalPaperPlannerApp
-    setActiveDataMethod,  // Added to expose for VerticalPaperPlannerApp
-    setSectionCompletionStatus, // Added to expose for VerticalPaperPlannerApp
+    setActiveApproach,
+    setActiveDataMethod,
+    setSectionCompletionStatus,
+    // NEW: Sequential mode handlers
+    toggleSectionExpansion,
+    setExpandedSection,
+    handleSectionFeedback,
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
@@ -388,7 +562,7 @@ const usePaperPlanner = () => {
     exportProject,
     saveProject,
     loadProject,
-    importDocumentContent: handleDocumentImport // Use the real document import service with sectionContent
+    importDocumentContent: handleDocumentImport
   };
 };
 
