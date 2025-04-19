@@ -356,6 +356,18 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     trackApproachToggle(approach);
     
     // When toggling approach, ensure the section is expanded
+    // and make sure it's the only expanded approach section
+    const expandedState = {...expandedSections};
+    
+    // Collapse all approach sections first
+    ['hypothesis', 'needsresearch', 'exploratoryresearch'].forEach(id => {
+      expandedState[id] = false;
+    });
+    
+    // Then expand only the selected one
+    expandedState[approach] = true;
+    
+    // Update the expanded sections state
     toggleSectionExpansion(approach);
   };
 
@@ -365,6 +377,18 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     trackDataMethodToggle(method);
     
     // When toggling data method, ensure the section is expanded
+    // and make sure it's the only expanded data method section
+    const expandedState = {...expandedSections};
+    
+    // Collapse all data method sections first
+    ['experiment', 'existingdata', 'theorysimulation'].forEach(id => {
+      expandedState[id] = false;
+    });
+    
+    // Then expand only the selected one
+    expandedState[method] = true;
+    
+    // Update the expanded sections state
     toggleSectionExpansion(method);
   };
 
@@ -409,10 +433,19 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Combined loading state for all AI features
   const isAnyAiLoading = loading || chatLoading || improvingInstructions || reviewLoading;
 
-  // Section display logic - UPDATED for sequential mode to use expandedSections
+  // Section display logic - UPDATED for sequential mode with toggle behavior
   const shouldDisplaySection = (sectionId) => {
-    // All sections are always displayed in the sequential mode,
-    // their expanded/collapsed state is controlled by expandedSections
+    // For approach sections, only show the active one
+    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
+      return sectionId === activeApproach;
+    }
+    
+    // For data method sections, only show the active one
+    if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
+      return sectionId === activeDataMethod;
+    }
+    
+    // All other sections are always displayed
     return true;
   };
 
@@ -453,9 +486,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 setActiveApproach={handleApproachToggle}
               />
 
-              {/* Display approach sections (only one is expanded at a time) */}
+              {/* Display ONLY the active approach section */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch')
+                .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
                 .map(section => renderSection(section))}
 
               {/* Target Audience section */}
@@ -474,9 +507,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 setActiveMethod={handleDataMethodToggle}
               />
 
-              {/* Display data acquisition sections (only one is expanded at a time) */}
+              {/* Display ONLY the active data acquisition method section */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation')
+                .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
                 .map(section => renderSection(section))}
 
               {/* Display remaining sections */}
