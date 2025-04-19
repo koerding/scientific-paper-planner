@@ -311,48 +311,50 @@ const usePaperPlanner = () => {
         [sectionId]: status
       }));
       
-      // If status is good, expand the next section
-      if (status === 'good') {
-        const nextSectionId = getNextSectionId(sectionId);
-        if (nextSectionId) {
-          // Special handling for approach and data method sections
-          if (nextSectionId === 'hypothesis' || nextSectionId === 'needsresearch' || nextSectionId === 'exploratoryresearch') {
-            // Set the active approach to this section
-            setActiveApproach(nextSectionId);
-            
-            // Update expanded sections: collapse all approach sections except the active one
-            setExpandedSections(prev => {
-              const newState = {...prev};
-              ['hypothesis', 'needsresearch', 'exploratoryresearch'].forEach(id => {
-                newState[id] = id === nextSectionId;
-              });
-              return newState;
-            });
-          }
-          else if (nextSectionId === 'experiment' || nextSectionId === 'existingdata' || nextSectionId === 'theorysimulation') {
-            // Set the active data method to this section
-            setActiveDataMethod(nextSectionId);
-            
-            // Update expanded sections: collapse all data method sections except the active one
-            setExpandedSections(prev => {
-              const newState = {...prev};
-              ['experiment', 'existingdata', 'theorysimulation'].forEach(id => {
-                newState[id] = id === nextSectionId;
-              });
-              return newState;
-            });
-          }
-          else {
-            // For regular sections, just expand it
-            setExpandedSections(prev => ({
-              ...prev,
-              [nextSectionId]: true
-            }));
-          }
+      // Always expand the next section regardless of feedback status
+      const nextSectionId = getNextSectionId(sectionId);
+      if (nextSectionId) {
+        // Special handling for approach and data method sections
+        if (nextSectionId === 'hypothesis' || nextSectionId === 'needsresearch' || nextSectionId === 'exploratoryresearch') {
+          // Set the active approach to this section
+          setActiveApproach(nextSectionId);
           
-          // Update current section to the next one
-          setCurrentSection(nextSectionId);
+          // Update expanded sections: collapse all approach sections except the active one
+          setExpandedSections(prev => {
+            const newState = {...prev};
+            ['hypothesis', 'needsresearch', 'exploratoryresearch'].forEach(id => {
+              newState[id] = id === nextSectionId;
+            });
+            // Always expand the next section
+            newState[nextSectionId] = true;
+            return newState;
+          });
         }
+        else if (nextSectionId === 'experiment' || nextSectionId === 'existingdata' || nextSectionId === 'theorysimulation') {
+          // Set the active data method to this section
+          setActiveDataMethod(nextSectionId);
+          
+          // Update expanded sections: collapse all data method sections except the active one
+          setExpandedSections(prev => {
+            const newState = {...prev};
+            ['experiment', 'existingdata', 'theorysimulation'].forEach(id => {
+              newState[id] = id === nextSectionId;
+            });
+            // Always expand the next section
+            newState[nextSectionId] = true;
+            return newState;
+          });
+        }
+        else {
+          // For regular sections, just expand it
+          setExpandedSections(prev => ({
+            ...prev,
+            [nextSectionId]: true
+          }));
+        }
+        
+        // Update current section to the next one
+        setCurrentSection(nextSectionId);
       }
       
       // Add feedback to chat messages
