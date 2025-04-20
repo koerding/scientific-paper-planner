@@ -1,16 +1,22 @@
-// src/components/controls/SectionControls.js
-
 import React from 'react';
 import { setAllSectionStates } from '../../services/sectionStateService';
 
 /**
  * Controls for expanding/minimizing all sections at once
  * Provides expand all and collapse all functionality
+ * Dispatches events to notify section components of changes
  */
 const SectionControls = ({ sectionIds, onStateChange }) => {
   // Expand all sections
   const expandAll = () => {
     setAllSectionStates(false, sectionIds);
+    
+    // Dispatch custom event to notify section cards
+    const event = new CustomEvent('sectionStatesChanged', { 
+      detail: { minimized: false } 
+    });
+    window.dispatchEvent(event);
+    
     if (onStateChange) {
       onStateChange(false);
     }
@@ -19,6 +25,13 @@ const SectionControls = ({ sectionIds, onStateChange }) => {
   // Minimize all sections
   const minimizeAll = () => {
     setAllSectionStates(true, sectionIds);
+    
+    // Dispatch custom event to notify section cards
+    const event = new CustomEvent('sectionStatesChanged', { 
+      detail: { minimized: true } 
+    });
+    window.dispatchEvent(event);
+    
     if (onStateChange) {
       onStateChange(true);
     }
