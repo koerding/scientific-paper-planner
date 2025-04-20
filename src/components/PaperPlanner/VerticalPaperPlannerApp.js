@@ -1,4 +1,4 @@
-// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
+// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Optimized version with enhanced review functionality
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
@@ -35,7 +35,7 @@ import {
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Project Planner with improved feedback functionality
+ * Enhanced Project Planner with improved review functionality
  * Scientific project planning tool with AI-assisted features
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
@@ -57,10 +57,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     resetProject: hookResetProject,
     exportProject,
     loadProject,
-    importDocumentContent,
-    // NEW: Get the section status and feedback handler
-    sectionStatus,
-    handleSectionFeedback
+    importDocumentContent
   } = usePaperPlannerHook;
 
   // Core state
@@ -96,17 +93,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   });
 
-  // Effect for keeping activeSection and currentSectionIdForChat in sync
-  useEffect(() => {
-    setActiveSection(currentSectionIdForChat);
-  }, [currentSectionIdForChat]);
-
-  // Also sync in the other direction - when activeSection changes, update currentSection in the hook
-  useEffect(() => {
-    // Always update the current section in the hook when activeSection changes
-    handleSectionChange(activeSection);
-  }, [activeSection, handleSectionChange]);
-
   // Make splash screen ref globally available
   useEffect(() => {
     window.splashManagerRef = splashManagerRef;
@@ -122,6 +108,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       });
     }
   }, [localSectionContent.sections]);
+
+  // Effect for initial active section setting
+  useEffect(() => {
+    setActiveSection(currentSectionIdForChat);
+  }, [currentSectionIdForChat]);
 
   // Track initial pageview
   useEffect(() => {
@@ -168,13 +159,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Section handling functions
   const setActiveSectionWithManualFlag = (sectionId) => {
-    // For debugging - log what we're setting
-    console.log("setActiveSectionWithManualFlag called with:", sectionId);
-    
-    // Update our local state
     setActiveSection(sectionId);
-    
-    // Update the hook's state
     handleSectionChange(sectionId);
     
     // Track this section change in analytics
@@ -187,15 +172,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     if (!localSectionContent || !Array.isArray(localSectionContent.sections)) {
       return null;
     }
-    
-    // Find the section matching activeSection (which tracks the cursor/active section)
-    const sectionData = localSectionContent.sections.find(s => s && s.id === activeSection) || null;
-    
-    // For debugging - log the active section and found data
-    console.log("Active section:", activeSection);
-    console.log("Found section data:", sectionData ? sectionData.title : "null");
-    
-    return sectionData;
+    return localSectionContent.sections.find(s => s && s.id === activeSection) || null;
   };
 
   // Edit tracking
@@ -208,30 +185,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setSignificantEditsMade(true);
   };
 
-  // Handle section feedback with localSectionContent update
-  const handleSectionFeedbackWithUpdate = async (sectionId) => {
-    trackInstructionImprovement(sectionId);
-    
-    // Call the hook's handleSectionFeedback function
-    const updatedSections = await handleSectionFeedback(sectionId);
-    
-    // If we got updated sections back, update our local section content
-    if (updatedSections) {
-      setLocalSectionContent(updatedSections);
-      setLastImprovementTime(Date.now());
-      setSignificantEditsMade(false);
-      setEditEvents([]);
-      
-      // For debugging - log the updated sections
-      console.log("Updated localSectionContent with feedback results:", updatedSections);
-    }
-  };
-
   // Handle magic (improving instructions)
   const handleMagic = async () => {
     if (isAnyAiLoading) return;
-    
-    console.log("Starting handleMagic for section:", activeSection);
     
     trackInstructionImprovement(activeSection);
     setLastImprovementTime(Date.now());
@@ -240,35 +196,19 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     
     setImprovingInstructions(true);
     try {
-      console.log("Calling improveBatchInstructions with sections:", 
-        localSectionContent.sections.map(s => s.id));
-      
       const result = await improveBatchInstructions(
         localSectionContent.sections,
         userInputs,
         sectionContent
       );
 
-      console.log("Received result from improveBatchInstructions:", result);
-
       if (result.success && result.improvedData && result.improvedData.length > 0) {
         // Update the instruction content
-        console.log("Updating section content with improved data:", 
-          result.improvedData.map(d => d.id));
-        
         const updatedSections = updateSectionWithImprovedInstructions(
           localSectionContent,
           result.improvedData
         );
-        
-        console.log("Updated sections:", updatedSections);
-        
         setLocalSectionContent(updatedSections);
-        
-        // Force a re-render of the instructions panel
-        const currentActive = activeSection;
-        setActiveSection("temp-force-rerender");
-        setTimeout(() => setActiveSection(currentActive), 10);
       }
     } catch (error) {
       console.error("[handleMagic] Error during improvement process:", error);
@@ -403,16 +343,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Get current section data for UI
   const sectionDataForPanel = getCurrentSectionData();
-  
-  // Log what's being passed to the panel
-  useEffect(() => {
-    console.log("Data being passed to instructions panel:", sectionDataForPanel);
-    if (sectionDataForPanel?.instructions?.improvement) {
-      console.log("Panel has improvement data:", sectionDataForPanel.instructions.improvement);
-    } else {
-      console.log("Panel does NOT have improvement data");
-    }
-  }, [sectionDataForPanel]);
 
   // Toggle handling
   const handleApproachToggle = (approach) => {
@@ -432,7 +362,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     if (!section || !section.id) return null;
 
     const isCurrentActive = activeSection === section.id;
-    const feedbackStatus = sectionStatus[section.id] || 'none';
     
     return (
       <SectionCard
@@ -446,8 +375,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         onClick={() => setActiveSectionWithManualFlag(section.id)}
         onEdit={handleEdit}
         onSignificantEdit={handleSignificantEdit}
-        feedbackStatus={feedbackStatus}
-        onGetFeedback={handleSectionFeedbackWithUpdate}
       />
     );
   };
@@ -465,20 +392,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Combined loading state for all AI features
   const isAnyAiLoading = loading || chatLoading || improvingInstructions || reviewLoading;
 
-  // Section display logic - UPDATED for toggle behavior
+  // Section display logic
   const shouldDisplaySection = (sectionId) => {
-    // For approach sections, only show the active one
     if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
       return sectionId === activeApproach;
     }
-    
-    // For data method sections, only show the active one
+
     if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
       return sectionId === activeDataMethod;
     }
-    
-    // All other sections are always displayed
-    return true;
+
+    return true; // All other sections are always displayed
   };
 
   return (
@@ -518,7 +442,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 setActiveApproach={handleApproachToggle}
               />
 
-              {/* Display ONLY the active approach section */}
+              {/* Display active approach section */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
                 .map(section => renderSection(section))}
@@ -539,22 +463,14 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
                 setActiveMethod={handleDataMethodToggle}
               />
 
-              {/* Display ONLY the active data acquisition method section */}
+              {/* Display active data acquisition section */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
                 .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
                 .map(section => renderSection(section))}
 
               {/* Display remaining sections */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => {
-                  // Only include non-toggle sections
-                  const isApproachSection = section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch';
-                  const isDataMethodSection = section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation';
-                  const isAlreadyRendered = section?.id === 'question' || section?.id === 'audience' || section?.id === 'relatedpapers';
-                  
-                  // Only show remaining sections that aren't toggle sections or already rendered
-                  return !isApproachSection && !isDataMethodSection && !isAlreadyRendered;
-                })
+                .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
                 .map(section => renderSection(section))}
             </div>
           </div>
