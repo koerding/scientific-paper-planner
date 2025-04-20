@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage, isStorageAvailable } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
+import { improveInstruction, improveBatchInstructions, updateSectionWithImprovedInstructions } from '../services/instructionImprovementService';
 import * as documentImportService from '../services/documentImportService';
 import sectionContent from '../data/sectionContent.json';
 import { validateProjectData } from '../utils/exportUtils';
@@ -240,17 +241,16 @@ const usePaperPlanner = () => {
     return nextSectionId;
   }, [activeApproach, activeDataMethod]);
 
-  // NEW: Function to get section-specific feedback and determine status
+  // MODIFIED: Replaced with improved version that uses instructionImprovementService
   const handleSectionFeedback = useCallback(async (sectionId) => {
     setLoading(true);
     
     try {
-      // Section data for context
-      const sectionsForContext = sectionContent?.sections || [];
-      const currentSectionObj = sectionsForContext.find(s => s && s.id === sectionId) || {};
-      
-      // Get instructions text
-      const instructionsText = currentSectionObj.introText || '';
+      // Get the section that was clicked
+      const targetSection = sectionContent?.sections?.find(s => s && s.id === sectionId);
+      if (!targetSection) {
+        throw new Error(`Section not found: ${sectionId}`);
+      }
       
       // Get user's current content for this section
       const userContent = userInputs[sectionId] || '';
@@ -262,113 +262,115 @@ const usePaperPlanner = () => {
         return;
       }
       
-      // Build system prompt
-      const systemPrompt = `You are evaluating the ${currentSectionObj.title || 'section'} of a scientific project plan. 
-      Provide constructive feedback on the content based on these criteria:
-
-      - Completeness: Does it address all key aspects?
-      - Clarity: Is it well-articulated and understandable?
-      - Relevance: Does it align with the project's focus?
-
-      Your evaluation will be used to determine a status rating: 'good', 'fair', or 'poor'.`;
+      console.log(`Running instruction improvement for section: ${sectionId}`);
       
-      // Build user prompt
-      const userPrompt = `Please review the following ${currentSectionObj.title || 'section'} content and provide specific, actionable feedback. 
-      Begin your response with one of these keywords to indicate quality:
-      - GOOD: If the content is thorough and well-developed
-      - FAIR: If the content needs moderate improvements
-      - POOR: If the content needs substantial work
-
-      Section Instructions: ${instructionsText}
-
-      User's content:
-      ${userContent}
-
-      Provide 3-5 specific points of feedback, focusing on concrete improvements.`;
-      
-      // Call OpenAI API
-      const response = await callOpenAI(
-        userPrompt,
-        sectionId,
-        userInputs,
-        sectionsForContext,
-        { temperature: 0.7 },
-        [],
-        systemPrompt,
-        false
+      // Create a small array of sections focusing on the clicked section
+      // but also including a few others for context
+      const sectionsForAnalysis = sectionContent?.sections?.filter(s => 
+        s.id === sectionId || 
+        // Include up to 2 sections before and after for context if they have content
+        (Math.abs(sectionContent.sections.findIndex(sec => sec.id === sectionId) - 
+                  sectionContent.sections.findIndex(sec => sec.id === s.id)) <= 2 && 
+         userInputs[s.id] && userInputs[s.id].trim() !== '')
       );
       
-      // Determine status based on response
-      let status = 'none';
-      if (response.toUpperCase().startsWith('GOOD')) {
-        status = 'good';
-      } else if (response.toUpperCase().startsWith('FAIR')) {
-        status = 'fair';
-      } else if (response.toUpperCase().startsWith('POOR')) {
-        status = 'poor';
+      if (!sectionsForAnalysis || sectionsForAnalysis.length === 0) {
+        throw new Error("No valid sections to analyze");
       }
       
-      // Update section status
-      setSectionStatus(prevStatus => ({
-        ...prevStatus,
-        [sectionId]: status
-      }));
+      // Call the original instruction improvement service
+      const result = await improveBatchInstructions(
+        sectionsForAnalysis,
+        userInputs,
+        sectionContent
+      );
+      
+      if (!result.success) {
+        throw new Error(result.message || "Failed to improve instructions");
+      }
+      
+      // Update the section content with improved instructions
+      const updatedSections = updateSectionWithImprovedInstructions(
+        { sections: sectionContent.sections }, // Wrap sections in an object as expected by the function
+        result.improvedData
+      );
+      
+      if (!updatedSections || !updatedSections.sections) {
+        throw new Error("Failed to update sections with improved instructions");
+      }
+      
+      // Determine improvement status for status indicators
+      // Find the improved data for this section
+      const improvedSection = result.improvedData.find(s => s.id === sectionId);
+      if (improvedSection) {
+        // Update section status based on completeness
+        let status = 'none';
+        if (improvedSection.completionStatus === 'complete') {
+          // Count number of completed subsections
+          const completedCount = improvedSection.subsectionFeedback?.filter(sub => sub.isComplete)?.length || 0;
+          const totalCount = improvedSection.subsectionFeedback?.length || 0;
+          
+          if (totalCount === 0) {
+            status = 'none';
+          } else if (completedCount / totalCount > 0.8) {
+            status = 'good';
+          } else if (completedCount / totalCount > 0.4) {
+            status = 'fair';
+          } else {
+            status = 'poor';
+          }
+        } else {
+          status = 'poor';
+        }
+        
+        // Update section status
+        setSectionStatus(prevStatus => ({
+          ...prevStatus,
+          [sectionId]: status
+        }));
+        
+        // Add feedback to chat messages
+        setChatMessages(prevMessages => {
+          const overallFeedback = improvedSection.overallFeedback || 
+            "I've reviewed your work on this section. Here's my feedback:";
+            
+          // Compile detailed feedback from subsections
+          const subsectionDetails = improvedSection.subsectionFeedback?.map(sub => 
+            `**${sub.title}**: ${sub.feedback}`
+          ).join('\n\n') || '';
+          
+          const fullFeedback = `${overallFeedback}\n\n${subsectionDetails}`;
+          
+          return {
+            ...prevMessages,
+            [sectionId]: [
+              ...(prevMessages[sectionId] || []),
+              { role: 'user', content: "Can you evaluate my current progress on this section?" },
+              { role: 'assistant', content: fullFeedback }
+            ]
+          };
+        });
+      }
       
       // Always expand the next section regardless of feedback status
       const nextSectionId = getNextSectionId(sectionId);
       if (nextSectionId) {
-        // Special handling for approach and data method sections
+        // Expand the next section automatically
+        setExpandedSections(prev => ({
+          ...prev,
+          [nextSectionId]: true
+        }));
+        
+        // If it's a toggle section (approach or data method), handle that specially
         if (nextSectionId === 'hypothesis' || nextSectionId === 'needsresearch' || nextSectionId === 'exploratoryresearch') {
-          // Set the active approach to this section
           setActiveApproach(nextSectionId);
-          
-          // Update expanded sections: collapse all approach sections except the active one
-          setExpandedSections(prev => {
-            const newState = {...prev};
-            ['hypothesis', 'needsresearch', 'exploratoryresearch'].forEach(id => {
-              newState[id] = id === nextSectionId;
-            });
-            // Always expand the next section
-            newState[nextSectionId] = true;
-            return newState;
-          });
-        }
-        else if (nextSectionId === 'experiment' || nextSectionId === 'existingdata' || nextSectionId === 'theorysimulation') {
-          // Set the active data method to this section
+        } else if (nextSectionId === 'experiment' || nextSectionId === 'existingdata' || nextSectionId === 'theorysimulation') {
           setActiveDataMethod(nextSectionId);
-          
-          // Update expanded sections: collapse all data method sections except the active one
-          setExpandedSections(prev => {
-            const newState = {...prev};
-            ['experiment', 'existingdata', 'theorysimulation'].forEach(id => {
-              newState[id] = id === nextSectionId;
-            });
-            // Always expand the next section
-            newState[nextSectionId] = true;
-            return newState;
-          });
-        }
-        else {
-          // For regular sections, just expand it
-          setExpandedSections(prev => ({
-            ...prev,
-            [nextSectionId]: true
-          }));
         }
         
         // Update current section to the next one
         setCurrentSection(nextSectionId);
       }
-      
-      // Add feedback to chat messages
-      setChatMessages(prevMessages => ({
-        ...prevMessages,
-        [sectionId]: [
-          ...(prevMessages[sectionId] || []),
-          { role: 'user', content: "Can you evaluate my current progress on this section?" },
-          { role: 'assistant', content: response }
-        ]
-      }));
       
     } catch (error) {
       console.error("Error getting section feedback:", error);
@@ -376,7 +378,7 @@ const usePaperPlanner = () => {
     } finally {
       setLoading(false);
     }
-  }, [userInputs, getNextSectionId]);
+  }, [userInputs, getNextSectionId, setChatMessages, setSectionStatus, setExpandedSections, setCurrentSection, setActiveApproach, setActiveDataMethod]);
 
   // Modernized send message handler using JSON mode for structured data
   const handleSendMessage = useCallback(async (overrideMessage = null) => {
