@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getSectionMinimizedState, setSectionMinimizedState } from '../../services/sectionStateService';
 
 /**
  * Enhanced section card component with minimization capabilities
  * ADDED: Minimization toggle with smooth animations and clear visual indication
+ * ADDED: Persistence of minimized states between sessions
  */
 const SectionCard = ({
   section,
@@ -28,8 +30,11 @@ const SectionCard = ({
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
-  // ADDED: State for minimized/expanded cards
-  const [isMinimized, setIsMinimized] = useState(false);
+  // ADDED: State for minimized/expanded cards with localStorage persistence
+  const [isMinimized, setIsMinimized] = useState(() => {
+    // Load initial state from localStorage if available
+    return getSectionMinimizedState(section.id);
+  });
 
   // Auto-resize textarea height - improved version
   const adjustTextareaHeight = () => {
@@ -163,10 +168,14 @@ const SectionCard = ({
     return firstLine;
   };
 
-  // ADDED: Toggle minimized state
+  // ADDED: Toggle minimized state with persistence
   const toggleMinimized = (e) => {
     e.stopPropagation(); // Prevent section selection when toggling
-    setIsMinimized(!isMinimized);
+    const newState = !isMinimized;
+    setIsMinimized(newState);
+    
+    // Save state to localStorage
+    setSectionMinimizedState(section.id, newState);
   };
 
   return (
