@@ -7,6 +7,7 @@ import { getSectionMinimizedState, setSectionMinimizedState } from '../../servic
  * - Persistence of minimized states between sessions
  * - Responds to global state changes
  * - Different defaults for new projects vs examples
+ * - FIXED: Properly maintains blue highlighting for active sections
  */
 const SectionCard = ({
   section,
@@ -99,7 +100,13 @@ const SectionCard = ({
 
   // Determine background color for the card and textarea
   const getBackgroundColor = () => {
-    return isCurrentSection ? 'bg-blue-50' : 'bg-white';
+    // Always prioritize the current section highlighting
+    if (isCurrentSection) {
+      return 'bg-blue-50'; // Keep the blue highlighting for current section
+    }
+    
+    // For non-current sections, return white
+    return 'bg-white';
   };
 
   // Calculate max height for minimized cards
@@ -125,6 +132,7 @@ const SectionCard = ({
     ${getMaxHeight()}
     overflow-hidden
     relative
+    ${isCurrentSection ? 'current-active' : ''}
   `;
 
   // Handle input change and resize, with tracking for improvement reminder
@@ -324,8 +332,18 @@ const SectionCard = ({
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
         
-        .section-card.minimized:hover {
+        /* Make sure current section styling always takes precedence */
+        .section-card.current-active {
+          background-color: #eff6ff !important; /* bg-blue-50 with !important */
+        }
+        
+        /* Update minimized card hover to respect active section */
+        .section-card.minimized:hover:not(.current-active) {
           background-color: #f8fafc !important; /* slate-50 */
+        }
+        
+        .section-card.minimized.current-active:hover {
+          background-color: #dbeafe !important; /* blue-100 for hover state of active section */
         }
         
         .minimize-toggle-btn {
