@@ -355,20 +355,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setActiveSectionWithManualFlag(approach);
     trackApproachToggle(approach);
     
-    // When toggling approach, ensure the section is expanded
-    // and make sure it's the only expanded approach section
-    const expandedState = {...expandedSections};
-    
-    // Collapse all approach sections first
-    ['hypothesis', 'needsresearch', 'exploratoryresearch'].forEach(id => {
-      expandedState[id] = false;
-    });
-    
-    // Then expand only the selected one
-    expandedState[approach] = true;
-    
-    // Update the expanded sections state
-    toggleSectionExpansion(approach);
+    // Don't automatically expand the section when selected from the toggle
+    // Just update which approach is active in state
   };
 
   const handleDataMethodToggle = (method) => {
@@ -376,20 +364,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setActiveSectionWithManualFlag(method);
     trackDataMethodToggle(method);
     
-    // When toggling data method, ensure the section is expanded
-    // and make sure it's the only expanded data method section
-    const expandedState = {...expandedSections};
-    
-    // Collapse all data method sections first
-    ['experiment', 'existingdata', 'theorysimulation'].forEach(id => {
-      expandedState[id] = false;
-    });
-    
-    // Then expand only the selected one
-    expandedState[method] = true;
-    
-    // Update the expanded sections state
-    toggleSectionExpansion(method);
+    // Don't automatically expand the section when selected from the toggle
+    // Just update which data method is active in state
   };
 
   // Rendering
