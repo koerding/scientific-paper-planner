@@ -1,210 +1,203 @@
 // FILE: src/services/sectionStateService.js
 
 /**
- * Service for managing section minimization states
- * Handles localStorage persistence and provides utility functions
+ * Service for managing section minimized states
+ * FIXED: Added error handling for localStorage access
+ * FIXED: Added fallback for missing sections
  */
 
+// Constants
 const STORAGE_KEY = 'sectionMinimizedStates';
 
 /**
- * Check if localStorage is available
- * @returns {boolean} - Whether localStorage is available
+ * Safely access localStorage with fallback for iframe or extension contexts
+ * @returns {boolean} Whether localStorage is available
  */
 const isStorageAvailable = () => {
   try {
+    // Test if localStorage is available
     const testKey = '__storage_test__';
     localStorage.setItem(testKey, testKey);
     localStorage.removeItem(testKey);
     return true;
   } catch (e) {
-    console.warn('Local storage is not available:', e.message);
+    console.warn('Local storage is not available for section states:', e.message);
     return false;
   }
 };
 
 /**
- * Get the minimized state for a specific section from localStorage
- * @param {string} sectionId - The section ID
- * @returns {boolean} - Whether the section is minimized
+ * In-memory fallback for when localStorage is not available
  */
-export const getSectionMinimizedState = (sectionId) => {
-  if (!isStorageAvailable()) {
-    // Default to minimized if storage is unavailable
-    return true;
-  }
-
-  try {
-    // Get all section states
-    const statesJson = localStorage.getItem(STORAGE_KEY);
-    if (!statesJson) {
-      // Default to minimized if no states are stored
-      return true;
-    }
-
-    const states = JSON.parse(statesJson);
-    
-    // If the section isn't in the states object, default to minimized
-    return states[sectionId] !== false;
-  } catch (error) {
-    console.error(`Error getting minimized state for section ${sectionId}:`, error);
-    // Default to minimized if there's an error
-    return true;
-  }
-};
+let memoryStorageFallback = {};
 
 /**
- * Set the minimized state for a specific section and persist to localStorage
- * @param {string} sectionId - The section ID
- * @param {boolean} isMinimized - Whether the section should be minimized
+ * Initialize section states (minimized or expanded) for new projects or examples
+ * @param {boolean} minimized - Whether sections should start minimized (true for new projects, false for examples)
+ * @param {Array} sectionIds - Optional array of section IDs to initialize
  */
-export const setSectionMinimizedState = (sectionId, isMinimized) => {
-  if (!isStorageAvailable()) {
-    return;
-  }
-
+export const initializeSectionStates = (minimized = true, sectionIds = []) => {
   try {
-    // Get current states
-    const statesJson = localStorage.getItem(STORAGE_KEY);
-    const states = statesJson ? JSON.parse(statesJson) : {};
+    console.log(`Initialized section states for ${minimized ? 'new project' : 'example'}:`, 
+                sectionIds.length ? sectionIds : 'all sections');
     
-    // Update state for this section
-    states[sectionId] = isMinimized;
+    let states = {};
     
-    // Save back to localStorage
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
-  } catch (error) {
-    console.error(`Error setting minimized state for section ${sectionId}:`, error);
-  }
-};
-
-/**
- * Initialize all section states based on whether it's a new project or example
- * @param {boolean} isNewProject - Whether this is a new project (true) or an example (false)
- * @param {Array} sectionIds - Array of all visible section IDs
- */
-export const initializeSectionStates = (isNewProject, sectionIds = []) => {
-  if (!isStorageAvailable()) {
-    return;
-  }
-
-  try {
-    // Create new states object
-    const states = {};
-    
-    // Always initialize all potential sections, even if they're not currently visible
-    // This ensures consistent behavior when switching between approaches later
-    const allPossibleSections = [
-      'question', 'audience', 'hypothesis', 'needsresearch', 'exploratoryresearch',
-      'relatedpapers', 'experiment', 'existingdata', 'theorysimulation',
-      'analysis', 'process', 'abstract'
-    ];
-    
-    // For new projects: Only expand the first "question" section, minimize all others
-    // For examples: Expand all sections
-    allPossibleSections.forEach(sectionId => {
-      if (isNewProject) {
-        // For new projects, only the "question" section is expanded
-        states[sectionId] = sectionId !== 'question';
-      } else {
-        // For examples, all sections are expanded
-        states[sectionId] = false;
-      }
-    });
-    
-    // Also include any sections from sectionIds that might not be in our hardcoded list
-    sectionIds.forEach(sectionId => {
-      if (!allPossibleSections.includes(sectionId)) {
-        if (isNewProject) {
-          // For new projects, only the "question" section is expanded
-          states[sectionId] = sectionId !== 'question';
-        } else {
-          // For examples, all sections are expanded
-          states[sectionId] = false;
-        }
-      }
-    });
-    
-    // Save to localStorage
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
-    
-    // Dispatch an event so components can react to the change
-    window.dispatchEvent(new CustomEvent('sectionStatesChanged'));
-    
-    console.log(`Initialized section states for ${isNewProject ? 'new project' : 'example'}:`, states);
-  } catch (error) {
-    console.error('Error initializing section states:', error);
-  }
-};
-
-/**
- * Clear all section states and reinitialize
- * @param {boolean} useMinimizedDefault - Whether sections should default to minimized after clearing
- */
-export const clearAllSectionStates = (useMinimizedDefault = true) => {
-  if (!isStorageAvailable()) {
-    return;
-  }
-
-  try {
-    if (useMinimizedDefault) {
-      // Define all possible sections
-      const allPossibleSections = [
+    // If section IDs are provided, initialize just those
+    if (sectionIds && sectionIds.length > 0) {
+      // Get existing states first if available
+      const existingStates = loadSectionStates();
+      states = { ...existingStates };
+      
+      // Set state for each specified section
+      sectionIds.forEach(sectionId => {
+        states[sectionId] = minimized;
+      });
+    } 
+    // Otherwise initialize a default set of sections
+    else {
+      // Default sections if none provided
+      const defaultSections = [
         'question', 'audience', 'hypothesis', 'needsresearch', 'exploratoryresearch',
-        'relatedpapers', 'experiment', 'existingdata', 'theorysimulation',
+        'relatedpapers', 'experiment', 'existingdata', 'theorysimulation', 
         'analysis', 'process', 'abstract'
       ];
       
-      // For new projects, set all sections to minimized except "question"
-      const states = {};
-      allPossibleSections.forEach(sectionId => {
-        // Only question is expanded (not minimized)
-        states[sectionId] = sectionId !== 'question';
+      defaultSections.forEach(sectionId => {
+        states[sectionId] = minimized;
       });
-      
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
-    } else {
-      // For examples or testing, just remove all states
-      localStorage.removeItem(STORAGE_KEY);
     }
     
-    // Dispatch an event so components can react to the change
-    window.dispatchEvent(new CustomEvent('sectionStatesChanged'));
+    // Save the states
+    saveSectionStates(states);
     
-    console.log('Cleared all section states');
+    // Dispatch event to notify components of the change
+    dispatchStateChangeEvent();
+    
   } catch (error) {
-    console.error('Error clearing section states:', error);
+    console.error('Error initializing section states:', error);
+    // Continue with fallback in-memory storage
   }
 };
 
 /**
- * External helper to toggle all sections at once
- * @param {boolean} minimizeAll - Whether to minimize all sections (true) or expand all (false)
- * @param {Array} sectionIds - Array of all section IDs to affect
+ * Clear all section states and set to default values
+ * @param {boolean} minimized - Whether sections should be minimized by default
  */
-export const toggleAllSections = (minimizeAll, sectionIds = []) => {
-  if (!isStorageAvailable() || !sectionIds.length) {
-    return;
-  }
-
+export const clearAllSectionStates = (minimized = true) => {
   try {
-    // Get current states
-    const statesJson = localStorage.getItem(STORAGE_KEY);
-    const states = statesJson ? JSON.parse(statesJson) : {};
+    // Reset to empty object first
+    const states = {};
     
-    // Update states for all sections
-    sectionIds.forEach(sectionId => {
-      states[sectionId] = minimizeAll;
-    });
+    // Save the empty states object
+    saveSectionStates(states);
     
-    // Save back to localStorage
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
+    // Now initialize with default values
+    initializeSectionStates(minimized);
     
-    // Dispatch an event so components can react to the change
-    window.dispatchEvent(new CustomEvent('sectionStatesChanged'));
-    
-    console.log(`${minimizeAll ? 'Minimized' : 'Expanded'} all sections`);
   } catch (error) {
-    console.error(`Error toggling all sections:`, error);
+    console.error('Error clearing section states:', error);
+    // Continue with fallback
+    memoryStorageFallback = {};
+  }
+};
+
+/**
+ * Get minimized state for a specific section with improved error handling
+ * @param {string} sectionId - The section ID
+ * @returns {boolean} - Whether the section is minimized (true) or expanded (false)
+ */
+export const getSectionMinimizedState = (sectionId) => {
+  try {
+    const states = loadSectionStates();
+    
+    // If we have a state for this section, return it
+    if (sectionId in states) {
+      return states[sectionId];
+    }
+    
+    // Default to minimized if not found
+    return true;
+  } catch (error) {
+    console.error(`Error getting state for section ${sectionId}:`, error);
+    // Fallback to default minimized
+    return true;
+  }
+};
+
+/**
+ * Set minimized state for a specific section
+ * @param {string} sectionId - The section ID
+ * @param {boolean} minimized - Whether the section should be minimized
+ */
+export const setSectionMinimizedState = (sectionId, minimized) => {
+  try {
+    const states = loadSectionStates();
+    
+    // Update the state for this section
+    states[sectionId] = minimized;
+    
+    // Save the updated states
+    saveSectionStates(states);
+    
+  } catch (error) {
+    console.error(`Error setting state for section ${sectionId}:`, error);
+    // Update memory fallback
+    memoryStorageFallback[sectionId] = minimized;
+  }
+};
+
+/**
+ * Helper function to load section states from storage
+ * @returns {Object} - Map of section IDs to minimized states
+ */
+const loadSectionStates = () => {
+  try {
+    // Try localStorage first
+    if (isStorageAvailable()) {
+      const statesJSON = localStorage.getItem(STORAGE_KEY);
+      if (statesJSON) {
+        return JSON.parse(statesJSON);
+      }
+    }
+    
+    // Fallback to memory storage
+    return { ...memoryStorageFallback };
+  } catch (error) {
+    console.error('Error loading section states:', error);
+    // Fallback to empty object
+    return {};
+  }
+};
+
+/**
+ * Helper function to save section states to storage
+ * @param {Object} states - Map of section IDs to minimized states
+ */
+const saveSectionStates = (states) => {
+  try {
+    // Try localStorage first
+    if (isStorageAvailable()) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
+    }
+    
+    // Update memory fallback as well
+    memoryStorageFallback = { ...states };
+  } catch (error) {
+    console.error('Error saving section states:', error);
+    // Just update memory fallback
+    memoryStorageFallback = { ...states };
+  }
+};
+
+/**
+ * Dispatch a custom event to notify components that section states have changed
+ */
+const dispatchStateChangeEvent = () => {
+  try {
+    const event = new Event('sectionStatesChanged');
+    window.dispatchEvent(event);
+  } catch (error) {
+    console.error('Error dispatching section states changed event:', error);
   }
 };
