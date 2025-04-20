@@ -514,7 +514,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
               {/* Display remaining sections */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
+                .filter(section => {
+                  // Only include non-toggle sections
+                  const isApproachSection = section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch';
+                  const isDataMethodSection = section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation';
+                  const isAlreadyRendered = section?.id === 'question' || section?.id === 'audience' || section?.id === 'relatedpapers';
+                  
+                  // Only show remaining sections that aren't toggle sections or already rendered
+                  return !isApproachSection && !isDataMethodSection && !isAlreadyRendered;
+                })
                 .map(section => renderSection(section))}
             </div>
           </div>
