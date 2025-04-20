@@ -631,46 +631,58 @@ export const saveProjectAsJson = (userInputs, chatMessages, fileName) => {
 
 /**
  * Validates loaded project data with improved handling for imports
+ * FINAL FIXED VERSION - Adds console logging to help diagnose issues
  * @param {Object} data - The data to validate
  * @returns {boolean} - Whether the data is valid
  */
 export const validateProjectData = (data) => {
-  // Basic structure validation
-  if (!data || typeof data !== 'object') {
-    console.error("validateProjectData: data is not an object");
+  // Basic validation checks
+  if (!data) {
+    console.error("validateProjectData: data is null or undefined");
     return false;
   }
   
-  // Check for userInputs structure
-  if (!data.userInputs || typeof data.userInputs !== 'object') {
-    console.error("validateProjectData: userInputs missing or not an object");
+  // Check if it's an object
+  if (typeof data !== 'object') {
+    console.error("validateProjectData: data is not an object, it's a", typeof data);
+    return false;
+  }
+  
+  // Check for userInputs property
+  if (!data.userInputs) {
+    console.error("validateProjectData: userInputs missing");
+    return false;
+  }
+  
+  // Check if userInputs is an object
+  if (typeof data.userInputs !== 'object') {
+    console.error("validateProjectData: userInputs is not an object, it's a", typeof data.userInputs);
     return false;
   }
   
   // Get all keys from userInputs to check content
   const existingFields = Object.keys(data.userInputs);
+  console.log("validateProjectData: found fields:", existingFields);
+  
   if (existingFields.length === 0) {
     console.error("validateProjectData: userInputs is empty");
     return false;
   }
   
-  // IMPROVED: More lenient validation for document imports
-  // Instead of requiring ALL fields, accept if ANY of the common fields exist
-  const commonFields = ['question', 'audience', 'hypothesis', 'relatedpapers', 'analysis', 'abstract'];
+  // IMPROVED: Extremely lenient validation for imported documents
+  // Accept if ANY field has non-empty content
+  const hasAnyContent = existingFields.some(field => {
+    const value = data.userInputs[field];
+    const hasValue = typeof value === 'string' && value.trim() !== '';
+    return hasValue;
+  });
   
-  // Check if at least one common field exists
-  const hasCommonField = commonFields.some(field => 
-    existingFields.includes(field) && 
-    typeof data.userInputs[field] === 'string' &&
-    data.userInputs[field].trim() !== ''
-  );
+  if (!hasAnyContent) {
+    console.error("validateProjectData: no fields have content");
+    return false;
+  }
   
-  // Check if userInputs has at least some field with actual content
-  const hasAnyContent = existingFields.some(field => 
-    typeof data.userInputs[field] === 'string' && 
-    data.userInputs[field].trim() !== ''
-  );
-  
-  // Accept if either common fields are found or there's significant content
-  return hasCommonField || (hasAnyContent && existingFields.length >= 3);
+  // If we made it here, the data is valid enough to use
+  console.log("validateProjectData: data is valid");
+  return true;
 };
