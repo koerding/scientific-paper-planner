@@ -20,7 +20,7 @@ import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
 import { reviewScientificPaper } from '../../services/paperReviewService';
 import HeaderCard from '../sections/HeaderCard';
 import SectionControls from '../controls/SectionControls';
-import { clearAllSectionStates } from '../../services/sectionStateService';
+import { clearAllSectionStates, initializeSectionStates } from '../../services/sectionStateService';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -95,6 +95,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       return { sections: [] };
     }
   });
+
+  // Initialize section states as minimized when the component first mounts
+  useEffect(() => {
+    // Initialize section states as minimized for new projects
+    initializeSectionStates(true, getAllVisibleSectionIds());
+  }, []);
 
   // Helper function to get all visible section IDs for the section controls
   const getAllVisibleSectionIds = () => {
@@ -293,8 +299,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       action: 'Reset Project'
     });
     
-    // Clear section minimization states
-    clearAllSectionStates();
+    // Clear section minimization states as a new project (minimized by default)
+    clearAllSectionStates(true);
     
     hookResetProject();
     // Reset local instructions state
@@ -324,6 +330,21 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const handleExportRequest = () => {
     trackExport('any');
     exportProject();
+  };
+
+  // Handler for loading projects to check if they're examples
+  const handleLoadProject = (data) => {
+    if (loadProject) {
+      // Check if this is from an example (not user-generated)
+      const isFromExample = data.version && data.version.includes('example');
+      
+      // Initialize section states based on whether this is an example or not
+      // Examples start expanded, user-generated projects start minimized
+      initializeSectionStates(!isFromExample, getAllVisibleSectionIds());
+      
+      // Call the original loadProject
+      loadProject(data);
+    }
   };
 
   // Save project with filename
@@ -400,11 +421,33 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     );
   };
 
-  // Handle document import with loading state
+  // Handle document import with minimization state handling
   const handleDocumentImport = async (file) => {
     setLoading(true);
     try {
-      await importDocumentContent(file);
+      if (window.confirm("Creating an example from this document will replace your current work. Continue?")) {
+        // Mark as an example with expanded sections before importing
+        initializeSectionStates(false); // false = this is an example, not a new project
+        
+        const importedData = await importDocumentContent(file);
+        
+        // Tag the data as coming from an example
+        if (importedData) {
+          if (!importedData.version) {
+            importedData.version = "document-example";
+          } else if (!importedData.version.includes("example")) {
+            importedData.version += "-example";
+          }
+        }
+        
+        loadProject(importedData);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error importing document:", error);
+      alert("Error importing document: " + (error.message || "Unknown error"));
+      return false;
     } finally {
       setLoading(false);
     }
@@ -437,7 +480,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           resetProject={() => setShowConfirmDialog(true)}
           exportProject={handleExportRequest}
           saveProject={handleSaveProject}
-          loadProject={loadProject}
+          loadProject={handleLoadProject}
           importDocumentContent={handleDocumentImport}
           onOpenReviewModal={handleOpenReviewModal}
           setShowExamplesDialog={setShowExamplesDialog}
@@ -452,7 +495,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             <div className="w-half px-4 py-2" style={{ width: '50%' }}>
               <HeaderCard />
               
-              {/* ADDED: Section minimization controls */}
+              {/* Section minimization controls */}
               <SectionControls 
                 sectionIds={getAllVisibleSectionIds()} 
                 onStateChange={() => {
@@ -567,7 +610,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         <ExamplesDialog
           showExamplesDialog={showExamplesDialog}
           setShowExamplesDialog={setShowExamplesDialog}
-          loadProject={loadProject}
+          loadProject={handleLoadProject}
         />
 
         <ReviewPaperModal
