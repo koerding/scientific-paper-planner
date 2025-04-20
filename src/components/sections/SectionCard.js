@@ -144,6 +144,10 @@ const SectionCard = ({
         className="flex justify-between items-center p-3 cursor-pointer"
         onClick={() => {
           // When header is clicked, both toggle expansion and set as active section
+          // For debugging - log click
+          console.log("Section header clicked:", section.id, section.title);
+          
+          // Call both handlers
           onToggleExpand();
           onClick(); // This calls setActiveSectionWithManualFlag
         }}
