@@ -142,7 +142,11 @@ const SectionCard = ({
       {/* Header (always visible) */}
       <div 
         className="flex justify-between items-center p-3 cursor-pointer"
-        onClick={onToggleExpand}
+        onClick={() => {
+          // When header is clicked, both toggle expansion and set as active section
+          onToggleExpand();
+          onClick(); // This calls setActiveSectionWithManualFlag
+        }}
       >
         <h2 className="font-semibold text-lg mr-2 text-gray-800">
           {section.title}
