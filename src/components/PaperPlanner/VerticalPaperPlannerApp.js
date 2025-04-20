@@ -1,4 +1,11 @@
-// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Updated with sequential mode
+// Function to handle section expansion and ensure activeSection is updated
+  const handleToggleSectionExpansion = (sectionId) => {
+    // First, update the active section to ensure instructions panel shows the right content
+    setActiveSection(sectionId);
+    
+    // Then toggle the expansion state
+    toggleSectionExpansion(sectionId);
+  };// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Updated with sequential mode
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
@@ -114,10 +121,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   }, [localSectionContent.sections]);
 
-  // Effect for initial active section setting
+  // Effect for keeping activeSection and currentSectionIdForChat in sync
   useEffect(() => {
     setActiveSection(currentSectionIdForChat);
   }, [currentSectionIdForChat]);
+
+  // Also sync in the other direction - when activeSection changes, update currentSection in the hook
+  useEffect(() => {
+    if (activeSection !== currentSectionIdForChat) {
+      handleSectionChange(activeSection);
+    }
+  }, [activeSection, currentSectionIdForChat, handleSectionChange]);
 
   // Track initial pageview
   useEffect(() => {
@@ -177,6 +191,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     if (!localSectionContent || !Array.isArray(localSectionContent.sections)) {
       return null;
     }
+    
+    // Find the section matching activeSection (which tracks the cursor/active section)
     return localSectionContent.sections.find(s => s && s.id === activeSection) || null;
   };
 
@@ -381,7 +397,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         key={section.id}
         section={section}
         isExpanded={isExpanded}
-        onToggleExpand={() => toggleSectionExpansion(section.id)}
+        onToggleExpand={() => handleToggleSectionExpansion(section.id)}
         isCurrentSection={isCurrentActive}
         userInputs={userInputs}
         handleInputChange={handleInputChange}
