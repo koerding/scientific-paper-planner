@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { loadExamples } from '../../utils/ExampleUtils.js';
+import { initializeSectionStates } from '../../services/sectionStateService';
 
 /**
  * Dialog for loading example projects
- * FIXES:
- * - Fixed import path case sensitivity (ExampleUtils.js)
- * - Improved error handling
- * - Better loading state handling
+ * - Added initialization of section states as expanded for examples
  */
 const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject }) => {
   const [examples, setExamples] = useState([]);
@@ -45,12 +43,24 @@ const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject
     setSelectedExample(example.id);
   };
 
-  // Handle loading the selected example
+  // Handle loading the selected example with expanded sections
   const handleLoadExample = () => {
     if (!selectedExample) return;
 
     const example = examples.find(ex => ex?.id === selectedExample);
     if (example && example.data) {
+      // Mark as an example with expanded sections
+      initializeSectionStates(false); // false = this is an example, not a new project
+      
+      // Tag the data as coming from an example
+      if (example.data) {
+        if (!example.data.version) {
+          example.data.version = "example";
+        } else if (!example.data.version.includes("example")) {
+          example.data.version += "-example";
+        }
+      }
+      
       loadProject(example.data);
       setShowExamplesDialog(false);
     }
