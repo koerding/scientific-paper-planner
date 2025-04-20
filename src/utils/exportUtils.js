@@ -630,18 +630,47 @@ export const saveProjectAsJson = (userInputs, chatMessages, fileName) => {
 };
 
 /**
- * Validates loaded project data
+ * Validates loaded project data with improved handling for imports
  * @param {Object} data - The data to validate
  * @returns {boolean} - Whether the data is valid
  */
 export const validateProjectData = (data) => {
-  // Check if data has required structure
-  if (!data || typeof data !== 'object') return false;
-  if (!data.userInputs || typeof data.userInputs !== 'object') return false;
+  // Basic structure validation
+  if (!data || typeof data !== 'object') {
+    console.error("validateProjectData: data is not an object");
+    return false;
+  }
   
-  // Check if userInputs has at least some of the expected fields
-  const expectedFields = ['question', 'audience', 'hypothesis', 'analysis', 'abstract'];
-  const hasExpectedFields = expectedFields.some(field => Object.prototype.hasOwnProperty.call(data.userInputs, field));
+  // Check for userInputs structure
+  if (!data.userInputs || typeof data.userInputs !== 'object') {
+    console.error("validateProjectData: userInputs missing or not an object");
+    return false;
+  }
   
-  return hasExpectedFields;
+  // Get all keys from userInputs to check content
+  const existingFields = Object.keys(data.userInputs);
+  if (existingFields.length === 0) {
+    console.error("validateProjectData: userInputs is empty");
+    return false;
+  }
+  
+  // IMPROVED: More lenient validation for document imports
+  // Instead of requiring ALL fields, accept if ANY of the common fields exist
+  const commonFields = ['question', 'audience', 'hypothesis', 'relatedpapers', 'analysis', 'abstract'];
+  
+  // Check if at least one common field exists
+  const hasCommonField = commonFields.some(field => 
+    existingFields.includes(field) && 
+    typeof data.userInputs[field] === 'string' &&
+    data.userInputs[field].trim() !== ''
+  );
+  
+  // Check if userInputs has at least some field with actual content
+  const hasAnyContent = existingFields.some(field => 
+    typeof data.userInputs[field] === 'string' && 
+    data.userInputs[field].trim() !== ''
+  );
+  
+  // Accept if either common fields are found or there's significant content
+  return hasCommonField || (hasAnyContent && existingFields.length >= 3);
 };
