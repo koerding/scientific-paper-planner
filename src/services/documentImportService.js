@@ -2,8 +2,7 @@
 
 /**
  * Document import service for PDF and Word documents
- * FIXED: Removed duplicated confirmation dialog
- * FIXED: Improved result validation to ensure compatible format
+ * FIXED: Final fix for the boolean/version error
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -70,7 +69,7 @@ const extractTextFromPDF = async (pdfData) => {
 };
 
 // --- Document Text Extraction ---
-// IMPORTANT: This function is used by importDocumentContent so it needs to be defined first
+// This function needs to be defined before importDocumentContent
 
 const extractTextFromDocument = async (file) => {
   console.log(`Attempting to extract text from: ${file.name}, type: ${file.type}`);
@@ -144,12 +143,8 @@ const extractTextFromDocument = async (file) => {
   });
 };
 
-// --- Function to extract criteria from section content ---
+// --- Helper Functions ---
 
-/**
- * Function to extract the key criteria from sectionContent for use in prompts
- * @returns {string} A formatted string containing the grading criteria
- */
 function extractGradingCriteria() {
   const criteria = [];
   
@@ -182,13 +177,8 @@ function extractGradingCriteria() {
   return criteriaStr;
 }
 
-// --- Validation and Fixing Functions ---
-
 /**
  * Generates placeholder content for missing sections using sectionContent.json
- * @param {string} sectionId - The section ID needing placeholder content
- * @param {string} fileName - The name of the imported file (used for context if needed)
- * @returns {string} - Placeholder content from sectionContent.json
  */
 function generatePlaceholderContent(sectionId, fileName) {
   // Find the section in sectionContent.json
@@ -205,7 +195,7 @@ function generatePlaceholderContent(sectionId, fileName) {
 
 /**
  * Processes extracted scientific paper text and generates structured data using OpenAI's JSON mode.
- * FIXED: Now correctly formats the return value to match expected project format
+ * FIXED: Issue with boolean/version error
  * @param {File} file - The document file object (used for filename in errors)
  * @param {Object} sections - The sectionContent data for context (optional)
  * @returns {Promise<Object>} - The structured data for loading into the planner
@@ -300,28 +290,24 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
       {}, [], { temperature: 0.3, max_tokens: 3000 }, [], enhancedSystemPrompt, true // Use JSON mode
     );
 
-    // Format the result correctly
-    let result = {};
+    // Format the result correctly - FIX THE BOOLEAN/OBJECT ISSUE
+    let result = {
+      userInputs: {},
+      chatMessages: {},
+      timestamp: new Date().toISOString(),
+      version: "1.0-document-import"
+    };
     
+    // Check if we have a valid API response and extract userInputs
     if (apiResponse && typeof apiResponse === 'object') {
       // If the API just returned userInputs directly
-      if (apiResponse.userInputs) {
-        result = {
-          userInputs: apiResponse.userInputs,
-          chatMessages: {},
-          timestamp: new Date().toISOString(),
-          version: "1.0-document-import"
-        };
+      if (apiResponse.userInputs && typeof apiResponse.userInputs === 'object') {
+        result.userInputs = apiResponse.userInputs;
       } 
-      // If the API returned some other format, attempt to use that
+      // If the API returned some other format, try to use it directly
       else if (Object.keys(apiResponse).length > 0) {
-        // Create proper structure with userInputs
-        result = {
-          userInputs: apiResponse,
-          chatMessages: {},
-          timestamp: new Date().toISOString(),
-          version: "1.0-document-import"
-        };
+        // Treat the entire response as userInputs
+        result.userInputs = apiResponse;
       }
       else {
         throw new Error("API returned invalid response format");
@@ -360,7 +346,6 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
     console.error('Error during document import process:', error);
     
     // Create a fallback result if there was an error
-    // This ensures we return valid data even if the API call fails
     const fallbackResult = {
       userInputs: {},
       chatMessages: {},
@@ -455,21 +440,7 @@ window.testDocumentImport = async function(fileInput) {
   }
 };
 
-// Add a minimal validateProjectData implementation if the real one isn't available
-if (!window.validateProjectData) {
-  window.validateProjectData = function(data) {
-    if (!data || typeof data !== 'object') return false;
-    if (!data.userInputs || typeof data.userInputs !== 'object') return false;
-    
-    const fields = Object.keys(data.userInputs);
-    return fields.length > 0 && fields.some(f => 
-      typeof data.userInputs[f] === 'string' && 
-      data.userInputs[f].trim().length > 0
-    );
-  };
-}
-
-// --- PDF.js testing and preloading ---
+// PDF.js testing and preloading
 window.testPdfExtraction = async function() {
   try {
     console.log("Testing PDF extraction...");
