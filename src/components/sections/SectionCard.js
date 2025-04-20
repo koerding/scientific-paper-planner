@@ -8,6 +8,8 @@ import { getSectionMinimizedState, setSectionMinimizedState } from '../../servic
  * - Responds to global state changes
  * - Different defaults for new projects vs examples
  * - FIXED: Properly maintains blue highlighting for active sections
+ * - IMPROVED: Toggle minimization on header click
+ * - IMPROVED: Different icons for minimize vs expand states
  */
 const SectionCard = ({
   section,
@@ -208,14 +210,26 @@ const SectionCard = ({
     setSectionMinimizedState(section.id, newState);
   };
 
-  // Modified click handler that expands minimized cards on click
+  // Modified click handler that handles both selection and toggle based on the click target
   const handleCardClick = (e) => {
-    if (isMinimized) {
-      // If minimized, expand on click anywhere in the card
+    // Let's find out if the click was on the header or toggle button
+    const header = e.currentTarget.querySelector('.section-header');
+    
+    // Check if the click was inside the header area (excluding the toggle button)
+    const isHeaderClick = header && header.contains(e.target) && 
+                         !e.target.closest('.minimize-toggle-btn');
+    
+    if (isHeaderClick) {
+      // If clicked on the header, toggle minimized state
       toggleMinimized(e);
-    } else {
-      // Otherwise use the normal onClick behavior
+    } else if (!isMinimized) {
+      // If expanded and clicked elsewhere (not header or toggle), use the normal onClick behavior
+      // This allows selection without toggling when clicking in the content area
       onClick(e);
+    } else {
+      // If minimized and clicked anywhere on the card (except toggle button),
+      // expand the card first
+      toggleMinimized(e);
     }
   };
 
@@ -226,7 +240,7 @@ const SectionCard = ({
       onClick={handleCardClick}
     >
       {/* Header with Title and Toggle button */}
-      <div className="flex justify-between items-center mb-1">
+      <div className="flex justify-between items-center mb-1 section-header">
         <h2 className="font-semibold text-lg mr-2 text-gray-800" style={{ fontSize: 'calc(1.4 * 1rem)' }}>
           {section.title}
         </h2>
@@ -239,22 +253,36 @@ const SectionCard = ({
             </svg>
           </div>
           
-          {/* Toggle button for minimizing/expanding */}
+          {/* Toggle button for minimizing/expanding with different icons based on state */}
           <button 
             onClick={toggleMinimized}
             className="minimize-toggle-btn text-gray-500 hover:text-gray-700 focus:outline-none"
             aria-label={isMinimized ? "Expand section" : "Minimize section"}
             title={isMinimized ? "Expand section" : "Minimize section"}
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className={`h-5 w-5 transition-transform duration-300 ${isMinimized ? 'rotate-180' : ''}`} 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            {isMinimized ? (
+              /* Expand icon (down arrow) */
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5 transition-transform duration-300" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            ) : (
+              /* Minimize icon (up arrow) */
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5 transition-transform duration-300" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+            )}
           </button>
         </div>
       </div>
@@ -354,6 +382,25 @@ const SectionCard = ({
         .minimize-toggle-btn:hover {
           background-color: #f1f5f9; /* slate-100 */
           border-radius: 50%;
+        }
+        
+        /* Style for header to indicate clickability */
+        .section-header {
+          cursor: pointer;
+          position: relative;
+        }
+        
+        /* Add subtle hover effect to the header */
+        .section-header:hover::after {
+          content: '';
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          bottom: -4px;
+          left: -4px;
+          background-color: rgba(0, 0, 0, 0.02);
+          z-index: -1;
+          border-radius: 4px;
         }
       `}</style>
     </div>
