@@ -10,6 +10,7 @@ import React, { useState } from 'react';
  * - Fixed Help button to properly show splash screen
  * - Added loading state animation for all buttons when any is active
  * - Updated Review Papers button to use teal color matching the modal
+ * - FIXED: Removed duplicate confirmation for document import
  */
 const AppHeader = ({
   resetProject,
@@ -26,6 +27,7 @@ const AppHeader = ({
   const [importLoading, setImportLoading] = useState(false);
 
   // Handle file import for PDF/Word docs with loading animation
+  // FIXED: Removed duplicate confirmation dialog
   const handleFileImport = async (event) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -34,7 +36,8 @@ const AppHeader = ({
       
       try {
         if (importDocumentContent) {
-          // Call the import function and await its completion
+          // Call the import function directly WITHOUT showing confirmation here
+          // The confirmation will be handled in the importDocumentContent function
           await importDocumentContent(file);
         }
       } catch (error) {
