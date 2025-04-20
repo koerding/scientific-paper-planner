@@ -46,10 +46,13 @@
   border: none !important;
 }
 
-.section-card.border-blue-500 {
+.section-card.expanded.current-active {
   border-color: #3b82f6 !important;
-  border-width: 2px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  background-color: #eff6ff !important;
+}
+
+.section-card textarea:focus {
+  background-color: #ffffff !important;
 }
 
 .border-2 {
