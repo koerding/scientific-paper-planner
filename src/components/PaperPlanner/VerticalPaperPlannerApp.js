@@ -1,4 +1,4 @@
-// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Updated with sequential mode
+// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
@@ -35,7 +35,7 @@ import {
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Project Planner with sequential mode
+ * Enhanced Project Planner with improved feedback functionality
  * Scientific project planning tool with AI-assisted features
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
@@ -58,10 +58,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     exportProject,
     loadProject,
     importDocumentContent,
-    // NEW: Sequential mode states and handlers
-    expandedSections,
+    // NEW: Get the section status and feedback handler
     sectionStatus,
-    toggleSectionExpansion,
     handleSectionFeedback
   } = usePaperPlannerHook;
 
@@ -168,25 +166,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   }, [userInputs, localSectionContent.sections]);
 
-  // Function to handle section expansion and ensure activeSection is updated
-  const handleToggleSectionExpansion = (sectionId) => {
-    // First, update the active section to ensure instructions panel shows the right content
-    setActiveSection(sectionId);
-    
-    // Also update the current section in the hook directly
-    handleSectionChange(sectionId);
-    
-    // Then toggle the expansion state
-    toggleSectionExpansion(sectionId);
-    
-    // Track this section change in analytics
-    const sectionTitle = localSectionContent.sections.find(s => s?.id === sectionId)?.title || 'Unknown';
-    trackSectionChange(sectionId, sectionTitle);
-    
-    // For debugging - log what section we're activating
-    console.log("Setting active section to:", sectionId);
-  };
-
   // Section handling functions
   const setActiveSectionWithManualFlag = (sectionId) => {
     // For debugging - log what we're setting
@@ -227,6 +206,25 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const handleSignificantEdit = (sectionId, timestamp) => {
     setEditEvents(prev => [...prev, { sectionId, timestamp, type: 'significant' }]);
     setSignificantEditsMade(true);
+  };
+
+  // Handle section feedback with localSectionContent update
+  const handleSectionFeedbackWithUpdate = async (sectionId) => {
+    trackInstructionImprovement(sectionId);
+    
+    // Call the hook's handleSectionFeedback function
+    const updatedSections = await handleSectionFeedback(sectionId);
+    
+    // If we got updated sections back, update our local section content
+    if (updatedSections) {
+      setLocalSectionContent(updatedSections);
+      setLastImprovementTime(Date.now());
+      setSignificantEditsMade(false);
+      setEditEvents([]);
+      
+      // For debugging - log the updated sections
+      console.log("Updated localSectionContent with feedback results:", updatedSections);
+    }
   };
 
   // Handle magic (improving instructions)
@@ -421,18 +419,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setActiveApproach(approach);
     setActiveSectionWithManualFlag(approach);
     trackApproachToggle(approach);
-    
-    // Don't automatically expand the section when selected from the toggle
-    // Just update which approach is active in state
   };
 
   const handleDataMethodToggle = (method) => {
     setActiveDataMethod(method);
     setActiveSectionWithManualFlag(method);
     trackDataMethodToggle(method);
-    
-    // Don't automatically expand the section when selected from the toggle
-    // Just update which data method is active in state
   };
 
   // Rendering
@@ -440,15 +432,12 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     if (!section || !section.id) return null;
 
     const isCurrentActive = activeSection === section.id;
-    const isExpanded = !!expandedSections[section.id];
-    const currentStatus = sectionStatus[section.id] || 'none';
+    const feedbackStatus = sectionStatus[section.id] || 'none';
     
     return (
       <SectionCard
         key={section.id}
         section={section}
-        isExpanded={isExpanded}
-        onToggleExpand={() => handleToggleSectionExpansion(section.id)}
         isCurrentSection={isCurrentActive}
         userInputs={userInputs}
         handleInputChange={handleInputChange}
@@ -457,8 +446,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
         onClick={() => setActiveSectionWithManualFlag(section.id)}
         onEdit={handleEdit}
         onSignificantEdit={handleSignificantEdit}
-        feedbackStatus={currentStatus}
-        onGetFeedback={handleSectionFeedback}
+        feedbackStatus={feedbackStatus}
+        onGetFeedback={handleSectionFeedbackWithUpdate}
       />
     );
   };
@@ -476,7 +465,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Combined loading state for all AI features
   const isAnyAiLoading = loading || chatLoading || improvingInstructions || reviewLoading;
 
-  // Section display logic - UPDATED for sequential mode with toggle behavior
+  // Section display logic - UPDATED for toggle behavior
   const shouldDisplaySection = (sectionId) => {
     // For approach sections, only show the active one
     if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
@@ -598,12 +587,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           loading={isAnyAiLoading}
         />
 
-        {/* Interactive UI elements - remove FloatingMagicButton since we have feedback buttons per section now */}
+        {/* Interactive UI elements */}
         <ImprovementReminderToast
           userInputs={userInputs}
           lastImprovementTime={lastImprovementTime}
           significantEditsMade={significantEditsMade}
           handleMagicClick={handleMagic}
+        />
+
+        <FloatingMagicButton
+          handleMagicClick={handleMagic}
+          loading={isAnyAiLoading}
         />
 
         <ModernChatInterface
@@ -648,30 +642,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           saveProject={saveProjectWithFilename}
         />
       </div>
-      
-      {/* Add additional styles for sequential mode */}
-      <style jsx>{`
-        /* Sequential mode styles */
-        .section-card {
-          position: relative;
-          overflow: hidden;
-          transition: all 0.3s ease;
-        }
-
-        .section-card.minimized {
-          max-height: 60px;
-        }
-
-        .section-card.expanded {
-          max-height: 2000px; /* Large value to accommodate any content size */
-        }
-
-        /* Hover effect for minimized cards */
-        .section-card.minimized:hover {
-          background-color: #f9fafb;
-          border-color: #d1d5db;
-        }
-      `}</style>
     </div>
   );
 };
