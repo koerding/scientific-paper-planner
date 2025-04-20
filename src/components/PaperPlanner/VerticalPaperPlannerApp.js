@@ -105,10 +105,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Also sync in the other direction - when activeSection changes, update currentSection in the hook
   useEffect(() => {
-    if (activeSection !== currentSectionIdForChat) {
-      handleSectionChange(activeSection);
-    }
-  }, [activeSection, currentSectionIdForChat, handleSectionChange]);
+    // Always update the current section in the hook when activeSection changes
+    handleSectionChange(activeSection);
+  }, [activeSection, handleSectionChange]);
 
   // Make splash screen ref globally available
   useEffect(() => {
@@ -174,13 +173,29 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     // First, update the active section to ensure instructions panel shows the right content
     setActiveSection(sectionId);
     
+    // Also update the current section in the hook directly
+    handleSectionChange(sectionId);
+    
     // Then toggle the expansion state
     toggleSectionExpansion(sectionId);
+    
+    // Track this section change in analytics
+    const sectionTitle = localSectionContent.sections.find(s => s?.id === sectionId)?.title || 'Unknown';
+    trackSectionChange(sectionId, sectionTitle);
+    
+    // For debugging - log what section we're activating
+    console.log("Setting active section to:", sectionId);
   };
 
   // Section handling functions
   const setActiveSectionWithManualFlag = (sectionId) => {
+    // For debugging - log what we're setting
+    console.log("setActiveSectionWithManualFlag called with:", sectionId);
+    
+    // Update our local state
     setActiveSection(sectionId);
+    
+    // Update the hook's state
     handleSectionChange(sectionId);
     
     // Track this section change in analytics
@@ -195,7 +210,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
     
     // Find the section matching activeSection (which tracks the cursor/active section)
-    return localSectionContent.sections.find(s => s && s.id === activeSection) || null;
+    const sectionData = localSectionContent.sections.find(s => s && s.id === activeSection) || null;
+    
+    // For debugging - log the active section and found data
+    console.log("Active section:", activeSection);
+    console.log("Found section data:", sectionData ? sectionData.title : "null");
+    
+    return sectionData;
   };
 
   // Edit tracking
