@@ -131,6 +131,9 @@ const usePaperPlanner = () => {
   }, []);
 
   const handleSectionChange = useCallback((sectionId) => {
+    // For debugging - log the section change
+    console.log("handleSectionChange called with:", sectionId);
+    
     setCurrentSection(sectionId);
   }, []);
 
