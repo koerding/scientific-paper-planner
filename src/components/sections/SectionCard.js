@@ -253,34 +253,35 @@ const SectionCard = ({
             </svg>
           </div>
           
-          {/* Toggle button for minimizing/expanding with different icons based on state */}
+          {/* Toggle button for minimizing/expanding with clearly different icons */}
           <button 
             onClick={toggleMinimized}
             className="minimize-toggle-btn text-gray-500 hover:text-gray-700 focus:outline-none"
             aria-label={isMinimized ? "Expand section" : "Minimize section"}
             title={isMinimized ? "Expand section" : "Minimize section"}
           >
+            {/* Use completely different SVG icons for each state */}
             {isMinimized ? (
-              /* Expand icon (down arrow) */
+              // Plus/Expand icon for minimized sections - indicates "expand this"
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
-                className="h-5 w-5 transition-transform duration-300" 
+                className="h-5 w-5" 
                 fill="none" 
                 viewBox="0 0 24 24" 
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             ) : (
-              /* Minimize icon (up arrow) */
+              // Minus/Collapse icon for expanded sections - indicates "minimize this"
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
-                className="h-5 w-5 transition-transform duration-300" 
+                className="h-5 w-5" 
                 fill="none" 
                 viewBox="0 0 24 24" 
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
               </svg>
             )}
           </button>
@@ -377,6 +378,11 @@ const SectionCard = ({
         .minimize-toggle-btn {
           z-index: 10;
           transition: all 0.2s ease;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .minimize-toggle-btn:hover {
