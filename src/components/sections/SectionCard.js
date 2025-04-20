@@ -3,8 +3,10 @@ import { getSectionMinimizedState, setSectionMinimizedState } from '../../servic
 
 /**
  * Enhanced section card component with minimization capabilities
- * ADDED: Minimization toggle with smooth animations and clear visual indication
- * ADDED: Persistence of minimized states between sessions
+ * - Minimization toggle with smooth animations and clear visual indication
+ * - Persistence of minimized states between sessions
+ * - Responds to global state changes
+ * - Different defaults for new projects vs examples
  */
 const SectionCard = ({
   section,
@@ -30,11 +32,31 @@ const SectionCard = ({
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
-  // ADDED: State for minimized/expanded cards with localStorage persistence
+  // State for minimized/expanded cards with localStorage persistence
+  // New projects start minimized, examples start expanded
   const [isMinimized, setIsMinimized] = useState(() => {
     // Load initial state from localStorage if available
     return getSectionMinimizedState(section.id);
   });
+
+  // Listen for global section state changes
+  useEffect(() => {
+    // This ensures the component refreshes when section states are updated globally
+    const handler = () => {
+      // Check if state has changed and update if needed
+      const newState = getSectionMinimizedState(section.id);
+      if (newState !== isMinimized) {
+        setIsMinimized(newState);
+      }
+    };
+    
+    // Listen for a custom event that might be dispatched when all sections change
+    window.addEventListener('sectionStatesChanged', handler);
+    
+    return () => {
+      window.removeEventListener('sectionStatesChanged', handler);
+    };
+  }, [section.id, isMinimized]);
 
   // Auto-resize textarea height - improved version
   const adjustTextareaHeight = () => {
@@ -80,7 +102,7 @@ const SectionCard = ({
     return isCurrentSection ? 'bg-blue-50' : 'bg-white';
   };
 
-  // ADDED: Calculate max height for minimized cards
+  // Calculate max height for minimized cards
   const getMaxHeight = () => {
     if (isMinimized) {
       return 'max-h-14'; // Maximum height for minimized cards
@@ -140,7 +162,7 @@ const SectionCard = ({
     setTimeout(adjustTextareaHeight, 0);
   };
 
-  // Visual cue styling for the textarea - NEW
+  // Visual cue styling for the textarea
   const getTextareaClasses = () => {
     const baseClasses = `w-full py-1 px-2 border-0 rounded focus:ring-1 focus:ring-blue-300 outline-none resize-none overflow-hidden text-base leading-relaxed ${getBackgroundColor()} font-normal`;
     
@@ -154,7 +176,7 @@ const SectionCard = ({
     return baseClasses;
   };
 
-  // ADDED: Calculate preview text for minimized view
+  // Calculate preview text for minimized view
   const getPreviewText = () => {
     if (!textValue || textValue.trim() === '') {
       return 'No content yet...';
@@ -168,7 +190,7 @@ const SectionCard = ({
     return firstLine;
   };
 
-  // ADDED: Toggle minimized state with persistence
+  // Toggle minimized state with persistence
   const toggleMinimized = (e) => {
     e.stopPropagation(); // Prevent section selection when toggling
     const newState = !isMinimized;
@@ -178,11 +200,22 @@ const SectionCard = ({
     setSectionMinimizedState(section.id, newState);
   };
 
+  // Modified click handler that expands minimized cards on click
+  const handleCardClick = (e) => {
+    if (isMinimized) {
+      // If minimized, expand on click anywhere in the card
+      toggleMinimized(e);
+    } else {
+      // Otherwise use the normal onClick behavior
+      onClick(e);
+    }
+  };
+
   return (
     <div
       ref={sectionRef}
       className={sectionClasses}
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       {/* Header with Title and Toggle button */}
       <div className="flex justify-between items-center mb-1">
@@ -191,14 +224,14 @@ const SectionCard = ({
         </h2>
         
         <div className="flex items-center">
-          {/* NEW: Edit indicator icon */}
+          {/* Edit indicator icon */}
           <div className={`edit-icon transition-opacity duration-200 mr-2 ${isHovered || isFocused ? 'opacity-100' : 'opacity-0'}`}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
               <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
             </svg>
           </div>
           
-          {/* ADDED: Toggle button for minimizing/expanding */}
+          {/* Toggle button for minimizing/expanding */}
           <button 
             onClick={toggleMinimized}
             className="minimize-toggle-btn text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -218,7 +251,7 @@ const SectionCard = ({
         </div>
       </div>
 
-      {/* ADDED: Preview text for minimized state */}
+      {/* Preview text for minimized state */}
       {isMinimized && (
         <div className="text-sm text-gray-500 overflow-hidden whitespace-nowrap overflow-ellipsis">
           {getPreviewText()}
@@ -259,7 +292,7 @@ const SectionCard = ({
         </div>
       )}
       
-      {/* ADDED: Fade gradient at bottom of minimized cards */}
+      {/* Fade gradient at bottom of minimized cards */}
       {isMinimized && (
         <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-t from-gray-200 to-transparent"></div>
       )}
@@ -285,7 +318,7 @@ const SectionCard = ({
           font-style: italic;
         }
         
-        /* ADDED: Styles for minimized cards */
+        /* Styles for minimized cards */
         .section-card.minimized {
           cursor: pointer;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
