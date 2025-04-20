@@ -5,6 +5,13 @@
     
     // Then toggle the expansion state
     toggleSectionExpansion(sectionId);
+  };  // Function to handle section expansion and ensure activeSection is updated
+  const handleToggleSectionExpansion = (sectionId) => {
+    // First, update the active section to ensure instructions panel shows the right content
+    setActiveSection(sectionId);
+    
+    // Then toggle the expansion state
+    toggleSectionExpansion(sectionId);
   };// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Updated with sequential mode
 
 import React, { useState, useEffect, useRef } from 'react';
