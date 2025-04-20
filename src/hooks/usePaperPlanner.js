@@ -325,123 +325,120 @@ const usePaperPlanner = () => {
     }
   }, [storageAvailable]);
 
-// This is just the fixed handleDocumentImport function for usePaperPlanner.js
+  // Import document content - FINAL FIXED version
+  const handleDocumentImport = useCallback(async (file) => {
+    setLoading(true);
 
-// Import document content - FINAL FIXED version
-const handleDocumentImport = useCallback(async (file) => {
-  setLoading(true);
+    try {
+      // Ask for confirmation just once here
+      if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
+        setLoading(false);
+        return false;
+      }
 
-  try {
-    // Ask for confirmation just once here
-    if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
-      setLoading(false);
-      return false;
-    }
-
-    console.log(`Starting import process for ${file.name}`);
-    
-    // Pass sectionContent to the import service
-    // This ensures it uses the same placeholders as the main app
-    const importedData = await documentImportService.importDocumentContent(file, sectionContent);
-    
-    console.log("Document import returned data:", importedData ? "Success" : "Failed");
-    
-    // Add extra validation to ensure we have a valid structure before loading
-    if (!importedData || !importedData.userInputs) {
-      console.error("Import returned invalid data structure:", importedData);
-      throw new Error("Import returned invalid data");
-    }
-    
-    // Ensure required fields exist
-    const requiredFields = ['question', 'audience']; // Minimal set required
-    const missingFields = requiredFields.filter(field => 
-      !importedData.userInputs[field] || typeof importedData.userInputs[field] !== 'string'
-    );
-    
-    if (missingFields.length > 0) {
-      console.error("Imported data missing required fields:", missingFields);
-      throw new Error(`Import missing required fields: ${missingFields.join(', ')}`);
-    }
-    
-    // Important: Don't return a boolean from this function!
-    // Format properly to ensure loadProject will accept it
-    const formattedData = {
-      userInputs: importedData.userInputs,
-      chatMessages: importedData.chatMessages || {},
-      timestamp: importedData.timestamp || new Date().toISOString(),
-      version: importedData.version || "1.0-document-import"
-    };
-    
-    console.log("Loading imported project data");
-    
-    // Create template values using sectionContent
-    const templateValues = {};
-    sectionContent.sections.forEach(section => {
-      if (section && section.id) {
-        templateValues[section.id] = section.placeholder || '';
+      console.log(`Starting import process for ${file.name}`);
+      
+      // Pass sectionContent to the import service
+      // This ensures it uses the same placeholders as the main app
+      const importedData = await documentImportService.importDocumentContent(file, sectionContent);
+      
+      console.log("Document import returned data:", importedData ? "Success" : "Failed");
+      
+      // Basic validation to ensure we have a valid structure
+      if (!importedData || typeof importedData !== 'object') {
+        console.error("Import returned invalid data structure:", importedData);
+        throw new Error("Import returned invalid data");
       }
-    });
-    
-    // Merge with loaded data
-    const mergedInputs = {...templateValues};
-    Object.keys(formattedData.userInputs).forEach(sectionId => {
-      if (formattedData.userInputs[sectionId] && 
-          typeof formattedData.userInputs[sectionId] === 'string' && 
-          formattedData.userInputs[sectionId].trim() !== '') {
-        mergedInputs[sectionId] = formattedData.userInputs[sectionId];
+      
+      if (!importedData.userInputs || typeof importedData.userInputs !== 'object') {
+        console.error("Import missing userInputs object:", importedData);
+        throw new Error("Import missing userInputs object");
       }
-    });
-    
-    // Update user inputs state
-    setUserInputs(mergedInputs);
-    
-    // Create empty chat messages
-    const emptyChat = {};
-    sectionContent.sections.forEach(section => {
-      if (section && section.id) {
-        emptyChat[section.id] = [];
+      
+      // Ensure required fields exist
+      const requiredFields = ['question', 'audience']; // Minimal set required
+      const missingFields = requiredFields.filter(field => 
+        !importedData.userInputs[field] || typeof importedData.userInputs[field] !== 'string'
+      );
+      
+      if (missingFields.length > 0) {
+        console.error("Imported data missing required fields:", missingFields);
+        throw new Error(`Import missing required fields: ${missingFields.join(', ')}`);
       }
-    });
-    
-    // Merge with loaded chat messages if they exist
-    const mergedChat = {...emptyChat};
-    if (formattedData.chatMessages) {
-      Object.keys(formattedData.chatMessages).forEach(sectionId => {
-        if (Array.isArray(formattedData.chatMessages[sectionId])) {
-          mergedChat[sectionId] = formattedData.chatMessages[sectionId];
+      
+      // Create a proper data object for loading
+      console.log("Loading imported project data");
+      
+      // Create template values using sectionContent
+      const templateValues = {};
+      sectionContent.sections.forEach(section => {
+        if (section && section.id) {
+          templateValues[section.id] = section.placeholder || '';
         }
       });
-    }
-    
-    // Update chat messages state
-    setChatMessages(mergedChat);
-    
-    // Save to localStorage
-    if (storageAvailable) {
-      saveToStorage(mergedInputs, mergedChat);
-    }
-    
-    // Set to first section
-    setCurrentSection(sectionContent.sections[0].id);
+      
+      // Merge with loaded data
+      const mergedInputs = {...templateValues};
+      Object.keys(importedData.userInputs).forEach(sectionId => {
+        if (importedData.userInputs[sectionId] && 
+            typeof importedData.userInputs[sectionId] === 'string' && 
+            importedData.userInputs[sectionId].trim() !== '') {
+          mergedInputs[sectionId] = importedData.userInputs[sectionId];
+        }
+      });
+      
+      // Update user inputs state
+      setUserInputs(mergedInputs);
+      
+      // Create empty chat messages
+      const emptyChat = {};
+      sectionContent.sections.forEach(section => {
+        if (section && section.id) {
+          emptyChat[section.id] = [];
+        }
+      });
+      
+      // Merge with loaded chat messages if they exist
+      const mergedChat = {...emptyChat};
+      if (importedData.chatMessages && typeof importedData.chatMessages === 'object') {
+        Object.keys(importedData.chatMessages).forEach(sectionId => {
+          if (Array.isArray(importedData.chatMessages[sectionId])) {
+            mergedChat[sectionId] = importedData.chatMessages[sectionId];
+          }
+        });
+      }
+      
+      // Update chat messages state
+      setChatMessages(mergedChat);
+      
+      // Save to localStorage
+      if (storageAvailable) {
+        saveToStorage(mergedInputs, mergedChat);
+      }
+      
+      // Set to first section
+      setCurrentSection(sectionContent.sections[0].id);
 
-    console.log(`Document ${file.name} successfully imported`);
-    
-    // Return a proper object, not a boolean
-    return {
-      success: true,
-      message: "Document successfully imported"
-    };
-  } catch (error) {
-    console.error("Error importing document:", error);
-    alert("Error importing document: " + (error.message || "Unknown error"));
-    return {
-      success: false,
-      error: error.message || "Unknown error"
-    };
-  } finally {
-    setLoading(false);
-  }
-}, [sectionContent, storageAvailable]);
+      console.log(`Document ${file.name} successfully imported`);
+      
+      // DO NOT return true or false directly
+      return {
+        success: true,
+        message: "Document successfully imported"
+      };
+    } catch (error) {
+      console.error("Error importing document:", error);
+      alert("Error importing document: " + (error.message || "Unknown error"));
+      
+      // Return an error object, not false
+      return {
+        success: false,
+        error: error.message || "Unknown error"
+      };
+    } finally {
+      setLoading(false);
+    }
+  }, [sectionContent, storageAvailable]);
 
   // Return all state and handlers needed by the components
   return {
