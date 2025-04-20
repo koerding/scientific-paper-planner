@@ -325,118 +325,123 @@ const usePaperPlanner = () => {
     }
   }, [storageAvailable]);
 
-  // Import document content - FIXED version
-  const handleDocumentImport = useCallback(async (file) => {
-    setLoading(true);
+// This is just the fixed handleDocumentImport function for usePaperPlanner.js
 
-    try {
-      // Ask for confirmation just once here
-      if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
-        setLoading(false);
-        return false;
-      }
+// Import document content - FINAL FIXED version
+const handleDocumentImport = useCallback(async (file) => {
+  setLoading(true);
 
-      console.log(`Starting import process for ${file.name}`);
-      
-      // Pass sectionContent to the import service
-      // This ensures it uses the same placeholders as the main app
-      const importedData = await documentImportService.importDocumentContent(file, sectionContent);
-      
-      console.log("Document import returned data:", importedData ? "Success" : "Failed");
-      
-      // Add extra validation to ensure we have a valid structure before loading
-      if (!importedData || !importedData.userInputs) {
-        console.error("Import returned invalid data structure:", importedData);
-        throw new Error("Import returned invalid data");
-      }
-      
-      // Ensure required fields exist
-      const requiredFields = ['question', 'audience']; // Minimal set required
-      const missingFields = requiredFields.filter(field => 
-        !importedData.userInputs[field] || typeof importedData.userInputs[field] !== 'string'
-      );
-      
-      if (missingFields.length > 0) {
-        console.error("Imported data missing required fields:", missingFields);
-        throw new Error(`Import missing required fields: ${missingFields.join(', ')}`);
-      }
-      
-      // Format to ensure loadProject will accept it
-      const formattedData = {
-        userInputs: importedData.userInputs,
-        chatMessages: importedData.chatMessages || {},
-        timestamp: importedData.timestamp || new Date().toISOString(),
-        version: importedData.version || "1.0-document-import"
-      };
-      
-      console.log("Loading imported project data");
-      
-      // Use our own implementation to bypass potential validation issues
-      try {
-        // Create template values using sectionContent
-        const templateValues = {};
-        sectionContent.sections.forEach(section => {
-          if (section && section.id) {
-            templateValues[section.id] = section.placeholder || '';
-          }
-        });
-        
-        // Merge with loaded data
-        const mergedInputs = {...templateValues};
-        Object.keys(formattedData.userInputs).forEach(sectionId => {
-          if (formattedData.userInputs[sectionId] && typeof formattedData.userInputs[sectionId] === 'string' && 
-              formattedData.userInputs[sectionId].trim() !== '') {
-            mergedInputs[sectionId] = formattedData.userInputs[sectionId];
-          }
-        });
-        
-        // Update user inputs state
-        setUserInputs(mergedInputs);
-        
-        // Create empty chat messages
-        const emptyChat = {};
-        sectionContent.sections.forEach(section => {
-          if (section && section.id) {
-            emptyChat[section.id] = [];
-          }
-        });
-        
-        // Merge with loaded chat messages if they exist
-        const mergedChat = {...emptyChat};
-        if (formattedData.chatMessages) {
-          Object.keys(formattedData.chatMessages).forEach(sectionId => {
-            if (Array.isArray(formattedData.chatMessages[sectionId])) {
-              mergedChat[sectionId] = formattedData.chatMessages[sectionId];
-            }
-          });
-        }
-        
-        // Update chat messages state
-        setChatMessages(mergedChat);
-        
-        // Save to localStorage
-        if (storageAvailable) {
-          saveToStorage(mergedInputs, mergedChat);
-        }
-        
-        // Set to first section
-        setCurrentSection(sectionContent.sections[0].id);
-
-        console.log(`Document ${file.name} successfully imported`);
-        
-        return true;
-      } catch (innerError) {
-        console.error("Error in loading imported data:", innerError);
-        throw innerError;
-      }
-    } catch (error) {
-      console.error("Error importing document:", error);
-      alert("Error importing document: " + (error.message || "Unknown error"));
-      return false;
-    } finally {
+  try {
+    // Ask for confirmation just once here
+    if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
       setLoading(false);
+      return false;
     }
-  }, [sectionContent, storageAvailable]);
+
+    console.log(`Starting import process for ${file.name}`);
+    
+    // Pass sectionContent to the import service
+    // This ensures it uses the same placeholders as the main app
+    const importedData = await documentImportService.importDocumentContent(file, sectionContent);
+    
+    console.log("Document import returned data:", importedData ? "Success" : "Failed");
+    
+    // Add extra validation to ensure we have a valid structure before loading
+    if (!importedData || !importedData.userInputs) {
+      console.error("Import returned invalid data structure:", importedData);
+      throw new Error("Import returned invalid data");
+    }
+    
+    // Ensure required fields exist
+    const requiredFields = ['question', 'audience']; // Minimal set required
+    const missingFields = requiredFields.filter(field => 
+      !importedData.userInputs[field] || typeof importedData.userInputs[field] !== 'string'
+    );
+    
+    if (missingFields.length > 0) {
+      console.error("Imported data missing required fields:", missingFields);
+      throw new Error(`Import missing required fields: ${missingFields.join(', ')}`);
+    }
+    
+    // Important: Don't return a boolean from this function!
+    // Format properly to ensure loadProject will accept it
+    const formattedData = {
+      userInputs: importedData.userInputs,
+      chatMessages: importedData.chatMessages || {},
+      timestamp: importedData.timestamp || new Date().toISOString(),
+      version: importedData.version || "1.0-document-import"
+    };
+    
+    console.log("Loading imported project data");
+    
+    // Create template values using sectionContent
+    const templateValues = {};
+    sectionContent.sections.forEach(section => {
+      if (section && section.id) {
+        templateValues[section.id] = section.placeholder || '';
+      }
+    });
+    
+    // Merge with loaded data
+    const mergedInputs = {...templateValues};
+    Object.keys(formattedData.userInputs).forEach(sectionId => {
+      if (formattedData.userInputs[sectionId] && 
+          typeof formattedData.userInputs[sectionId] === 'string' && 
+          formattedData.userInputs[sectionId].trim() !== '') {
+        mergedInputs[sectionId] = formattedData.userInputs[sectionId];
+      }
+    });
+    
+    // Update user inputs state
+    setUserInputs(mergedInputs);
+    
+    // Create empty chat messages
+    const emptyChat = {};
+    sectionContent.sections.forEach(section => {
+      if (section && section.id) {
+        emptyChat[section.id] = [];
+      }
+    });
+    
+    // Merge with loaded chat messages if they exist
+    const mergedChat = {...emptyChat};
+    if (formattedData.chatMessages) {
+      Object.keys(formattedData.chatMessages).forEach(sectionId => {
+        if (Array.isArray(formattedData.chatMessages[sectionId])) {
+          mergedChat[sectionId] = formattedData.chatMessages[sectionId];
+        }
+      });
+    }
+    
+    // Update chat messages state
+    setChatMessages(mergedChat);
+    
+    // Save to localStorage
+    if (storageAvailable) {
+      saveToStorage(mergedInputs, mergedChat);
+    }
+    
+    // Set to first section
+    setCurrentSection(sectionContent.sections[0].id);
+
+    console.log(`Document ${file.name} successfully imported`);
+    
+    // Return a proper object, not a boolean
+    return {
+      success: true,
+      message: "Document successfully imported"
+    };
+  } catch (error) {
+    console.error("Error importing document:", error);
+    alert("Error importing document: " + (error.message || "Unknown error"));
+    return {
+      success: false,
+      error: error.message || "Unknown error"
+    };
+  } finally {
+    setLoading(false);
+  }
+}, [sectionContent, storageAvailable]);
 
   // Return all state and handlers needed by the components
   return {
