@@ -1,4 +1,9 @@
-// FILE: src/components/sections/SectionCard.js
+// Handle clicks directly to ensure both header and text work
+  const handleComponentClick = () => {
+    console.log("SectionCard click handler for section:", section.id);
+    // Make sure we call both expansion toggle and active section update
+    if (onClick) onClick(); // Update active section
+  };// FILE: src/components/sections/SectionCard.js
 
 import React, { useState, useEffect, useRef } from 'react';
 
@@ -117,9 +122,9 @@ const SectionCard = ({
     }
   };
 
-  // Visual cue styling for the textarea
+  // Visual cue styling for the textarea - NEW
   const getTextareaClasses = () => {
-    const baseClasses = `w-full py-1 px-2 border-0 rounded focus:ring-1 focus:ring-blue-300 outline-none resize-none overflow-hidden text-base leading-relaxed bg-white font-normal`;
+    const baseClasses = `w-full py-1 px-2 border-0 rounded focus:ring-1 focus:ring-blue-300 outline-none resize-none overflow-hidden text-base leading-relaxed ${isCurrentSection ? 'bg-blue-50' : 'bg-white'} font-normal`;
     
     // Add visual cues for editing
     if (isFocused) {
@@ -144,12 +149,9 @@ const SectionCard = ({
         className="flex justify-between items-center p-3 cursor-pointer"
         onClick={() => {
           // When header is clicked, both toggle expansion and set as active section
-          // For debugging - log click
           console.log("Section header clicked:", section.id, section.title);
-          
-          // Call both handlers
           onToggleExpand();
-          onClick(); // This calls setActiveSectionWithManualFlag
+          handleComponentClick(); // This now calls onClick to update active section
         }}
       >
         <h2 className="font-semibold text-lg mr-2 text-gray-800">
