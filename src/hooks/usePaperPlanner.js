@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { saveToStorage, loadFromStorage, clearStorage, isStorageAvailable } from '../services/storageService';
 import { callOpenAI } from '../services/openaiService';
-import { improveInstruction, improveBatchInstructions, updateSectionWithImprovedInstructions } from '../services/instructionImprovementService';
-import * as documentImportService from '../services/documentImportService';
+import * as documentImportService from '../services/documentImportService'; // Import the full service
 import sectionContent from '../data/sectionContent.json';
 import { validateProjectData } from '../utils/exportUtils';
 import { exportProject as exportProjectFunction } from '../utils/exportUtils';
@@ -85,19 +84,6 @@ const usePaperPlanner = () => {
   const [currentSectionData, setCurrentSectionData] = useState(null);
   const [sectionCompletionStatus, setSectionCompletionStatus] = useState({});
 
-  // NEW: Sequential mode state variables
-  const [expandedSections, setExpandedSections] = useState(() => {
-    // Initially only first section is expanded
-    const initialExpanded = {};
-    if (sectionContent?.sections?.length > 0) {
-      initialExpanded[sectionContent.sections[0].id] = true;
-    }
-    return initialExpanded;
-  });
-  
-  // NEW: Track section feedback status (none, good, fair, poor)
-  const [sectionStatus, setSectionStatus] = useState({});
-
   // These additional states are used by the VerticalPaperPlannerApp.js but needed in resetProject
   const [activeApproach, setActiveApproach] = useState('hypothesis');
   const [activeDataMethod, setActiveDataMethod] = useState('experiment');
@@ -132,253 +118,8 @@ const usePaperPlanner = () => {
   }, []);
 
   const handleSectionChange = useCallback((sectionId) => {
-    // For debugging - log the section change
-    console.log("handleSectionChange called with:", sectionId);
-    
     setCurrentSection(sectionId);
   }, []);
-
-  // Function to toggle section expansion
-  const toggleSectionExpansion = useCallback((sectionId) => {
-    // Special handling for approach and data method sections
-    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
-      // For approach sections, set them as the active approach
-      setActiveApproach(sectionId);
-      
-      // Update expanded sections for approaches
-      setExpandedSections(prev => {
-        const newState = {...prev};
-        // Collapse all approach sections
-        ['hypothesis', 'needsresearch', 'exploratoryresearch'].forEach(id => {
-          newState[id] = false;
-        });
-        // Expand the selected section
-        newState[sectionId] = true;
-        return newState;
-      });
-    } 
-    else if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
-      // For data method sections, set them as the active data method
-      setActiveDataMethod(sectionId);
-      
-      // Update expanded sections for data methods
-      setExpandedSections(prev => {
-        const newState = {...prev};
-        // Collapse all data method sections
-        ['experiment', 'existingdata', 'theorysimulation'].forEach(id => {
-          newState[id] = false;
-        });
-        // Expand the selected section
-        newState[sectionId] = true;
-        return newState;
-      });
-    }
-    else {
-      // For all other sections, simply toggle expansion
-      setExpandedSections(prev => ({
-        ...prev,
-        [sectionId]: !prev[sectionId]
-      }));
-    }
-    
-    // If we're expanding this section, make it the current section
-    if (!expandedSections[sectionId]) {
-      setCurrentSection(sectionId);
-    }
-  }, [expandedSections, setActiveApproach, setActiveDataMethod]);
-
-  // NEW: Function to expand only specific sections
-  const setExpandedSection = useCallback((sectionId) => {
-    setExpandedSections(prev => {
-      const newState = { ...prev };
-      Object.keys(newState).forEach(id => {
-        newState[id] = id === sectionId;
-      });
-      return newState;
-    });
-    setCurrentSection(sectionId);
-  }, []);
-
-  // Get the next section ID in the sequence, accounting for toggle sections
-  const getNextSectionId = useCallback((currentId) => {
-    const sections = sectionContent?.sections || [];
-    const currentIndex = sections.findIndex(s => s.id === currentId);
-    
-    if (currentIndex === -1 || currentIndex >= sections.length - 1) {
-      return null;
-    }
-    
-    // Get the next section in the array
-    let nextSectionId = sections[currentIndex + 1].id;
-    
-    // Handle approach toggle sections
-    if (currentId === 'hypothesis' || currentId === 'needsresearch' || currentId === 'exploratoryresearch') {
-      // Skip to audience section after any approach section
-      const audienceIndex = sections.findIndex(s => s.id === 'audience');
-      if (audienceIndex !== -1) {
-        nextSectionId = 'audience';
-      }
-    }
-    // Handle approach section when coming from question
-    else if (currentId === 'question') {
-      // Next would be the active approach section, not necessarily hypothesis
-      nextSectionId = activeApproach;
-    }
-    // Handle data method toggle sections
-    else if (currentId === 'experiment' || currentId === 'existingdata' || currentId === 'theorysimulation') {
-      // Skip to analysis section after any data method section
-      const analysisIndex = sections.findIndex(s => s.id === 'analysis');
-      if (analysisIndex !== -1) {
-        nextSectionId = 'analysis';
-      }
-    }
-    // Handle data method when coming from relatedpapers
-    else if (currentId === 'relatedpapers') {
-      // Next would be the active data method, not necessarily experiment
-      nextSectionId = activeDataMethod;
-    }
-    
-    return nextSectionId;
-  }, [activeApproach, activeDataMethod]);
-
-  // MODIFIED: Replaced with improved version that uses instructionImprovementService
-  const handleSectionFeedback = useCallback(async (sectionId) => {
-    setLoading(true);
-    
-    try {
-      // Get the section that was clicked
-      const targetSection = sectionContent?.sections?.find(s => s && s.id === sectionId);
-      if (!targetSection) {
-        throw new Error(`Section not found: ${sectionId}`);
-      }
-      
-      // Get user's current content for this section
-      const userContent = userInputs[sectionId] || '';
-      
-      // Skip if no content
-      if (!userContent.trim()) {
-        alert("Please add some content before requesting feedback.");
-        setLoading(false);
-        return;
-      }
-      
-      console.log(`Running instruction improvement for section: ${sectionId}`);
-      
-      // Create a small array of sections focusing on the clicked section
-      // but also including a few others for context
-      const sectionsForAnalysis = sectionContent?.sections?.filter(s => 
-        s.id === sectionId || 
-        // Include up to 2 sections before and after for context if they have content
-        (Math.abs(sectionContent.sections.findIndex(sec => sec.id === sectionId) - 
-                  sectionContent.sections.findIndex(sec => sec.id === s.id)) <= 2 && 
-         userInputs[s.id] && userInputs[s.id].trim() !== '')
-      );
-      
-      if (!sectionsForAnalysis || sectionsForAnalysis.length === 0) {
-        throw new Error("No valid sections to analyze");
-      }
-      
-      // Call the original instruction improvement service
-      const result = await improveBatchInstructions(
-        sectionsForAnalysis,
-        userInputs,
-        sectionContent
-      );
-      
-      if (!result.success) {
-        throw new Error(result.message || "Failed to improve instructions");
-      }
-      
-      // Update the section content with improved instructions
-      const updatedSections = updateSectionWithImprovedInstructions(
-        { sections: sectionContent.sections }, // Wrap sections in an object as expected by the function
-        result.improvedData
-      );
-      
-      if (!updatedSections || !updatedSections.sections) {
-        throw new Error("Failed to update sections with improved instructions");
-      }
-      
-      // Determine improvement status for status indicators
-      // Find the improved data for this section
-      const improvedSection = result.improvedData.find(s => s.id === sectionId);
-      if (improvedSection) {
-        // Update section status based on completeness
-        let status = 'none';
-        if (improvedSection.completionStatus === 'complete') {
-          // Count number of completed subsections
-          const completedCount = improvedSection.subsectionFeedback?.filter(sub => sub.isComplete)?.length || 0;
-          const totalCount = improvedSection.subsectionFeedback?.length || 0;
-          
-          if (totalCount === 0) {
-            status = 'none';
-          } else if (completedCount / totalCount > 0.8) {
-            status = 'good';
-          } else if (completedCount / totalCount > 0.4) {
-            status = 'fair';
-          } else {
-            status = 'poor';
-          }
-        } else {
-          status = 'poor';
-        }
-        
-        // Update section status
-        setSectionStatus(prevStatus => ({
-          ...prevStatus,
-          [sectionId]: status
-        }));
-        
-        // Add feedback to chat messages
-        setChatMessages(prevMessages => {
-          const overallFeedback = improvedSection.overallFeedback || 
-            "I've reviewed your work on this section. Here's my feedback:";
-            
-          // Compile detailed feedback from subsections
-          const subsectionDetails = improvedSection.subsectionFeedback?.map(sub => 
-            `**${sub.title}**: ${sub.feedback}`
-          ).join('\n\n') || '';
-          
-          const fullFeedback = `${overallFeedback}\n\n${subsectionDetails}`;
-          
-          return {
-            ...prevMessages,
-            [sectionId]: [
-              ...(prevMessages[sectionId] || []),
-              { role: 'user', content: "Can you evaluate my current progress on this section?" },
-              { role: 'assistant', content: fullFeedback }
-            ]
-          };
-        });
-      }
-      
-      // Always expand the next section regardless of feedback status
-      const nextSectionId = getNextSectionId(sectionId);
-      if (nextSectionId) {
-        // Expand the next section automatically
-        setExpandedSections(prev => ({
-          ...prev,
-          [nextSectionId]: true
-        }));
-        
-        // If it's a toggle section (approach or data method), handle that specially
-        if (nextSectionId === 'hypothesis' || nextSectionId === 'needsresearch' || nextSectionId === 'exploratoryresearch') {
-          setActiveApproach(nextSectionId);
-        } else if (nextSectionId === 'experiment' || nextSectionId === 'existingdata' || nextSectionId === 'theorysimulation') {
-          setActiveDataMethod(nextSectionId);
-        }
-        
-        // Update current section to the next one
-        setCurrentSection(nextSectionId);
-      }
-      
-    } catch (error) {
-      console.error("Error getting section feedback:", error);
-      alert("There was an error getting feedback. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [userInputs, getNextSectionId, setChatMessages, setSectionStatus, setExpandedSections, setCurrentSection, setActiveApproach, setActiveDataMethod]);
 
   // Modernized send message handler using JSON mode for structured data
   const handleSendMessage = useCallback(async (overrideMessage = null) => {
@@ -462,7 +203,7 @@ const usePaperPlanner = () => {
     }
   }, [currentMessage, currentSection, currentSectionData, userInputs, chatMessages]);
 
-  // Reset project function - UPDATED for sequential mode
+  // Reset project function - FIXED to correctly use fresh templates and all required states
   const resetProject = useCallback(() => {
     // Clear localStorage first, if available
     if (storageAvailable) {
@@ -481,17 +222,10 @@ const usePaperPlanner = () => {
     // Set the state to fresh templates
     setUserInputs(freshInputs);
     setChatMessages(freshChat);
-    
-    // Reset section expansion to only first section
-    const firstSectionId = sectionContent?.sections?.[0]?.id || 'question';
-    const initialExpanded = { [firstSectionId]: true };
-    setExpandedSections(initialExpanded);
-    
-    setCurrentSection(firstSectionId);
+    setCurrentSection(sectionContent?.sections?.[0]?.id || 'question');
     setActiveApproach('hypothesis');
     setActiveDataMethod('experiment');
     setSectionCompletionStatus({});
-    setSectionStatus({}); // Reset feedback status
     setShowConfirmDialog(false);
   }, [initialTemplates, storageAvailable]);
 
@@ -530,7 +264,7 @@ const usePaperPlanner = () => {
     return true;
   }, [userInputs, chatMessages]);
 
-  // Function to load project from imported JSON file - UPDATED for sequential mode
+  // Function to load project from imported JSON file - SIMPLIFIED VERSION
   const loadProject = useCallback((data) => {
     if (!validateProjectData(data)) {
       alert("Invalid project file format. Please select a valid project file.");
@@ -580,14 +314,6 @@ const usePaperPlanner = () => {
       // Update chat messages state
       setChatMessages(mergedChat);
       
-      // Reset section expansion to only first section
-      const firstSectionId = sectionContent?.sections?.[0]?.id || 'question';
-      const initialExpanded = { [firstSectionId]: true };
-      setExpandedSections(initialExpanded);
-      
-      // Reset section status
-      setSectionStatus({});
-      
       // Save to localStorage
       if (storageAvailable) {
         saveToStorage(mergedInputs, mergedChat);
@@ -603,7 +329,7 @@ const usePaperPlanner = () => {
   }, [storageAvailable]);
 
   // Import document content using the document import service
-  // UPDATED for sequential mode
+  // FIXED: Now passes sectionContent to ensure consistent placeholders
   const handleDocumentImport = useCallback(async (file) => {
     setLoading(true);
 
@@ -643,25 +369,18 @@ const usePaperPlanner = () => {
     loading,
     showConfirmDialog,
     showExamplesDialog,
-    currentSectionData,
-    activeApproach,
-    activeDataMethod,
-    sectionCompletionStatus,
-    // NEW: Sequential mode states
-    expandedSections,
-    sectionStatus,
+    currentSectionData,  // Provides section data to chat
+    activeApproach,      // Added to expose for VerticalPaperPlannerApp
+    activeDataMethod,    // Added to expose for VerticalPaperPlannerApp
+    sectionCompletionStatus, // Added to expose for VerticalPaperPlannerApp
     setChatMessages,
     setUserInputs,
     setCurrentMessage,
     setShowConfirmDialog,
     setShowExamplesDialog,
-    setActiveApproach,
-    setActiveDataMethod,
-    setSectionCompletionStatus,
-    // NEW: Sequential mode handlers
-    toggleSectionExpansion,
-    setExpandedSection,
-    handleSectionFeedback,
+    setActiveApproach,    // Added to expose for VerticalPaperPlannerApp
+    setActiveDataMethod,  // Added to expose for VerticalPaperPlannerApp
+    setSectionCompletionStatus, // Added to expose for VerticalPaperPlannerApp
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
@@ -669,7 +388,7 @@ const usePaperPlanner = () => {
     exportProject,
     saveProject,
     loadProject,
-    importDocumentContent: handleDocumentImport
+    importDocumentContent: handleDocumentImport // Use the real document import service with sectionContent
   };
 };
 
