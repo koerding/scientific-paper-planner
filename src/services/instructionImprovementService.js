@@ -313,3 +313,6 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
 
   return updatedSections;
 };
+
+// Export an alias for backwards compatibility if needed
+export const improveInstruction = improveBatchInstructions;
