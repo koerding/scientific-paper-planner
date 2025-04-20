@@ -3,9 +3,11 @@
 /**
  * Service for handling section UI state persistence
  * Manages minimized/expanded states across sessions
+ * Provides different defaults for new projects vs examples
  */
 
 const STORAGE_KEY = 'sectionUIStates';
+const NEW_PROJECT_FLAG = 'isNewProject';
 
 /**
  * Safely checks if localStorage is available and accessible
@@ -34,10 +36,16 @@ export const getSectionMinimizedState = (sectionId) => {
   
   try {
     const statesJson = localStorage.getItem(STORAGE_KEY);
-    if (!statesJson) return false;
     
-    const states = JSON.parse(statesJson);
-    return states[sectionId] === true;
+    // If we have saved states, use them
+    if (statesJson) {
+      const states = JSON.parse(statesJson);
+      return states[sectionId] === true;
+    }
+    
+    // Otherwise check if this is a new project and return default (minimized)
+    const isNewProject = localStorage.getItem(NEW_PROJECT_FLAG) === 'true';
+    return isNewProject; // Default to minimized for new projects, expanded for examples
   } catch (error) {
     console.warn('Error getting section state:', error);
     return false;
@@ -85,15 +93,42 @@ export const getAllSectionStates = () => {
 
 /**
  * Clear all section state settings
- * Useful when resetting the project
+ * Used when resetting the project
+ * @param {boolean} isNewProject - Whether this is a new project (vs an example)
  */
-export const clearAllSectionStates = () => {
+export const clearAllSectionStates = (isNewProject = true) => {
   if (!isStorageAvailable()) return;
   
   try {
     localStorage.removeItem(STORAGE_KEY);
+    // Set flag to indicate if this is a new project
+    localStorage.setItem(NEW_PROJECT_FLAG, isNewProject.toString());
   } catch (error) {
     console.warn('Error clearing section states:', error);
+  }
+};
+
+/**
+ * Initialize state for a new project or example
+ * @param {boolean} isNewProject - Whether this is a new project (vs an example)
+ * @param {Array} sectionIds - Array of section IDs to affect
+ */
+export const initializeSectionStates = (isNewProject = true, sectionIds = null) => {
+  if (!isStorageAvailable()) return;
+  
+  try {
+    // Set the new project flag
+    localStorage.setItem(NEW_PROJECT_FLAG, isNewProject.toString());
+    
+    // For a completely new initialization, clear existing states
+    localStorage.removeItem(STORAGE_KEY);
+    
+    // If we have specific sections, set them all to the default state
+    if (sectionIds && Array.isArray(sectionIds)) {
+      setAllSectionStates(isNewProject, sectionIds);
+    }
+  } catch (error) {
+    console.warn('Error initializing section states:', error);
   }
 };
 
