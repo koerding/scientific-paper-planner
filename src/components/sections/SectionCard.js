@@ -1,9 +1,4 @@
-// Handle clicks directly to ensure both header and text work
-  const handleComponentClick = () => {
-    console.log("SectionCard click handler for section:", section.id);
-    // Make sure we call both expansion toggle and active section update
-    if (onClick) onClick(); // Update active section
-  };// FILE: src/components/sections/SectionCard.js
+// FILE: src/components/sections/SectionCard.js
 
 import React, { useState, useEffect, useRef } from 'react';
 
@@ -23,7 +18,8 @@ const SectionCard = ({
   onEdit,
   onSignificantEdit,
   feedbackStatus = 'none',
-  onGetFeedback
+  onGetFeedback,
+  isCurrentSection
 }) => {
   const textareaRef = useRef(null);
   
@@ -37,6 +33,13 @@ const SectionCard = ({
   // State to track focus and hover for edit indication
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Handle clicks directly to ensure both header and text work
+  const handleComponentClick = () => {
+    console.log("SectionCard click handler for section:", section.id);
+    // Make sure we call both expansion toggle and active section update
+    if (onClick) onClick(); // Update active section
+  };
 
   // Auto-resize textarea height - improved version
   const adjustTextareaHeight = () => {
