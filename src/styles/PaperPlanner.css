@@ -563,3 +563,34 @@ body, html {
   height: 8px;
   background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(243,244,246,0.8));
 }
+/* Add these styles to PaperPlanner.css to fix the background color issue */
+
+/* Ensure active section highlighting always takes precedence */
+.section-card.expanded.current-active,
+.section-card.minimized.current-active {
+  background-color: #eff6ff !important; /* bg-blue-50 with !important to override other styles */
+  border-color: #3b82f6 !important; /* border-blue-500 !important */
+}
+
+/* Improve hover state for active sections */
+.section-card.minimized.current-active:hover {
+  background-color: #dbeafe !important; /* blue-100 for hover effect */
+  border-left-color: #3b82f6 !important; /* border-blue-500 !important */
+}
+
+/* Ensure textarea in active section keeps the blue background */
+.section-card.current-active textarea {
+  background-color: #eff6ff !important; /* Same blue-50 background */
+}
+
+/* Fix the indicator border for minimized cards to respect active styling */
+.section-card.minimized:not(.current-active) {
+  border-color: #e5e7eb !important; 
+  border-left-width: 4px !important;
+  border-left-color: #9ca3af !important; /* Gray-400 left border indicator */
+}
+
+.section-card.minimized.current-active {
+  border-left-width: 4px !important;
+  border-left-color: #3b82f6 !important; /* Blue-500 left border for active */
+}
