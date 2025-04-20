@@ -12,6 +12,17 @@
   background-color: #f9fafb;
 }
 
+.section-card.minimized::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(transparent, rgba(209, 213, 219, 0.3));
+  display: block;
+}
+
 .section-card.expanded {
   max-height: 2000px; /* Large value to accommodate any content size */
   background-color: #ffffff;
