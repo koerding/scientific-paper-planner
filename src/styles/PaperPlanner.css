@@ -437,3 +437,90 @@ header.bg-white.shadow-sm .container {
 body, html {
   overflow-x: hidden;
 }
+/* Add these new styles to PaperPlanner.css to support card minimization */
+
+/* Core minimization styles */
+.section-card {
+  margin-bottom: 0.5rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Improved smooth easing */
+  border-color: #e5e7eb !important;
+  position: relative;
+  overflow: hidden;
+  will-change: max-height, opacity; /* Optimize for animations */
+}
+
+.section-card.minimized {
+  max-height: 60px;
+  background-color: #f9fafb;
+}
+
+.section-card.minimized::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(transparent, rgba(209, 213, 219, 0.3));
+  display: block;
+}
+
+.section-card.expanded {
+  max-height: 2000px; /* Large value to accommodate any content size */
+  background-color: #ffffff;
+}
+
+.section-card.minimized:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Visual cue for minimized cards */
+.section-card.minimized .minimize-toggle-btn {
+  transform: rotate(180deg);
+}
+
+/* Animation for minimization */
+@keyframes minimizeCard {
+  from {
+    max-height: 2000px;
+    opacity: 1;
+  }
+  to {
+    max-height: 60px;
+    opacity: 0.9;
+  }
+}
+
+@keyframes expandCard {
+  from {
+    max-height: 60px;
+  }
+  to {
+    max-height: 2000px;
+  }
+}
+
+/* Added style to show a clearer border for minimized cards */
+.section-card.minimized:not(.current-active) {
+  border-color: #e5e7eb !important;
+  border-left-width: 4px !important;
+  border-left-color: #9ca3af !important; /* Gray-400 left border indicator */
+}
+
+/* Pointer cursor for minimized cards to indicate clickable */
+.section-card.minimized {
+  cursor: pointer;
+}
+
+/* Adjust fade gradient for minimized sections */
+.section-card.minimized::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(243,244,246,0.8));
+}
