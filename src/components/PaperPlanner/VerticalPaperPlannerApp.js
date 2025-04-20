@@ -233,6 +233,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const handleMagic = async () => {
     if (isAnyAiLoading) return;
     
+    console.log("Starting handleMagic for section:", activeSection);
+    
     trackInstructionImprovement(activeSection);
     setLastImprovementTime(Date.now());
     setSignificantEditsMade(false);
@@ -240,19 +242,35 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     
     setImprovingInstructions(true);
     try {
+      console.log("Calling improveBatchInstructions with sections:", 
+        localSectionContent.sections.map(s => s.id));
+      
       const result = await improveBatchInstructions(
         localSectionContent.sections,
         userInputs,
         sectionContent
       );
 
+      console.log("Received result from improveBatchInstructions:", result);
+
       if (result.success && result.improvedData && result.improvedData.length > 0) {
         // Update the instruction content
+        console.log("Updating section content with improved data:", 
+          result.improvedData.map(d => d.id));
+        
         const updatedSections = updateSectionWithImprovedInstructions(
           localSectionContent,
           result.improvedData
         );
+        
+        console.log("Updated sections:", updatedSections);
+        
         setLocalSectionContent(updatedSections);
+        
+        // Force a re-render of the instructions panel
+        const currentActive = activeSection;
+        setActiveSection("temp-force-rerender");
+        setTimeout(() => setActiveSection(currentActive), 10);
       }
     } catch (error) {
       console.error("[handleMagic] Error during improvement process:", error);
@@ -387,6 +405,16 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
 
   // Get current section data for UI
   const sectionDataForPanel = getCurrentSectionData();
+  
+  // Log what's being passed to the panel
+  useEffect(() => {
+    console.log("Data being passed to instructions panel:", sectionDataForPanel);
+    if (sectionDataForPanel?.instructions?.improvement) {
+      console.log("Panel has improvement data:", sectionDataForPanel.instructions.improvement);
+    } else {
+      console.log("Panel does NOT have improvement data");
+    }
+  }, [sectionDataForPanel]);
 
   // Toggle handling
   const handleApproachToggle = (approach) => {
