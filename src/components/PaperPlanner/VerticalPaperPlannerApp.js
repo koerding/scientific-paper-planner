@@ -1,4 +1,4 @@
-// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - Optimized version with enhanced review functionality
+// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - With card minimization
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
@@ -19,6 +19,8 @@ import PrivacyPolicyModal from '../modals/PrivacyPolicyModal';
 import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
 import { reviewScientificPaper } from '../../services/paperReviewService';
 import HeaderCard from '../sections/HeaderCard';
+import SectionControls from '../controls/SectionControls';
+import { clearAllSectionStates } from '../../services/sectionStateService';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -37,6 +39,7 @@ import '../../styles/PaperPlanner.css';
 /**
  * Enhanced Project Planner with improved review functionality
  * Scientific project planning tool with AI-assisted features
+ * ADDED: Section minimization support with expand/collapse controls
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -92,6 +95,21 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       return { sections: [] };
     }
   });
+
+  // Helper function to get all visible section IDs for the section controls
+  const getAllVisibleSectionIds = () => {
+    const visibleIds = [];
+    
+    if (Array.isArray(localSectionContent?.sections)) {
+      localSectionContent.sections.forEach(section => {
+        if (section?.id && shouldDisplaySection(section.id)) {
+          visibleIds.push(section.id);
+        }
+      });
+    }
+    
+    return visibleIds;
+  };
 
   // Make splash screen ref globally available
   useEffect(() => {
@@ -267,13 +285,16 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Project management
+  // Project management with minimization state clearing
   const handleResetRequest = () => {
     // Track reset action
     ReactGA.event({
       category: 'Document Actions',
       action: 'Reset Project'
     });
+    
+    // Clear section minimization states
+    clearAllSectionStates();
     
     hookResetProject();
     // Reset local instructions state
@@ -430,6 +451,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
             {/* Left panel */}
             <div className="w-half px-4 py-2" style={{ width: '50%' }}>
               <HeaderCard />
+              
+              {/* ADDED: Section minimization controls */}
+              <SectionControls 
+                sectionIds={getAllVisibleSectionIds()} 
+                onStateChange={() => {
+                  // Force a re-render by updating state
+                  setActiveSection(activeSection);
+                }}
+              />
               
               {/* Display Research Question first */}
               {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
