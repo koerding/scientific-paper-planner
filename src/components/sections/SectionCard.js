@@ -7,6 +7,7 @@ import { getSectionMinimizedState, setSectionMinimizedState } from '../../servic
  * Enhanced section card component with rating-based feedback
  * - Added edit-after-feedback tracking to update button label
  * - Uses green text for completed items instead of strikethrough
+ * - UPDATED: Now listens for global reset events
  */
 const SectionCard = ({
   section,
@@ -58,6 +59,42 @@ const SectionCard = ({
       setEditedSinceFeedback(false);
     }
   }, [lastFeedbackTime]);
+  
+  // Listen for global reset events to clear local state
+  useEffect(() => {
+    const handleProjectReset = () => {
+      console.log(`[SectionCard ${section.id}] Resetting local state due to global reset event`);
+      setLastEditTimestamp(null);
+      setSignificantChange(false);
+      setEditedSinceFeedback(false);
+    };
+    
+    const handleProjectDataLoaded = () => {
+      console.log(`[SectionCard ${section.id}] Resetting local state due to project data load`);
+      setLastEditTimestamp(null);
+      setSignificantChange(false);
+      setEditedSinceFeedback(false);
+    };
+    
+    const handleDocumentImported = () => {
+      console.log(`[SectionCard ${section.id}] Resetting local state due to document import`);
+      setLastEditTimestamp(null);
+      setSignificantChange(false);
+      setEditedSinceFeedback(false);
+    };
+    
+    // Listen for various events that should trigger a reset
+    window.addEventListener('projectStateReset', handleProjectReset);
+    window.addEventListener('projectDataLoaded', handleProjectDataLoaded);
+    window.addEventListener('documentImported', handleDocumentImported);
+    
+    return () => {
+      // Clean up event listeners
+      window.removeEventListener('projectStateReset', handleProjectReset);
+      window.removeEventListener('projectDataLoaded', handleProjectDataLoaded);
+      window.removeEventListener('documentImported', handleDocumentImported);
+    };
+  }, [section.id]);
   
   // State to track focus and hover for edit indication
   const [isFocused, setIsFocused] = useState(false);
