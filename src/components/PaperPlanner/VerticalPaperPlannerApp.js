@@ -20,7 +20,7 @@ import '../../styles/PaperPlanner.css';
  * Now uses a more modular, component-based architecture
  * FIXED: Restored toggle functionality for research approach and data method
  * ADDED: Automatic next section opening after feedback
- * FIXED: Corrected reset functionality to properly clear content
+ * FIXED: Properly maintains reset functionality to clear content
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -54,14 +54,14 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
-    resetProject: originalResetProject,
+    resetProject: hookResetProject,
     exportProject,
     loadProject,
     importDocumentContent,
     handleReviewPaper,
     handleSaveProject,
     saveWithFilename,
-    onConfirmReset: originalOnConfirmReset,
+    onConfirmReset: hookOnConfirmReset,
     openExamplesDialog,
     openReviewModal,
     openPrivacyPolicy,
@@ -285,32 +285,26 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     });
   };
 
-  // Function to open the confirm reset dialog
-  const openResetDialog = () => {
-    setShowConfirmDialog(true);
+  // FIXED: Simply use the hook's reset functions directly
+  // This maintains the original reset functionality while adding our section-open feature
+  const resetProject = () => {
+    // Use the hook's function to open the confirm dialog
+    hookResetProject();
   };
 
-  // FIXED: Properly delegate to the original functions
-  // This function just opens a confirmation dialog
-  const resetProject = () => {
-    openResetDialog();
-  };
-  
-  // This is the actual reset function that runs after confirmation
+  // Custom onConfirmReset that extends the hook's reset function
   const onConfirmReset = () => {
-    // Call the original resetProject from the hook - this will clear content
-    originalResetProject();
+    // Call the hook's original confirm reset function
+    // This will handle all the proper content resetting
+    hookOnConfirmReset();
     
-    // Reset our local tracking state
+    // Reset our local state
     setSectionsWithFeedback([]);
     
     // Reset improvement state if available
     if (typeof resetImprovementState === 'function') {
       resetImprovementState();
     }
-    
-    // Close the dialog
-    setShowConfirmDialog(false);
   };
 
   // Show splash screen
@@ -343,15 +337,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     reviewData
   };
   
-  // Use the direct setter functions from the hook
-  // FIXED: Use our onConfirmReset that properly resets state
+  // FIXED: Use custom onConfirmReset that calls the hook's version
+  // but also handles our local state
   const modalActions = {
     closeConfirmDialog: () => setShowConfirmDialog(false),
     closeExamplesDialog: () => setShowExamplesDialog(false),
     closeReviewModal: () => setShowReviewModal(false),
     closePrivacyPolicy: () => setShowPrivacyPolicy(false),
     closeSaveDialog: () => setShowSaveDialog(false),
-    onConfirmReset  // Use our modified version that resets state
+    onConfirmReset  // Use our wrapper that handles both hook reset and local state
   };
 
   // Prepare props for ContentArea component
@@ -394,7 +388,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   return (
     <MainLayout
       splashManagerRef={splashManagerRef}
-      resetProject={resetProject} // This just opens the confirmation dialog
+      resetProject={resetProject} // Use the hook's function to open dialog
       exportProject={handleExportRequest}
       saveProject={handleSaveRequest}
       loadProject={loadProject}
