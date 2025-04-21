@@ -13,6 +13,7 @@ import {
   trackExport,
   trackSave
 } from '../../utils/analyticsUtils';
+import { getNextVisibleSectionId } from '../../utils/sectionOrderUtils';
 import '../../styles/PaperPlanner.css';
 
 /**
@@ -21,6 +22,7 @@ import '../../styles/PaperPlanner.css';
  * FIXED: Restored toggle functionality for research approach and data method
  * ADDED: Automatic next section opening after feedback
  * FIXED: Properly maintains reset functionality to clear content
+ * IMPROVED: Uses centralized section order configuration
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -169,21 +171,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     trackSectionChange(sectionId, sectionTitle);
   };
 
-  // Helper function to determine if a section should be displayed
-  const shouldDisplaySection = (sectionId) => {
-    // Research approach sections
-    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
-      return sectionId === activeApproach;
-    }
-
-    // Data acquisition method sections
-    if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
-      return sectionId === activeDataMethod;
-    }
-
-    return true; // All other sections are always displayed
-  };
-
   // Toggle handling - FIXED to update both local state and hook state
   const handleApproachToggle = (approach) => {
     console.log(`Setting research approach to: ${approach}`);
@@ -225,7 +212,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   };
 
   // Wrapper for handleMagic that passes activeSection and updates tracking
-  // MODIFIED: Now focuses the next section after feedback
+  // IMPROVED: Now uses the centralized getNextVisibleSectionId function for proper order
   const handleMagicClick = (sectionId = null) => {
     const targetSection = sectionId || activeSection;
     
@@ -238,45 +225,28 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           // Add to the list of sections with feedback
           setSectionsWithFeedback(prev => [...prev, targetSection]);
           
-          // Find the next section to open and focus
-          const currentSectionIndex = localSectionContent.sections.findIndex(s => s.id === targetSection);
-          if (currentSectionIndex !== -1 && currentSectionIndex < localSectionContent.sections.length - 1) {
-            // Find the next visible section
-            let nextSectionIndex = currentSectionIndex + 1;
-            let nextSection = null;
+          // Find the next section using our utility function
+          const nextSectionId = getNextVisibleSectionId(targetSection, activeApproach, activeDataMethod);
+          
+          if (nextSectionId) {
+            console.log(`Opening next section: ${nextSectionId}`);
             
-            // Loop until we find a visible section or reach the end
-            while (nextSectionIndex < localSectionContent.sections.length) {
-              const candidateSection = localSectionContent.sections[nextSectionIndex];
+            // Ensure the next section is expanded
+            setSectionMinimizedState(nextSectionId, false);
+            
+            // Set focus to the next section
+            setTimeout(() => {
+              // Set it as the active section
+              setActiveSectionWithManualFlag(nextSectionId);
               
-              // Skip invisible sections (based on approach/method toggles)
-              if (candidateSection && shouldDisplaySection(candidateSection.id)) {
-                nextSection = candidateSection;
-                break;
+              // Scroll to it
+              if (sectionRefs.current[nextSectionId]?.current) {
+                sectionRefs.current[nextSectionId].current.scrollIntoView({ 
+                  behavior: 'smooth',
+                  block: 'start'
+                });
               }
-              nextSectionIndex++;
-            }
-            
-            if (nextSection) {
-              console.log(`Opening next section: ${nextSection.id}`);
-              
-              // Ensure the next section is expanded
-              setSectionMinimizedState(nextSection.id, false);
-              
-              // Set focus to the next section
-              setTimeout(() => {
-                // Set it as the active section
-                setActiveSectionWithManualFlag(nextSection.id);
-                
-                // Scroll to it
-                if (sectionRefs.current[nextSection.id]?.current) {
-                  sectionRefs.current[nextSection.id].current.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start'
-                  });
-                }
-              }, 300); // Small delay to ensure the UI updates first
-            }
+            }, 300); // Small delay to ensure the UI updates first
           }
         }
       }
