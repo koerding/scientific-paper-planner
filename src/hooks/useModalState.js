@@ -17,7 +17,7 @@ export const useModalState = () => {
   const [reviewData, setReviewData] = useState(null);
   const [reviewLoading, setReviewLoading] = useState(false);
 
-  // Methods to open/close modals
+  // Methods to open/close modals - consistent naming with open/close prefixes
   const openConfirmDialog = useCallback(() => setShowConfirmDialog(true), []);
   const closeConfirmDialog = useCallback(() => setShowConfirmDialog(false), []);
   
@@ -41,22 +41,31 @@ export const useModalState = () => {
     showPrivacyPolicy,
     showSaveDialog,
     
+    // Direct setter functions for consistent API
+    setShowConfirmDialog,
+    setShowExamplesDialog,
+    setShowReviewModal,
+    setShowPrivacyPolicy,
+    setShowSaveDialog,
+    
     // Review state
     reviewData,
     setReviewData,
     reviewLoading,
     setReviewLoading,
     
-    // Modal open/close methods
+    // Modal open methods
     openConfirmDialog,
-    closeConfirmDialog,
     openExamplesDialog,
-    closeExamplesDialog,
     openReviewModal,
-    closeReviewModal,
     openPrivacyPolicy,
-    closePrivacyPolicy,
     openSaveDialog,
+    
+    // Modal close methods
+    closeConfirmDialog,
+    closeExamplesDialog,
+    closeReviewModal,
+    closePrivacyPolicy,
     closeSaveDialog
   };
 };
