@@ -2,7 +2,7 @@
 
 /**
  * Main hook that combines all specialized hooks into a unified API
- * FIXED: Improved handling of research approach and data method toggling
+ * UPDATED: Now properly connects the unified reset function across hooks
  */
 import { useState, useEffect } from 'react';
 import { useProjectState } from './useProjectState';
@@ -44,7 +44,7 @@ const usePaperPlanner = () => {
     handleSendMessage
   } = chat;
   
-  // Setup project actions
+  // Setup project actions with reset functionality
   const projectActions = useProjectActions(
     userInputs, 
     setUserInputs, 
@@ -56,13 +56,18 @@ const usePaperPlanner = () => {
   const {
     actionLoading,
     resetProject: resetProjectAction,
+    resetAllProjectState, // Get the comprehensive reset function
     handleExportProject: exportProject,
     saveProject,
     loadProject: loadProjectAction
   } = projectActions;
   
-  // Setup document import
-  const documentImport = useDocumentImport(loadProjectAction, sectionContent);
+  // Setup document import with the comprehensive reset function
+  const documentImport = useDocumentImport(
+    loadProjectAction, 
+    sectionContent,
+    resetAllProjectState // Pass the reset function to document import
+  );
   const {
     importLoading,
     handleDocumentImport: importDocumentContent
@@ -163,9 +168,10 @@ const usePaperPlanner = () => {
     }
   };
   
-  // Final reset project function
+  // Final reset project function - now uses our unified reset
   const onConfirmReset = () => {
-    resetProjectAction();
+    // Use our comprehensive reset function
+    resetAllProjectState();
     closeConfirmDialog();
     
     // Reset approach and method to defaults
@@ -173,13 +179,14 @@ const usePaperPlanner = () => {
     setActiveDataMethod('experiment');
   };
   
-  // Final load project function
+  // Final load project function - now uses reset
   const loadProject = (data) => {
     const result = loadProjectAction(data);
     if (result) {
       handleSectionChange(sectionContent.sections[0].id);
       
-      // Reset approach and method to defaults
+      // Reset approach and method to defaults 
+      // (Note: project loading handles the rest of the reset already)
       setActiveApproach('hypothesis');
       setActiveDataMethod('experiment');
     }
@@ -241,6 +248,9 @@ const usePaperPlanner = () => {
     resetProject,
     goToNextSection,
     goToPreviousSection,
+    
+    // Unified reset function for direct access when needed
+    resetAllProjectState,
     
     // Project actions
     exportProject,
