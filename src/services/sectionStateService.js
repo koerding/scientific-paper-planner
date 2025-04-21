@@ -3,6 +3,7 @@
 /**
  * Service for managing section minimization state
  * Provides functions to get, set, clear, and initialize section states
+ * UPDATED: Enhanced event dispatching for better component coordination
  */
 
 /**
@@ -37,6 +38,13 @@ export const getSectionMinimizedState = (sectionId) => {
 export const setSectionMinimizedState = (sectionId, isMinimized) => {
   try {
     localStorage.setItem(`section_minimized_${sectionId}`, isMinimized.toString());
+    
+    // Dispatch an event to notify components of the change
+    window.dispatchEvent(new CustomEvent('sectionStatesChanged', {
+      detail: { sectionId, isMinimized }
+    }));
+    
+    console.log(`Section state updated: ${sectionId} is now ${isMinimized ? 'minimized' : 'expanded'}`);
   } catch (error) {
     console.warn(`Error setting minimized state for ${sectionId}:`, error);
   }
@@ -60,7 +68,9 @@ export const clearAllSectionStates = (defaultMinimized = true) => {
     }
     
     // Dispatch an event to notify components of the change
-    window.dispatchEvent(new CustomEvent('sectionStatesChanged'));
+    window.dispatchEvent(new CustomEvent('sectionStatesChanged', {
+      detail: { allSectionsReset: true, defaultMinimized }
+    }));
   } catch (error) {
     console.warn('Error clearing section states:', error);
   }
@@ -91,9 +101,58 @@ export const initializeSectionStates = (defaultMinimized = true, sectionIds = []
     }
     
     // Dispatch an event to notify components of the change
-    window.dispatchEvent(new CustomEvent('sectionStatesChanged'));
+    window.dispatchEvent(new CustomEvent('sectionStatesChanged', {
+      detail: { initialized: true, defaultMinimized }
+    }));
   } catch (error) {
     console.warn('Error initializing section states:', error);
+  }
+};
+
+/**
+ * Toggle minimization state for a section
+ * @param {string} sectionId - The ID of the section to toggle
+ * @returns {boolean} - The new minimized state (true if minimized)
+ */
+export const toggleSectionMinimizedState = (sectionId) => {
+  try {
+    const currentState = getSectionMinimizedState(sectionId);
+    const newState = !currentState;
+    
+    setSectionMinimizedState(sectionId, newState);
+    return newState;
+  } catch (error) {
+    console.warn(`Error toggling minimized state for ${sectionId}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Toggle all sections to a specific state
+ * @param {boolean} minimize - Whether to minimize (true) or expand (false) all sections
+ * @returns {boolean} - Success flag
+ */
+export const toggleAllSections = (minimize = true) => {
+  try {
+    // Get all section keys from localStorage
+    const allSectionKeys = Object.keys(localStorage)
+      .filter(key => key.startsWith('section_minimized_'))
+      .map(key => key.replace('section_minimized_', ''));
+    
+    // Set all sections to the requested state
+    allSectionKeys.forEach(sectionId => {
+      localStorage.setItem(`section_minimized_${sectionId}`, minimize.toString());
+    });
+    
+    // Dispatch an event to notify components of the change
+    window.dispatchEvent(new CustomEvent('sectionStatesChanged', {
+      detail: { allSectionsToggled: true, minimize }
+    }));
+    
+    return true;
+  } catch (error) {
+    console.error('Error toggling all sections:', error);
+    return false;
   }
 };
 
@@ -113,7 +172,9 @@ export const resetSectionStates = () => {
     localStorage.setItem('section_minimized_question', 'false');
     
     // Dispatch an event to notify components of the change
-    window.dispatchEvent(new CustomEvent('sectionStatesChanged'));
+    window.dispatchEvent(new CustomEvent('sectionStatesChanged', {
+      detail: { reset: true }
+    }));
     
     return true;
   } catch (error) {
