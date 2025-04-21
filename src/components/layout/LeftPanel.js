@@ -9,6 +9,7 @@ import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 
 /**
  * Left panel component that manages rendering sections and toggles
+ * UPDATED: Added support for section feedback handling
  */
 const LeftPanel = ({ 
   activeSection,
@@ -23,7 +24,9 @@ const LeftPanel = ({
   handleDataMethodToggle,
   sectionRefs,
   handleEdit,
-  handleSignificantEdit
+  handleSignificantEdit,
+  handleMagic, // Included to support section feedback
+  sectionsWithFeedback = [] // New prop to track which sections have feedback
 }) => {
   // Helper to get all visible section IDs for the section controls
   const getAllVisibleSectionIds = () => {
@@ -53,12 +56,22 @@ const LeftPanel = ({
     return true; // All other sections are always displayed
   };
   
+  // Handle feedback request for a specific section
+  const handleSectionFeedback = (sectionId) => {
+    if (handleMagic && typeof handleMagic === 'function') {
+      console.log(`Requesting feedback for section: ${sectionId}`);
+      // Call the magic function with the section ID
+      handleMagic(sectionId);
+    }
+  };
+  
   // Rendering function for a section
   const renderSection = (section) => {
     if (!section || !section.id) return null;
     if (!shouldDisplaySection(section.id)) return null;
 
     const isCurrentActive = activeSection === section.id;
+    const hasFeedback = sectionsWithFeedback.includes(section.id);
     
     return (
       <SectionCard
@@ -72,6 +85,8 @@ const LeftPanel = ({
         onClick={() => setActiveSectionWithManualFlag(section.id)}
         onEdit={handleEdit}
         onSignificantEdit={handleSignificantEdit}
+        onRequestFeedback={handleSectionFeedback}
+        hasFeedback={hasFeedback}
       />
     );
   };
