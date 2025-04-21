@@ -2,11 +2,12 @@
 
 /**
  * Document import service for PDF and Word documents
- * Now uses the dedicated documentProcessor for text extraction
+ * UPDATED: Now expands all sections after import
  */
 import { callOpenAI } from './openaiService';
 import { loadPDFJS, extractTextFromDocument } from './documentProcessor';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
+import { initializeSectionStates } from '../services/sectionStateService';
 import sectionContentData from '../data/sectionContent.json';
 
 /**
@@ -87,8 +88,6 @@ IMPORTANT: Your output will be graded based on how well it meets the criteria fo
 6. Fill out every component that the placeholders ask for
 7. The text should be easily readable for students. Use line feeds and bullet points where useful for readability and always when separating distinct placeholder points.
 8. IMPORTANT: All field values MUST be simple strings, NOT nested objects or arrays
-9. SPECIAL CONSIDERATION: The prompts are for planning research while this is about how research was probably planned. So look for results instead for expected results. And when extracting the abstract, take the abstract verbatim but add uppercase labels marking the components mentioned in the prompt.
-
 
 
 GRADING CRITERIA:
@@ -201,6 +200,11 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
 
     console.log("Final import structure with userInputs:", 
                 Object.keys(result.userInputs).length, "fields");
+    
+    // IMPORTANT: Initialize all sections as expanded for examples from PDF
+    // This ensures the user can see all the content immediately
+    initializeSectionStates(false); // false = expand all sections
+    console.log("Set all sections to expanded state for imported document");
 
     console.log('Successfully processed paper structure');
     return result;
@@ -235,6 +239,10 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
     // Add some derived content
     fallbackResult.userInputs.question = `Research Question: How does ${formattedName} affect research outcomes?\n\nSignificance/Impact: Understanding the impact of ${formattedName} could lead to improved methodologies.`;
     fallbackResult.userInputs.audience = `Target Audience/Community:\n1. Researchers in the field of ${formattedName}\n2. Policy makers\n3. Practitioners`;
+    
+    // Initialize all sections as expanded even for fallback data
+    initializeSectionStates(false); // false = expand all sections
+    console.log("Set all sections to expanded state for fallback import");
     
     return fallbackResult;
   }
