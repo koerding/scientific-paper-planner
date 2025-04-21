@@ -1,3 +1,5 @@
+// FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
+
 import React, { useState, useEffect } from 'react';
 
 /**
@@ -31,12 +33,18 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
   const renderInstructionContent = () => {
     if (!currentSection) return null;
     
+    // For debugging - log the current section structure
+    console.log("FullHeightInstructionsPanel rendering with section:", currentSection);
+    
     // Check if we have improvement feedback data
-    const hasImprovement = !!currentSection?.instructions?.improvement;
+    const hasImprovement = currentSection.instructions && 
+                          currentSection.instructions.improvement;
     
     if (hasImprovement) {
+      console.log("Found improvement data:", currentSection.instructions.improvement);
       return renderImprovedInstructions();
     } else {
+      console.log("No improvement data found, rendering original instructions");
       return renderOriginalInstructions();
     }
   };
@@ -93,6 +101,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
     if (!currentSection || !currentSection.instructions?.improvement) return null;
     
     const improvement = currentSection.instructions.improvement;
+    console.log("Rendering improved instructions with:", improvement);
     
     return (
       <>
