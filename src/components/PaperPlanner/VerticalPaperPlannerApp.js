@@ -1,6 +1,8 @@
 // FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
 
-import React, { useEffect, useRef, useState } from 'react';
+// Modified version with feedback rating tracking added
+
+import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
 import sectionContent from '../../data/sectionContent.json';
 import MainLayout from '../layout/MainLayout';
@@ -19,10 +21,7 @@ import '../../styles/PaperPlanner.css';
 /**
  * Enhanced Project Planner with improved structure
  * Now uses a more modular, component-based architecture
- * FIXED: Restored toggle functionality for research approach and data method
- * ADDED: Automatic next section opening after feedback
- * FIXED: Properly maintains reset functionality to clear content
- * IMPROVED: Uses centralized section order configuration
+ * UPDATED: Added tracking for feedback ratings
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -86,6 +85,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // New state to track sections that have received feedback
   const [sectionsWithFeedback, setSectionsWithFeedback] = useState([]);
   
+  // NEW: Add state to track feedback ratings (maps section ID to rating)
+  const [feedbackRatings, setFeedbackRatings] = useState({});
+  
   // Get improvement logic from custom hook
   const improvement = useImprovementLogic(userInputs, sectionContent);
   const {
@@ -93,7 +95,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     improvingInstructions,
     lastImprovementTime,
     significantEditsMade,
-    handleMagic,
+    handleMagic: originalHandleMagic,
     handleEdit,
     handleSignificantEdit,
     resetImprovementState
@@ -137,14 +139,31 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     });
   }, []);
 
-  // Effect to update sectionsWithFeedback when localSectionContent changes
+  // NEW: Effect to extract ratings when localSectionContent changes
   useEffect(() => {
     if (localSectionContent?.sections) {
+      // Extract sections that have received feedback
       const sectionsWithImprovement = localSectionContent.sections
         .filter(section => section?.instructions?.improvement)
         .map(section => section.id);
         
       setSectionsWithFeedback(sectionsWithImprovement);
+      
+      // Extract ratings from the improvement data
+      const newRatings = {};
+      localSectionContent.sections.forEach(section => {
+        if (section?.instructions?.improvement?.rating) {
+          newRatings[section.id] = section.instructions.improvement.rating;
+        }
+      });
+      
+      // Update ratings state if there are changes
+      if (Object.keys(newRatings).length > 0) {
+        setFeedbackRatings(prevRatings => ({
+          ...prevRatings,
+          ...newRatings
+        }));
+      }
     }
   }, [localSectionContent]);
 
@@ -211,15 +230,48 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSaveProject();
   };
 
-  // Wrapper for handleMagic that passes activeSection and updates tracking
-  // IMPROVED: Now uses the centralized getNextVisibleSectionId function for proper order
+  // Check if a section contains placeholder content
+  const isPlaceholderContent = (sectionId) => {
+    if (!sectionId) return true;
+    
+    const content = userInputs[sectionId] || '';
+    const section = sectionContent.sections.find(s => s.id === sectionId);
+    const placeholder = section?.placeholder || '';
+    
+    return content === placeholder || content.trim() === '';
+  };
+
+  // Modified wrapper for handleMagic that:
+  // 1. Only processes sections that have non-placeholder content
+  // 2. Handles ratings extraction
+  // 3. Updates tracking 
+  // 4. Opens the next section
   const handleMagicClick = (sectionId = null) => {
     const targetSection = sectionId || activeSection;
     
-    return handleMagic(targetSection).then(success => {
+    // Skip if the section only contains placeholder content
+    if (isPlaceholderContent(targetSection)) {
+      console.log(`Skipping feedback for ${targetSection} - contains only placeholder content`);
+      alert("Please add some content to this section before requesting feedback.");
+      return Promise.resolve(false);
+    }
+    
+    return originalHandleMagic(targetSection).then(success => {
       if (success) {
         // Check if this is the first time this section receives feedback
         const isFirstFeedback = !sectionsWithFeedback.includes(targetSection);
+        
+        // Extract the rating if available
+        const sectionData = localSectionContent.sections.find(s => s.id === targetSection);
+        const rating = sectionData?.instructions?.improvement?.rating;
+        
+        // Update our ratings state if a rating was provided
+        if (rating) {
+          setFeedbackRatings(prev => ({
+            ...prev,
+            [targetSection]: rating
+          }));
+        }
         
         if (isFirstFeedback) {
           // Add to the list of sections with feedback
@@ -270,6 +322,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     
     // Reset our local state
     setSectionsWithFeedback([]);
+    setFeedbackRatings({});
     
     // Reset improvement state if available
     if (typeof resetImprovementState === 'function') {
@@ -334,6 +387,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleEdit,
     handleSignificantEdit,
     sectionsWithFeedback,
+    feedbackRatings, // Pass the feedback ratings
     sectionDataForPanel,
     handleMagic: handleMagicClick
   };
