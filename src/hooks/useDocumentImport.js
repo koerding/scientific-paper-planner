@@ -2,11 +2,12 @@
 
 /**
  * Hook for managing document import functionality
+ * UPDATED: Now uses the unified reset function before importing
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
 
-export const useDocumentImport = (loadProject, sectionContent) => {
+export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
   const [importLoading, setImportLoading] = useState(false);
 
   const handleDocumentImport = useCallback(async (file) => {
@@ -21,6 +22,15 @@ export const useDocumentImport = (loadProject, sectionContent) => {
 
       console.log(`Starting import process for ${file.name}`);
       
+      // First, reset all state to ensure clean slate
+      // This will clear feedback, reset section states, and clear localStorage
+      if (resetAllProjectState && typeof resetAllProjectState === 'function') {
+        resetAllProjectState();
+        console.log("[handleDocumentImport] Reset all project state before import");
+      } else {
+        console.warn("[handleDocumentImport] resetAllProjectState function not provided");
+      }
+      
       // Pass sectionContent to the import service
       const importedData = await importDocumentContent(file, sectionContent);
       
@@ -31,6 +41,15 @@ export const useDocumentImport = (loadProject, sectionContent) => {
         const result = loadProject(importedData);
         if (result) {
           console.log(`Document ${file.name} successfully imported`);
+          
+          // Dispatch a specific event for document imports
+          window.dispatchEvent(new CustomEvent('documentImported', {
+            detail: { 
+              timestamp: Date.now(),
+              filename: file.name
+            }
+          }));
+          
           return true;
         }
       }
@@ -43,7 +62,7 @@ export const useDocumentImport = (loadProject, sectionContent) => {
     } finally {
       setImportLoading(false);
     }
-  }, [loadProject, sectionContent]);
+  }, [loadProject, sectionContent, resetAllProjectState]);
 
   return {
     importLoading,
