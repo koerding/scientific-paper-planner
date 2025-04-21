@@ -18,6 +18,7 @@ import '../../styles/PaperPlanner.css';
 /**
  * Enhanced Project Planner with improved structure
  * Now uses a more modular, component-based architecture
+ * UPDATED: Added tracking for sections with feedback
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -70,6 +71,9 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Local state for active section (separate from chat section)
   const [activeSection, setActiveSection] = useState(currentSectionIdForChat);
   
+  // New state to track sections that have received feedback
+  const [sectionsWithFeedback, setSectionsWithFeedback] = useState([]);
+  
   // Get improvement logic from custom hook
   const improvement = useImprovementLogic(userInputs, sectionContent);
   const {
@@ -120,6 +124,17 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     });
   }, []);
 
+  // Effect to update sectionsWithFeedback when localSectionContent changes
+  useEffect(() => {
+    if (localSectionContent?.sections) {
+      const sectionsWithImprovement = localSectionContent.sections
+        .filter(section => section?.instructions?.improvement)
+        .map(section => section.id);
+        
+      setSectionsWithFeedback(sectionsWithImprovement);
+    }
+  }, [localSectionContent]);
+
   // Section handling functions
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
@@ -152,8 +167,18 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSaveProject();
   };
 
-  // Wrapper for handleMagic that passes activeSection
-  const handleMagicClick = () => handleMagic(activeSection);
+  // Wrapper for handleMagic that passes activeSection and updates tracking
+  const handleMagicClick = (sectionId = null) => {
+    const targetSection = sectionId || activeSection;
+    
+    return handleMagic(targetSection).then(success => {
+      if (success && !sectionsWithFeedback.includes(targetSection)) {
+        // Add to the list of sections with feedback
+        setSectionsWithFeedback(prev => [...prev, targetSection]);
+      }
+      return success;
+    });
+  };
 
   // Show splash screen
   const handleShowHelpSplash = () => {
@@ -209,6 +234,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     sectionRefs,
     handleEdit,
     handleSignificantEdit,
+    sectionsWithFeedback,
     sectionDataForPanel,
     handleMagic: handleMagicClick
   };
