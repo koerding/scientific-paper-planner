@@ -2,8 +2,7 @@ import React from 'react';
 
 /**
  * Toggle component for selecting research approach
- * UPDATED: Made styling more subtle
- * FIXED: Significantly more compact layout with less whitespace
+ * FIXED: Ensured proper active state handling
  */
 const ResearchApproachToggle = ({ activeApproach, setActiveApproach }) => {
   // Helper to generate button classes
@@ -15,6 +14,14 @@ const ResearchApproachToggle = ({ activeApproach, setActiveApproach }) => {
     }
   `;
 
+  // Handler for approach selection
+  const handleApproachChange = (approach) => {
+    console.log(`Changing research approach to: ${approach}`);
+    if (setActiveApproach && typeof setActiveApproach === 'function') {
+      setActiveApproach(approach);
+    }
+  };
+
   return (
     // Removed heavy container styles, added padding/margin
     <div className="approach-toggle mb-3">
@@ -22,7 +29,7 @@ const ResearchApproachToggle = ({ activeApproach, setActiveApproach }) => {
 
       <div className="flex flex-wrap gap-1">
         <button
-          onClick={() => setActiveApproach('hypothesis')}
+          onClick={() => handleApproachChange('hypothesis')}
           className={getButtonClasses('hypothesis')}
         >
           <div className="flex items-center justify-center">
@@ -31,7 +38,7 @@ const ResearchApproachToggle = ({ activeApproach, setActiveApproach }) => {
         </button>
 
         <button
-          onClick={() => setActiveApproach('needsresearch')}
+          onClick={() => handleApproachChange('needsresearch')}
           className={getButtonClasses('needsresearch')}
         >
           <div className="flex items-center justify-center">
@@ -40,7 +47,7 @@ const ResearchApproachToggle = ({ activeApproach, setActiveApproach }) => {
         </button>
 
         <button
-          onClick={() => setActiveApproach('exploratoryresearch')}
+          onClick={() => handleApproachChange('exploratoryresearch')}
           className={getButtonClasses('exploratoryresearch')}
         >
           <div className="flex items-center justify-center">
