@@ -1,8 +1,9 @@
 // FILE: src/services/instructionImprovementService.js
 
 /**
- * Modern service for improving instructions based on user progress
- * FIXED: Properly transform subsection feedback for UI rendering
+ * Enhanced service for improving instructions based on user progress
+ * ADDED: Now includes numerical rating on a 1-10 scale
+ * FIXED: Only processes sections that aren't just placeholder content
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt } from '../utils/promptUtils';
@@ -10,6 +11,7 @@ import { buildSystemPrompt } from '../utils/promptUtils';
 /**
  * Improves instructions for multiple sections using a structured JSON approach.
  * Each section's subsections are evaluated separately for completion status and feedback.
+ * Now also includes a numerical rating from 1-10.
  * 
  * @param {Array} currentSections - Array of section objects from the main state
  * @param {Object} userInputs - User inputs for all sections
@@ -27,13 +29,15 @@ export const improveBatchInstructions = async (
     console.log("[Instruction Improvement] Starting batch instruction improvement process");
     console.time("instructionImprovementTime");
     
-    // Identify sections with meaningful user content
+    // Identify sections with meaningful user content (not just placeholder)
     const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
       const content = userInputs[sectionId];
       const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
       const placeholder = originalSectionDef?.placeholder || '';
       
-      return typeof content === 'string' && content.trim() !== '' && content !== placeholder;
+      return typeof content === 'string' && 
+             content.trim() !== '' && 
+             content !== placeholder; // Explicitly check not equal to placeholder
     });
 
     if (sectionsWithProgress.length === 0) {
@@ -50,6 +54,7 @@ export const improveBatchInstructions = async (
         id: sectionId,
         title: sectionDef.title,
         userContent: userInputs[sectionId] || '',
+        originalPlaceholder: sectionDef.placeholder || '', // Include placeholder for reference
         introText: sectionDef.introText || '',
         // Send only the instruction part, NOT the tooltips
         subsections: (sectionDef.subsections || []).map(subsection => ({
@@ -66,10 +71,10 @@ export const improveBatchInstructions = async (
       return { success: false, message: "No valid sections for analysis" };
     }
 
-    // Build system prompt - simplified without research context
+    // Build system prompt with rating instructions
     const systemPrompt = buildSystemPrompt('instructionImprovement');
 
-    // Create the user prompt with clear JSON structure expectations
+    // Create the user prompt with clear JSON structure expectations, including rating
     const userPrompt = `
       I need you to evaluate the following research sections and provide feedback on each subsection.
       
@@ -83,6 +88,7 @@ export const improveBatchInstructions = async (
             "id": "section_id",
             "overallFeedback": "Overall feedback for the entire section",
             "completionStatus": "complete" or "unstarted", 
+            "rating": number_between_1_and_10,
             "subsections": [
               {
                 "id": "subsection_id",
@@ -101,6 +107,14 @@ export const improveBatchInstructions = async (
       - Provide positive feedback for completed items
       - For incomplete items, suggest specific improvements
       - The overall section is "complete" if most key subsections are adequately addressed
+      
+      RATING SCALE (very important):
+      Please include a "rating" field for each section with a number from 1-10 where:
+      - 1 is truly embarrassing work
+      - 5 is what a typical masters student should be able to produce
+      - 10 is could not possibly be better
+      
+      Be honest but fair with ratings. Don't inflate ratings - use the full scale.
       
       Here are the sections to evaluate:
       
@@ -174,6 +188,7 @@ export const improveBatchInstructions = async (
           id: id,
           overallFeedback: `Great work on your ${section.title.toLowerCase()}!`,
           completionStatus: "complete",
+          rating: 6, // Default middle-good rating for fallback
           subsections: (section.subsections || []).map((subsection, index) => ({
             id: subsection.id,
             isComplete: Math.random() > 0.3, // Randomly mark some as complete
@@ -209,6 +224,7 @@ function createFallbackAnalysis(sectionsForAnalysis) {
     id: section.id,
     overallFeedback: `Great work on your ${section.title.toLowerCase()}!`,
     completionStatus: "complete",
+    rating: 6, // Default middle-good rating for fallback
     subsections: (section.subsections || []).map((subsection, index) => ({
       id: subsection.id,
       isComplete: Math.random() > 0.3, // Randomly mark some as complete
@@ -237,6 +253,7 @@ function transformAnalysisToInstructions(analysisResults, originalSections) {
 /**
  * Transforms a single section's analysis into instruction format
  * FIXED: Properly sets the improvement structure for UI rendering
+ * ADDED: Now includes the numerical rating
  * @param {Object} analysis - Analysis for a single section
  * @param {Object} originalSection - The original section definition
  * @returns {Object} - Transformed instruction data
@@ -259,11 +276,17 @@ function transformSingleAnalysisToInstructions(analysis, originalSection) {
     };
   });
   
+  // Extract the numerical rating (default to 5 if missing)
+  const rating = typeof analysis.rating === 'number' ? 
+                 Math.min(Math.max(Math.round(analysis.rating), 1), 10) : // Ensure between 1-10 and rounded
+                 5; // Default rating
+  
   // Create a structure that matches what the UI component expects
   return {
     id: analysis.id,
     overallFeedback: analysis.overallFeedback || `Great work on your ${originalSection.title}!`,
     completionStatus: analysis.completionStatus || "complete",
+    rating: rating, // Include the numerical rating
     subsections: subsectionFeedback
   };
 }
@@ -271,6 +294,7 @@ function transformSingleAnalysisToInstructions(analysis, originalSection) {
 /**
  * Updates section content object with improved instructions.
  * FIXED: Ensures improvement object has correct structure for the UI
+ * ADDED: Now includes the numerical rating
  * @param {Object} currentSections - The current sections object from state.
  * @param {Array} improvedData - Array of improved section data objects.
  * @returns {Object} - A new object with updated section content.
@@ -318,6 +342,7 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
       id: improvement.id,
       overallFeedback: improvement.overallFeedback,
       completionStatus: improvement.completionStatus,
+      rating: improvement.rating, // Include the numerical rating
       subsections: improvement.subsections
     };
     
