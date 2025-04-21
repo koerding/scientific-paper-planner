@@ -505,7 +505,7 @@
         {
           "id": "abstract_background",
           "title": "Background",
-          "instruction": "Introduce the area and the problem/gap. Keep it short. Assume the reader knows the general field but not the specific issue.",
+          "instruction": "Introduce the area and the problem/gap. Keep it short. Assume the reader knows the general field but not the specific issue. Make sure the background is perfectly matched to the results.",
           "tooltip": "The background in your abstract provides a quick context to orient readers. You don't need to regurgitate everything—just enough to highlight the specific gap or problem your study addresses. A concise, well-crafted background primes your audience to appreciate what follows in the objective, methods, and results. It also signals why your topic matters. By focusing on the crucial points only, you keep the abstract streamlined and prevent losing people who are skimming for relevance. Done right, a succinct background ensures your work stands out in a sea of scholarly papers."
         },
         {
@@ -517,19 +517,19 @@
         {
           "id": "abstract_methods",
           "title": "Methods",
-          "instruction": "Summarize how you'll answer the question. Include key techniques, datasets, or models — briefly.",
+          "instruction": "Summarize how you'll answer the question. Include key techniques, datasets, or models — briefly. Make sure the methods perfectly answer the question.",
           "tooltip": "This section should be a bite-sized overview of your research approach, not a full protocol. If you're running a double-blind experiment, say so. If you're analyzing a large public dataset, mention that. If you're building a computational model, name the main algorithmic techniques. Readers want just enough detail to gauge validity and relevance. By highlighting your core methods, you convey the rigor behind your work without bogging down the abstract with procedural minutiae. It reassures other researchers that you've used appropriate tools to tackle your stated question."
         },
         {
           "id": "abstract_expected_results",
           "title": "Expected Results",
-          "instruction": "Say what kind of outcome you expect or hope for. This helps readers understand what success would look like.",
+          "instruction": "Say what kind of outcome you expect or hope for. This helps readers understand what success would look like. Make sure the results are the answer.",
           "tooltip": "Outlining the anticipated findings gives readers a roadmap of where your study is heading. You don't need to overpromise or provide exact figures—just a ballpark of the trends or relationships you predict. This might be as broad as we expect to observe a significant improvement in performance measures or \"we anticipate identifying new behavioral clusters.\" This step also clarifies the scope of your work. If reality contradicts these expectations, that could be equally enlightening, but at least you've demonstrated a clear hypothesis or objective up front."
         },
         {
           "id": "abstract_conclusion_implications",
           "title": "Conclusion / Implications",
-          "instruction": "State the main expected impact. What should your reader believe, do, or study next after reading your paper?",
+          "instruction": "State the main expected impact. What should your reader believe, do, or study next after reading your paper? Make sure the implications draw from the answer.",
           "tooltip": "Wrapping up your abstract with a concise statement of why your study matters leaves a strong impression. Maybe your findings can reshape a clinical protocol, spark an entirely new research direction, or confirm a theoretical stance. By articulating these implications clearly, you encourage readers to think about how they can apply or extend your work. It also frames your study's contribution within the broader scholarly or practical landscape. An impactful conclusion often helps your paper stand out, signaling that your research is more than an isolated investigation—it has tangible takeaways for the field and beyond."
         }
       ],
