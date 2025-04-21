@@ -15,7 +15,7 @@ import {
 
 /**
  * Left panel component that manages rendering sections and toggles
- * FIXED: Uses centralized section order configuration
+ * UPDATED: Added support for feedback ratings
  */
 const LeftPanel = ({ 
   activeSection,
@@ -31,8 +31,9 @@ const LeftPanel = ({
   sectionRefs,
   handleEdit,
   handleSignificantEdit,
-  handleMagic, // Included to support section feedback
-  sectionsWithFeedback = [] // New prop to track which sections have feedback
+  handleMagic,
+  sectionsWithFeedback = [], // Array of section IDs with feedback
+  feedbackRatings = {} // New prop: Object mapping section IDs to ratings
 }) => {
   // Helper to get all visible section IDs for the section controls
   const getAllVisibleSectionIds = () => {
@@ -58,12 +59,24 @@ const LeftPanel = ({
     }
   };
   
+  // Check if the section content is just the placeholder
+  const isPlaceholderContent = (sectionId) => {
+    const content = userInputs[sectionId] || '';
+    const section = localSectionContent?.sections?.find(s => s.id === sectionId);
+    const placeholder = section?.placeholder || '';
+    return content === placeholder || content.trim() === '';
+  };
+  
   // Rendering function for a section
   const renderSection = (section) => {
     if (!section || !section.id) return null;
     
     const isCurrentActive = activeSection === section.id;
     const hasFeedback = sectionsWithFeedback.includes(section.id);
+    const feedbackRating = feedbackRatings[section.id]; // Get rating if available
+    
+    // Check if this section has only placeholder content
+    const hasOnlyPlaceholder = isPlaceholderContent(section.id);
     
     return (
       <SectionCard
@@ -79,6 +92,8 @@ const LeftPanel = ({
         onSignificantEdit={handleSignificantEdit}
         onRequestFeedback={handleSectionFeedback}
         hasFeedback={hasFeedback}
+        feedbackRating={feedbackRating} // Pass the rating to the section card
+        hasOnlyPlaceholder={hasOnlyPlaceholder} // Pass whether it's just placeholder content
       />
     );
   };
