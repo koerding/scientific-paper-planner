@@ -1,6 +1,6 @@
 // FILE: src/hooks/useImprovementLogic.js
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { 
   improveBatchInstructions, 
   updateSectionWithImprovedInstructions 
@@ -9,15 +9,30 @@ import { trackInstructionImprovement } from '../utils/analyticsUtils';
 
 /**
  * Hook for managing instruction improvement logic
- * UPDATED: Added reset function and improved section targeting
+ * UPDATED: Now saves feedback to localStorage
+ * UPDATED: Loads feedback from localStorage on initialization
  */
 export const useImprovementLogic = (userInputs, sectionContent) => {
   // State for improvement logic
   const [localSectionContent, setLocalSectionContent] = useState(() => {
     try {
+      // First try to load from localStorage if available
+      const savedFeedback = localStorage.getItem('savedSectionFeedback');
+      
+      if (savedFeedback) {
+        const parsedFeedback = JSON.parse(savedFeedback);
+        
+        // Verify we have valid feedback data
+        if (parsedFeedback && parsedFeedback.sections && Array.isArray(parsedFeedback.sections)) {
+          console.log("[useImprovementLogic] Loaded saved feedback from localStorage");
+          return parsedFeedback;
+        }
+      }
+      
+      // Fall back to initial section content if no saved feedback
       return JSON.parse(JSON.stringify(sectionContent));
     } catch (e) {
-      console.error("Failed to parse initial sectionContent", e);
+      console.error("Failed to parse initial sectionContent or load from localStorage", e);
       return { sections: [] };
     }
   });
@@ -26,6 +41,23 @@ export const useImprovementLogic = (userInputs, sectionContent) => {
   const [lastImprovementTime, setLastImprovementTime] = useState(Date.now());
   const [editEvents, setEditEvents] = useState([]);
   const [significantEditsMade, setSignificantEditsMade] = useState(false);
+
+  // Save feedback to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      // Only save if we have sections with improvement data
+      const hasFeedback = localSectionContent.sections?.some(
+        section => section?.instructions?.improvement
+      );
+      
+      if (hasFeedback) {
+        localStorage.setItem('savedSectionFeedback', JSON.stringify(localSectionContent));
+        console.log("[useImprovementLogic] Saved feedback to localStorage");
+      }
+    } catch (error) {
+      console.error("[useImprovementLogic] Error saving feedback to localStorage:", error);
+    }
+  }, [localSectionContent]);
 
   // Handle magic (improving instructions)
   const handleMagic = useCallback(async (targetSectionId = null) => {
@@ -80,6 +112,11 @@ export const useImprovementLogic = (userInputs, sectionContent) => {
           result.improvedData
         );
         setLocalSectionContent(updatedSections);
+        
+        // Save the updated sections to localStorage immediately
+        localStorage.setItem('savedSectionFeedback', JSON.stringify(updatedSections));
+        console.log("[handleMagic] Saved updated feedback to localStorage");
+        
         return true;
       }
       return false;
@@ -107,7 +144,12 @@ export const useImprovementLogic = (userInputs, sectionContent) => {
     
     // Reset the local section content to the original template
     try {
-      setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent)));
+      const freshContent = JSON.parse(JSON.stringify(sectionContent));
+      setLocalSectionContent(freshContent);
+      
+      // Also clear localStorage
+      localStorage.removeItem('savedSectionFeedback');
+      console.log("[useImprovementLogic] Cleared saved feedback from localStorage");
     } catch (e) {
       console.error("Failed to reset sectionContent", e);
     }
