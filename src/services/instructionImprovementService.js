@@ -2,8 +2,7 @@
 
 /**
  * Modern service for improving instructions based on user progress
- * REFACTORED: Now uses structured JSON approach for reliable subsection handling
- * REMOVED: All research approach related code
+ * FIXED: Properly transform subsection feedback for UI rendering
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt } from '../utils/promptUtils';
@@ -15,12 +14,14 @@ import { buildSystemPrompt } from '../utils/promptUtils';
  * @param {Array} currentSections - Array of section objects from the main state
  * @param {Object} userInputs - User inputs for all sections
  * @param {Object} sectionContent - The full, original section content definition object
+ * @param {Boolean} forceImprovement - Force improvement even if no significant changes
  * @returns {Promise<Object>} - Result with success flag and improved instructions
  */
 export const improveBatchInstructions = async (
   currentSections,
   userInputs,
-  sectionContent
+  sectionContent,
+  forceImprovement = false
 ) => {
   try {
     console.log("[Instruction Improvement] Starting batch instruction improvement process");
@@ -235,35 +236,41 @@ function transformAnalysisToInstructions(analysisResults, originalSections) {
 
 /**
  * Transforms a single section's analysis into instruction format
+ * FIXED: Properly sets the improvement structure for UI rendering
  * @param {Object} analysis - Analysis for a single section
  * @param {Object} originalSection - The original section definition
  * @returns {Object} - Transformed instruction data
  */
 function transformSingleAnalysisToInstructions(analysis, originalSection) {
-  // Create a structured data object that will be rendered by FullHeightInstructionsPanel
+  // Get all original subsections to ensure we have complete data
+  const subsections = originalSection.subsections || [];
+  
+  // Map the feedback to each subsection
+  const subsectionFeedback = subsections.map(originalSubsection => {
+    // Find matching feedback from analysis
+    const matchingFeedback = analysis.subsections?.find(feedback => 
+      feedback.id === originalSubsection.id
+    );
+    
+    return {
+      id: originalSubsection.id,
+      isComplete: matchingFeedback?.isComplete || false,
+      feedback: matchingFeedback?.feedback || "Consider addressing this point in more detail."
+    };
+  });
+  
+  // Create a structure that matches what the UI component expects
   return {
     id: analysis.id,
-    title: originalSection.title,
     overallFeedback: analysis.overallFeedback || `Great work on your ${originalSection.title}!`,
     completionStatus: analysis.completionStatus || "complete",
-    subsectionFeedback: (originalSection.subsections || []).map(subsection => {
-      // Find corresponding feedback from analysis
-      const subsectionAnalysis = analysis.subsections?.find(s => s.id === subsection.id);
-      return {
-        id: subsection.id,
-        title: subsection.title,
-        instruction: subsection.instruction,
-        tooltip: subsection.tooltip, // Keep the original tooltip
-        isComplete: subsectionAnalysis?.isComplete || false,
-        feedback: subsectionAnalysis?.feedback || 
-          (subsectionAnalysis?.isComplete ? "Well addressed in your current draft." : "Consider addressing this point in more detail.")
-      };
-    })
+    subsections: subsectionFeedback
   };
 }
 
 /**
  * Updates section content object with improved instructions.
+ * FIXED: Ensures improvement object has correct structure for the UI
  * @param {Object} currentSections - The current sections object from state.
  * @param {Array} improvedData - Array of improved section data objects.
  * @returns {Object} - A new object with updated section content.
@@ -289,21 +296,38 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
     if (!improvement?.id) return;
 
     const sectionIndex = updatedSections.sections?.findIndex(s => s?.id === improvement.id);
-    if (sectionIndex === -1) return;
+    if (sectionIndex === -1 || sectionIndex === undefined) {
+      console.warn(`[updateSectionWithImprovedInstructions] Section ${improvement.id} not found`);
+      return;
+    }
     
     const section = updatedSections.sections[sectionIndex];
-    if (!section) return;
+    if (!section) {
+      console.warn(`[updateSectionWithImprovedInstructions] Section at index ${sectionIndex} is undefined`);
+      return;
+    }
 
     // Create or update the instructions object
-    if (!section.instructions) section.instructions = {};
+    if (!section.instructions) {
+      section.instructions = {};
+    }
 
     // Store the full improvement data for the panel to render
-    section.instructions.improvement = improvement;
+    // FIXED: Ensure improvement has the exact structure needed by FullHeightInstructionsPanel
+    section.instructions.improvement = {
+      id: improvement.id,
+      overallFeedback: improvement.overallFeedback,
+      completionStatus: improvement.completionStatus,
+      subsections: improvement.subsections
+    };
     
     // Set the completion status 
     section.instructions.completionStatus = improvement.completionStatus;
 
     console.log(`[updateSectionWithImprovedInstructions] Updated instructions for ${improvement.id}`);
+    // Log the structure to debug
+    console.log(`[updateSectionWithImprovedInstructions] Improvement structure:`, section.instructions.improvement);
+    
     changesApplied = true;
   });
 
