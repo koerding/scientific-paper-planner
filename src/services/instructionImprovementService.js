@@ -110,8 +110,9 @@ export const improveBatchInstructions = async (
       
       RATING SCALE (very important):
       Please include a "rating" field for each section with a number from 1-10 where:
-      - 1 is truly embarrassing work
-      - 5 is what a typical masters student should be able to produce
+      - 1 is truly embarrassing work. This would for example be the case if the user has not edited the template beyond a few words.
+      - 5 is what a typical masters student should be able to produce. Clearly lacking in clarity or completeness. 
+      - 8 comparable in quality to what a leading professor could produce. But lacking in overall clarity and completeness when thinking deeply.
       - 10 is could not possibly be better
       
       Be honest but fair with ratings. Don't inflate ratings - use the full scale.
