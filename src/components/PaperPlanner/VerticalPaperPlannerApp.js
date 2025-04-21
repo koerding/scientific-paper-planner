@@ -182,6 +182,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     });
   };
 
+  // Function to open the confirm reset dialog
+  const openResetDialog = () => {
+    setShowConfirmDialog(true);
+  };
+
   // Override resetProject to also reset feedback state
   const resetProject = () => {
     // Call the original reset function
@@ -282,7 +287,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   return (
     <MainLayout
       splashManagerRef={splashManagerRef}
-      resetProject={openConfirmDialog} // Call to open dialog instead of immediately resetting
+      resetProject={openResetDialog} // Call to open dialog instead of immediately resetting
       exportProject={handleExportRequest}
       saveProject={handleSaveRequest}
       loadProject={loadProject}
