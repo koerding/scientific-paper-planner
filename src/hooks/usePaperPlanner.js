@@ -2,7 +2,7 @@
 
 /**
  * Main hook that combines all specialized hooks into a unified API
- * UPDATED: Now properly connects the unified reset function across hooks
+ * UPDATED: Now uses the resetService for consistent reset functionality
  */
 import { useState, useEffect } from 'react';
 import { useProjectState } from './useProjectState';
@@ -11,6 +11,7 @@ import { useProjectActions } from './useProjectActions';
 import { useDocumentImport } from './useDocumentImport';
 import { useModalState } from './useModalState';
 import { reviewScientificPaper } from '../services/paperReviewService';
+import { resetAllState } from '../services/resetService';
 import sectionContent from '../data/sectionContent.json';
 
 const usePaperPlanner = () => {
@@ -168,15 +169,24 @@ const usePaperPlanner = () => {
     }
   };
   
-  // Final reset project function - now uses our unified reset
+  // UPDATED: Final reset project function - now uses our centralized reset service
   const onConfirmReset = () => {
-    // Use our comprehensive reset function
-    resetAllProjectState();
-    closeConfirmDialog();
+    // Use our comprehensive reset service
+    const freshState = resetAllState();
     
-    // Reset approach and method to defaults
+    // Update state with the fresh values
+    setUserInputs(freshState.userInputs);
+    setChatMessages(freshState.chatMessages);
+    
+    // Reset our local state too
     setActiveApproach('hypothesis');
     setActiveDataMethod('experiment');
+    setSectionCompletionStatus({});
+    
+    // Close the confirmation dialog
+    closeConfirmDialog();
+    
+    console.log("[usePaperPlanner] Reset completed");
   };
   
   // Final load project function - now uses reset
@@ -204,6 +214,27 @@ const usePaperPlanner = () => {
     closeSaveDialog();
     return result;
   };
+  
+  // Initialization effect for global reset handlers
+  useEffect(() => {
+    const handleGlobalReset = () => {
+      console.log("[usePaperPlanner] Detected global reset event");
+      // Update our state with the reset values
+      const freshState = resetAllState();
+      setUserInputs(freshState.userInputs);
+      setChatMessages(freshState.chatMessages);
+      setActiveApproach('hypothesis');
+      setActiveDataMethod('experiment');
+      setSectionCompletionStatus({});
+    };
+    
+    // Listen for global reset events
+    window.addEventListener('projectStateReset', handleGlobalReset);
+    
+    return () => {
+      window.removeEventListener('projectStateReset', handleGlobalReset);
+    };
+  }, []);
   
   // Return a unified API for all functionality
   return {
