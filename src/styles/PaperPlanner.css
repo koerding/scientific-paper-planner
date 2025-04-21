@@ -750,3 +750,67 @@ body, html {
 .rating-indicator-10 {
   background-color: #22c55e;
 }
+/* Add these styles to PaperPlanner.css or replace existing styles */
+
+/* Remove strikethrough styles */
+.line-through {
+  /* Remove strikethrough styles but keep for backward compatibility */
+  color: #059669 !important; /* Green-600 */
+  text-decoration: none !important; /* Explicitly remove strikethrough */
+}
+
+/* Green text styles for completed items */
+.text-green-600 {
+  color: #059669 !important; /* Tailwind's green-600 color */
+  font-weight: 500; /* Slightly bolder */
+}
+
+/* Override text color in the instructions panel when marked complete */
+.instructions-content .text-green-600 {
+  color: #059669 !important;
+}
+
+/* Make sure purple text for AI feedback stands out properly */
+.text-purple-700 {
+  color: #6D28D9 !important;
+}
+
+/* Ensure completed items don't get the opacity reduction */
+.mb-5.opacity-90 {
+  opacity: 1 !important; /* Override opacity to keep all items fully visible */
+}
+
+/* Updated styling for the rating indicator */
+.rating-indicator-1, .rating-indicator-2, .rating-indicator-3 {
+  background-color: #ef4444;
+}
+
+.rating-indicator-4, .rating-indicator-5 {
+  background-color: #f97316;
+}
+
+.rating-indicator-6, .rating-indicator-7 {
+  background-color: #facc15;
+}
+
+.rating-indicator-8, .rating-indicator-9 {
+  background-color: #84cc16;
+}
+
+.rating-indicator-10 {
+  background-color: #059669; /* Changed to match our green-600 color */
+}
+
+/* UPDATED: Button styling for section cards with completed status */
+.section-card .feedback-button-10,
+.section-card .feedback-button-9,
+.section-card .feedback-button-8 {
+  background-color: #059669 !important; /* Tailwind green-600 */
+  color: white;
+}
+
+.section-card .feedback-button-10:hover,
+.section-card .feedback-button-9:hover,
+.section-card .feedback-button-8:hover {
+  background-color: #047857 !important; /* Tailwind green-700 */
+}
