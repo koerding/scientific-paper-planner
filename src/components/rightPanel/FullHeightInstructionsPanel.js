@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 /**
  * Enhanced instructions panel with expandable tooltip content
- * Cleaned up version with unused props removed
+ * FIXED: Properly displays improvement feedback in purple
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
   // Track which tooltips are expanded
@@ -109,42 +109,49 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
         )}
         
         {/* Subsections with feedback and expandable tooltips */}
-        {improvement.subsectionFeedback && improvement.subsectionFeedback.map((subsection, index) => (
-          <div key={index} className={`mb-5 ${subsection.isComplete ? 'opacity-70' : ''}`}>
-            <div className="text-base leading-relaxed">
-              {/* Render title and instruction with strikethrough if completed */}
-              <strong className={`font-bold ${subsection.isComplete ? 'line-through text-gray-500' : ''}`}>
-                {subsection.title}:
-              </strong>{' '}
-              <span className={subsection.isComplete ? 'line-through text-gray-500' : ''}>
-                {subsection.instruction}
-              </span>
+        {currentSection.subsections && currentSection.subsections.map((subsection, index) => {
+          // Find the corresponding feedback for this subsection
+          const subsectionFeedback = improvement.subsections?.find(fb => fb.id === subsection.id);
+          const isComplete = subsectionFeedback?.isComplete || false;
+          const feedback = subsectionFeedback?.feedback || "Consider addressing this aspect in more detail.";
+          
+          return (
+            <div key={index} className={`mb-5 ${isComplete ? 'opacity-70' : ''}`}>
+              <div className="text-base leading-relaxed">
+                {/* Render title and instruction with strikethrough if completed */}
+                <strong className={`font-bold ${isComplete ? 'line-through text-gray-500' : ''}`}>
+                  {subsection.title}:
+                </strong>{' '}
+                <span className={isComplete ? 'line-through text-gray-500' : ''}>
+                  {subsection.instruction}
+                </span>
+                
+                {/* Always show tooltip button */}
+                {subsection.tooltip && (
+                  <button 
+                    className="info-icon-button ml-1"
+                    onClick={() => toggleTooltip(subsection.id)}
+                    aria-label={expandedTooltips[subsection.id] ? "Hide details" : "Show details"}
+                  >
+                    {expandedTooltips[subsection.id] ? '−' : 'ⓘ'}
+                  </button>
+                )}
+              </div>
               
-              {/* Always show tooltip button */}
-              {subsection.tooltip && (
-                <button 
-                  className="info-icon-button ml-1"
-                  onClick={() => toggleTooltip(subsection.id)}
-                  aria-label={expandedTooltips[subsection.id] ? "Hide details" : "Show details"}
-                >
-                  {expandedTooltips[subsection.id] ? '−' : 'ⓘ'}
-                </button>
+              {/* Feedback from AI in purple with enhanced styling */}
+              <div className="mt-1 ml-4 text-purple-700 p-1 bg-purple-50 rounded">
+                {feedback}
+              </div>
+              
+              {/* Expandable tooltip content */}
+              {subsection.tooltip && expandedTooltips[subsection.id] && (
+                <div className="mt-2 mb-3 ml-6 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
+                  {subsection.tooltip}
+                </div>
               )}
             </div>
-            
-            {/* Feedback from AI in purple with enhanced styling */}
-            <div className="mt-1 ml-4 text-purple-700 p-1 bg-purple-50 rounded">
-              {subsection.feedback}
-            </div>
-            
-            {/* Expandable tooltip content */}
-            {subsection.tooltip && expandedTooltips[subsection.id] && (
-              <div className="mt-2 mb-3 ml-6 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
-                {subsection.tooltip}
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </>
     );
   };
