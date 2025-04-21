@@ -2,7 +2,7 @@
 
 /**
  * Hook for managing project actions like save, load, export
- * UPDATED: Added comprehensive reset function that clears all state
+ * UPDATED: Improved reset function to clear ALL content
  */
 import { useState, useCallback } from 'react';
 import { clearStorage } from '../services/storageService';
@@ -15,6 +15,7 @@ export const useProjectActions = (userInputs, setUserInputs, chatMessages, setCh
   /**
    * Comprehensive reset function that clears all state
    * This resets everything: project content, chat messages, section states, and feedback
+   * UPDATED: Now explicitly sets all section content back to placeholder values
    * @returns {boolean} - Success indicator
    */
   const resetAllProjectState = useCallback(() => {
@@ -29,10 +30,36 @@ export const useProjectActions = (userInputs, setUserInputs, chatMessages, setCh
     // 3. Clear saved feedback from localStorage
     localStorage.removeItem('savedSectionFeedback');
     
-    // 4. Call the parent reset state function to reset inputs and chat messages
+    // 4. Create fresh default values with placeholders for all sections
+    const freshInputs = {};
+    if (sectionContent && Array.isArray(sectionContent.sections)) {
+      sectionContent.sections.forEach(section => {
+        if (section && section.id) {
+          // Use placeholder as initial content
+          freshInputs[section.id] = section.placeholder || '';
+        }
+      });
+    }
+    
+    // 5. Create fresh empty chat messages
+    const freshChatMessages = {};
+    if (sectionContent && Array.isArray(sectionContent.sections)) {
+      sectionContent.sections.forEach(section => {
+        if (section && section.id) {
+          freshChatMessages[section.id] = [];
+        }
+      });
+    }
+    
+    // 6. Update the state directly 
+    // This ensures we don't rely on resetState which might not be comprehensive
+    setUserInputs(freshInputs);
+    setChatMessages(freshChatMessages);
+    
+    // 7. Also call the parent reset state function as backup
     resetState();
     
-    // 5. Dispatch a global event to notify components that need to reset
+    // 8. Dispatch a global event to notify components that need to reset
     window.dispatchEvent(new CustomEvent('projectStateReset', {
       detail: { 
         timestamp: Date.now(),
@@ -42,7 +69,7 @@ export const useProjectActions = (userInputs, setUserInputs, chatMessages, setCh
     
     console.log("[useProjectActions] Project reset complete");
     return true;
-  }, [resetState]);
+  }, [resetState, setUserInputs, setChatMessages, sectionContent]);
 
   // Reset project function - now just calls the comprehensive reset
   const resetProject = useCallback(() => {
