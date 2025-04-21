@@ -5,6 +5,7 @@
  */
 import { useState, useCallback } from 'react';
 import { clearStorage } from '../services/storageService';
+import { resetSectionStates } from '../services/sectionStateService';
 import { exportProject, saveProjectAsJson, validateProjectData } from '../utils/export';
 
 export const useProjectActions = (userInputs, setUserInputs, chatMessages, setChatMessages, resetState, sectionContent) => {
@@ -14,6 +15,9 @@ export const useProjectActions = (userInputs, setUserInputs, chatMessages, setCh
   const resetProject = useCallback(() => {
     // Clear localStorage first
     clearStorage();
+    
+    // Reset section minimization states
+    resetSectionStates();
 
     // Call the reset state function
     resetState();
