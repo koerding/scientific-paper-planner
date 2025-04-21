@@ -4,6 +4,7 @@
  * Service for managing section minimized states
  * FIXED: Added error handling for localStorage access
  * FIXED: Added fallback for missing sections
+ * FIXED: Added toggleAllSections function
  */
 
 // Constants
@@ -77,6 +78,45 @@ export const initializeSectionStates = (minimized = true, sectionIds = []) => {
   } catch (error) {
     console.error('Error initializing section states:', error);
     // Continue with fallback in-memory storage
+  }
+};
+
+/**
+ * Toggle the minimized state of all sections
+ * @param {boolean} minimized - Whether all sections should be minimized (true) or expanded (false)
+ * @param {Array} sectionIds - Optional array of section IDs to toggle (defaults to all known sections)
+ */
+export const toggleAllSections = (minimized = true, sectionIds = []) => {
+  try {
+    // Get current states
+    const states = loadSectionStates();
+    
+    // If sectionIds provided, only toggle those
+    if (sectionIds && sectionIds.length > 0) {
+      sectionIds.forEach(sectionId => {
+        states[sectionId] = minimized;
+      });
+    } 
+    // Otherwise toggle all known sections
+    else {
+      // Toggle all existing states
+      Object.keys(states).forEach(sectionId => {
+        states[sectionId] = minimized;
+      });
+    }
+    
+    // Save updated states
+    saveSectionStates(states);
+    
+    // Notify components
+    dispatchStateChangeEvent();
+    
+    console.log(`Toggled all sections to ${minimized ? 'minimized' : 'expanded'}`);
+    
+    return true;
+  } catch (error) {
+    console.error('Error toggling all sections:', error);
+    return false;
   }
 };
 
