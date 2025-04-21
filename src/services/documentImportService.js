@@ -3,6 +3,7 @@
 /**
  * Document import service for PDF and Word documents
  * FIXED: Final fix for the boolean/version error
+ * FIXED: Improved validation and handling of API responses
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
@@ -196,6 +197,7 @@ function generatePlaceholderContent(sectionId, fileName) {
 /**
  * Processes extracted scientific paper text and generates structured data using OpenAI's JSON mode.
  * FIXED: Issue with boolean/version error
+ * FIXED: Improved handling of API responses and data structure
  * @param {File} file - The document file object (used for filename in errors)
  * @param {Object} sections - The sectionContent data for context (optional)
  * @returns {Promise<Object>} - The structured data for loading into the planner
@@ -303,11 +305,19 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
       // If the API just returned userInputs directly
       if (apiResponse.userInputs && typeof apiResponse.userInputs === 'object') {
         result.userInputs = apiResponse.userInputs;
+        console.log("Processed userInputs from API response structure");
       } 
       // If the API returned some other format, try to use it directly
       else if (Object.keys(apiResponse).length > 0) {
-        // Treat the entire response as userInputs
-        result.userInputs = apiResponse;
+        // Look for common fields to determine if this is already a userInputs object
+        if (apiResponse.question || apiResponse.abstract || apiResponse.audience) {
+          result.userInputs = apiResponse;
+          console.log("Using API response directly as userInputs");
+        } else {
+          // Last resort: treat the entire response as userInputs
+          result.userInputs = apiResponse;
+          console.log("Using entire API response as userInputs (fallback)");
+        }
       }
       else {
         throw new Error("API returned invalid response format");
@@ -338,6 +348,10 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
         }
       });
     }
+
+    // Log the final data structure before returning
+    console.log("Final import structure with userInputs:", 
+                Object.keys(result.userInputs).length, "fields");
 
     console.log('Successfully processed paper structure');
     return result;
