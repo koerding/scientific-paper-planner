@@ -230,7 +230,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSaveProject();
   };
 
-  // Check if a section contains placeholder content
+  // Check if a section contains placeholder content or hasn't been edited
   const isPlaceholderContent = (sectionId) => {
     if (!sectionId) return true;
     
@@ -238,6 +238,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     const section = sectionContent.sections.find(s => s.id === sectionId);
     const placeholder = section?.placeholder || '';
     
+    // Content must be different from placeholder AND not empty
+    // This ensures that just having the placeholder text or empty content won't allow feedback
     return content === placeholder || content.trim() === '';
   };
 
