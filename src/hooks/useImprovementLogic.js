@@ -9,7 +9,7 @@ import { trackInstructionImprovement } from '../utils/analyticsUtils';
 
 /**
  * Hook for managing instruction improvement logic
- * UPDATED: Modified handleMagic to support specific section improvement
+ * UPDATED: Added reset function and improved section targeting
  */
 export const useImprovementLogic = (userInputs, sectionContent) => {
   // State for improvement logic
@@ -62,10 +62,15 @@ export const useImprovementLogic = (userInputs, sectionContent) => {
         console.log(`[handleMagic] Improving all sections with content`);
       }
       
+      // Always force improvement when requested for a specific section
+      // This ensures the button click always gives feedback, even if content hasn't changed
+      const forceImprovement = !!targetSectionId;
+      
       const result = await improveBatchInstructions(
         sectionsToImprove,
         userInputs,
-        sectionContent
+        sectionContent,
+        forceImprovement
       );
 
       if (result.success && result.improvedData && result.improvedData.length > 0) {
@@ -96,6 +101,25 @@ export const useImprovementLogic = (userInputs, sectionContent) => {
     setSignificantEditsMade(true);
   }, []);
 
+  // Reset all improvement state - used when creating a new project
+  const resetImprovementState = useCallback(() => {
+    console.log("[useImprovementLogic] Resetting improvement state");
+    
+    // Reset the local section content to the original template
+    try {
+      setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent)));
+    } catch (e) {
+      console.error("Failed to reset sectionContent", e);
+    }
+    
+    // Reset other state
+    setLastImprovementTime(Date.now());
+    setEditEvents([]);
+    setSignificantEditsMade(false);
+    
+    return true;
+  }, [sectionContent]);
+
   return {
     // State
     localSectionContent,
@@ -106,6 +130,7 @@ export const useImprovementLogic = (userInputs, sectionContent) => {
     // Methods
     handleMagic,
     handleEdit,
-    handleSignificantEdit
+    handleSignificantEdit,
+    resetImprovementState
   };
 };
