@@ -1,26 +1,17 @@
-// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js - With card minimization
+// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactGA from 'react-ga4';
 import sectionContent from '../../data/sectionContent.json';
-import ConfirmDialog from './ConfirmDialog';
-import ExamplesDialog from './ExamplesDialog';
-import SaveDialog from './SaveDialog';
-import SectionCard from '../sections/SectionCard';
-import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
-import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
+import LeftPanel from '../layout/LeftPanel';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import ModernChatInterface from '../chat/ModernChatInterface';
 import FloatingMagicButton from '../buttons/FloatingMagicButton';
-import ReviewPaperModal from '../modals/ReviewPaperModal';
 import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 import AppHeader from '../layout/AppHeader';
-import PrivacyPolicyModal from '../modals/PrivacyPolicyModal';
+import ModalManager from '../modals/ModalManager';
 import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
-import { reviewScientificPaper } from '../../services/paperReviewService';
-import HeaderCard from '../sections/HeaderCard';
-import SectionControls from '../controls/SectionControls';
-import { clearAllSectionStates, initializeSectionStates } from '../../services/sectionStateService';
+import { initializeSectionStates } from '../../services/sectionStateService';
 import {
   improveBatchInstructions,
   updateSectionWithImprovedInstructions
@@ -37,56 +28,64 @@ import {
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Project Planner with improved review functionality
- * Scientific project planning tool with AI-assisted features
- * ADDED: Section minimization support with expand/collapse controls
+ * Enhanced Project Planner with improved structure
+ * Now uses specialized components for different areas
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
   const {
-    currentSection: currentSectionIdForChat,
+    // State
     userInputs,
     chatMessages,
+    currentSection: currentSectionIdForChat,
     currentMessage,
-    loading: chatLoading,
+    loading: hookLoading,
+    activeApproach,
+    activeDataMethod,
+    
+    // Modal state
     showConfirmDialog,
     showExamplesDialog,
+    showReviewModal,
+    showPrivacyPolicy,
+    showSaveDialog,
+    reviewData,
+    
+    // Methods
     setCurrentMessage,
-    setShowConfirmDialog,
-    setShowExamplesDialog,
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
-    resetProject: hookResetProject,
+    resetProject,
     exportProject,
     loadProject,
-    importDocumentContent
+    importDocumentContent,
+    handleReviewPaper,
+    handleSaveProject,
+    saveWithFilename,
+    onConfirmReset,
+    openExamplesDialog,
+    openReviewModal,
+    openPrivacyPolicy,
+    
+    // Modal actions for closing
+    setShowConfirmDialog: closeConfirmDialog,
+    setShowExamplesDialog: closeExamplesDialog,
+    
+    // For current section data
+    getCurrentSectionData
   } = usePaperPlannerHook;
 
-  // Core state
+  // Local state
   const [activeSection, setActiveSection] = useState(currentSectionIdForChat);
-  const [activeApproach, setActiveApproach] = useState('hypothesis');
-  const [activeDataMethod, setActiveDataMethod] = useState('experiment');
   const [improvingInstructions, setImprovingInstructions] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
-  
-  // Review-related state
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [reviewData, setReviewData] = useState(null);
-  const [showReviewModal, setShowReviewModal] = useState(false);
   
   // Improvement reminder state
   const [lastImprovementTime, setLastImprovementTime] = useState(Date.now());
   const [editEvents, setEditEvents] = useState([]);
   const [significantEditsMade, setSignificantEditsMade] = useState(false);
   
-  // Refs
-  const sectionRefs = useRef({});
-  const splashManagerRef = useRef(null);
-
-  // Local state for instructions potentially modified by AI
+  // Local section content that can be modified by the AI
   const [localSectionContent, setLocalSectionContent] = useState(() => {
     try {
       return JSON.parse(JSON.stringify(sectionContent));
@@ -95,27 +94,16 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       return { sections: [] };
     }
   });
+  
+  // Refs
+  const sectionRefs = useRef({});
+  const splashManagerRef = useRef(null);
 
   // Initialize section states as minimized when the component first mounts
   useEffect(() => {
     // Initialize section states as minimized for new projects
-    initializeSectionStates(true, getAllVisibleSectionIds());
+    initializeSectionStates(true);
   }, []);
-
-  // Helper function to get all visible section IDs for the section controls
-  const getAllVisibleSectionIds = () => {
-    const visibleIds = [];
-    
-    if (Array.isArray(localSectionContent?.sections)) {
-      localSectionContent.sections.forEach(section => {
-        if (section?.id && shouldDisplaySection(section.id)) {
-          visibleIds.push(section.id);
-        }
-      });
-    }
-    
-    return visibleIds;
-  };
 
   // Make splash screen ref globally available
   useEffect(() => {
@@ -146,41 +134,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     });
   }, []);
 
-  // Effect to update active approach and data method based on user inputs
-  useEffect(() => {
-    // Determine default placeholder content for each section
-    const placeholders = {};
-    if (localSectionContent?.sections) {
-      localSectionContent.sections.forEach(s => {
-        if (s?.id) placeholders[s.id] = s.placeholder || '';
-      });
-    }
-
-    // Helper to check if content is different from placeholder
-    const isModified = (sectionId) => {
-      const content = userInputs[sectionId];
-      return typeof content === 'string' && content.trim() !== '' && content !== placeholders[sectionId];
-    };
-
-    // Set active approach based on modified content
-    if (isModified('hypothesis')) {
-      setActiveApproach('hypothesis');
-    } else if (isModified('needsresearch')) {
-      setActiveApproach('needsresearch');
-    } else if (isModified('exploratoryresearch')) {
-      setActiveApproach('exploratoryresearch');
-    }
-
-    // Set active data method based on modified content
-    if (isModified('experiment')) {
-      setActiveDataMethod('experiment');
-    } else if (isModified('existingdata')) {
-      setActiveDataMethod('existingdata');
-    } else if (isModified('theorysimulation')) {
-      setActiveDataMethod('theorysimulation');
-    }
-  }, [userInputs, localSectionContent.sections]);
-
   // Section handling functions
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
@@ -189,14 +142,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     // Track this section change in analytics
     const sectionTitle = localSectionContent.sections.find(s => s?.id === sectionId)?.title || 'Unknown';
     trackSectionChange(sectionId, sectionTitle);
-  };
-
-  // Get the current section data for instructions display
-  const getCurrentSectionData = () => {
-    if (!localSectionContent || !Array.isArray(localSectionContent.sections)) {
-      return null;
-    }
-    return localSectionContent.sections.find(s => s && s.id === activeSection) || null;
   };
 
   // Edit tracking
@@ -241,43 +186,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Handle opening the review modal without uploading a file
-  const handleOpenReviewModal = () => {
-    setShowReviewModal(true);
-  };
-
-  // Handle paper review with file upload
-  const handleReviewPaper = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    setReviewLoading(true);
-    try {
-      // Call the paper review service
-      console.log(`Starting paper review for: ${file.name}`);
-      const result = await reviewScientificPaper(file);
-      
-      if (result.success) {
-        console.log(`Review completed successfully for: ${file.name}`);
-        // Set the review data and show the modal
-        setReviewData(result);
-        setShowReviewModal(true);
-        
-        // Track review completion in analytics
-        trackEvent('Paper Review', 'Complete Review', file.name);
-      } else {
-        console.error(`Review failed for: ${file.name}`, result.error);
-        // Show error message
-        alert(`Error reviewing paper: ${result.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error("Error in paper review:", error);
-      alert(`Error reviewing paper: ${error.message || 'Unknown error'}`);
-    } finally {
-      setReviewLoading(false);
-    }
-  };
-
   // Show splash screen
   const handleShowHelpSplash = () => {
     if (splashManagerRef.current) {
@@ -291,166 +199,51 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
 
-  // Project management with minimization state clearing
-  const handleResetRequest = () => {
-    // Track reset action
-    ReactGA.event({
-      category: 'Document Actions',
-      action: 'Reset Project'
-    });
-    
-    // Clear section minimization states as a new project (minimized by default)
-    clearAllSectionStates(true);
-    
-    hookResetProject();
-    // Reset local instructions state
-    try {
-      setLocalSectionContent(JSON.parse(JSON.stringify(sectionContent)));
-    } catch(e) {
-      console.error("Failed to reset local section content:", e);
-      setLocalSectionContent({ sections: [] });
-    }
-    setActiveSection(sectionContent?.sections?.[0]?.id || 'question');
-    setActiveApproach('hypothesis');
-    setActiveDataMethod('experiment');
-    
-    // Reset improvement reminder state
-    setLastImprovementTime(Date.now());
-    setEditEvents([]);
-    setSignificantEditsMade(false);
+  // Toggle handling
+  const handleApproachToggle = (approach) => {
+    trackApproachToggle(approach);
+    setActiveSectionWithManualFlag(approach);
   };
 
-  // Save project
-  const handleSaveProject = () => {
-    trackSave();
-    setShowSaveDialog(true);
+  const handleDataMethodToggle = (method) => {
+    trackDataMethodToggle(method);
+    setActiveSectionWithManualFlag(method);
   };
 
-  // Export project
+  // Export and save tracking
   const handleExportRequest = () => {
     trackExport('any');
     exportProject();
   };
 
-  // Handler for loading projects to check if they're examples
-  const handleLoadProject = (data) => {
-    if (loadProject) {
-      // Check if this is from an example (not user-generated)
-      const isFromExample = data.version && data.version.includes('example');
-      
-      // Initialize section states based on whether this is an example or not
-      // Examples start expanded, user-generated projects start minimized
-      initializeSectionStates(!isFromExample, getAllVisibleSectionIds());
-      
-      // Call the original loadProject
-      loadProject(data);
-    }
+  const handleSaveRequest = () => {
+    trackSave();
+    handleSaveProject();
   };
 
-  // Save project with filename
-  const saveProjectWithFilename = (fileName) => {
-    try {
-      const safeFileName = fileName.trim() || 'scientific-project-plan';
-      const finalFileName = safeFileName.endsWith('.json') ? safeFileName : `${safeFileName}.json`;
-      
-      const jsonData = {
-        userInputs: userInputs,
-        chatMessages: chatMessages,
-        timestamp: new Date().toISOString(),
-        version: "1.0-direct-from-component"
-      };
+  // Combined loading state
+  const isAnyAiLoading = hookLoading || improvingInstructions;
 
-      const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
-      const jsonUrl = URL.createObjectURL(jsonBlob);
-
-      const link = document.createElement('a');
-      link.href = jsonUrl;
-      link.download = finalFileName;
-      document.body.appendChild(link);
-      link.click();
-      
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(jsonUrl);
-      }, 100);
-      
-      console.log("Project saved successfully as:", finalFileName);
-      return true;
-    } catch (error) {
-      console.error("Error saving project:", error);
-      alert("There was an error saving your project: " + (error.message || "Unknown error"));
-      return false;
-    }
-  };
-
-  // Get current section data for UI
+  // Get current section data for the instructions panel
   const sectionDataForPanel = getCurrentSectionData();
 
-  // Toggle handling
-  const handleApproachToggle = (approach) => {
-    setActiveApproach(approach);
-    setActiveSectionWithManualFlag(approach);
-    trackApproachToggle(approach);
+  // Modal state and action objects for ModalManager
+  const modalState = {
+    showConfirmDialog,
+    showExamplesDialog,
+    showReviewModal,
+    showPrivacyPolicy,
+    showSaveDialog,
+    reviewData
   };
-
-  const handleDataMethodToggle = (method) => {
-    setActiveDataMethod(method);
-    setActiveSectionWithManualFlag(method);
-    trackDataMethodToggle(method);
-  };
-
-  // Rendering
-  const renderSection = (section) => {
-    if (!section || !section.id) return null;
-
-    const isCurrentActive = activeSection === section.id;
-    
-    return (
-      <SectionCard
-        key={section.id}
-        section={section}
-        isCurrentSection={isCurrentActive}
-        userInputs={userInputs}
-        handleInputChange={handleInputChange}
-        loading={isAnyAiLoading}
-        sectionRef={sectionRefs.current[section.id]}
-        onClick={() => setActiveSectionWithManualFlag(section.id)}
-        onEdit={handleEdit}
-        onSignificantEdit={handleSignificantEdit}
-      />
-    );
-  };
-
-const handleDocumentImport = async (file) => {
-  setLoading(true); // Optional: Keep for local UI loading state
-  try {
-    // REMOVE the window.confirm() call from here.
-    // Directly call the hook's function, which handles confirmation and loading.
-    await importDocumentContent(file);
-    // The hook now handles calling loadProject internally on success.
-  } catch (error) {
-    // Optional: Add a fallback UI alert if the hook doesn't handle all errors visibly.
-    console.error("Error initiating document import:", error);
-    // alert("An error occurred starting the document import."); // Uncomment if needed
-  } finally {
-    setLoading(false); // Reset local loading state
-  }
-};
-
-  // Combined loading state for all AI features
-  const isAnyAiLoading = loading || chatLoading || improvingInstructions || reviewLoading;
-
-  // Section display logic
-  const shouldDisplaySection = (sectionId) => {
-    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
-      return sectionId === activeApproach;
-    }
-
-    if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
-      return sectionId === activeDataMethod;
-    }
-
-    return true; // All other sections are always displayed
+  
+  const modalActions = {
+    closeConfirmDialog,
+    closeExamplesDialog,
+    closeReviewModal: () => setShowReviewModal(false),
+    closePrivacyPolicy: () => setShowPrivacyPolicy(false),
+    closeSaveDialog: () => setShowSaveDialog(false),
+    onConfirmReset
   };
 
   return (
@@ -461,13 +254,13 @@ const handleDocumentImport = async (file) => {
       <div className="w-full pb-6">
         {/* Header */}
         <AppHeader
-          resetProject={() => setShowConfirmDialog(true)}
+          resetProject={resetProject}
           exportProject={handleExportRequest}
-          saveProject={handleSaveProject}
-          loadProject={handleLoadProject}
-          importDocumentContent={handleDocumentImport}
-          onOpenReviewModal={handleOpenReviewModal}
-          setShowExamplesDialog={setShowExamplesDialog}
+          saveProject={handleSaveRequest}
+          loadProject={loadProject}
+          importDocumentContent={importDocumentContent}
+          onOpenReviewModal={openReviewModal}
+          setShowExamplesDialog={openExamplesDialog}
           showHelpSplash={handleShowHelpSplash}
           loading={isAnyAiLoading}
         />
@@ -475,61 +268,22 @@ const handleDocumentImport = async (file) => {
         {/* Main content area */}
         <div style={{ paddingTop: '40px' }}>
           <div className="flex">
-            {/* Left panel */}
-            <div className="w-half px-4 py-2" style={{ width: '50%' }}>
-              <HeaderCard />
-              
-              {/* Section minimization controls */}
-              <SectionControls 
-                sectionIds={getAllVisibleSectionIds()} 
-                onStateChange={() => {
-                  // Force a re-render by updating state
-                  setActiveSection(activeSection);
-                }}
-              />
-              
-              {/* Display Research Question first */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'question')
-                .map(section => renderSection(section))}
-
-              {/* Research Approach Toggle */}
-              <ResearchApproachToggle
-                activeApproach={activeApproach}
-                setActiveApproach={handleApproachToggle}
-              />
-
-              {/* Display active approach section */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch') && section?.id === activeApproach)
-                .map(section => renderSection(section))}
-
-              {/* Target Audience section */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'audience')
-                .map(section => renderSection(section))}
-
-              {/* Related Papers Section */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'relatedpapers')
-                .map(section => renderSection(section))}
-
-              {/* Data Acquisition Toggle */}
-              <DataAcquisitionToggle
-                activeMethod={activeDataMethod}
-                setActiveMethod={handleDataMethodToggle}
-              />
-
-              {/* Display active data acquisition section */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation') && section?.id === activeDataMethod)
-                .map(section => renderSection(section))}
-
-              {/* Display remaining sections */}
-              {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-                .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
-                .map(section => renderSection(section))}
-            </div>
+            {/* Left panel with sections */}
+            <LeftPanel 
+              activeSection={activeSection}
+              userInputs={userInputs}
+              handleInputChange={handleInputChange}
+              localSectionContent={localSectionContent}
+              isAnyAiLoading={isAnyAiLoading}
+              activeApproach={activeApproach}
+              activeDataMethod={activeDataMethod}
+              setActiveSectionWithManualFlag={setActiveSectionWithManualFlag}
+              handleApproachToggle={handleApproachToggle}
+              handleDataMethodToggle={handleDataMethodToggle}
+              sectionRefs={sectionRefs}
+              handleEdit={handleEdit}
+              handleSignificantEdit={handleSignificantEdit}
+            />
           </div>
 
           {/* Footer */}
@@ -538,13 +292,7 @@ const handleDocumentImport = async (file) => {
               Scientific Project Planner • Designed with Love for Researchers by Konrad @Kordinglab • {new Date().getFullYear()}
               <span className="mx-2">•</span>
               <button 
-                onClick={() => {
-                  setShowPrivacyPolicy(true);
-                  ReactGA.event({
-                    category: 'Footer',
-                    action: 'Open Privacy Policy'
-                  });
-                }}
+                onClick={openPrivacyPolicy}
                 className="text-blue-500 hover:text-blue-700 underline"
               >
                 Privacy Policy
@@ -584,35 +332,13 @@ const handleDocumentImport = async (file) => {
           currentSectionData={sectionDataForPanel}
         />
 
-        {/* Dialogs */}
-        <ConfirmDialog
-          showConfirmDialog={showConfirmDialog}
-          setShowConfirmDialog={setShowConfirmDialog}
-          resetProject={handleResetRequest}
-        />
-
-        <ExamplesDialog
-          showExamplesDialog={showExamplesDialog}
-          setShowExamplesDialog={setShowExamplesDialog}
-          loadProject={handleLoadProject}
-        />
-
-        <ReviewPaperModal
-          showModal={showReviewModal}
-          onClose={() => setShowReviewModal(false)}
-          reviewData={reviewData}
+        {/* Centralized modal management */}
+        <ModalManager 
+          modals={modalState}
+          actions={modalActions}
           handleReviewPaper={handleReviewPaper}
-        />
-
-        <PrivacyPolicyModal 
-          showModal={showPrivacyPolicy} 
-          onClose={() => setShowPrivacyPolicy(false)} 
-        />
-
-        <SaveDialog
-          showSaveDialog={showSaveDialog}
-          setShowSaveDialog={setShowSaveDialog}
-          saveProject={saveProjectWithFilename}
+          loadProject={loadProject}
+          saveWithFilename={saveWithFilename}
         />
       </div>
     </div>
