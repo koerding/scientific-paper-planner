@@ -70,15 +70,27 @@ const usePaperPlanner = () => {
   // Setup modal state
   const modalState = useModalState();
   const {
+    // Modal visibility state
     showConfirmDialog,
     showExamplesDialog,
     showReviewModal,
     showPrivacyPolicy,
     showSaveDialog,
+    
+    // Direct setter functions for consistent API
+    setShowConfirmDialog,
+    setShowExamplesDialog,
+    setShowReviewModal,
+    setShowPrivacyPolicy,
+    setShowSaveDialog,
+    
+    // Review state
     reviewData,
     setReviewData,
     reviewLoading,
     setReviewLoading,
+    
+    // Modal open/close methods
     openConfirmDialog,
     closeConfirmDialog,
     openExamplesDialog,
@@ -181,6 +193,13 @@ const usePaperPlanner = () => {
     showSaveDialog,
     reviewData,
     
+    // Direct setter functions for consistent API
+    setShowConfirmDialog,
+    setShowExamplesDialog, 
+    setShowReviewModal,
+    setShowPrivacyPolicy,
+    setShowSaveDialog,
+    
     // Setters
     setUserInputs,
     setChatMessages,
@@ -188,8 +207,6 @@ const usePaperPlanner = () => {
     setActiveApproach,
     setActiveDataMethod,
     setSectionCompletionStatus,
-    setShowConfirmDialog: closeConfirmDialog, // For backward compatibility
-    setShowExamplesDialog: closeExamplesDialog, // For backward compatibility
     
     // Core functionality
     handleSectionChange,
@@ -208,10 +225,19 @@ const usePaperPlanner = () => {
     
     // Modal actions
     onConfirmReset,
+    openConfirmDialog,
+    closeConfirmDialog,
     openExamplesDialog,
+    closeExamplesDialog,
     openReviewModal,
-    handleReviewPaper,
+    closeReviewModal,
     openPrivacyPolicy,
+    closePrivacyPolicy,
+    openSaveDialog,
+    closeSaveDialog,
+    
+    // Review actions
+    handleReviewPaper,
     
     // Helpers
     getCurrentSectionData
