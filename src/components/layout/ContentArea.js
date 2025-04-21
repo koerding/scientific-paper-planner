@@ -6,6 +6,7 @@ import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPan
 
 /**
  * Component for the main content area with left and right panels
+ * UPDATED: Added sectionsWithFeedback to track which sections have received feedback
  */
 const ContentArea = ({
   // Left panel props
@@ -22,6 +23,7 @@ const ContentArea = ({
   sectionRefs,
   handleEdit,
   handleSignificantEdit,
+  sectionsWithFeedback = [], // New prop to track sections with feedback
   
   // Right panel props
   sectionDataForPanel,
@@ -45,6 +47,8 @@ const ContentArea = ({
           sectionRefs={sectionRefs}
           handleEdit={handleEdit}
           handleSignificantEdit={handleSignificantEdit}
+          handleMagic={handleMagic}
+          sectionsWithFeedback={sectionsWithFeedback}
         />
       </div>
 
