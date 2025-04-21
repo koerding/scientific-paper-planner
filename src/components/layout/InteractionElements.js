@@ -2,11 +2,10 @@
 
 import React from 'react';
 import ModernChatInterface from '../chat/ModernChatInterface';
-import ImprovementReminderToast from '../toasts/ImprovementReminderToast';
 
 /**
- * Component for interactive UI elements like chat and reminders
- * UPDATED: Removed FloatingMagicButton
+ * Component for interactive UI elements like chat
+ * UPDATED: Removed FloatingMagicButton and ImprovementReminderToast
  */
 const InteractionElements = ({
   // Chat props
@@ -19,24 +18,14 @@ const InteractionElements = ({
   loading,
   currentSectionData,
   
-  // Magic button props (kept for ImprovementReminderToast)
+  // Other props kept for compatibility but not used
   handleMagicClick,
-  
-  // Reminder toast props
   userInputs,
   lastImprovementTime,
   significantEditsMade
 }) => {
   return (
     <>
-      {/* Improvement reminder toast */}
-      <ImprovementReminderToast
-        userInputs={userInputs}
-        lastImprovementTime={lastImprovementTime}
-        significantEditsMade={significantEditsMade}
-        handleMagicClick={handleMagicClick}
-      />
-
       {/* Chat interface */}
       <ModernChatInterface
         currentSection={currentSection}
