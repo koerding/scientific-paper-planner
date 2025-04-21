@@ -421,37 +421,21 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     );
   };
 
-  // Handle document import with minimization state handling
-  const handleDocumentImport = async (file) => {
-    setLoading(true);
-    try {
-      if (window.confirm("Creating an example from this document will replace your current work. Continue?")) {
-        // Mark as an example with expanded sections before importing
-        initializeSectionStates(false); // false = this is an example, not a new project
-        
-        const importedData = await importDocumentContent(file);
-        
-        // Tag the data as coming from an example
-        if (importedData) {
-          if (!importedData.version) {
-            importedData.version = "document-example";
-          } else if (!importedData.version.includes("example")) {
-            importedData.version += "-example";
-          }
-        }
-        
-        loadProject(importedData);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error("Error importing document:", error);
-      alert("Error importing document: " + (error.message || "Unknown error"));
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleDocumentImport = async (file) => {
+  setLoading(true); // Optional: Keep for local UI loading state
+  try {
+    // REMOVE the window.confirm() call from here.
+    // Directly call the hook's function, which handles confirmation and loading.
+    await importDocumentContent(file);
+    // The hook now handles calling loadProject internally on success.
+  } catch (error) {
+    // Optional: Add a fallback UI alert if the hook doesn't handle all errors visibly.
+    console.error("Error initiating document import:", error);
+    // alert("An error occurred starting the document import."); // Uncomment if needed
+  } finally {
+    setLoading(false); // Reset local loading state
+  }
+};
 
   // Combined loading state for all AI features
   const isAnyAiLoading = loading || chatLoading || improvingInstructions || reviewLoading;
