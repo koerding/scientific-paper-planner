@@ -249,6 +249,30 @@ const saveSectionStates = (states) => {
   }
 };
 
+// FILE: src/services/sectionStateService.js
+
+export const resetSectionStates = () => {
+  try {
+    // Clear all existing section states
+    const allSectionKeys = Object.keys(localStorage).filter(key => 
+      key.startsWith('section_minimized_')
+    );
+    
+    allSectionKeys.forEach(key => localStorage.removeItem(key));
+    
+    // Set the Question section to be expanded by default
+    localStorage.setItem('section_minimized_question', 'false');
+    
+    // Dispatch an event to notify components of the change
+    window.dispatchEvent(new CustomEvent('sectionStatesChanged'));
+    
+    return true;
+  } catch (error) {
+    console.error('Error resetting section states:', error);
+    return false;
+  }
+};
+
 /**
  * Dispatch a custom event to notify components that section states have changed
  */
