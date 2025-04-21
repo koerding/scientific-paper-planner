@@ -18,8 +18,7 @@ import '../../styles/PaperPlanner.css';
 /**
  * Enhanced Project Planner with improved structure
  * Now uses a more modular, component-based architecture
- * UPDATED: Added tracking for sections with feedback and reset handling
- * FIXED: Only reset feedback state when actually confirming reset
+ * FIXED: Restored toggle functionality for research approach and data method
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -30,8 +29,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     currentSection: currentSectionIdForChat,
     currentMessage,
     loading: hookLoading,
-    activeApproach,
-    activeDataMethod,
+    activeApproach: hookActiveApproach, // Rename to avoid confusion
+    activeDataMethod: hookActiveDataMethod, // Rename to avoid confusion
     
     // Modal state
     showConfirmDialog,
@@ -66,11 +65,19 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     openPrivacyPolicy,
     
     // For current section data
-    getCurrentSectionData
+    getCurrentSectionData,
+    
+    // Active approach/method setters from hook
+    setActiveApproach: setHookActiveApproach, // Rename to avoid confusion
+    setActiveDataMethod: setHookActiveDataMethod // Rename to avoid confusion
   } = usePaperPlannerHook;
 
   // Local state for active section (separate from chat section)
   const [activeSection, setActiveSection] = useState(currentSectionIdForChat);
+  
+  // Local state for active approach and data method
+  const [activeApproach, setActiveApproach] = useState(hookActiveApproach || 'hypothesis');
+  const [activeDataMethod, setActiveDataMethod] = useState(hookActiveDataMethod || 'experiment');
   
   // New state to track sections that have received feedback
   const [sectionsWithFeedback, setSectionsWithFeedback] = useState([]);
@@ -137,6 +144,19 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   }, [localSectionContent]);
 
+  // Sync with hook values for approach/method if they change
+  useEffect(() => {
+    if (hookActiveApproach && hookActiveApproach !== activeApproach) {
+      setActiveApproach(hookActiveApproach);
+    }
+  }, [hookActiveApproach]);
+
+  useEffect(() => {
+    if (hookActiveDataMethod && hookActiveDataMethod !== activeDataMethod) {
+      setActiveDataMethod(hookActiveDataMethod);
+    }
+  }, [hookActiveDataMethod]);
+
   // Section handling functions
   const setActiveSectionWithManualFlag = (sectionId) => {
     setActiveSection(sectionId);
@@ -147,14 +167,32 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     trackSectionChange(sectionId, sectionTitle);
   };
 
-  // Toggle handling
+  // Toggle handling - FIXED to update both local state and hook state
   const handleApproachToggle = (approach) => {
+    console.log(`Setting research approach to: ${approach}`);
     trackApproachToggle(approach);
+    setActiveApproach(approach);
+    
+    // Also update the hook state if available
+    if (setHookActiveApproach && typeof setHookActiveApproach === 'function') {
+      setHookActiveApproach(approach);
+    }
+    
+    // Set the active section to the new approach to show it
     setActiveSectionWithManualFlag(approach);
   };
 
   const handleDataMethodToggle = (method) => {
+    console.log(`Setting data acquisition method to: ${method}`);
     trackDataMethodToggle(method);
+    setActiveDataMethod(method);
+    
+    // Also update the hook state if available
+    if (setHookActiveDataMethod && typeof setHookActiveDataMethod === 'function') {
+      setHookActiveDataMethod(method);
+    }
+    
+    // Set the active section to the new method to show it
     setActiveSectionWithManualFlag(method);
   };
 
@@ -201,7 +239,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
   
-  // Override onConfirmReset to use our modified resetProject - FIXED here
+  // Override onConfirmReset to use our modified resetProject
   const onConfirmReset = () => {
     resetProject();
     setShowConfirmDialog(false);
@@ -237,7 +275,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     reviewData
   };
   
-  // Use the direct setter functions from the hook - FIXED to not reset when cancelling
+  // Use the direct setter functions from the hook
   const modalActions = {
     closeConfirmDialog: () => setShowConfirmDialog(false),
     closeExamplesDialog: () => setShowExamplesDialog(false),
