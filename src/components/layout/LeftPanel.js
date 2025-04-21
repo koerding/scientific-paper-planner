@@ -9,7 +9,7 @@ import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 
 /**
  * Left panel component that manages rendering sections and toggles
- * UPDATED: Added support for section feedback handling
+ * FIXED: Restored toggle functionality for research approach and data method
  */
 const LeftPanel = ({ 
   activeSection,
@@ -45,10 +45,12 @@ const LeftPanel = ({
   
   // Section display logic
   const shouldDisplaySection = (sectionId) => {
+    // Research approach sections
     if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
       return sectionId === activeApproach;
     }
 
+    // Data acquisition method sections
     if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
       return sectionId === activeDataMethod;
     }
@@ -91,6 +93,12 @@ const LeftPanel = ({
     );
   };
   
+  // Research approach section IDs
+  const approachSectionIds = ['hypothesis', 'needsresearch', 'exploratoryresearch'];
+  
+  // Data acquisition method section IDs
+  const dataMethodSectionIds = ['experiment', 'existingdata', 'theorysimulation'];
+  
   return (
     <div className="w-half px-4 py-2" style={{ width: '50%' }}>
       <HeaderCard />
@@ -116,7 +124,7 @@ const LeftPanel = ({
 
       {/* Display active approach section */}
       {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-        .filter(section => (section?.id === 'hypothesis' || section?.id === 'needsresearch' || section?.id === 'exploratoryresearch'))
+        .filter(section => approachSectionIds.includes(section?.id))
         .map(section => renderSection(section))}
 
       {/* Target Audience section */}
@@ -137,7 +145,7 @@ const LeftPanel = ({
 
       {/* Display active data acquisition section */}
       {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-        .filter(section => (section?.id === 'experiment' || section?.id === 'existingdata' || section?.id === 'theorysimulation'))
+        .filter(section => dataMethodSectionIds.includes(section?.id))
         .map(section => renderSection(section))}
 
       {/* Display remaining sections */}
