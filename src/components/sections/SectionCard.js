@@ -5,10 +5,8 @@ import { getSectionMinimizedState, setSectionMinimizedState } from '../../servic
 
 /**
  * Enhanced section card component with rating-based feedback
- * - Added color-coding based on AI rating (1-10 scale)
- * - Gray button until content is meaningfully edited beyond placeholder
- * - Rating indicator for minimized cards 
- * - Disabled feedback for placeholders or empty content
+ * - Added edit-after-feedback tracking to update button label
+ * - Maintains color based on rating but updates text when content changes
  */
 const SectionCard = ({
   section,
@@ -22,7 +20,8 @@ const SectionCard = ({
   onSignificantEdit,
   onRequestFeedback,
   hasFeedback,
-  feedbackRating // New prop for the feedback rating (1-10)
+  feedbackRating, // Feedback rating (1-10)
+  lastFeedbackTime = 0 // New prop for tracking when feedback was last received
 }) => {
   const textareaRef = useRef(null);
   
@@ -41,12 +40,30 @@ const SectionCard = ({
   const [lastEditTimestamp, setLastEditTimestamp] = useState(null);
   const [significantChange, setSignificantChange] = useState(false);
   
+  // NEW: Track if content was edited since last feedback
+  const [editedSinceFeedback, setEditedSinceFeedback] = useState(false);
+  
+  // Update editedSinceFeedback when appropriate
+  useEffect(() => {
+    if (lastEditTimestamp && lastFeedbackTime && lastEditTimestamp > lastFeedbackTime) {
+      setEditedSinceFeedback(true);
+    } else if (!lastEditTimestamp || !lastFeedbackTime) {
+      setEditedSinceFeedback(false);
+    }
+  }, [lastEditTimestamp, lastFeedbackTime]);
+  
+  // Reset editedSinceFeedback when new feedback is received
+  useEffect(() => {
+    if (lastFeedbackTime) {
+      setEditedSinceFeedback(false);
+    }
+  }, [lastFeedbackTime]);
+  
   // State to track focus and hover for edit indication
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
   // State for minimized/expanded cards with localStorage persistence
-  // New projects start minimized, examples start expanded
   const [isMinimized, setIsMinimized] = useState(() => {
     // Load initial state from localStorage if available
     return getSectionMinimizedState(section.id);
@@ -185,6 +202,11 @@ const SectionCard = ({
       }
     }
     
+    // Set editedSinceFeedback flag if we have previous feedback
+    if (hasFeedback && lastFeedbackTime) {
+      setEditedSinceFeedback(true);
+    }
+    
     // Ensure height adjustment occurs after state update
     setTimeout(adjustTextareaHeight, 0);
   };
@@ -247,8 +269,14 @@ const SectionCard = ({
   const getFeedbackLabel = () => {
     if (!hasEditedContent) return "Add content first";
     if (loading) return "Processing...";
+    
+    // UPDATED: If not rated yet or edited after feedback, show default prompt
     if (!hasFeedback) return "Ready for feedback";
     
+    // NEW: If edited since feedback, show "New feedback" instead of rating
+    if (editedSinceFeedback) return "Get new feedback";
+    
+    // Otherwise show the rating with descriptive text
     if (!feedbackRating) return "Get new feedback";
     
     if (feedbackRating <= 3) return `Needs work (${feedbackRating}/10)`;
@@ -322,6 +350,13 @@ const SectionCard = ({
               className={`w-3 h-3 rounded-full ml-1 ${getMinimizedIndicatorColor()}`} 
               title={`Rated ${feedbackRating}/10`}
             ></div>
+          )}
+          
+          {/* NEW: Show edited indicator if content changed since last feedback */}
+          {isMinimized && editedSinceFeedback && (
+            <div className="ml-1 text-xs text-purple-600 font-medium">
+              (edited)
+            </div>
           )}
         </div>
         
@@ -417,7 +452,9 @@ const SectionCard = ({
                   transition-colors
                   ${getFeedbackButtonColor()}
                 `}
-                title={hasEditedContent ? "Get AI feedback on this section" : "Add content before requesting feedback"}
+                title={hasEditedContent ? 
+                       (editedSinceFeedback ? "Content changed since last feedback" : "Get AI feedback on this section") : 
+                       "Add content before requesting feedback"}
               >
                 {loading ? (
                   <>
