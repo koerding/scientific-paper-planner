@@ -1,3 +1,5 @@
+// FILE: src/components/sections/SectionCard.js
+
 import React, { useState, useEffect, useRef } from 'react';
 import { getSectionMinimizedState, setSectionMinimizedState } from '../../services/sectionStateService';
 
@@ -45,7 +47,7 @@ const SectionCard = ({
   // Listen for global section state changes
   useEffect(() => {
     // This ensures the component refreshes when section states are updated globally
-    const handler = () => {
+    const handleSectionStatesChanged = () => {
       // Check if state has changed and update if needed
       const newState = getSectionMinimizedState(section.id);
       if (newState !== isMinimized) {
@@ -54,10 +56,10 @@ const SectionCard = ({
     };
     
     // Listen for a custom event that might be dispatched when all sections change
-    window.addEventListener('sectionStatesChanged', handler);
+    window.addEventListener('sectionStatesChanged', handleSectionStatesChanged);
     
     return () => {
-      window.removeEventListener('sectionStatesChanged', handler);
+      window.removeEventListener('sectionStatesChanged', handleSectionStatesChanged);
     };
   }, [section.id, isMinimized]);
 
