@@ -9,6 +9,7 @@ import { trackInstructionImprovement } from '../utils/analyticsUtils';
 
 /**
  * Hook for managing instruction improvement logic
+ * UPDATED: Modified handleMagic to support specific section improvement
  */
 export const useImprovementLogic = (userInputs, sectionContent) => {
   // State for improvement logic
@@ -27,11 +28,11 @@ export const useImprovementLogic = (userInputs, sectionContent) => {
   const [significantEditsMade, setSignificantEditsMade] = useState(false);
 
   // Handle magic (improving instructions)
-  const handleMagic = useCallback(async (activeSection) => {
+  const handleMagic = useCallback(async (targetSectionId = null) => {
     if (improvingInstructions) return false;
     
     // Track the improvement in analytics
-    trackInstructionImprovement(activeSection);
+    trackInstructionImprovement(targetSectionId || 'all');
     
     // Reset improvement state
     setLastImprovementTime(Date.now());
@@ -41,8 +42,28 @@ export const useImprovementLogic = (userInputs, sectionContent) => {
     // Start the improvement process
     setImprovingInstructions(true);
     try {
+      // If a specific section was requested, only improve that one
+      let sectionsToImprove = localSectionContent.sections;
+      
+      if (targetSectionId) {
+        // Filter to include only the target section
+        sectionsToImprove = localSectionContent.sections.filter(
+          section => section && section.id === targetSectionId
+        );
+        
+        if (sectionsToImprove.length === 0) {
+          console.warn(`[handleMagic] Target section "${targetSectionId}" not found`);
+          setImprovingInstructions(false);
+          return false;
+        }
+        
+        console.log(`[handleMagic] Improving specific section: ${targetSectionId}`);
+      } else {
+        console.log(`[handleMagic] Improving all sections with content`);
+      }
+      
       const result = await improveBatchInstructions(
-        localSectionContent.sections,
+        sectionsToImprove,
         userInputs,
         sectionContent
       );
