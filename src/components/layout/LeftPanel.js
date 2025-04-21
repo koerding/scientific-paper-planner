@@ -15,7 +15,7 @@ import {
 
 /**
  * Left panel component that manages rendering sections and toggles
- * UPDATED: Added support for feedback ratings
+ * UPDATED: Now passes last feedback times to track edits after feedback
  */
 const LeftPanel = ({ 
   activeSection,
@@ -33,7 +33,8 @@ const LeftPanel = ({
   handleSignificantEdit,
   handleMagic,
   sectionsWithFeedback = [], // Array of section IDs with feedback
-  feedbackRatings = {} // New prop: Object mapping section IDs to ratings
+  feedbackRatings = {}, // Object mapping section IDs to ratings
+  lastFeedbackTimes = {} // NEW: Object mapping section IDs to last feedback timestamp
 }) => {
   // Helper to get all visible section IDs for the section controls
   const getAllVisibleSectionIds = () => {
@@ -74,6 +75,7 @@ const LeftPanel = ({
     const isCurrentActive = activeSection === section.id;
     const hasFeedback = sectionsWithFeedback.includes(section.id);
     const feedbackRating = feedbackRatings[section.id]; // Get rating if available
+    const lastFeedbackTime = lastFeedbackTimes[section.id] || null; // Get last feedback time
     
     // Check if this section has only placeholder content
     const hasOnlyPlaceholder = isPlaceholderContent(section.id);
@@ -92,8 +94,9 @@ const LeftPanel = ({
         onSignificantEdit={handleSignificantEdit}
         onRequestFeedback={handleSectionFeedback}
         hasFeedback={hasFeedback}
-        feedbackRating={feedbackRating} // Pass the rating to the section card
-        hasOnlyPlaceholder={hasOnlyPlaceholder} // Pass whether it's just placeholder content
+        feedbackRating={feedbackRating}
+        lastFeedbackTime={lastFeedbackTime} // NEW: Pass last feedback time
+        hasOnlyPlaceholder={hasOnlyPlaceholder}
       />
     );
   };
