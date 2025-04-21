@@ -19,6 +19,7 @@ import '../../styles/PaperPlanner.css';
  * Enhanced Project Planner with improved structure
  * Now uses a more modular, component-based architecture
  * UPDATED: Added tracking for sections with feedback and reset handling
+ * FIXED: Only reset feedback state when actually confirming reset
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -84,7 +85,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleMagic,
     handleEdit,
     handleSignificantEdit,
-    resetImprovementState // Add this function to the destructuring if it exists in the hook
+    resetImprovementState
   } = improvement;
   
   // Refs
@@ -195,7 +196,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     }
   };
   
-  // Override onConfirmReset to use our modified resetProject
+  // Override onConfirmReset to use our modified resetProject - FIXED here
   const onConfirmReset = () => {
     resetProject();
     setShowConfirmDialog(false);
@@ -218,7 +219,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   const isAnyAiLoading = hookLoading || improvingInstructions;
 
   // Get current section data for the instructions panel
-  const sectionDataForPanel = getCurrentSectionData();
+  const sectionDataForPanel = getCurrentSectionData ? getCurrentSectionData() : 
+    localSectionContent?.sections?.find(s => s.id === activeSection);
 
   // Modal state and action objects for ModalManager
   const modalState = {
@@ -230,14 +232,14 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     reviewData
   };
   
-  // Use the direct setter functions from the hook
+  // Use the direct setter functions from the hook - FIXED to not reset when cancelling
   const modalActions = {
     closeConfirmDialog: () => setShowConfirmDialog(false),
     closeExamplesDialog: () => setShowExamplesDialog(false),
     closeReviewModal: () => setShowReviewModal(false),
     closePrivacyPolicy: () => setShowPrivacyPolicy(false),
     closeSaveDialog: () => setShowSaveDialog(false),
-    onConfirmReset
+    onConfirmReset  // Use our modified version that resets state
   };
 
   // Prepare props for ContentArea component
@@ -280,7 +282,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   return (
     <MainLayout
       splashManagerRef={splashManagerRef}
-      resetProject={resetProject}  // Use our modified version
+      resetProject={openConfirmDialog} // Call to open dialog instead of immediately resetting
       exportProject={handleExportRequest}
       saveProject={handleSaveRequest}
       loadProject={loadProject}
