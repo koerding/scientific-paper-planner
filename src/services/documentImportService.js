@@ -87,6 +87,8 @@ IMPORTANT: Your output will be graded based on how well it meets the criteria fo
 6. Fill out every component that the placeholders ask for
 7. The text should be easily readable for students. Use line feeds and bullet points where useful for readability and always when separating distinct placeholder points.
 8. IMPORTANT: All field values MUST be simple strings, NOT nested objects or arrays
+9. SPECIAL CONSIDERATION: The prompts are for planning research while this is about how research was probably planned. So look for results instead for expected results. And when extracting the abstract, take the abstract verbatim but add uppercase labels marking the components mentioned in the prompt.
+
 
 
 GRADING CRITERIA:
