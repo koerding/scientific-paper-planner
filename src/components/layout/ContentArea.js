@@ -6,8 +6,7 @@ import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPan
 
 /**
  * Component for the main content area with left and right panels
- * FIXED: Properly passes section data to instruction panel
- * UPDATED: Now passes feedback ratings to LeftPanel
+ * UPDATED: Now passes last feedback times to track edits made after feedback
  */
 const ContentArea = ({
   // Left panel props
@@ -25,7 +24,8 @@ const ContentArea = ({
   handleEdit,
   handleSignificantEdit,
   sectionsWithFeedback = [], // Sections that have received feedback
-  feedbackRatings = {}, // NEW: Object mapping section IDs to ratings
+  feedbackRatings = {}, // Object mapping section IDs to ratings
+  lastFeedbackTimes = {}, // NEW: Object mapping section IDs to last feedback timestamp
   
   // Right panel props
   sectionDataForPanel,
@@ -56,7 +56,8 @@ const ContentArea = ({
           handleSignificantEdit={handleSignificantEdit}
           handleMagic={handleMagic}
           sectionsWithFeedback={sectionsWithFeedback}
-          feedbackRatings={feedbackRatings} // Pass the ratings
+          feedbackRatings={feedbackRatings}
+          lastFeedbackTimes={lastFeedbackTimes} // NEW: Pass last feedback times
         />
       </div>
 
