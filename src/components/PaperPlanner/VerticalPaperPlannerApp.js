@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ReactGA from 'react-ga4';
 import sectionContent from '../../data/sectionContent.json';
 import MainLayout from '../layout/MainLayout';
-import { initializeSectionStates } from '../../services/sectionStateService';
+import { initializeSectionStates, setSectionMinimizedState } from '../../services/sectionStateService';
 import { useImprovementLogic } from '../../hooks/useImprovementLogic';
 import {
   trackSectionChange,
@@ -19,6 +19,7 @@ import '../../styles/PaperPlanner.css';
  * Enhanced Project Planner with improved structure
  * Now uses a more modular, component-based architecture
  * FIXED: Restored toggle functionality for research approach and data method
+ * ADDED: Automatic next section opening after feedback
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -167,6 +168,21 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     trackSectionChange(sectionId, sectionTitle);
   };
 
+  // Helper function to determine if a section should be displayed
+  const shouldDisplaySection = (sectionId) => {
+    // Research approach sections
+    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
+      return sectionId === activeApproach;
+    }
+
+    // Data acquisition method sections
+    if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
+      return sectionId === activeDataMethod;
+    }
+
+    return true; // All other sections are always displayed
+  };
+
   // Toggle handling - FIXED to update both local state and hook state
   const handleApproachToggle = (approach) => {
     console.log(`Setting research approach to: ${approach}`);
@@ -208,14 +224,62 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   };
 
   // Wrapper for handleMagic that passes activeSection and updates tracking
+  // MODIFIED: Now focuses the next section after feedback
   const handleMagicClick = (sectionId = null) => {
     const targetSection = sectionId || activeSection;
     
     return handleMagic(targetSection).then(success => {
-      if (success && !sectionsWithFeedback.includes(targetSection)) {
-        // Add to the list of sections with feedback
-        setSectionsWithFeedback(prev => [...prev, targetSection]);
+      if (success) {
+        // Check if this is the first time this section receives feedback
+        const isFirstFeedback = !sectionsWithFeedback.includes(targetSection);
+        
+        if (isFirstFeedback) {
+          // Add to the list of sections with feedback
+          setSectionsWithFeedback(prev => [...prev, targetSection]);
+          
+          // Find the next section to open and focus
+          const currentSectionIndex = localSectionContent.sections.findIndex(s => s.id === targetSection);
+          if (currentSectionIndex !== -1 && currentSectionIndex < localSectionContent.sections.length - 1) {
+            // Find the next visible section
+            let nextSectionIndex = currentSectionIndex + 1;
+            let nextSection = null;
+            
+            // Loop until we find a visible section or reach the end
+            while (nextSectionIndex < localSectionContent.sections.length) {
+              const candidateSection = localSectionContent.sections[nextSectionIndex];
+              
+              // Skip invisible sections (based on approach/method toggles)
+              if (candidateSection && shouldDisplaySection(candidateSection.id)) {
+                nextSection = candidateSection;
+                break;
+              }
+              nextSectionIndex++;
+            }
+            
+            if (nextSection) {
+              console.log(`Opening next section: ${nextSection.id}`);
+              
+              // Ensure the next section is expanded
+              setSectionMinimizedState(nextSection.id, false);
+              
+              // Set focus to the next section
+              setTimeout(() => {
+                // Set it as the active section
+                setActiveSectionWithManualFlag(nextSection.id);
+                
+                // Scroll to it
+                if (sectionRefs.current[nextSection.id]?.current) {
+                  sectionRefs.current[nextSection.id].current.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                  });
+                }
+              }, 300); // Small delay to ensure the UI updates first
+            }
+          }
+        }
       }
+      
       return success;
     });
   };
