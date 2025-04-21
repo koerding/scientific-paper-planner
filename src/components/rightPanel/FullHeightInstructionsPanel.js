@@ -7,6 +7,7 @@ import { logSectionData, validateImprovementData } from '../../utils/debugUtils'
  * Enhanced instructions panel with expandable tooltip content
  * FIXED: Properly displays improvement feedback in purple
  * ADDED: Debug logging to diagnose issues
+ * FIXED: Corrected missing closing div tag
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
   // Track which tooltips are expanded
@@ -126,6 +127,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
         {/* Overall feedback in purple with enhanced styling */}
         <div className="text-base mb-5 leading-relaxed font-medium text-purple-700 p-2 bg-purple-50 rounded border border-purple-100">
           {improvement.overallFeedback || "Great work on this section! Here's some feedback to consider."}
+        </div>
         
         {/* Intro Text */}
         {currentSection.introText && (
