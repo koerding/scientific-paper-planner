@@ -2,9 +2,7 @@ import React from 'react';
 
 /**
  * Toggle component for selecting data acquisition method
- * UPDATED: Made styling more subtle
- * FIXED: Significantly more compact layout with less whitespace
- * UPDATED: Added Theory/Simulation as a third option
+ * FIXED: Ensured proper active state handling
  */
 const DataAcquisitionToggle = ({ activeMethod, setActiveMethod }) => {
   // Helper to generate button classes
@@ -16,6 +14,14 @@ const DataAcquisitionToggle = ({ activeMethod, setActiveMethod }) => {
     }
   `;
 
+  // Handler for method selection
+  const handleMethodChange = (method) => {
+    console.log(`Changing data acquisition method to: ${method}`);
+    if (setActiveMethod && typeof setActiveMethod === 'function') {
+      setActiveMethod(method);
+    }
+  };
+
   return (
     // Removed heavy container styles, added padding/margin
     <div className="data-toggle mb-3">
@@ -23,7 +29,7 @@ const DataAcquisitionToggle = ({ activeMethod, setActiveMethod }) => {
 
       <div className="flex flex-wrap gap-1">
         <button
-          onClick={() => setActiveMethod('experiment')}
+          onClick={() => handleMethodChange('experiment')}
           className={getButtonClasses('experiment')}
         >
           <div className="flex items-center justify-center">
@@ -32,7 +38,7 @@ const DataAcquisitionToggle = ({ activeMethod, setActiveMethod }) => {
         </button>
 
         <button
-          onClick={() => setActiveMethod('existingdata')}
+          onClick={() => handleMethodChange('existingdata')}
           className={getButtonClasses('existingdata')}
         >
           <div className="flex items-center justify-center">
@@ -41,7 +47,7 @@ const DataAcquisitionToggle = ({ activeMethod, setActiveMethod }) => {
         </button>
 
         <button
-          onClick={() => setActiveMethod('theorysimulation')}
+          onClick={() => handleMethodChange('theorysimulation')}
           className={getButtonClasses('theorysimulation')}
         >
           <div className="flex items-center justify-center">
