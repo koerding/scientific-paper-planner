@@ -6,6 +6,7 @@ import { logSectionData, validateImprovementData } from '../../utils/debugUtils'
 /**
  * Enhanced instructions panel with expandable tooltip content
  * UPDATED: Displays numeric rating and colored indicator
+ * UPDATED: Now uses green text for completed items instead of strikethrough
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
   // Track which tooltips are expanded
@@ -127,6 +128,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
   /**
    * Renders improved instructions with AI feedback
    * All AI-generated content is styled with purple text
+   * UPDATED: Complete items now use green text instead of strikethrough
    */
   const renderImprovedInstructions = () => {
     if (!currentSection || !currentSection.instructions?.improvement) return null;
@@ -207,13 +209,13 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
           }
           
           return (
-            <div key={index} className={`mb-5 ${isComplete ? 'opacity-70' : ''}`}>
+            <div key={index} className={`mb-5 ${isComplete ? 'opacity-90' : ''}`}>
               <div className="text-base leading-relaxed">
-                {/* Render title and instruction with strikethrough if completed */}
-                <strong className={`font-bold ${isComplete ? 'line-through text-gray-500' : ''}`}>
+                {/* UPDATED: Use green text instead of strikethrough for completed items */}
+                <strong className={`font-bold ${isComplete ? 'text-green-600' : ''}`}>
                   {subsection.title}:
                 </strong>{' '}
-                <span className={isComplete ? 'line-through text-gray-500' : ''}>
+                <span className={isComplete ? 'text-green-600' : ''}>
                   {subsection.instruction}
                 </span>
                 
@@ -322,10 +324,15 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
           margin-bottom: 1em;
         }
         
-        /* Styling for crossed out text */
-        .line-through {
+        /* REMOVED: Styling for crossed out text */
+        /* .line-through {
           text-decoration: line-through;
           color: #6B7280;
+        } */
+        
+        /* Added styling for completed items - green text */
+        .text-green-600 {
+          color: #059669; /* Tailwind's green-600 color */
         }
         
         /* Enhanced Purple styling for AI-generated content */
