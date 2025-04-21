@@ -1,7 +1,8 @@
 // FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
 
-// Modified version with feedback rating tracking added
-
+/**
+ * Modified version with feedback tracking and edit-after-feedback detection
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
 import sectionContent from '../../data/sectionContent.json';
@@ -19,9 +20,8 @@ import { getNextVisibleSectionId } from '../../utils/sectionOrderUtils';
 import '../../styles/PaperPlanner.css';
 
 /**
- * Enhanced Project Planner with improved structure
- * Now uses a more modular, component-based architecture
- * UPDATED: Added tracking for feedback ratings
+ * Enhanced Project Planner component
+ * UPDATED: Added tracking for last feedback time per section
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -32,8 +32,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     currentSection: currentSectionIdForChat,
     currentMessage,
     loading: hookLoading,
-    activeApproach: hookActiveApproach, // Rename to avoid confusion
-    activeDataMethod: hookActiveDataMethod, // Rename to avoid confusion
+    activeApproach: hookActiveApproach,
+    activeDataMethod: hookActiveDataMethod,
     
     // Modal state
     showConfirmDialog,
@@ -71,22 +71,25 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     getCurrentSectionData,
     
     // Active approach/method setters from hook
-    setActiveApproach: setHookActiveApproach, // Rename to avoid confusion
-    setActiveDataMethod: setHookActiveDataMethod // Rename to avoid confusion
+    setActiveApproach: setHookActiveApproach,
+    setActiveDataMethod: setHookActiveDataMethod
   } = usePaperPlannerHook;
 
-  // Local state for active section (separate from chat section)
+  // Local state for active section
   const [activeSection, setActiveSection] = useState(currentSectionIdForChat);
   
   // Local state for active approach and data method
   const [activeApproach, setActiveApproach] = useState(hookActiveApproach || 'hypothesis');
   const [activeDataMethod, setActiveDataMethod] = useState(hookActiveDataMethod || 'experiment');
   
-  // New state to track sections that have received feedback
+  // State to track sections that have received feedback
   const [sectionsWithFeedback, setSectionsWithFeedback] = useState([]);
   
-  // NEW: Add state to track feedback ratings (maps section ID to rating)
+  // State to track feedback ratings for each section
   const [feedbackRatings, setFeedbackRatings] = useState({});
+  
+  // NEW: State to track when feedback was last received for each section
+  const [lastFeedbackTimes, setLastFeedbackTimes] = useState({});
   
   // Get improvement logic from custom hook
   const improvement = useImprovementLogic(userInputs, sectionContent);
@@ -139,7 +142,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     });
   }, []);
 
-  // NEW: Effect to extract ratings when localSectionContent changes
+  // Effect to extract ratings when localSectionContent changes
   useEffect(() => {
     if (localSectionContent?.sections) {
       // Extract sections that have received feedback
@@ -239,7 +242,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     const placeholder = section?.placeholder || '';
     
     // Content must be different from placeholder AND not empty
-    // This ensures that just having the placeholder text or empty content won't allow feedback
     return content === placeholder || content.trim() === '';
   };
 
@@ -247,7 +249,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // 1. Only processes sections that have non-placeholder content
   // 2. Handles ratings extraction
   // 3. Updates tracking 
-  // 4. Opens the next section
+  // 4. Records last feedback time
+  // 5. Opens the next section
   const handleMagicClick = (sectionId = null) => {
     const targetSection = sectionId || activeSection;
     
@@ -260,6 +263,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     
     return originalHandleMagic(targetSection).then(success => {
       if (success) {
+        // Record the current time as last feedback time for this section
+        const now = Date.now();
+        setLastFeedbackTimes(prev => ({
+          ...prev,
+          [targetSection]: now
+        }));
+        
         // Check if this is the first time this section receives feedback
         const isFirstFeedback = !sectionsWithFeedback.includes(targetSection);
         
@@ -325,6 +335,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     // Reset our local state
     setSectionsWithFeedback([]);
     setFeedbackRatings({});
+    setLastFeedbackTimes({});
     
     // Reset improvement state if available
     if (typeof resetImprovementState === 'function') {
@@ -389,7 +400,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleEdit,
     handleSignificantEdit,
     sectionsWithFeedback,
-    feedbackRatings, // Pass the feedback ratings
+    feedbackRatings,
+    lastFeedbackTimes, // NEW: Pass last feedback times
     sectionDataForPanel,
     handleMagic: handleMagicClick
   };
