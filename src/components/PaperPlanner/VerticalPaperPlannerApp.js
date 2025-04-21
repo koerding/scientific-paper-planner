@@ -51,6 +51,13 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     showSaveDialog,
     reviewData,
     
+    // Modal action setters
+    setShowConfirmDialog,
+    setShowExamplesDialog,
+    setShowReviewModal,
+    setShowPrivacyPolicy, 
+    setShowSaveDialog,
+    
     // Methods
     setCurrentMessage,
     handleSectionChange,
@@ -67,10 +74,6 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     openExamplesDialog,
     openReviewModal,
     openPrivacyPolicy,
-    
-    // Modal actions for closing
-    setShowConfirmDialog: closeConfirmDialog,
-    setShowExamplesDialog: closeExamplesDialog,
     
     // For current section data
     getCurrentSectionData
@@ -237,9 +240,10 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     reviewData
   };
   
+  // Use the direct setter functions from the hook
   const modalActions = {
-    closeConfirmDialog,
-    closeExamplesDialog,
+    closeConfirmDialog: () => setShowConfirmDialog(false),
+    closeExamplesDialog: () => setShowExamplesDialog(false),
     closeReviewModal: () => setShowReviewModal(false),
     closePrivacyPolicy: () => setShowPrivacyPolicy(false),
     closeSaveDialog: () => setShowSaveDialog(false),
