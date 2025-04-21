@@ -5,9 +5,7 @@ import { logSectionData, validateImprovementData } from '../../utils/debugUtils'
 
 /**
  * Enhanced instructions panel with expandable tooltip content
- * FIXED: Properly displays improvement feedback in purple
- * ADDED: Debug logging to diagnose issues
- * FIXED: Corrected missing closing div tag
+ * UPDATED: Displays numeric rating and colored indicator
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
   // Track which tooltips are expanded
@@ -28,6 +26,28 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
       ...prev,
       [id]: !prev[id]
     }));
+  };
+
+  // Get color based on rating
+  const getRatingColor = (rating) => {
+    if (!rating) return 'text-gray-500';
+    
+    if (rating <= 3) return 'text-red-500';
+    if (rating <= 5) return 'text-orange-500';
+    if (rating <= 7) return 'text-yellow-600';
+    if (rating <= 9) return 'text-lime-600';
+    return 'text-green-600';
+  };
+
+  // Get the label for a rating
+  const getRatingLabel = (rating) => {
+    if (!rating) return '';
+    
+    if (rating <= 3) return 'Needs work';
+    if (rating <= 5) return 'Average';
+    if (rating <= 7) return 'Good';
+    if (rating <= 9) return 'Very good';
+    return 'Excellent';
   };
 
   /**
@@ -114,6 +134,11 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
     const improvement = currentSection.instructions.improvement;
     console.log("Rendering improved instructions with:", improvement);
     
+    // Extract the numerical rating (if available)
+    const rating = improvement.rating ? Math.round(improvement.rating) : null;
+    const ratingColor = getRatingColor(rating);
+    const ratingLabel = getRatingLabel(rating);
+    
     // Console.error if critical data is missing
     if (!improvement.overallFeedback) {
       console.error("Missing overallFeedback in improvement data!");
@@ -125,9 +150,24 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
     return (
       <>
         {/* Overall feedback in purple with enhanced styling */}
-        <div className="text-base mb-5 leading-relaxed font-medium text-purple-700 p-2 bg-purple-50 rounded border border-purple-100">
+        <div className="text-base mb-2 leading-relaxed font-medium text-purple-700 p-2 bg-purple-50 rounded border border-purple-100">
           {improvement.overallFeedback || "Great work on this section! Here's some feedback to consider."}
         </div>
+        
+        {/* NEW: Show the numeric rating if available */}
+        {rating && (
+          <div className={`text-base mb-5 font-bold ${ratingColor} flex items-center`}>
+            Rating: {rating}/10
+            <span className="ml-2 font-normal">({ratingLabel})</span>
+            <div className={`ml-auto w-16 h-3 rounded-full bg-gradient-to-r ${
+              rating <= 3 ? 'from-red-600 to-red-300' :
+              rating <= 5 ? 'from-orange-600 to-orange-300' :
+              rating <= 7 ? 'from-yellow-600 to-yellow-300' :
+              rating <= 9 ? 'from-lime-600 to-lime-300' :
+              'from-green-600 to-green-300'
+            }`}></div>
+          </div>
+        )}
         
         {/* Intro Text */}
         {currentSection.introText && (
