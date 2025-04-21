@@ -2,11 +2,10 @@
 
 /**
  * Hook for managing project actions like save, load, export
- * UPDATED: Improved reset function to clear ALL content
+ * UPDATED: Uses the new resetService for consistent reset functionality
  */
 import { useState, useCallback } from 'react';
-import { clearStorage } from '../services/storageService';
-import { resetSectionStates } from '../services/sectionStateService';
+import { resetAllState, resetPartialState } from '../services/resetService';
 import { exportProject, saveProjectAsJson, validateProjectData } from '../utils/export';
 
 export const useProjectActions = (userInputs, setUserInputs, chatMessages, setChatMessages, resetState, sectionContent) => {
@@ -14,62 +13,27 @@ export const useProjectActions = (userInputs, setUserInputs, chatMessages, setCh
 
   /**
    * Comprehensive reset function that clears all state
-   * This resets everything: project content, chat messages, section states, and feedback
-   * UPDATED: Now explicitly sets all section content back to placeholder values
+   * Now uses the centralized resetService
    * @returns {boolean} - Success indicator
    */
   const resetAllProjectState = useCallback(() => {
-    console.log("[useProjectActions] Performing complete project reset");
+    console.log("[useProjectActions] Calling resetAllState from resetService");
     
-    // 1. Clear localStorage completely
-    clearStorage();
+    // Get fresh state from the reset service
+    const freshState = resetAllState();
     
-    // 2. Reset section minimization states (expand/collapse)
-    resetSectionStates();
+    // Update state with the fresh values
+    setUserInputs(freshState.userInputs);
+    setChatMessages(freshState.chatMessages);
     
-    // 3. Clear saved feedback from localStorage
-    localStorage.removeItem('savedSectionFeedback');
-    
-    // 4. Create fresh default values with placeholders for all sections
-    const freshInputs = {};
-    if (sectionContent && Array.isArray(sectionContent.sections)) {
-      sectionContent.sections.forEach(section => {
-        if (section && section.id) {
-          // Use placeholder as initial content
-          freshInputs[section.id] = section.placeholder || '';
-        }
-      });
+    // Also call the parent reset state function as backup
+    if (typeof resetState === 'function') {
+      resetState();
     }
-    
-    // 5. Create fresh empty chat messages
-    const freshChatMessages = {};
-    if (sectionContent && Array.isArray(sectionContent.sections)) {
-      sectionContent.sections.forEach(section => {
-        if (section && section.id) {
-          freshChatMessages[section.id] = [];
-        }
-      });
-    }
-    
-    // 6. Update the state directly 
-    // This ensures we don't rely on resetState which might not be comprehensive
-    setUserInputs(freshInputs);
-    setChatMessages(freshChatMessages);
-    
-    // 7. Also call the parent reset state function as backup
-    resetState();
-    
-    // 8. Dispatch a global event to notify components that need to reset
-    window.dispatchEvent(new CustomEvent('projectStateReset', {
-      detail: { 
-        timestamp: Date.now(),
-        source: 'resetAllProjectState'
-      }
-    }));
     
     console.log("[useProjectActions] Project reset complete");
     return true;
-  }, [resetState, setUserInputs, setChatMessages, sectionContent]);
+  }, [resetState, setUserInputs, setChatMessages]);
 
   // Reset project function - now just calls the comprehensive reset
   const resetProject = useCallback(() => {
