@@ -20,6 +20,7 @@ import '../../styles/PaperPlanner.css';
  * Now uses a more modular, component-based architecture
  * FIXED: Restored toggle functionality for research approach and data method
  * ADDED: Automatic next section opening after feedback
+ * FIXED: Corrected reset functionality to properly clear content
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -289,23 +290,26 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     setShowConfirmDialog(true);
   };
 
-  // Override resetProject to also reset feedback state
+  // FIXED: Properly delegate to the original functions
+  // This function just opens a confirmation dialog
   const resetProject = () => {
-    // Call the original reset function
+    openResetDialog();
+  };
+  
+  // This is the actual reset function that runs after confirmation
+  const onConfirmReset = () => {
+    // Call the original resetProject from the hook - this will clear content
     originalResetProject();
     
-    // Reset the feedback tracking
+    // Reset our local tracking state
     setSectionsWithFeedback([]);
     
-    // Reset improvement state if the hook provides a method for it
+    // Reset improvement state if available
     if (typeof resetImprovementState === 'function') {
       resetImprovementState();
     }
-  };
-  
-  // Override onConfirmReset to use our modified resetProject
-  const onConfirmReset = () => {
-    resetProject();
+    
+    // Close the dialog
     setShowConfirmDialog(false);
   };
 
@@ -340,6 +344,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   };
   
   // Use the direct setter functions from the hook
+  // FIXED: Use our onConfirmReset that properly resets state
   const modalActions = {
     closeConfirmDialog: () => setShowConfirmDialog(false),
     closeExamplesDialog: () => setShowExamplesDialog(false),
@@ -389,7 +394,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   return (
     <MainLayout
       splashManagerRef={splashManagerRef}
-      resetProject={openResetDialog} // Call to open dialog instead of immediately resetting
+      resetProject={resetProject} // This just opens the confirmation dialog
       exportProject={handleExportRequest}
       saveProject={handleSaveRequest}
       loadProject={loadProject}
