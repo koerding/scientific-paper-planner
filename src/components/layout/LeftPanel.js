@@ -6,10 +6,16 @@ import SectionControls from '../controls/SectionControls';
 import SectionCard from '../sections/SectionCard';
 import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
 import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
+import { 
+  shouldDisplaySection,
+  getVisibleSectionsInDisplayOrder,
+  getApproachSectionIds,
+  getDataMethodSectionIds
+} from '../../utils/sectionOrderUtils';
 
 /**
  * Left panel component that manages rendering sections and toggles
- * FIXED: Restored toggle functionality for research approach and data method
+ * FIXED: Uses centralized section order configuration
  */
 const LeftPanel = ({ 
   activeSection,
@@ -34,28 +40,13 @@ const LeftPanel = ({
     
     if (Array.isArray(localSectionContent?.sections)) {
       localSectionContent.sections.forEach(section => {
-        if (section?.id && shouldDisplaySection(section.id)) {
+        if (section?.id && shouldDisplaySection(section.id, activeApproach, activeDataMethod)) {
           visibleIds.push(section.id);
         }
       });
     }
     
     return visibleIds;
-  };
-  
-  // Section display logic
-  const shouldDisplaySection = (sectionId) => {
-    // Research approach sections
-    if (sectionId === 'hypothesis' || sectionId === 'needsresearch' || sectionId === 'exploratoryresearch') {
-      return sectionId === activeApproach;
-    }
-
-    // Data acquisition method sections
-    if (sectionId === 'experiment' || sectionId === 'existingdata' || sectionId === 'theorysimulation') {
-      return sectionId === activeDataMethod;
-    }
-
-    return true; // All other sections are always displayed
   };
   
   // Handle feedback request for a specific section
@@ -70,8 +61,7 @@ const LeftPanel = ({
   // Rendering function for a section
   const renderSection = (section) => {
     if (!section || !section.id) return null;
-    if (!shouldDisplaySection(section.id)) return null;
-
+    
     const isCurrentActive = activeSection === section.id;
     const hasFeedback = sectionsWithFeedback.includes(section.id);
     
@@ -93,11 +83,26 @@ const LeftPanel = ({
     );
   };
   
-  // Research approach section IDs
-  const approachSectionIds = ['hypothesis', 'needsresearch', 'exploratoryresearch'];
+  // Get section IDs by category
+  const approachSectionIds = getApproachSectionIds();
+  const dataMethodSectionIds = getDataMethodSectionIds();
   
-  // Data acquisition method section IDs
-  const dataMethodSectionIds = ['experiment', 'existingdata', 'theorysimulation'];
+  // Get sections in display order, filtering for visibility
+  const visibleSections = getVisibleSectionsInDisplayOrder(
+    localSectionContent?.sections || [],
+    activeApproach,
+    activeDataMethod
+  );
+  
+  // Group sections for inserting toggles between them
+  const questionSection = visibleSections.find(section => section.id === 'question');
+  const approachSection = visibleSections.find(section => approachSectionIds.includes(section.id));
+  const audienceSection = visibleSections.find(section => section.id === 'audience');
+  const relatedPapersSection = visibleSections.find(section => section.id === 'relatedpapers');
+  const dataMethodSection = visibleSections.find(section => dataMethodSectionIds.includes(section.id));
+  const remainingSections = visibleSections.filter(section => 
+    ['analysis', 'process', 'abstract'].includes(section.id)
+  );
   
   return (
     <div className="w-half px-4 py-2" style={{ width: '50%' }}>
@@ -112,9 +117,7 @@ const LeftPanel = ({
       />
       
       {/* Display Research Question first */}
-      {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-        .filter(section => section?.id === 'question')
-        .map(section => renderSection(section))}
+      {questionSection && renderSection(questionSection)}
 
       {/* Research Approach Toggle */}
       <ResearchApproachToggle
@@ -123,19 +126,13 @@ const LeftPanel = ({
       />
 
       {/* Display active approach section */}
-      {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-        .filter(section => approachSectionIds.includes(section?.id))
-        .map(section => renderSection(section))}
+      {approachSection && renderSection(approachSection)}
 
       {/* Target Audience section */}
-      {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-        .filter(section => section?.id === 'audience')
-        .map(section => renderSection(section))}
+      {audienceSection && renderSection(audienceSection)}
 
       {/* Related Papers Section */}
-      {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-        .filter(section => section?.id === 'relatedpapers')
-        .map(section => renderSection(section))}
+      {relatedPapersSection && renderSection(relatedPapersSection)}
 
       {/* Data Acquisition Toggle */}
       <DataAcquisitionToggle
@@ -144,14 +141,10 @@ const LeftPanel = ({
       />
 
       {/* Display active data acquisition section */}
-      {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-        .filter(section => dataMethodSectionIds.includes(section?.id))
-        .map(section => renderSection(section))}
+      {dataMethodSection && renderSection(dataMethodSection)}
 
       {/* Display remaining sections */}
-      {Array.isArray(localSectionContent?.sections) && localSectionContent.sections
-        .filter(section => section?.id === 'analysis' || section?.id === 'process' || section?.id === 'abstract')
-        .map(section => renderSection(section))}
+      {remainingSections.map(section => renderSection(section))}
     </div>
   );
 };
