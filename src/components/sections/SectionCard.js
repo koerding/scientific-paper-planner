@@ -13,6 +13,7 @@ import { getSectionMinimizedState, setSectionMinimizedState } from '../../servic
  * - IMPROVED: Toggle minimization on header click
  * - IMPROVED: Different icons for minimize vs expand states
  * - ADDED: Feedback button for each section
+ * - ADDED: Improved event listening for section state changes
  */
 const SectionCard = ({
   section,
@@ -50,11 +51,18 @@ const SectionCard = ({
   // Listen for global section state changes
   useEffect(() => {
     // This ensures the component refreshes when section states are updated globally
-    const handleSectionStatesChanged = () => {
-      // Check if state has changed and update if needed
-      const newState = getSectionMinimizedState(section.id);
-      if (newState !== isMinimized) {
-        setIsMinimized(newState);
+    const handleSectionStatesChanged = (e) => {
+      // If this is a specific section event and it matches this section
+      if (e?.detail?.sectionId === section.id) {
+        setIsMinimized(e.detail.isMinimized);
+      } 
+      // Otherwise check if it's a global change
+      else {
+        // Check if state has changed and update if needed
+        const newState = getSectionMinimizedState(section.id);
+        if (newState !== isMinimized) {
+          setIsMinimized(newState);
+        }
       }
     };
     
