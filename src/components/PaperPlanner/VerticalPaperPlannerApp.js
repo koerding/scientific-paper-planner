@@ -18,7 +18,7 @@ import '../../styles/PaperPlanner.css';
 /**
  * Enhanced Project Planner with improved structure
  * Now uses a more modular, component-based architecture
- * UPDATED: Added tracking for sections with feedback
+ * UPDATED: Added tracking for sections with feedback and reset handling
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -52,14 +52,14 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSectionChange,
     handleInputChange,
     handleSendMessage,
-    resetProject,
+    resetProject: originalResetProject,
     exportProject,
     loadProject,
     importDocumentContent,
     handleReviewPaper,
     handleSaveProject,
     saveWithFilename,
-    onConfirmReset,
+    onConfirmReset: originalOnConfirmReset,
     openExamplesDialog,
     openReviewModal,
     openPrivacyPolicy,
@@ -83,7 +83,8 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     significantEditsMade,
     handleMagic,
     handleEdit,
-    handleSignificantEdit
+    handleSignificantEdit,
+    resetImprovementState // Add this function to the destructuring if it exists in the hook
   } = improvement;
   
   // Refs
@@ -180,6 +181,26 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     });
   };
 
+  // Override resetProject to also reset feedback state
+  const resetProject = () => {
+    // Call the original reset function
+    originalResetProject();
+    
+    // Reset the feedback tracking
+    setSectionsWithFeedback([]);
+    
+    // Reset improvement state if the hook provides a method for it
+    if (typeof resetImprovementState === 'function') {
+      resetImprovementState();
+    }
+  };
+  
+  // Override onConfirmReset to use our modified resetProject
+  const onConfirmReset = () => {
+    resetProject();
+    setShowConfirmDialog(false);
+  };
+
   // Show splash screen
   const handleShowHelpSplash = () => {
     if (splashManagerRef.current) {
@@ -259,7 +280,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   return (
     <MainLayout
       splashManagerRef={splashManagerRef}
-      resetProject={resetProject}
+      resetProject={resetProject}  // Use our modified version
       exportProject={handleExportRequest}
       saveProject={handleSaveRequest}
       loadProject={loadProject}
