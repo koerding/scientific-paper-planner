@@ -2,6 +2,7 @@
 
 /**
  * Helper utility to log section data structure in a clean, organized way
+ * UPDATED: Added validation for the rating field
  */
 
 export const logSectionData = (section, label = "Section Data") => {
@@ -21,6 +22,7 @@ export const logSectionData = (section, label = "Section Data") => {
   if (section.instructions?.improvement) {
     simplifiedSection.improvement = {
       overallFeedback: section.instructions.improvement.overallFeedback,
+      rating: section.instructions.improvement.rating, // Include the rating
       subsectionsCount: Array.isArray(section.instructions.improvement.subsections) ? 
                         section.instructions.improvement.subsections.length : 'not an array',
       // Sample the first subsection if available
@@ -40,6 +42,7 @@ export const logSectionData = (section, label = "Section Data") => {
 
 /**
  * Check if the improvement data has the correct structure
+ * UPDATED: Now validates the rating field
  */
 export const validateImprovementData = (section) => {
   if (!section) return { valid: false, reason: 'Section is null or undefined' };
@@ -52,6 +55,17 @@ export const validateImprovementData = (section) => {
   if (!improvement.overallFeedback) return { valid: false, reason: 'Missing overallFeedback' };
   if (!improvement.subsections) return { valid: false, reason: 'Missing subsections array' };
   if (!Array.isArray(improvement.subsections)) return { valid: false, reason: 'subsections is not an array' };
+  
+  // Check rating (optional but should be a number between 1-10 if present)
+  if (improvement.rating !== undefined) {
+    const rating = improvement.rating;
+    if (typeof rating !== 'number') {
+      return { valid: false, reason: 'rating is not a number', details: `Found type: ${typeof rating}` };
+    }
+    if (rating < 1 || rating > 10) {
+      return { valid: false, reason: 'rating is outside valid range (1-10)', details: `Found value: ${rating}` };
+    }
+  }
   
   // Check subsections structure
   const subsectionIssues = improvement.subsections
