@@ -7,7 +7,7 @@ import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPan
 /**
  * Component for the main content area with left and right panels
  * FIXED: Properly passes section data to instruction panel
- * FIXED: Removed incorrect import of openaiService
+ * UPDATED: Now passes feedback ratings to LeftPanel
  */
 const ContentArea = ({
   // Left panel props
@@ -24,7 +24,8 @@ const ContentArea = ({
   sectionRefs,
   handleEdit,
   handleSignificantEdit,
-  sectionsWithFeedback = [], // New prop to track sections with feedback
+  sectionsWithFeedback = [], // Sections that have received feedback
+  feedbackRatings = {}, // NEW: Object mapping section IDs to ratings
   
   // Right panel props
   sectionDataForPanel,
@@ -55,6 +56,7 @@ const ContentArea = ({
           handleSignificantEdit={handleSignificantEdit}
           handleMagic={handleMagic}
           sectionsWithFeedback={sectionsWithFeedback}
+          feedbackRatings={feedbackRatings} // Pass the ratings
         />
       </div>
 
