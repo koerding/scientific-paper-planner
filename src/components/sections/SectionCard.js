@@ -6,7 +6,7 @@ import { getSectionMinimizedState, setSectionMinimizedState } from '../../servic
 /**
  * Enhanced section card component with rating-based feedback
  * - Added edit-after-feedback tracking to update button label
- * - Maintains color based on rating but updates text when content changes
+ * - Uses green text for completed items instead of strikethrough
  */
 const SectionCard = ({
   section,
@@ -21,7 +21,7 @@ const SectionCard = ({
   onRequestFeedback,
   hasFeedback,
   feedbackRating, // Feedback rating (1-10)
-  lastFeedbackTime = 0 // New prop for tracking when feedback was last received
+  lastFeedbackTime = 0 // Prop for tracking when feedback was last received
 }) => {
   const textareaRef = useRef(null);
   
@@ -40,7 +40,7 @@ const SectionCard = ({
   const [lastEditTimestamp, setLastEditTimestamp] = useState(null);
   const [significantChange, setSignificantChange] = useState(false);
   
-  // NEW: Track if content was edited since last feedback
+  // Track if content was edited since last feedback
   const [editedSinceFeedback, setEditedSinceFeedback] = useState(false);
   
   // Update editedSinceFeedback when appropriate
@@ -262,7 +262,7 @@ const SectionCard = ({
     if (feedbackRating <= 5) return 'bg-orange-500 text-white hover:bg-orange-600';
     if (feedbackRating <= 7) return 'bg-yellow-500 text-white hover:bg-yellow-600';
     if (feedbackRating <= 9) return 'bg-lime-500 text-white hover:bg-lime-600';
-    return 'bg-green-500 text-white hover:bg-green-600';
+    return 'bg-green-600 text-white hover:bg-green-700'; // Use our standard green-600 color
   };
 
   // Function to get a descriptive label based on the rating
@@ -270,10 +270,10 @@ const SectionCard = ({
     if (!hasEditedContent) return "Add content first";
     if (loading) return "Processing...";
     
-    // UPDATED: If not rated yet or edited after feedback, show default prompt
+    // If not rated yet or edited after feedback, show default prompt
     if (!hasFeedback) return "Ready for feedback";
     
-    // NEW: If edited since feedback, show "New feedback" instead of rating
+    // If edited since feedback, show "New feedback" instead of rating
     if (editedSinceFeedback) return "Get new feedback";
     
     // Otherwise show the rating with descriptive text
@@ -294,7 +294,7 @@ const SectionCard = ({
     if (feedbackRating <= 5) return 'bg-orange-500';
     if (feedbackRating <= 7) return 'bg-yellow-500';
     if (feedbackRating <= 9) return 'bg-lime-500';
-    return 'bg-green-500';
+    return 'bg-green-600'; // Use our standard green-600 color
   };
 
   // Handle feedback button click
@@ -352,7 +352,7 @@ const SectionCard = ({
             ></div>
           )}
           
-          {/* NEW: Show edited indicator if content changed since last feedback */}
+          {/* Show edited indicator if content changed since last feedback */}
           {isMinimized && editedSinceFeedback && (
             <div className="ml-1 text-xs text-purple-600 font-medium">
               (edited)
