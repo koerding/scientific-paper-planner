@@ -5,6 +5,7 @@
  * FIXED: Added error handling for localStorage access
  * FIXED: Added fallback for missing sections
  * FIXED: Added toggleAllSections function
+ * IMPROVED: Ensures question section is expanded by default
  */
 
 // Constants
@@ -65,7 +66,12 @@ export const initializeSectionStates = (minimized = true, sectionIds = []) => {
       ];
       
       defaultSections.forEach(sectionId => {
-        states[sectionId] = minimized;
+        // IMPORTANT: Always make question section expanded regardless of minimized parameter
+        if (sectionId === 'question') {
+          states[sectionId] = false; // false = expanded
+        } else {
+          states[sectionId] = minimized;
+        }
       });
     }
     
@@ -94,6 +100,10 @@ export const toggleAllSections = (minimized = true, sectionIds = []) => {
     // If sectionIds provided, only toggle those
     if (sectionIds && sectionIds.length > 0) {
       sectionIds.forEach(sectionId => {
+        // Never minimize the question section if it's a new project
+        if (sectionId === 'question' && minimized) {
+          return; // Skip setting question to minimized
+        }
         states[sectionId] = minimized;
       });
     } 
@@ -101,6 +111,10 @@ export const toggleAllSections = (minimized = true, sectionIds = []) => {
     else {
       // Toggle all existing states
       Object.keys(states).forEach(sectionId => {
+        // Never minimize the question section if it's a new project
+        if (sectionId === 'question' && minimized) {
+          return; // Skip setting question to minimized
+        }
         states[sectionId] = minimized;
       });
     }
@@ -156,12 +170,17 @@ export const getSectionMinimizedState = (sectionId) => {
       return states[sectionId];
     }
     
-    // Default to minimized if not found
+    // Always keep question expanded by default
+    if (sectionId === 'question') {
+      return false; // false = expanded
+    }
+    
+    // Default to minimized for other sections if not found
     return true;
   } catch (error) {
     console.error(`Error getting state for section ${sectionId}:`, error);
-    // Fallback to default minimized
-    return true;
+    // Fallback to default minimized, except for question
+    return sectionId === 'question' ? false : true;
   }
 };
 
