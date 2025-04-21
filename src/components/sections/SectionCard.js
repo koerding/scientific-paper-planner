@@ -4,16 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getSectionMinimizedState, setSectionMinimizedState } from '../../services/sectionStateService';
 
 /**
- * Enhanced section card component with minimization capabilities and feedback button
- * - Minimization toggle with smooth animations and clear visual indication
- * - Persistence of minimized states between sessions
- * - Responds to global state changes
- * - Different defaults for new projects vs examples
- * - FIXED: Properly maintains blue highlighting for active sections
- * - IMPROVED: Toggle minimization on header click
- * - IMPROVED: Different icons for minimize vs expand states
- * - ADDED: Feedback button for each section
- * - ADDED: Improved event listening for section state changes
+ * Enhanced section card component with rating-based feedback
+ * - Added color-coding based on AI rating (1-10 scale)
+ * - Gray button until content is meaningfully edited beyond placeholder
+ * - Rating indicator for minimized cards 
+ * - Disabled feedback for placeholders or empty content
  */
 const SectionCard = ({
   section,
@@ -25,13 +20,22 @@ const SectionCard = ({
   onClick,
   onEdit,
   onSignificantEdit,
-  onRequestFeedback, // New prop for the feedback button
-  hasFeedback // New prop to indicate if feedback has been provided before
+  onRequestFeedback,
+  hasFeedback,
+  feedbackRating // New prop for the feedback rating (1-10)
 }) => {
   const textareaRef = useRef(null);
   
   // Get the actual value stored in userInputs
   const textValue = userInputs[section.id] || '';
+  
+  // Check if the content is just the placeholder or hasn't been edited
+  const isPlaceholder = textValue === (section.placeholder || '');
+  const isDefaultContent = textValue.trim() === '';
+
+  // Determine if the content has been meaningfully edited - must be different from placeholder
+  // AND have actual content
+  const hasEditedContent = !isPlaceholder && !isDefaultContent;
 
   // Track user edits for improvement reminder
   const [lastEditTimestamp, setLastEditTimestamp] = useState(null);
@@ -223,10 +227,54 @@ const SectionCard = ({
     setSectionMinimizedState(section.id, newState);
   };
 
+  // Function to get the color based on the rating
+  const getFeedbackButtonColor = () => {
+    if (!hasEditedContent) return 'bg-gray-400 text-white cursor-not-allowed'; // Gray when content not edited
+    if (loading) return 'bg-purple-300 text-white cursor-wait'; // Light purple when loading
+    
+    // Default state (not yet rated)
+    if (!feedbackRating) return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
+    
+    // Color based on rating (1=red, 10=green)
+    if (feedbackRating <= 3) return 'bg-red-500 text-white hover:bg-red-600';
+    if (feedbackRating <= 5) return 'bg-orange-500 text-white hover:bg-orange-600';
+    if (feedbackRating <= 7) return 'bg-yellow-500 text-white hover:bg-yellow-600';
+    if (feedbackRating <= 9) return 'bg-lime-500 text-white hover:bg-lime-600';
+    return 'bg-green-500 text-white hover:bg-green-600';
+  };
+
+  // Function to get a descriptive label based on the rating
+  const getFeedbackLabel = () => {
+    if (!hasEditedContent) return "Add content first";
+    if (loading) return "Processing...";
+    if (!hasFeedback) return "Ready for feedback";
+    
+    if (!feedbackRating) return "Get new feedback";
+    
+    if (feedbackRating <= 3) return `Needs work (${feedbackRating}/10)`;
+    if (feedbackRating <= 5) return `Average (${feedbackRating}/10)`;
+    if (feedbackRating <= 7) return `Good (${feedbackRating}/10)`;
+    if (feedbackRating <= 9) return `Very good (${feedbackRating}/10)`;
+    return `Excellent (${feedbackRating}/10)`;
+  };
+
+  // Get indicator color for minimized cards
+  const getMinimizedIndicatorColor = () => {
+    if (!hasFeedback || !feedbackRating) return 'bg-gray-300';
+    
+    if (feedbackRating <= 3) return 'bg-red-500';
+    if (feedbackRating <= 5) return 'bg-orange-500';
+    if (feedbackRating <= 7) return 'bg-yellow-500';
+    if (feedbackRating <= 9) return 'bg-lime-500';
+    return 'bg-green-500';
+  };
+
   // Handle feedback button click
   const handleFeedbackRequest = (e) => {
     e.stopPropagation(); // Prevent other actions
-    if (onRequestFeedback && typeof onRequestFeedback === 'function') {
+    
+    // Only allow feedback if the content has been edited
+    if (hasEditedContent && onRequestFeedback && typeof onRequestFeedback === 'function') {
       onRequestFeedback(section.id);
     }
   };
@@ -261,11 +309,21 @@ const SectionCard = ({
       className={sectionClasses}
       onClick={handleCardClick}
     >
-      {/* Header with Title and Toggle button */}
+      {/* Header with Title, Rating Indicator (if minimized), and Toggle button */}
       <div className="flex justify-between items-center mb-1 section-header">
-        <h2 className="font-semibold text-lg mr-2 text-gray-800" style={{ fontSize: 'calc(1.4 * 1rem)' }}>
-          {section.title}
-        </h2>
+        <div className="flex items-center">
+          <h2 className="font-semibold text-lg mr-2 text-gray-800" style={{ fontSize: 'calc(1.4 * 1rem)' }}>
+            {section.title}
+          </h2>
+          
+          {/* Rating indicator dot for minimized cards */}
+          {isMinimized && hasFeedback && feedbackRating && (
+            <div 
+              className={`w-3 h-3 rounded-full ml-1 ${getMinimizedIndicatorColor()}`} 
+              title={`Rated ${feedbackRating}/10`}
+            ></div>
+          )}
+        </div>
         
         <div className="flex items-center">
           {/* Edit indicator icon */}
@@ -275,16 +333,14 @@ const SectionCard = ({
             </svg>
           </div>
           
-          {/* Toggle button for minimizing/expanding with clearly different icons */}
+          {/* Toggle button for minimizing/expanding */}
           <button 
             onClick={toggleMinimized}
             className="minimize-toggle-btn text-gray-500 hover:text-gray-700 focus:outline-none"
             aria-label={isMinimized ? "Expand section" : "Minimize section"}
             title={isMinimized ? "Expand section" : "Minimize section"}
           >
-            {/* Use completely different SVG icons for each state */}
             {isMinimized ? (
-              // Plus/Expand icon for minimized sections - indicates "expand this"
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 className="h-5 w-5" 
@@ -295,7 +351,6 @@ const SectionCard = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             ) : (
-              // Minus/Collapse icon for expanded sections - indicates "minimize this"
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 className="h-5 w-5" 
@@ -317,7 +372,7 @@ const SectionCard = ({
         </div>
       )}
 
-      {/* Input Area - Enhanced with visual cues - Only show when not minimized */}
+      {/* Input Area - Only show when not minimized */}
       {!isMinimized && (
         <div 
           className="relative"
@@ -349,21 +404,20 @@ const SectionCard = ({
             }}
           />
           
-          {/* Feedback Button - only show for expanded cards with content */}
-          {!isMinimized && textValue.trim() !== '' && (
+          {/* Feedback Button - only show for expanded cards */}
+          {!isMinimized && (
             <div className="flex justify-end mt-2">
               <button
                 onClick={handleFeedbackRequest}
-                disabled={loading}
+                disabled={loading || !hasEditedContent}
                 className={`
                   feedback-button text-sm font-medium
                   px-3 py-1.5 rounded
                   flex items-center
                   transition-colors
-                  ${loading 
-                    ? 'bg-purple-300 text-white cursor-wait' 
-                    : 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer'}
+                  ${getFeedbackButtonColor()}
                 `}
+                title={hasEditedContent ? "Get AI feedback on this section" : "Add content before requesting feedback"}
               >
                 {loading ? (
                   <>
@@ -378,7 +432,7 @@ const SectionCard = ({
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {hasFeedback ? "Get new feedback" : "Ready for feedback"}
+                    {getFeedbackLabel()}
                   </>
                 )}
               </button>
