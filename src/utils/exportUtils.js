@@ -631,12 +631,13 @@ export const saveProjectAsJson = (userInputs, chatMessages, fileName) => {
 
 /**
  * Validates loaded project data with improved handling for imports
- * FINAL FIXED VERSION - Adds console logging to help diagnose issues
+ * FIXED: Adds console logging to help diagnose issues
+ * FIXED: More robust handling of different data structures
  * @param {Object} data - The data to validate
  * @returns {boolean} - Whether the data is valid
  */
 export const validateProjectData = (data) => {
-  // Basic validation checks
+  // Basic validation checks with detailed logging
   if (!data) {
     console.error("validateProjectData: data is null or undefined");
     return false;
@@ -648,20 +649,36 @@ export const validateProjectData = (data) => {
     return false;
   }
   
-  // Check for userInputs property
-  if (!data.userInputs) {
-    console.error("validateProjectData: userInputs missing");
-    return false;
-  }
+  // Direct check for the actual structure we're getting
+  console.log("validateProjectData: received data structure:", 
+              typeof data, 
+              data ? Object.keys(data).join(', ') : "null/undefined");
   
-  // Check if userInputs is an object
-  if (typeof data.userInputs !== 'object') {
-    console.error("validateProjectData: userInputs is not an object, it's a", typeof data.userInputs);
+  // Consider different valid formats:
+  // 1. Object with userInputs property (standard format)
+  // 2. Object that IS the userInputs (the API sometimes returns this directly)
+  
+  let userInputs = null;
+  
+  // Case 1: Standard format with userInputs property
+  if (data.userInputs && typeof data.userInputs === 'object') {
+    userInputs = data.userInputs;
+    console.log("validateProjectData: found standard format with userInputs property");
+  } 
+  // Case 2: The object itself contains input fields
+  else if (data.question || data.abstract || data.audience) {
+    // The data object itself appears to be the userInputs
+    userInputs = data;
+    console.log("validateProjectData: object appears to be userInputs directly");
+  }
+  // Neither case matches
+  else {
+    console.error("validateProjectData: could not find userInputs in data");
     return false;
   }
   
   // Get all keys from userInputs to check content
-  const existingFields = Object.keys(data.userInputs);
+  const existingFields = Object.keys(userInputs);
   console.log("validateProjectData: found fields:", existingFields);
   
   if (existingFields.length === 0) {
@@ -672,7 +689,7 @@ export const validateProjectData = (data) => {
   // IMPROVED: Extremely lenient validation for imported documents
   // Accept if ANY field has non-empty content
   const hasAnyContent = existingFields.some(field => {
-    const value = data.userInputs[field];
+    const value = userInputs[field];
     const hasValue = typeof value === 'string' && value.trim() !== '';
     return hasValue;
   });
