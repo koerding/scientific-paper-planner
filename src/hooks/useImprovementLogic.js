@@ -9,8 +9,8 @@ import { trackInstructionImprovement } from '../utils/analyticsUtils';
 
 /**
  * Hook for managing instruction improvement logic
- * UPDATED: Now saves feedback to localStorage
- * UPDATED: Loads feedback from localStorage on initialization
+ * UPDATED: Now properly resets to original sectionContent on reset
+ * FIXED: Reset logic now correctly clears localStorage feedback data
  */
 export const useImprovementLogic = (userInputs, sectionContent) => {
   // State for improvement logic
@@ -58,6 +58,24 @@ export const useImprovementLogic = (userInputs, sectionContent) => {
       console.error("[useImprovementLogic] Error saving feedback to localStorage:", error);
     }
   }, [localSectionContent]);
+
+  // Listen for reset events to restore original section content
+  useEffect(() => {
+    const handleReset = () => {
+      console.log("[useImprovementLogic] Detected reset event, restoring original section content");
+      // Reset to original section content
+      resetImprovementState();
+    };
+    
+    // Listen for the global reset event
+    window.addEventListener('projectStateReset', handleReset);
+    window.addEventListener('projectDataLoaded', handleReset);
+    
+    return () => {
+      window.removeEventListener('projectStateReset', handleReset);
+      window.removeEventListener('projectDataLoaded', handleReset);
+    };
+  }, [sectionContent]);
 
   // Handle magic (improving instructions)
   const handleMagic = useCallback(async (targetSectionId = null) => {
