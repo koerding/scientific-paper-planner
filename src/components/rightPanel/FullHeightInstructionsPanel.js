@@ -7,6 +7,7 @@ import { logSectionData, validateImprovementData } from '../../utils/debugUtils'
  * Enhanced instructions panel with expandable tooltip content
  * UPDATED: Displays numeric rating and colored indicator
  * UPDATED: Now uses green text for completed items instead of strikethrough
+ * UPDATED: Listens for reset events to clear state
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
   // Track which tooltips are expanded
@@ -16,6 +17,36 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
     // Reset expanded tooltips when section changes
     setExpandedTooltips({});
   }, [currentSection]);
+  
+  // Listen for global reset events to clear local state
+  useEffect(() => {
+    const handleProjectReset = () => {
+      console.log(`[FullHeightInstructionsPanel] Resetting local state due to global reset event`);
+      setExpandedTooltips({});
+    };
+    
+    const handleProjectDataLoaded = () => {
+      console.log(`[FullHeightInstructionsPanel] Resetting local state due to project data load`);
+      setExpandedTooltips({});
+    };
+    
+    const handleDocumentImported = () => {
+      console.log(`[FullHeightInstructionsPanel] Resetting local state due to document import`);
+      setExpandedTooltips({});
+    };
+    
+    // Listen for various events that should trigger a reset
+    window.addEventListener('projectStateReset', handleProjectReset);
+    window.addEventListener('projectDataLoaded', handleProjectDataLoaded);
+    window.addEventListener('documentImported', handleDocumentImported);
+    
+    return () => {
+      // Clean up event listeners
+      window.removeEventListener('projectStateReset', handleProjectReset);
+      window.removeEventListener('projectDataLoaded', handleProjectDataLoaded);
+      window.removeEventListener('documentImported', handleDocumentImported);
+    };
+  }, []);
   
   // Create a title that includes the section name
   const sectionTitle = currentSection?.title || "Instructions";
