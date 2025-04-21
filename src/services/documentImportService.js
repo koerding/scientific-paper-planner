@@ -2,150 +2,17 @@
 
 /**
  * Document import service for PDF and Word documents
- * FIXED: Final fix for the boolean/version error
- * FIXED: Improved validation and handling of API responses
+ * Now uses the dedicated documentProcessor for text extraction
  */
 import { callOpenAI } from './openaiService';
+import { loadPDFJS, extractTextFromDocument } from './documentProcessor';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
-import sectionContentData from '../data/sectionContent.json'; // Load the section content
+import sectionContentData from '../data/sectionContent.json';
 
-// Import necessary libraries for document processing
-import mammoth from 'mammoth';
-
-// --- PDF Handling Functions ---
-
-export const loadPDFJS = async () => {
-  // Only load if it's not already loaded
-  if (window.pdfjsLib) return window.pdfjsLib;
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-    script.async = true;
-    script.onload = () => {
-      console.log("PDF.js loaded from CDN successfully");
-      if (window.pdfjsLib) {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        resolve(window.pdfjsLib);
-      } else {
-        reject(new Error("PDF.js loaded but pdfjsLib not found in window"));
-      }
-    };
-    script.onerror = () => {
-      console.error("Failed to load PDF.js from CDN");
-      reject(new Error("Failed to load PDF.js from CDN"));
-    };
-    document.body.appendChild(script);
-  });
-};
-
-const extractTextFromPDF = async (pdfData) => {
-  try {
-    if (!window.pdfjsLib) await loadPDFJS();
-    const loadingTask = window.pdfjsLib.getDocument({data: pdfData});
-    const pdf = await loadingTask.promise;
-    let fullText = '';
-    const maxPagesToProcess = Math.min(pdf.numPages, 20);
-    for (let pageNum = 1; pageNum <= maxPagesToProcess; pageNum++) {
-      try {
-        const page = await pdf.getPage(pageNum);
-        const content = await page.getTextContent();
-        const strings = content.items.map(item => item.str);
-        fullText += `--- Page ${pageNum} ---\n` + strings.join(' ') + '\n\n';
-        if (fullText.length > 30000) {
-          fullText = fullText.substring(0, 30000) + "... [TRUNCATED]";
-          break;
-        }
-      } catch (pageError) {
-        console.warn(`Error extracting text from page ${pageNum}:`, pageError);
-        fullText += `[Error extracting page ${pageNum}]\n\n`;
-      }
-    }
-    return fullText;
-  } catch (error) {
-    console.error("Error in PDF extraction:", error);
-    throw error;
-  }
-};
-
-// --- Document Text Extraction ---
-// This function needs to be defined before importDocumentContent
-
-const extractTextFromDocument = async (file) => {
-  console.log(`Attempting to extract text from: ${file.name}, type: ${file.type}`);
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = async (event) => {
-      try {
-        const arrayBuffer = event.target.result;
-        let extractedText = `Filename: ${file.name}\nFiletype: ${file.type}\nSize: ${Math.round(file.size / 1024)} KB\n\n[Content Extraction Skipped - Library Error or Unsupported Type]`; // Default fallback
-
-        // PDF Extraction Logic
-        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-          console.log("Processing as PDF...");
-          try {
-            const pdfText = await extractTextFromPDF(arrayBuffer);
-            extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${pdfText}\n\n--- Extracted Text End ---`;
-            console.log("PDF text extracted. Length:", extractedText.length);
-          } catch (pdfError) {
-            console.error('Error extracting PDF text:', pdfError);
-            reject(new Error(`Failed to extract text from PDF: ${pdfError.message || pdfError.toString()}`));
-            return;
-          }
-        }
-        // DOCX Extraction Logic
-        else if ((file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                  file.name.toLowerCase().endsWith('.docx')) && typeof mammoth !== 'undefined') {
-          console.log("Processing as DOCX...");
-          try {
-            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-            let docxText = result.value || '';
-            if (docxText.length > 15000) { // Limit length
-              console.log("Truncating DOCX text content due to length limit...");
-              docxText = docxText.substring(0, 15000) + "... [TRUNCATED]";
-            }
-            extractedText = `Filename: ${file.name}\n\n--- Extracted Text Start ---\n\n${docxText}\n\n--- Extracted Text End ---`;
-            console.log("DOCX text extracted. Length:", extractedText.length);
-          } catch (docxError) {
-            console.error('Error extracting DOCX text:', docxError);
-            reject(new Error(`Failed to extract text from DOCX: ${docxError.message || docxError.toString()}`));
-            return;
-          }
-        }
-        // Handle other types
-        else {
-          const libraryMessage = (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))
-            ? "[PDF Library Not Loaded]"
-            : (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-               file.name.toLowerCase().endsWith('.docx'))
-              ? "[DOCX Library Not Loaded]"
-              : `[Unsupported File Type: ${file.type || 'unknown'}]`;
-
-          console.warn(`Content extraction skipped. ${libraryMessage}`);
-          reject(new Error(`Content extraction skipped: ${libraryMessage}`));
-          return;
-        }
-
-        resolve(extractedText);
-      } catch (error) {
-        console.error('Error processing document content:', error);
-        reject(new Error(`Failed to process document content: ${error.message}`));
-      }
-    };
-
-    reader.onerror = (error) => {
-      console.error('Error reading file:', error);
-      reject(new Error(`Failed to read file: ${error.message}`));
-    };
-
-    reader.readAsArrayBuffer(file);
-  });
-};
-
-// --- Helper Functions ---
-
+/**
+ * Extract grading criteria from sectionContent.json for the AI prompt
+ * @returns {string} Formatted criteria string
+ */
 function extractGradingCriteria() {
   const criteria = [];
   
@@ -172,32 +39,14 @@ function extractGradingCriteria() {
   const criteriaStr = criteria.join('\n');
   
   // Log the full criteria to the console for inspection
-  console.log("FULL GRADING CRITERIA FOR IMPORT:");
+  console.log("GRADING CRITERIA FOR IMPORT:");
   console.log(criteriaStr);
   
   return criteriaStr;
 }
 
 /**
- * Generates placeholder content for missing sections using sectionContent.json
- */
-function generatePlaceholderContent(sectionId, fileName) {
-  // Find the section in sectionContent.json
-  const section = sectionContentData.sections.find(s => s.id === sectionId);
-  if (section && section.placeholder) {
-    // Use the placeholder from sectionContent.json as the single source of truth
-    return section.placeholder;
-  }
-  
-  // Fallback if section or placeholder is not found in sectionContent.json
-  console.warn(`Placeholder not found for section: ${sectionId}, using default fallback`);
-  return `[${sectionId} content not available]`;
-}
-
-/**
  * Processes extracted scientific paper text and generates structured data using OpenAI's JSON mode.
- * FIXED: Issue with boolean/version error
- * FIXED: Improved handling of API responses and data structure
  * @param {File} file - The document file object (used for filename in errors)
  * @param {Object} sections - The sectionContent data for context (optional)
  * @returns {Promise<Object>} - The structured data for loading into the planner
@@ -208,22 +57,22 @@ export async function importDocumentContent(file, sections = null) {
   let documentText = '';
   
   try {
-    // Load PDF.js first if needed
+    // Preload PDF.js if needed for PDF files
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
       try { await loadPDFJS(); } catch (loadError) { console.warn("Failed to load PDF.js:", loadError); }
     }
 
-    // Step 1: Extract text
+    // Extract text using the dedicated document processor
     console.log(`Starting text extraction for ${file.name}`);
     documentText = await extractTextFromDocument(file);
     console.log(`Extraction successful for ${file.name}. Text length: ${documentText.length}`);
 
-    // Step 2: Extract grading criteria
+    // Extract grading criteria
     const gradingCriteria = extractGradingCriteria();
     console.log("Extracted grading criteria for prompt context");
     console.log("GRADING CRITERIA LENGTH:", gradingCriteria.length, "characters");
 
-    // Step 3: Build improved system prompt with clear requirements
+    // Build improved system prompt with clear requirements
     const enhancedSystemPrompt = `You are analyzing a scientific paper to extract its structure based on specific grading criteria. 
 Be methodical, accurate, and ensure your output aligns with the evaluation standards.
 
@@ -247,7 +96,7 @@ Document text (first part): ${documentText.substring(0, 500)}
 
 Create comprehensive examples that address each criterion from the grading rubric.`;
 
-    // Step 4: Create examples of placeholder structure from sectionContent.json
+    // Create examples of placeholder structure from sectionContent.json
     const placeholderExamples = {};
     sectionContent.sections.forEach(section => {
       if (section && section.id && section.placeholder) {
@@ -255,7 +104,7 @@ Create comprehensive examples that address each criterion from the grading rubri
       }
     });
 
-    // Step 5: Build the enhanced task prompt with placeholder examples
+    // Build the enhanced task prompt with placeholder examples
     const enhancedTaskPrompt = `
 # Scientific Paper Extraction with Essential Fields
 
@@ -284,7 +133,7 @@ Your output must be valid JSON with "userInputs" as the top-level key.
 ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncated]' : ''}
 --- DOCUMENT TEXT END ---`;
 
-    // Step 6: Call OpenAI with improved prompts
+    // Call OpenAI with improved prompts
     console.log("Sending request to OpenAI with improved prompts");
     const apiResponse = await callOpenAI(
       enhancedTaskPrompt,
@@ -292,7 +141,7 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
       {}, [], { temperature: 0.3, max_tokens: 3000 }, [], enhancedSystemPrompt, true // Use JSON mode
     );
 
-    // Format the result correctly - FIX THE BOOLEAN/OBJECT ISSUE
+    // Format the result correctly
     let result = {
       userInputs: {},
       chatMessages: {},
@@ -326,7 +175,6 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
       throw new Error("API returned invalid or empty response");
     }
     
-    // Ensure result has all required fields
     // Validate that we have at least basic required fields
     const validateFields = ['question', 'audience', 'abstract'];
     const missingRequiredFields = validateFields.filter(field => 
@@ -349,7 +197,6 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
       });
     }
 
-    // Log the final data structure before returning
     console.log("Final import structure with userInputs:", 
                 Object.keys(result.userInputs).length, "fields");
 
@@ -389,95 +236,9 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
     
     return fallbackResult;
   }
-}  
-
-/**
- * Utility to test document import without interacting with the UI
- * This can be called from the browser console to debug import issues
- */
-window.testDocumentImport = async function(fileInput) {
-  try {
-    console.log("Starting document import test...");
-    
-    // Get file from input or create a placeholder 
-    let file;
-    if (fileInput && fileInput.files && fileInput.files[0]) {
-      file = fileInput.files[0];
-      console.log(`Using provided file: ${file.name}`);
-    } else {
-      // Create a dummy file if none provided
-      const dummyContent = new Blob(['Test document content'], { type: 'text/plain' });
-      file = new File([dummyContent], 'test-document.txt', { type: 'text/plain' });
-      console.log("Using dummy test file");
-    }
-    
-    // Load dependencies if needed
-    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-      try { 
-        await loadPDFJS(); 
-        console.log("PDF.js loaded successfully");
-      } catch (loadError) { 
-        console.warn("Failed to load PDF.js:", loadError); 
-      }
-    }
-    
-    // Step 1: Test text extraction
-    console.log("Testing text extraction...");
-    const extractedText = await extractTextFromDocument(file);
-    console.log("Extracted text:", extractedText.substring(0, 500) + "...");
-    
-    // Step 2: Test full import process
-    console.log("Testing full import process...");
-    const importResult = await importDocumentContent(file);
-    
-    // Step 3: Validate the result
-    console.log("Testing validation...");
-    // Import exportUtils to test validation
-    const isValid = window.validateProjectData ? 
-      window.validateProjectData(importResult) : 
-      (importResult && importResult.userInputs && Object.keys(importResult.userInputs).length > 0);
-    
-    console.log("Import result:", importResult);
-    console.log("Validation result:", isValid ? "VALID" : "INVALID");
-    
-    return {
-      extractedText,
-      importResult,
-      isValid
-    };
-  } catch (error) {
-    console.error("Test failed:", error);
-    return {
-      error: error.message || String(error),
-      stack: error.stack
-    };
-  }
-};
-
-// PDF.js testing and preloading
-window.testPdfExtraction = async function() {
-  try {
-    console.log("Testing PDF extraction...");
-    await loadPDFJS();
-    let pdfUrl = 'https://arxiv.org/pdf/1409.0473.pdf';
-    console.log("Fetching test PDF from URL:", pdfUrl);
-    const response = await fetch(pdfUrl);
-    if (!response.ok) throw new Error(`Failed to fetch sample PDF: ${response.status} ${response.statusText}`);
-    const pdfData = await response.arrayBuffer();
-    console.log("PDF fetched, size:", pdfData.byteLength);
-    const extractedText = await extractTextFromPDF(pdfData);
-    console.log("EXTRACTION RESULT:", extractedText);
-    return extractedText;
-  } catch (error) {
-    console.error("PDF extraction test failed:", error);
-    return "Test failed: " + error.message;
-  }
-};
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('load', () => {
-    loadPDFJS().catch(error => {
-      console.warn("Preloading PDF.js failed:", error);
-    });
-  });
 }
+
+// Export testing utilities
+export const testUtils = {
+  extractGradingCriteria
+};
