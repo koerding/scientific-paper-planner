@@ -2,6 +2,7 @@
 
 /**
  * Hook for managing project actions like save, load, export
+ * UPDATED: Added comprehensive reset function that clears all state
  */
 import { useState, useCallback } from 'react';
 import { clearStorage } from '../services/storageService';
@@ -11,19 +12,42 @@ import { exportProject, saveProjectAsJson, validateProjectData } from '../utils/
 export const useProjectActions = (userInputs, setUserInputs, chatMessages, setChatMessages, resetState, sectionContent) => {
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Reset project function
-  const resetProject = useCallback(() => {
-    // Clear localStorage first
+  /**
+   * Comprehensive reset function that clears all state
+   * This resets everything: project content, chat messages, section states, and feedback
+   * @returns {boolean} - Success indicator
+   */
+  const resetAllProjectState = useCallback(() => {
+    console.log("[useProjectActions] Performing complete project reset");
+    
+    // 1. Clear localStorage completely
     clearStorage();
     
-    // Reset section minimization states
+    // 2. Reset section minimization states (expand/collapse)
     resetSectionStates();
-
-    // Call the reset state function
+    
+    // 3. Clear saved feedback from localStorage
+    localStorage.removeItem('savedSectionFeedback');
+    
+    // 4. Call the parent reset state function to reset inputs and chat messages
     resetState();
-
+    
+    // 5. Dispatch a global event to notify components that need to reset
+    window.dispatchEvent(new CustomEvent('projectStateReset', {
+      detail: { 
+        timestamp: Date.now(),
+        source: 'resetAllProjectState'
+      }
+    }));
+    
+    console.log("[useProjectActions] Project reset complete");
     return true;
   }, [resetState]);
+
+  // Reset project function - now just calls the comprehensive reset
+  const resetProject = useCallback(() => {
+    return resetAllProjectState();
+  }, [resetAllProjectState]);
 
   // Export project
   const handleExportProject = useCallback(() => {
@@ -35,7 +59,11 @@ export const useProjectActions = (userInputs, setUserInputs, chatMessages, setCh
     return saveProjectAsJson(userInputs, chatMessages, fileName);
   }, [userInputs, chatMessages]);
 
-  // Load project from data
+  /**
+   * Load project from data with comprehensive reset first
+   * @param {Object} data - The project data to load
+   * @returns {boolean} - Success indicator
+   */
   const loadProject = useCallback((data) => {
     if (!validateProjectData(data)) {
       alert("Invalid project file format. Please select a valid project file.");
@@ -43,6 +71,9 @@ export const useProjectActions = (userInputs, setUserInputs, chatMessages, setCh
     }
     
     try {
+      // First reset everything to ensure clean state
+      resetAllProjectState();
+      
       // Create template values using sectionContent
       const templateValues = {};
       sectionContent.sections.forEach(section => {
@@ -84,18 +115,27 @@ export const useProjectActions = (userInputs, setUserInputs, chatMessages, setCh
       // Update chat messages state
       setChatMessages(mergedChat);
       
+      // Dispatch an event to notify components that project data was loaded
+      window.dispatchEvent(new CustomEvent('projectDataLoaded', {
+        detail: { 
+          timestamp: Date.now(),
+          hasUserContent: Object.values(mergedInputs).some(val => val && val.trim() !== '')
+        }
+      }));
+      
       return true;
     } catch (error) {
       console.error("Error loading project:", error);
       alert("Error loading project: " + (error.message || "Unknown error"));
       return false;
     }
-  }, [sectionContent, setUserInputs, setChatMessages]);
+  }, [sectionContent, setUserInputs, setChatMessages, resetAllProjectState]);
 
   return {
     actionLoading,
     setActionLoading,
     resetProject,
+    resetAllProjectState, // Export the comprehensive reset function
     handleExportProject,
     saveProject,
     loadProject
