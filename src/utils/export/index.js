@@ -4,7 +4,7 @@
  * Centralized export module that brings all export functionality together
  */
 
-import { showExportDialog, validateProjectData } from './exportBase';
+import { showExportDialog, validateProjectData, promptForFilename } from './exportBase';
 import { exportAsMarkdown } from './markdownExporter';
 import { exportAsPdf } from './pdfExporter';
 import { exportAsDocx } from './docxExporter';
