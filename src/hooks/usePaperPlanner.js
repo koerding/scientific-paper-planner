@@ -2,8 +2,9 @@
 
 /**
  * Main hook that combines all specialized hooks into a unified API
+ * FIXED: Improved handling of research approach and data method toggling
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProjectState } from './useProjectState';
 import { useChat } from './useChat';
 import { useProjectActions } from './useProjectActions';
@@ -28,7 +29,7 @@ const usePaperPlanner = () => {
     currentSection,
     currentIndex,
     handleInputChange,
-    handleSectionChange,
+    handleSectionChange: baseHandleSectionChange,
     resetState,
     goToNextSection,
     goToPreviousSection
@@ -111,6 +112,23 @@ const usePaperPlanner = () => {
     return sectionContent?.sections?.find(s => s.id === currentSection) || null;
   };
   
+  // Enhanced section change handler to handle approach/method toggling
+  const handleSectionChange = (sectionId) => {
+    // First, check if this is a research approach or data method section
+    const isApproachSection = ['hypothesis', 'needsresearch', 'exploratoryresearch'].includes(sectionId);
+    const isDataMethodSection = ['experiment', 'existingdata', 'theorysimulation'].includes(sectionId);
+    
+    // Update the appropriate state
+    if (isApproachSection) {
+      setActiveApproach(sectionId);
+    } else if (isDataMethodSection) {
+      setActiveDataMethod(sectionId);
+    }
+    
+    // Call the base section change handler
+    baseHandleSectionChange(sectionId);
+  };
+  
   // Reset project with confirmation handling
   const resetProject = () => {
     openConfirmDialog();
@@ -149,6 +167,10 @@ const usePaperPlanner = () => {
   const onConfirmReset = () => {
     resetProjectAction();
     closeConfirmDialog();
+    
+    // Reset approach and method to defaults
+    setActiveApproach('hypothesis');
+    setActiveDataMethod('experiment');
   };
   
   // Final load project function
@@ -156,6 +178,10 @@ const usePaperPlanner = () => {
     const result = loadProjectAction(data);
     if (result) {
       handleSectionChange(sectionContent.sections[0].id);
+      
+      // Reset approach and method to defaults
+      setActiveApproach('hypothesis');
+      setActiveDataMethod('experiment');
     }
     return result;
   };
