@@ -1,5 +1,4 @@
 // FILE: src/utils/promptUtils.js
-// REFACTORED: Removed all research approach related code
 
 import promptContent from '../data/promptContent.json';
 
@@ -32,10 +31,22 @@ const replacePlaceholders = (template, params = {}) => {
  */
 export const buildSystemPrompt = (promptType, params = {}) => {
   // Get the base system prompt template
-  const basePromptTemplate = promptContent.systemPrompts[promptType];
+  let basePromptTemplate = promptContent.systemPrompts[promptType];
   if (!basePromptTemplate) {
     console.error(`Unknown system prompt type: ${promptType}`);
     return `System error: Unknown prompt type ${promptType}`;
+  }
+
+  // For instruction improvement, add the rating instructions
+  if (promptType === 'instructionImprovement') {
+    basePromptTemplate += `\n\nRATING INSTRUCTIONS:
+For each section, provide a numerical rating on a scale of 1-10, where:
+- 1 is truly embarrassing, unprofessional work
+- 5 is what a typical masters student should be able to produce
+- 10 is could not possibly be better, publication-quality work
+
+Be honest but fair with your ratings. Use the full scale and don't inflate ratings.
+Include this rating as a "rating" field in your JSON response structure for each section.`;
   }
 
   // Add params for replacement with defaults for common parameters
@@ -80,6 +91,7 @@ export const buildTaskPrompt = (taskType, params = {}) => {
 /**
  * Generate a mock response for structured instruction improvement
  * Used for testing without making API calls
+ * UPDATED: Now includes rating in mock data
  * @param {Array} sectionsForAnalysis - The sections being analyzed
  * @returns {Array} - Mock analysis results
  */
@@ -88,6 +100,7 @@ export const generateMockStructuredAnalysis = (sectionsForAnalysis) => {
     id: section.id,
     overallFeedback: `Great work on your ${section.title.toLowerCase()}! You've made excellent progress.`,
     completionStatus: "complete",
+    rating: Math.floor(Math.random() * 6) + 5, // Random rating between 5-10 for testing
     subsections: (section.subsections || []).map((subsection, index) => ({
       id: subsection.id,
       isComplete: index % 3 !== 0, // Mark 2/3 of subsections as complete for testing
