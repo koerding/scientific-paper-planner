@@ -1,10 +1,12 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
 
 import React, { useState, useEffect } from 'react';
+import { logSectionData, validateImprovementData } from '../../utils/debugUtils';
 
 /**
  * Enhanced instructions panel with expandable tooltip content
  * FIXED: Properly displays improvement feedback in purple
+ * ADDED: Debug logging to diagnose issues
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
   // Track which tooltips are expanded
@@ -33,15 +35,23 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
   const renderInstructionContent = () => {
     if (!currentSection) return null;
     
-    // For debugging - log the current section structure
-    console.log("FullHeightInstructionsPanel rendering with section:", currentSection);
+    // For debugging - log the current section structure using our debug utility
+    logSectionData(currentSection, "FullHeightInstructionsPanel rendering");
     
     // Check if we have improvement feedback data
     const hasImprovement = currentSection.instructions && 
                           currentSection.instructions.improvement;
     
     if (hasImprovement) {
-      console.log("Found improvement data:", currentSection.instructions.improvement);
+      // Validate the improvement data structure
+      const validationResult = validateImprovementData(currentSection);
+      if (!validationResult.valid) {
+        console.error("Invalid improvement data structure:", validationResult.reason, validationResult.details || '');
+        console.log("Falling back to original instructions due to invalid improvement data");
+        return renderOriginalInstructions();
+      }
+      
+      console.log("Found valid improvement data, rendering improved instructions");
       return renderImprovedInstructions();
     } else {
       console.log("No improvement data found, rendering original instructions");
@@ -103,12 +113,19 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
     const improvement = currentSection.instructions.improvement;
     console.log("Rendering improved instructions with:", improvement);
     
+    // Console.error if critical data is missing
+    if (!improvement.overallFeedback) {
+      console.error("Missing overallFeedback in improvement data!");
+    }
+    if (!improvement.subsections || !Array.isArray(improvement.subsections)) {
+      console.error("Missing or invalid subsections array in improvement data!");
+    }
+    
     return (
       <>
         {/* Overall feedback in purple with enhanced styling */}
         <div className="text-base mb-5 leading-relaxed font-medium text-purple-700 p-2 bg-purple-50 rounded border border-purple-100">
-          {improvement.overallFeedback}
-        </div>
+          {improvement.overallFeedback || "Great work on this section! Here's some feedback to consider."}
         
         {/* Intro Text */}
         {currentSection.introText && (
@@ -119,10 +136,33 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
         
         {/* Subsections with feedback and expandable tooltips */}
         {currentSection.subsections && currentSection.subsections.map((subsection, index) => {
+          if (!subsection || !subsection.id) {
+            console.error(`Invalid subsection at index ${index}:`, subsection);
+            return null; // Skip invalid subsections
+          }
+          
           // Find the corresponding feedback for this subsection
-          const subsectionFeedback = improvement.subsections?.find(fb => fb.id === subsection.id);
-          const isComplete = subsectionFeedback?.isComplete || false;
-          const feedback = subsectionFeedback?.feedback || "Consider addressing this aspect in more detail.";
+          let subsectionFeedback;
+          let isComplete = false;
+          let feedback = "Consider addressing this aspect in more detail.";
+          
+          try {
+            // Only attempt to find feedback if subsections array exists and is valid
+            if (improvement.subsections && Array.isArray(improvement.subsections)) {
+              subsectionFeedback = improvement.subsections.find(fb => fb && fb.id === subsection.id);
+              
+              if (subsectionFeedback) {
+                isComplete = !!subsectionFeedback.isComplete; // Convert to boolean
+                feedback = subsectionFeedback.feedback || feedback;
+              } else {
+                console.warn(`No feedback found for subsection ${subsection.id}`);
+              }
+            } else {
+              console.warn("improvement.subsections is not a valid array:", improvement.subsections);
+            }
+          } catch (error) {
+            console.error(`Error processing feedback for subsection ${subsection.id}:`, error);
+          }
           
           return (
             <div key={index} className={`mb-5 ${isComplete ? 'opacity-70' : ''}`}>
