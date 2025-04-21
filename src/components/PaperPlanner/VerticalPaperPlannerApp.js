@@ -2,6 +2,8 @@
 
 /**
  * Modified version with feedback tracking and edit-after-feedback detection
+ * UPDATED: Now properly implements unified reset functionality 
+ * UPDATED: Handles loading of examples and document imports correctly
  */
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
@@ -21,7 +23,7 @@ import '../../styles/PaperPlanner.css';
 
 /**
  * Enhanced Project Planner component
- * UPDATED: Added tracking for last feedback time per section
+ * UPDATED: Uses unified reset approach for consistent behavior
  */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
@@ -56,6 +58,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleInputChange,
     handleSendMessage,
     resetProject: hookResetProject,
+    resetAllProjectState, // The unified reset function
     exportProject,
     loadProject,
     importDocumentContent,
@@ -88,7 +91,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // State to track feedback ratings for each section
   const [feedbackRatings, setFeedbackRatings] = useState({});
   
-  // NEW: State to track when feedback was last received for each section
+  // State to track when feedback was last received for each section
   const [lastFeedbackTimes, setLastFeedbackTimes] = useState({});
   
   // Get improvement logic from custom hook
@@ -140,6 +143,42 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
       hitType: "pageview", 
       page: `/section/${activeSection}` 
     });
+  }, []);
+  
+  // Listen for reset events to clear feedback state
+  useEffect(() => {
+    const handleProjectReset = () => {
+      console.log(`[VerticalPaperPlannerApp] Resetting feedback state due to global reset event`);
+      setSectionsWithFeedback([]);
+      setFeedbackRatings({});
+      setLastFeedbackTimes({});
+    };
+    
+    const handleProjectDataLoaded = () => {
+      console.log(`[VerticalPaperPlannerApp] Resetting feedback state due to project data load`);
+      setSectionsWithFeedback([]);
+      setFeedbackRatings({});
+      setLastFeedbackTimes({});
+    };
+    
+    const handleDocumentImported = () => {
+      console.log(`[VerticalPaperPlannerApp] Resetting feedback state due to document import`);
+      setSectionsWithFeedback([]);
+      setFeedbackRatings({});
+      setLastFeedbackTimes({});
+    };
+    
+    // Listen for various events that should trigger a reset
+    window.addEventListener('projectStateReset', handleProjectReset);
+    window.addEventListener('projectDataLoaded', handleProjectDataLoaded);
+    window.addEventListener('documentImported', handleDocumentImported);
+    
+    return () => {
+      // Clean up event listeners
+      window.removeEventListener('projectStateReset', handleProjectReset);
+      window.removeEventListener('projectDataLoaded', handleProjectDataLoaded);
+      window.removeEventListener('documentImported', handleDocumentImported);
+    };
   }, []);
 
   // Effect to extract ratings when localSectionContent changes
@@ -319,28 +358,15 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     });
   };
 
-  // FIXED: Simply use the hook's reset functions directly
-  // This maintains the original reset functionality while adding our section-open feature
+  // Use the hook's resetProject function which opens the confirmation dialog
   const resetProject = () => {
-    // Use the hook's function to open the confirm dialog
     hookResetProject();
   };
 
-  // Custom onConfirmReset that extends the hook's reset function
+  // Use the hook's onConfirmReset that now calls resetAllProjectState
+  // This function is complete since we updated the hook implementation
   const onConfirmReset = () => {
-    // Call the hook's original confirm reset function
-    // This will handle all the proper content resetting
     hookOnConfirmReset();
-    
-    // Reset our local state
-    setSectionsWithFeedback([]);
-    setFeedbackRatings({});
-    setLastFeedbackTimes({});
-    
-    // Reset improvement state if available
-    if (typeof resetImprovementState === 'function') {
-      resetImprovementState();
-    }
   };
 
   // Show splash screen
@@ -373,15 +399,14 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     reviewData
   };
   
-  // FIXED: Use custom onConfirmReset that calls the hook's version
-  // but also handles our local state
+  // Use the hook's onConfirmReset function
   const modalActions = {
     closeConfirmDialog: () => setShowConfirmDialog(false),
     closeExamplesDialog: () => setShowExamplesDialog(false),
     closeReviewModal: () => setShowReviewModal(false),
     closePrivacyPolicy: () => setShowPrivacyPolicy(false),
     closeSaveDialog: () => setShowSaveDialog(false),
-    onConfirmReset  // Use our wrapper that handles both hook reset and local state
+    onConfirmReset // Use the hook's implementation that calls resetAllProjectState
   };
 
   // Prepare props for ContentArea component
@@ -401,7 +426,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
     handleSignificantEdit,
     sectionsWithFeedback,
     feedbackRatings,
-    lastFeedbackTimes, // NEW: Pass last feedback times
+    lastFeedbackTimes, // Pass last feedback times
     sectionDataForPanel,
     handleMagic: handleMagicClick
   };
