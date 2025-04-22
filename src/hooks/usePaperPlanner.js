@@ -4,6 +4,7 @@
  * Main hook that combines all specialized hooks into a unified API
  * UPDATED: Now uses the resetService for consistent reset functionality
  * UPDATED: Sets the correct research approach and data method based on document import
+ * UPDATED: Listens for document import events to expand all sections
  */
 import { useState, useEffect } from 'react';
 import { useProjectState } from './useProjectState';
