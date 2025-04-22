@@ -2,10 +2,11 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Now uses the unified reset function before importing
+ * UPDATED: Now properly expands all sections after import
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
+import { expandAllSections } from '../services/sectionStateService';
 
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
   const [importLoading, setImportLoading] = useState(false);
@@ -36,19 +37,17 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       
       console.log("Document import returned data:", importedData ? "Success" : "Failed");
       
+      // Explicitly ensure all sections are expanded after import
+      expandAllSections();
+      console.log("[handleDocumentImport] Explicitly expanded all sections");
+      
       // Load the imported data using the loadProject function
       if (importedData) {
         const result = loadProject(importedData);
         if (result) {
           console.log(`Document ${file.name} successfully imported`);
           
-          // Dispatch a specific event for document imports
-          window.dispatchEvent(new CustomEvent('documentImported', {
-            detail: { 
-              timestamp: Date.now(),
-              filename: file.name
-            }
-          }));
+          // A specific event for document imports is already dispatched in the importDocumentContent function
           
           return true;
         }
