@@ -1,4 +1,4 @@
-// FILE: src/components/sections/SectionEditor.js
+// src/components/sections/SectionEditor.js
 import React, { useRef, useEffect } from 'react';
 
 const SectionEditor = ({ 
