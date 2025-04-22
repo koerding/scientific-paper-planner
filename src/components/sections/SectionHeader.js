@@ -1,4 +1,4 @@
-// FILE: src/components/sections/SectionHeader.js
+// src/components/sections/SectionHeader.js
 import React from 'react';
 
 const SectionHeader = ({ 
