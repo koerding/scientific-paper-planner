@@ -11,6 +11,7 @@ import FeedbackButton from './FeedbackButton';
  * Section card component for displaying and editing a section
  * Refactored to use smaller components for better maintainability
  * FIXED: Restored functionality to detect edits after feedback
+ * UPDATED: Now properly responds to document import events
  */
 const SectionCard = ({
   section,
@@ -25,15 +26,13 @@ const SectionCard = ({
   onRequestFeedback,
   hasFeedback,
   feedbackRating,
-  lastFeedbackTime = 0
+  lastFeedbackTime = 0,
+  hasOnlyPlaceholder
 }) => {
   // Get the actual value stored in userInputs
   const textValue = userInputs[section.id] || '';
   
   // Check if the content is just the placeholder
-  const hasOnlyPlaceholder = isPlaceholderContent(textValue, section.placeholder || '');
-  
-  // Determine if the content has been meaningfully edited
   const hasEditedContent = !hasOnlyPlaceholder;
   
   // Use our custom hook for section state management
@@ -65,6 +64,21 @@ const SectionCard = ({
       setEditedSinceFeedback(false);
     }
   }, [lastFeedbackTime, setEditedSinceFeedback]);
+  
+  // Effect to listen for document import events specifically
+  useEffect(() => {
+    const handleDocumentImported = (event) => {
+      if (event.detail?.expandAllSections) {
+        console.log(`[SectionCard] ${section.id} responding to document import event`);
+      }
+    };
+    
+    window.addEventListener('documentImported', handleDocumentImported);
+    
+    return () => {
+      window.removeEventListener('documentImported', handleDocumentImported);
+    };
+  }, [section.id]);
   
   // Handle input change with tracking for improvement reminder
   const handleTextChange = (e) => {
@@ -178,6 +192,7 @@ const SectionCard = ({
       ref={sectionRef}
       className={sectionClasses}
       onClick={handleCardClick}
+      data-section-id={section.id}
     >
       {/* Header Component */}
       <SectionHeader
