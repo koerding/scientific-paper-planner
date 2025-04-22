@@ -1,4 +1,4 @@
-// src/contexts/ProjectContext.js
+// FILE: src/contexts/ProjectContext.js
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 import sectionContent from '../data/sectionContent.json';
@@ -30,7 +30,8 @@ const initialState = {
   metadata: {
     lastModified: null,
     version: '1.0'
-  }
+  },
+  sectionContent: sectionContent // Store this for easy reference
 };
 
 // Action types as constants
@@ -118,14 +119,18 @@ export function ProjectProvider({ children }) {
   
   // Load from storage on mount
   useEffect(() => {
-    const savedState = storageService.loadProject();
-    if (savedState) {
+    const loadedData = storageService.loadProject();
+    if (loadedData) {
+      const sections = loadedData.sections || {};
+      const suggestedApproach = loadedData.approaches?.active;
+      const suggestedMethod = loadedData.dataMethods?.active;
+      
       dispatch({ 
         type: ACTION_TYPES.IMPORT_PROJECT, 
         payload: { 
-          sections: savedState.sections,
-          suggestedApproach: savedState.suggestedApproach,
-          suggestedMethod: savedState.suggestedMethod,
+          sections,
+          suggestedApproach,
+          suggestedMethod,
           source: 'storage'
         }
       });
@@ -136,6 +141,16 @@ export function ProjectProvider({ children }) {
   useEffect(() => {
     storageService.saveProject(state);
   }, [state]);
+  
+  // Listen for storage reset events
+  useEffect(() => {
+    const handleStorageReset = () => {
+      dispatch({ type: ACTION_TYPES.RESET_PROJECT });
+    };
+    
+    window.addEventListener('storageReset', handleStorageReset);
+    return () => window.removeEventListener('storageReset', handleStorageReset);
+  }, []);
   
   // Define actions that components can use
   const actions = {
@@ -185,5 +200,23 @@ export function useProject() {
   if (!context) {
     throw new Error('useProject must be used within a ProjectProvider');
   }
-  return context;
+  
+  // Return a simplified interface with the most commonly used properties
+  return {
+    // State
+    sections: context.state.sections,
+    activeApproach: context.state.approaches.active,
+    activeDataMethod: context.state.dataMethods.active,
+    sectionContent: context.state.sectionContent,
+    
+    // Full state and dispatch for advanced usage
+    state: context.state,
+    
+    // Actions
+    setSectionContent: context.actions.setSectionContent,
+    setActiveApproach: context.actions.setActiveApproach,
+    setActiveDataMethod: context.actions.setActiveMethod,
+    importProject: context.actions.importProject,
+    resetProject: context.actions.resetProject
+  };
 }
