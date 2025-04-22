@@ -1,7 +1,6 @@
-// FILE: src/components/sections/SectionCard.js
-import React, { useEffect } from 'react';
-import useSectionState from '../../hooks/useSectionState';
-import { isPlaceholderContent } from '../../utils/sectionUtils';
+// src/components/sections/SectionCard.js
+import React from 'react';
+import { useProjectSection } from '../../hooks/useProjectSection';
 import SectionHeader from './SectionHeader';
 import SectionPreview from './SectionPreview';
 import SectionEditor from './SectionEditor';
@@ -9,148 +8,38 @@ import FeedbackButton from './FeedbackButton';
 
 /**
  * Section card component for displaying and editing a section
- * Refactored to use smaller components for better maintainability
- * FIXED: Restored functionality to detect edits after feedback
- * UPDATED: Now properly responds to document import events
+ * Refactored to use the new context architecture
  */
-const SectionCard = ({
-  section,
-  isCurrentSection,
-  userInputs,
-  handleInputChange,
-  loading,
-  sectionRef,
-  onClick,
-  onEdit,
-  onSignificantEdit,
-  onRequestFeedback,
-  hasFeedback,
-  feedbackRating,
-  lastFeedbackTime = 0,
-  hasOnlyPlaceholder
-}) => {
-  // Get the actual value stored in userInputs
-  const textValue = userInputs[section.id] || '';
-  
-  // Check if the content is just the placeholder
-  const hasEditedContent = !hasOnlyPlaceholder;
-  
-  // Use our custom hook for section state management
-  const { 
-    isMinimized, 
-    isFocused, 
-    setIsFocused,
-    isHovered, 
-    setIsHovered,
-    lastEditTimestamp, 
-    setLastEditTimestamp,
+const SectionCard = ({ section, isCurrentSection }) => {
+  // Use our custom hook to get all data and functionality
+  const {
+    content,
+    setContent,
+    placeholder,
+    isExpanded,
+    toggleSection,
+    hasBeenEdited,
+    hasFeedback,
+    feedbackRating,
     editedSinceFeedback,
-    setEditedSinceFeedback,
-    toggleMinimized
-  } = useSectionState(section.id, { lastFeedbackTime });
+    isEditing,
+    setIsEditing,
+    requestFeedback,
+    handleSignificantEdit,
+    lastFeedbackTime
+  } = useProjectSection(section.id);
 
-  // Effect to update editedSinceFeedback when appropriate
-  useEffect(() => {
-    if (lastEditTimestamp && lastFeedbackTime && lastEditTimestamp > lastFeedbackTime) {
-      setEditedSinceFeedback(true);
-    } else if (!lastEditTimestamp || !lastFeedbackTime) {
-      setEditedSinceFeedback(false);
-    }
-  }, [lastEditTimestamp, lastFeedbackTime, setEditedSinceFeedback]);
-  
-  // Reset editedSinceFeedback when new feedback is received
-  useEffect(() => {
-    if (lastFeedbackTime) {
-      setEditedSinceFeedback(false);
-    }
-  }, [lastFeedbackTime, setEditedSinceFeedback]);
-  
-  // Effect to listen for document import events specifically
-  useEffect(() => {
-    const handleDocumentImported = (event) => {
-      if (event.detail?.expandAllSections) {
-        console.log(`[SectionCard] ${section.id} responding to document import event`);
-      }
-    };
-    
-    window.addEventListener('documentImported', handleDocumentImported);
-    
-    return () => {
-      window.removeEventListener('documentImported', handleDocumentImported);
-    };
-  }, [section.id]);
-  
-  // Handle input change with tracking for improvement reminder
+  // Handle text changes
   const handleTextChange = (e) => {
     const newValue = e.target.value;
-    const currentValue = textValue;
+    const currentValue = content;
     
-    // Call the parent's input change handler
-    handleInputChange(section.id, newValue);
-    
-    // Track edit timestamp for significant changes
-    const now = Date.now();
+    // Set the new content
+    setContent(newValue);
     
     // Determine if this is a significant change
     if (Math.abs(newValue.length - currentValue.length) > 15) {
-      setLastEditTimestamp(now);
-      
-      // Emit significant edit event to parent component
-      if (typeof onSignificantEdit === 'function') {
-        onSignificantEdit(section.id, now);
-      }
-      
-      // Important: Set editedSinceFeedback to true when there's a significant edit after feedback
-      if (hasFeedback && lastFeedbackTime) {
-        setEditedSinceFeedback(true);
-      }
-    }
-    // Update timestamp periodically even for smaller changes
-    else if (!lastEditTimestamp || (now - lastEditTimestamp) > 30000) { // 30 seconds
-      setLastEditTimestamp(now);
-      
-      // Emit regular edit event to parent component
-      if (typeof onEdit === 'function') {
-        onEdit(section.id, now);
-      }
-      
-      // Also mark edited since feedback for any edits when feedback exists
-      if (hasFeedback && lastFeedbackTime) {
-        setEditedSinceFeedback(true);
-      }
-    }
-  };
-  
-  // Handle feedback button click
-  const handleFeedbackRequest = (e) => {
-    e.stopPropagation(); // Prevent other actions
-    
-    // Only allow feedback if the content has been edited
-    if (hasEditedContent && onRequestFeedback && typeof onRequestFeedback === 'function') {
-      onRequestFeedback(section.id);
-    }
-  };
-  
-  // Modified click handler
-  const handleCardClick = (e) => {
-    // Let's find out if the click was on the header or toggle button
-    const header = e.currentTarget.querySelector('.section-header');
-    
-    // Check if the click was inside the header area
-    const isHeaderClick = header && header.contains(e.target) && 
-                         !e.target.closest('.minimize-toggle-btn') &&
-                         !e.target.closest('.feedback-button');
-    
-    if (isHeaderClick) {
-      // If clicked on the header, toggle minimized state
-      toggleMinimized(e);
-    } else if (!isMinimized) {
-      // If expanded and clicked elsewhere, use the normal onClick behavior
-      onClick(e);
-    } else {
-      // If minimized and clicked anywhere on the card (except toggle button),
-      // expand the card first
-      toggleMinimized(e);
+      handleSignificantEdit();
     }
   };
   
@@ -166,7 +55,7 @@ const SectionCard = ({
 
   // Calculate max height for minimized cards
   const getMaxHeight = () => {
-    return isMinimized ? 'max-h-14' : 'max-h-[2000px]';
+    return isExpanded ? 'max-h-[2000px]' : 'max-h-14';
   };
 
   // Combine all the classes
@@ -180,7 +69,7 @@ const SectionCard = ({
     duration-300 
     ease-in-out 
     ${getBorderClasses()}
-    ${isMinimized ? 'minimized' : 'expanded'}
+    ${isExpanded ? 'expanded' : 'minimized'}
     ${getMaxHeight()}
     overflow-hidden
     relative
@@ -189,57 +78,54 @@ const SectionCard = ({
 
   return (
     <div
-      ref={sectionRef}
       className={sectionClasses}
-      onClick={handleCardClick}
-      data-section-id={section.id}
     >
       {/* Header Component */}
       <SectionHeader
         title={section.title}
-        isMinimized={isMinimized}
+        isMinimized={!isExpanded}
         hasFeedback={hasFeedback}
         feedbackRating={feedbackRating}
         editedSinceFeedback={editedSinceFeedback}
-        isHovered={isHovered}
-        isFocused={isFocused}
-        toggleMinimized={toggleMinimized}
+        isHovered={isEditing}
+        isFocused={isEditing}
+        toggleMinimized={toggleSection}
       />
 
       {/* Preview for minimized state */}
-      {isMinimized && (
-        <SectionPreview textValue={textValue} />
+      {!isExpanded && (
+        <SectionPreview textValue={content} />
       )}
 
       {/* Editor Component - Only show when not minimized */}
-      {!isMinimized && (
+      {isExpanded && (
         <>
           <SectionEditor
-            textValue={textValue}
-            placeholder={section.placeholder}
+            textValue={content}
+            placeholder={placeholder}
             maxLength={section.maxLength}
             inputPlaceholder={section.inputPlaceholder}
-            isFocused={isFocused}
-            setIsFocused={setIsFocused}
-            isHovered={isHovered}
-            setIsHovered={setIsHovered}
+            isFocused={isEditing}
+            setIsFocused={setIsEditing}
+            isHovered={isEditing}
+            setIsHovered={setIsEditing}
             handleTextChange={handleTextChange}
           />
           
           {/* Feedback Button */}
           <FeedbackButton
-            loading={loading}
-            hasEditedContent={hasEditedContent}
+            loading={false} // Will be connected to feedback loading state
+            hasEditedContent={hasBeenEdited}
             hasFeedback={hasFeedback}
             editedSinceFeedback={editedSinceFeedback}
             feedbackRating={feedbackRating}
-            handleFeedbackRequest={handleFeedbackRequest}
+            handleFeedbackRequest={requestFeedback}
           />
         </>
       )}
       
       {/* Fade gradient at bottom of minimized cards */}
-      {isMinimized && (
+      {!isExpanded && (
         <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-t from-gray-200 to-transparent"></div>
       )}
     </div>
