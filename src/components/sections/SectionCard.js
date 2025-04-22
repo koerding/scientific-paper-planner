@@ -1,5 +1,5 @@
 // FILE: src/components/sections/SectionCard.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import useSectionState from '../../hooks/useSectionState';
 import { isPlaceholderContent } from '../../utils/sectionUtils';
 import SectionHeader from './SectionHeader';
@@ -10,6 +10,7 @@ import FeedbackButton from './FeedbackButton';
 /**
  * Section card component for displaying and editing a section
  * Refactored to use smaller components for better maintainability
+ * FIXED: Restored functionality to detect edits after feedback
  */
 const SectionCard = ({
   section,
@@ -45,8 +46,25 @@ const SectionCard = ({
     lastEditTimestamp, 
     setLastEditTimestamp,
     editedSinceFeedback,
+    setEditedSinceFeedback,
     toggleMinimized
   } = useSectionState(section.id, { lastFeedbackTime });
+
+  // Effect to update editedSinceFeedback when appropriate
+  useEffect(() => {
+    if (lastEditTimestamp && lastFeedbackTime && lastEditTimestamp > lastFeedbackTime) {
+      setEditedSinceFeedback(true);
+    } else if (!lastEditTimestamp || !lastFeedbackTime) {
+      setEditedSinceFeedback(false);
+    }
+  }, [lastEditTimestamp, lastFeedbackTime, setEditedSinceFeedback]);
+  
+  // Reset editedSinceFeedback when new feedback is received
+  useEffect(() => {
+    if (lastFeedbackTime) {
+      setEditedSinceFeedback(false);
+    }
+  }, [lastFeedbackTime, setEditedSinceFeedback]);
   
   // Handle input change with tracking for improvement reminder
   const handleTextChange = (e) => {
@@ -67,6 +85,11 @@ const SectionCard = ({
       if (typeof onSignificantEdit === 'function') {
         onSignificantEdit(section.id, now);
       }
+      
+      // Important: Set editedSinceFeedback to true when there's a significant edit after feedback
+      if (hasFeedback && lastFeedbackTime) {
+        setEditedSinceFeedback(true);
+      }
     }
     // Update timestamp periodically even for smaller changes
     else if (!lastEditTimestamp || (now - lastEditTimestamp) > 30000) { // 30 seconds
@@ -75,6 +98,11 @@ const SectionCard = ({
       // Emit regular edit event to parent component
       if (typeof onEdit === 'function') {
         onEdit(section.id, now);
+      }
+      
+      // Also mark edited since feedback for any edits when feedback exists
+      if (hasFeedback && lastFeedbackTime) {
+        setEditedSinceFeedback(true);
       }
     }
   };
