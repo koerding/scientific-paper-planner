@@ -4,6 +4,7 @@
  * Service to manage the progression state of sections based on feedback scores
  * Controls which sections are visible/unlocked as the user progresses
  */
+import { getNextVisibleSectionId, getApproachSectionIds, getDataMethodSectionIds } from '../utils/sectionOrderUtils';
 
 // Constants
 const MINIMUM_SCORE_TO_UNLOCK = 6;
@@ -127,79 +128,68 @@ export const updateSectionScore = (sectionId, score) => {
   if (!state.scores) state.scores = {};
   state.scores[sectionId] = score;
   
-  // If score is high enough, unlock next content
+  // If score is high enough, unlock next content using section ordering utilities
   if (score >= MINIMUM_SCORE_TO_UNLOCK) {
-    // Unlock based on section progression logic
-    switch (sectionId) {
-      case 'question':
-        // Unlock approach toggle and approach sections
-        state.unlocked.approach_toggle = true;
-        state.unlocked.hypothesis = true;
-        state.unlocked.needsresearch = true;
-        state.unlocked.exploratoryresearch = true;
-        state.unlocked.audience = true;
-        
-        // Record unlock timestamps
+    // Get the approach and data method section IDs
+    const approachSectionIds = getApproachSectionIds();
+    const dataMethodSectionIds = getDataMethodSectionIds();
+    
+    // Determine which section to unlock next based on the current section
+    if (sectionId === 'question') {
+      // After Question, unlock the Research Approach toggle and associated approach sections
+      state.unlocked.approach_toggle = true;
+      approachSectionIds.forEach(id => {
+        state.unlocked[id] = true;
         if (!state.unlockTimestamps) state.unlockTimestamps = {};
-        state.unlockTimestamps.approach_toggle = now;
-        state.unlockTimestamps.hypothesis = now;
-        state.unlockTimestamps.needsresearch = now;
-        state.unlockTimestamps.exploratoryresearch = now;
-        state.unlockTimestamps.audience = now;
-        break;
-        
-      case 'hypothesis':
-      case 'needsresearch':
-      case 'exploratoryresearch':
-        // Any of the approach sections will unlock related papers
-        state.unlocked.relatedpapers = true;
+        state.unlockTimestamps[id] = now;
+      });
+      
+      // Record unlock timestamp for the toggle
+      if (!state.unlockTimestamps) state.unlockTimestamps = {};
+      state.unlockTimestamps.approach_toggle = now;
+    } 
+    else if (approachSectionIds.includes(sectionId)) {
+      // After any approach section, unlock Audience
+      state.unlocked.audience = true;
+      if (!state.unlockTimestamps) state.unlockTimestamps = {};
+      state.unlockTimestamps.audience = now;
+    }
+    else if (sectionId === 'audience') {
+      // After Audience, unlock Related Papers
+      state.unlocked.relatedpapers = true;
+      if (!state.unlockTimestamps) state.unlockTimestamps = {};
+      state.unlockTimestamps.relatedpapers = now;
+    } 
+    else if (sectionId === 'relatedpapers') {
+      // After Related Papers, unlock Data Methods toggle and associated methods
+      state.unlocked.data_toggle = true;
+      dataMethodSectionIds.forEach(id => {
+        state.unlocked[id] = true;
         if (!state.unlockTimestamps) state.unlockTimestamps = {};
-        state.unlockTimestamps.relatedpapers = now;
-        break;
-        
-      case 'audience':
-        // Audience also unlocks related papers
-        state.unlocked.relatedpapers = true;
-        if (!state.unlockTimestamps) state.unlockTimestamps = {};
-        state.unlockTimestamps.relatedpapers = now;
-        break;
-        
-      case 'relatedpapers':
-        // Related papers unlocks data toggle and methods
-        state.unlocked.data_toggle = true;
-        state.unlocked.experiment = true;
-        state.unlocked.existingdata = true;
-        state.unlocked.theorysimulation = true;
-        
-        if (!state.unlockTimestamps) state.unlockTimestamps = {};
-        state.unlockTimestamps.data_toggle = now;
-        state.unlockTimestamps.experiment = now;
-        state.unlockTimestamps.existingdata = now;
-        state.unlockTimestamps.theorysimulation = now;
-        break;
-        
-      case 'experiment':
-      case 'existingdata':
-      case 'theorysimulation':
-        // Any data method unlocks analysis
-        state.unlocked.analysis = true;
-        if (!state.unlockTimestamps) state.unlockTimestamps = {};
-        state.unlockTimestamps.analysis = now;
-        break;
-        
-      case 'analysis':
-        // Analysis unlocks process
-        state.unlocked.process = true;
-        if (!state.unlockTimestamps) state.unlockTimestamps = {};
-        state.unlockTimestamps.process = now;
-        break;
-        
-      case 'process':
-        // Process unlocks abstract
-        state.unlocked.abstract = true;
-        if (!state.unlockTimestamps) state.unlockTimestamps = {};
-        state.unlockTimestamps.abstract = now;
-        break;
+        state.unlockTimestamps[id] = now;
+      });
+      
+      // Record unlock timestamp for the toggle
+      if (!state.unlockTimestamps) state.unlockTimestamps = {};
+      state.unlockTimestamps.data_toggle = now;
+    }
+    else if (dataMethodSectionIds.includes(sectionId)) {
+      // After any data method section, unlock Analysis
+      state.unlocked.analysis = true;
+      if (!state.unlockTimestamps) state.unlockTimestamps = {};
+      state.unlockTimestamps.analysis = now;
+    }
+    else if (sectionId === 'analysis') {
+      // After Analysis, unlock Process
+      state.unlocked.process = true;
+      if (!state.unlockTimestamps) state.unlockTimestamps = {};
+      state.unlockTimestamps.process = now;
+    }
+    else if (sectionId === 'process') {
+      // After Process, unlock Abstract
+      state.unlocked.abstract = true;
+      if (!state.unlockTimestamps) state.unlockTimestamps = {};
+      state.unlockTimestamps.abstract = now;
     }
   }
   
@@ -289,10 +279,106 @@ export const resetProgressionState = () => {
   return freshState;
 };
 
-// Listen for global reset events
+/**
+ * Unlock all sections at once (useful for imports and examples)
+ * @returns {Object} Updated progression state with all sections unlocked
+ */
+export const unlockAllSections = () => {
+  const state = getProgressionState();
+  const now = Date.now();
+  
+  // Unlock all sections
+  state.unlocked = {
+    question: true,
+    approach_toggle: true,
+    hypothesis: true,
+    needsresearch: true,
+    exploratoryresearch: true,
+    audience: true,
+    relatedpapers: true,
+    data_toggle: true,
+    experiment: true,
+    existingdata: true,
+    theorysimulation: true,
+    analysis: true,
+    process: true,
+    abstract: true
+  };
+  
+  // Set unlock timestamps
+  if (!state.unlockTimestamps) state.unlockTimestamps = {};
+  Object.keys(state.unlocked).forEach(key => {
+    state.unlockTimestamps[key] = now;
+  });
+  
+  // Save the updated state
+  saveProgressionState(state);
+  
+  // Notify components
+  window.dispatchEvent(new CustomEvent('progressionStateChanged', { 
+    detail: { 
+      allUnlocked: true,
+      state,
+      unlocked: Object.keys(state.unlocked).filter(key => !key.includes('_toggle'))
+    }
+  }));
+  
+  return state;
+};
+
+// Listen for global reset events and document imports
 if (typeof window !== 'undefined') {
   window.addEventListener('projectStateReset', () => {
     console.log('[progressionStateService] Detected global reset, resetting progression state');
     resetProgressionState();
+  });
+  
+  // Handle document imports specifically
+  window.addEventListener('documentImported', (event) => {
+    console.log('[progressionStateService] Document import detected, unlocking all sections');
+    
+    // Create a state where all sections are unlocked
+    const state = getProgressionState();
+    const now = Date.now();
+    
+    // Unlock all sections
+    state.unlocked = {
+      question: true,
+      approach_toggle: true,
+      hypothesis: true,
+      needsresearch: true,
+      exploratoryresearch: true,
+      audience: true,
+      relatedpapers: true,
+      data_toggle: true,
+      experiment: true,
+      existingdata: true,
+      theorysimulation: true,
+      analysis: true,
+      process: true,
+      abstract: true
+    };
+    
+    // Set unlock timestamps
+    if (!state.unlockTimestamps) state.unlockTimestamps = {};
+    Object.keys(state.unlocked).forEach(key => {
+      state.unlockTimestamps[key] = now;
+    });
+    
+    // Save the state
+    saveProgressionState(state);
+    
+    // Also make sure Pro Mode is enabled
+    setProModeEnabled(true);
+    
+    // Notify components
+    window.dispatchEvent(new CustomEvent('progressionStateChanged', { 
+      detail: { 
+        allUnlocked: true,
+        state,
+        unlocked: Object.keys(state.unlocked).filter(key => !key.includes('_toggle')),
+        source: 'documentImport'
+      }
+    }));
   });
 }
