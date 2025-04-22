@@ -1,14 +1,49 @@
-// src/contexts/FeedbackContext.js
+// FILE: src/contexts/FeedbackContext.js
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
-import { storageService } from '../services/storageService';
+
+// Try to load initial state from localStorage
+const getInitialState = () => {
+  try {
+    const savedFeedback = localStorage.getItem('savedSectionFeedback');
+    if (savedFeedback) {
+      const parsedData = JSON.parse(savedFeedback);
+      
+      // Extract feedback data from the old format
+      if (parsedData && parsedData.sections) {
+        const feedback = {};
+        const lastFeedbackTimes = {};
+        
+        // Process each section to extract feedback
+        parsedData.sections.forEach(section => {
+          if (section && section.id && section.instructions && section.instructions.improvement) {
+            feedback[section.id] = section.instructions.improvement;
+            lastFeedbackTimes[section.id] = section.instructions.improvement.timestamp || Date.now();
+          }
+        });
+        
+        return {
+          feedback,
+          lastFeedbackTimes,
+          editTimestamps: {},
+          loading: false
+        };
+      }
+    }
+  } catch (error) {
+    console.warn('Error loading feedback data from localStorage:', error);
+  }
+  
+  // Default empty state
+  return {
+    feedback: {},
+    lastFeedbackTimes: {},
+    editTimestamps: {},
+    loading: false
+  };
+};
 
 // Initial state
-const initialState = {
-  feedback: {}, // Organized by sectionId
-  lastFeedbackTimes: {}, // Timestamp of last feedback by sectionId
-  editTimestamps: {}, // Last edit timestamp by sectionId
-  loading: false
-};
+const initialState = getInitialState();
 
 // Action types
 const ACTION_TYPES = {
@@ -26,11 +61,17 @@ function feedbackReducer(state, action) {
       const { sectionId, feedbackData } = action.payload;
       const now = Date.now();
       
+      // Ensure the feedback has a timestamp
+      const enhancedFeedback = {
+        ...feedbackData,
+        timestamp: now
+      };
+      
       return {
         ...state,
         feedback: {
           ...state.feedback,
-          [sectionId]: feedbackData
+          [sectionId]: enhancedFeedback
         },
         lastFeedbackTimes: {
           ...state.lastFeedbackTimes,
@@ -66,7 +107,12 @@ function feedbackReducer(state, action) {
       };
       
     case ACTION_TYPES.RESET_FEEDBACK:
-      return initialState;
+      return {
+        feedback: {},
+        lastFeedbackTimes: {},
+        editTimestamps: {},
+        loading: false
+      };
       
     default:
       return state;
@@ -80,21 +126,20 @@ const FeedbackContext = createContext();
 export function FeedbackProvider({ children }) {
   const [state, dispatch] = useReducer(feedbackReducer, initialState);
   
-  // Load feedback data from storage on mount
+  // Save feedback data to localStorage in the new format
   useEffect(() => {
-    const savedData = storageService.loadFeedbackData();
-    if (savedData) {
-      dispatch({ type: ACTION_TYPES.IMPORT_FEEDBACK, payload: savedData });
+    try {
+      // Only save if we have feedback data
+      if (Object.keys(state.feedback).length > 0) {
+        localStorage.setItem('feedback_data', JSON.stringify({
+          feedback: state.feedback,
+          lastFeedbackTimes: state.lastFeedbackTimes,
+          editTimestamps: state.editTimestamps
+        }));
+      }
+    } catch (error) {
+      console.warn('Error saving feedback data to localStorage:', error);
     }
-  }, []);
-  
-  // Save feedback data when it changes
-  useEffect(() => {
-    storageService.saveFeedbackData({
-      feedback: state.feedback,
-      lastFeedbackTimes: state.lastFeedbackTimes,
-      editTimestamps: state.editTimestamps
-    });
   }, [state.feedback, state.lastFeedbackTimes, state.editTimestamps]);
   
   // Listen for storage reset events
