@@ -1,11 +1,7 @@
-// FILE: src/components/sections/FeedbackButton.js
+// src/components/sections/FeedbackButton.js
 import React from 'react';
 import { getFeedbackButtonColor, getFeedbackLabel } from '../../utils/sectionUtils';
 
-/**
- * Feedback button component for sections
- * FIXED: Improved handling of "edited since feedback" state
- */
 const FeedbackButton = ({ 
   loading, 
   hasEditedContent, 
