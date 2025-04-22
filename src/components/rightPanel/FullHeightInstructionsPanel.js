@@ -1,15 +1,7 @@
-// FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
-
+// src/components/rightPanel/FullHeightInstructionsPanel.js
 import React, { useState, useEffect } from 'react';
 import { logSectionData, validateImprovementData } from '../../utils/debugUtils';
 
-/**
- * Enhanced instructions panel with expandable tooltip content
- * UPDATED: Displays numeric rating and colored indicator
- * UPDATED: Now uses green text for completed items instead of strikethrough
- * UPDATED: Listens for reset events to clear state
- * UPDATED: No more inline styles - uses global CSS
- */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
   // Track which tooltips are expanded
   const [expandedTooltips, setExpandedTooltips] = useState({});
