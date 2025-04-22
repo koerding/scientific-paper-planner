@@ -1,14 +1,36 @@
-// src/contexts/ChatContext.js
+// FILE: src/contexts/ChatContext.js
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
-import { storageService } from '../services/storageService';
+import { callOpenAI } from '../services/openaiService';
+import { buildSystemPrompt } from '../utils/promptUtils';
+
+// Try to load initial state from localStorage
+const getInitialState = () => {
+  try {
+    const savedChat = localStorage.getItem('paperPlannerChat');
+    if (savedChat) {
+      const parsedChat = JSON.parse(savedChat);
+      return {
+        messages: parsedChat || {},
+        currentMessage: '',
+        currentSectionId: 'question',
+        loading: false
+      };
+    }
+  } catch (error) {
+    console.warn('Error loading chat messages from localStorage:', error);
+  }
+  
+  // Default empty state
+  return {
+    messages: {},
+    currentMessage: '',
+    currentSectionId: 'question',
+    loading: false
+  };
+};
 
 // Initial state
-const initialState = {
-  messages: {}, // Organized by sectionId
-  currentMessage: '',
-  currentSectionId: 'question',
-  loading: false
-};
+const initialState = getInitialState();
 
 // Action types
 const ACTION_TYPES = {
@@ -112,17 +134,13 @@ const ChatContext = createContext();
 export function ChatProvider({ children }) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   
-  // Load messages from storage on mount
+  // Save chat messages to localStorage
   useEffect(() => {
-    const savedMessages = storageService.loadChatMessages();
-    if (savedMessages) {
-      dispatch({ type: ACTION_TYPES.IMPORT_MESSAGES, payload: savedMessages });
+    try {
+      localStorage.setItem('paperPlannerChat', JSON.stringify(state.messages));
+    } catch (error) {
+      console.warn('Error saving chat messages to localStorage:', error);
     }
-  }, []);
-  
-  // Save messages when they change
-  useEffect(() => {
-    storageService.saveChatMessages(state.messages);
   }, [state.messages]);
   
   // Listen for storage reset events
@@ -145,7 +163,7 @@ export function ChatProvider({ children }) {
       dispatch({ type: ACTION_TYPES.SET_CURRENT_SECTION, payload: sectionId });
     },
     
-    sendMessage: (content = null) => {
+    sendMessage: async (content = null, userInputs = {}, sectionContent = {}) => {
       const messageContent = content || state.currentMessage;
       if (!messageContent.trim() || !state.currentSectionId) return;
       
@@ -161,19 +179,62 @@ export function ChatProvider({ children }) {
       // Set loading state
       dispatch({ type: ACTION_TYPES.SET_LOADING, payload: true });
       
-      // This would normally call an API - we'll implement that later
-      // For now, just simulate a response after a delay
-      setTimeout(() => {
+      try {
+        // Find section data for context
+        const currentSectionObj = sectionContent.sections?.find(s => s.id === state.currentSectionId);
+        
+        // Get necessary context for the prompt
+        const sectionTitle = currentSectionObj?.title || 'section';
+        const instructionsText = currentSectionObj?.instructions?.text || '';
+        const feedbackText = currentSectionObj?.instructions?.feedback || '';
+        const userContent = userInputs[state.currentSectionId] || '';
+        
+        // Build system prompt
+        const systemPrompt = buildSystemPrompt('chat', {
+          sectionTitle,
+          instructionsText,
+          feedbackText,
+          userContent: userContent || "They haven't written anything substantial yet."
+        });
+        
+        // Get chat history
+        const historyForApi = state.messages[state.currentSectionId] || [];
+        
+        // Call the OpenAI API
+        const response = await callOpenAI(
+          messageContent,
+          state.currentSectionId,
+          userInputs,
+          sectionContent.sections || [],
+          { temperature: 0.9 },
+          historyForApi,
+          systemPrompt,
+          false
+        );
+        
+        // Add AI response
         dispatch({
           type: ACTION_TYPES.ADD_AI_MESSAGE,
           payload: {
             sectionId: state.currentSectionId,
-            content: `This is a placeholder response to: "${messageContent}"`
+            content: response
           }
         });
+      } catch (error) {
+        console.error('Error sending chat message:', error);
         
+        // Add error message from AI
+        dispatch({
+          type: ACTION_TYPES.ADD_AI_MESSAGE,
+          payload: {
+            sectionId: state.currentSectionId,
+            content: "I'm sorry, I encountered an error. Could you please try again or rephrase your question?"
+          }
+        });
+      } finally {
+        // Clear loading state
         dispatch({ type: ACTION_TYPES.SET_LOADING, payload: false });
-      }, 1000);
+      }
     },
     
     clearMessages: (sectionId) => {
