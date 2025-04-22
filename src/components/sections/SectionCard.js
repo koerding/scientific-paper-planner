@@ -1,12 +1,16 @@
-// src/components/sections/SectionCard.js
-import React, { useEffect } from 'react';
-import { useSectionState } from '../../hooks/useSectionState';
+// FILE: src/components/sections/SectionCard.js
+import React from 'react';
+import useSectionState from '../../hooks/useSectionState';
 import { isPlaceholderContent } from '../../utils/sectionUtils';
 import SectionHeader from './SectionHeader';
 import SectionPreview from './SectionPreview';
 import SectionEditor from './SectionEditor';
 import FeedbackButton from './FeedbackButton';
 
+/**
+ * Section card component for displaying and editing a section
+ * Refactored to use smaller components for better maintainability
+ */
 const SectionCard = ({
   section,
   isCurrentSection,
