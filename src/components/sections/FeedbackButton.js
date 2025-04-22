@@ -1,4 +1,5 @@
-// components/sections/FeedbackButton.js
+// FILE: src/components/sections/FeedbackButton.js
+import React from 'react';
 import { getFeedbackButtonColor, getFeedbackLabel } from '../../utils/sectionUtils';
 
 const FeedbackButton = ({ 
@@ -50,3 +51,5 @@ const FeedbackButton = ({
     </div>
   );
 };
+
+export default FeedbackButton;
