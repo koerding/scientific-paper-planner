@@ -3,6 +3,7 @@
 /**
  * Hook for managing project actions like save, load, export
  * UPDATED: Uses the new resetService for consistent reset functionality
+ * UPDATED: Enhanced to handle detected toggles from document import
  */
 import { useState, useCallback } from 'react';
 import { resetAllState, resetPartialState } from '../services/resetService';
@@ -106,11 +107,18 @@ export const useProjectActions = (userInputs, setUserInputs, chatMessages, setCh
       // Update chat messages state
       setChatMessages(mergedChat);
       
+      // Extract toggle settings from the data if available
+      const detectedApproach = data.detectedToggles?.approach || null;
+      const detectedDataMethod = data.detectedToggles?.dataMethod || null;
+      
       // Dispatch an event to notify components that project data was loaded
       window.dispatchEvent(new CustomEvent('projectDataLoaded', {
         detail: { 
           timestamp: Date.now(),
-          hasUserContent: Object.values(mergedInputs).some(val => val && val.trim() !== '')
+          hasUserContent: Object.values(mergedInputs).some(val => val && val.trim() !== ''),
+          // Include detected toggles if they exist
+          detectedApproach,
+          detectedDataMethod
         }
       }));
       
