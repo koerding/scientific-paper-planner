@@ -1,5 +1,4 @@
-// FILE: src/components/layout/LeftPanel.js
-
+// src/components/layout/LeftPanel.js
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '../sections/HeaderCard';
 import SectionCard from '../sections/SectionCard';
@@ -17,10 +16,6 @@ import {
   isProModeEnabled
 } from '../../services/progressionStateService';
 
-/**
- * Left panel component that manages rendering sections and toggles
- * UPDATED: Now implements progressive section unlocking based on feedback scores
- */
 const LeftPanel = ({ 
   activeSection,
   userInputs,
