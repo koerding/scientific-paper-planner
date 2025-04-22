@@ -1,4 +1,4 @@
-// FILE: src/components/sections/SectionPreview.js
+// src/components/sections/SectionPreview.js
 import React from 'react';
 import { getPreviewText } from '../../utils/sectionUtils';
 
