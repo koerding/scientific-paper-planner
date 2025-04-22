@@ -1,4 +1,6 @@
-// components/sections/SectionHeader.js
+// FILE: src/components/sections/SectionHeader.js
+import React from 'react';
+
 const SectionHeader = ({ 
   title, 
   isMinimized, 
@@ -71,3 +73,5 @@ const SectionHeader = ({
     </div>
   );
 };
+
+export default SectionHeader;
