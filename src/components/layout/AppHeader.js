@@ -1,11 +1,13 @@
 // FILE: src/components/layout/AppHeader.js
-// Updated with teal-colored review button to match the modal's color scheme
+// Updated with Pro Mode toggle button and improved button styling
 
 import React, { useState } from 'react';
+import ProModeToggle from '../toggles/ProModeToggle';
 
 /**
  * Compact header component with reduced height
  * CHANGES:
+ * - Added Pro Mode toggle for progressive section unlocking
  * - Changed title from "Paper" to "Project"
  * - Fixed Help button to properly show splash screen
  * - Added loading state animation for all buttons when any is active
@@ -208,6 +210,9 @@ const AppHeader = ({
               Export
             </button>
 
+            {/* NEW: Pro Mode toggle */}
+            <ProModeToggle />
+            
             {/* Review Papers button - UPDATED to use teal color to match modal */}
             <button
               onClick={onOpenReviewModal}
