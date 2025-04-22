@@ -1,52 +1,23 @@
-// FILE: src/services/resetService.js
+// src/services/resetService.js
+
+import { storageService } from './storageService';
 
 /**
- * Centralized reset service to ensure consistent state reset across the application
- * This service handles clearing all user data and returning to initial state
- * UPDATED: Now also resets section progression state
+ * Complete reset service to ensure consistent state reset across the application
  */
 
-import { clearStorage } from './storageService';
-import { resetSectionStates } from './sectionStateService';
-import { resetProgressionState } from './progressionStateService';
-import sectionContent from '../data/sectionContent.json';
-
 /**
- * Fully resets the application state to default values
- * This is called when the user starts a new project
- * @returns {Object} Initial values for the application state
+ * Reset all application state to default values
+ * This is a centralized function that should be used for "New Project" functionality
+ * @returns {boolean} Success flag
  */
 export const resetAllState = () => {
   console.log("[resetService] Performing full application reset");
   
-  // 1. Clear localStorage completely
-  clearStorage();
+  // Clear all localStorage data through the storage service
+  storageService.clearAll();
   
-  // 2. Clear feedback data specifically (in case clearStorage misses it)
-  localStorage.removeItem('savedSectionFeedback');
-  
-  // 3. Reset section minimization states
-  resetSectionStates();
-  
-  // 4. Reset section progression state (unlocked sections)
-  resetProgressionState();
-  
-  // 5. Create fresh default values with placeholders for all sections
-  const freshInputs = {};
-  const freshChatMessages = {};
-  
-  if (sectionContent && Array.isArray(sectionContent.sections)) {
-    sectionContent.sections.forEach(section => {
-      if (section && section.id) {
-        // Use placeholder as initial content
-        freshInputs[section.id] = section.placeholder || '';
-        // Initialize empty chat for each section
-        freshChatMessages[section.id] = [];
-      }
-    });
-  }
-  
-  // 6. Dispatch a global event to notify components that need to reset
+  // Dispatch a global reset event that components can listen for
   window.dispatchEvent(new CustomEvent('projectStateReset', {
     detail: { 
       timestamp: Date.now(),
@@ -54,85 +25,60 @@ export const resetAllState = () => {
     }
   }));
   
-  // Return initial state values for components to use
-  return {
-    userInputs: freshInputs,
-    chatMessages: freshChatMessages,
-    currentSection: sectionContent.sections[0].id,
-    currentIndex: 0
-  };
+  return true;
 };
 
 /**
- * Resets only specific parts of state
+ * Performs a partial reset of specific state slices
  * @param {Object} options - Options specifying what to reset
- * @returns {Object} - Reset values for the specified state components
+ * @returns {boolean} - Success flag
  */
 export const resetPartialState = (options = {}) => {
   const { 
-    resetUserInputs = false,
-    resetChatMessages = false,
+    resetContent = false,
+    resetSectionStates = false,
     resetFeedback = false,
-    resetSectionMinimization = false,
-    resetSectionProgression = false
+    resetChat = false
   } = options;
   
   console.log(`[resetService] Performing partial reset with options:`, options);
   
-  const result = {};
-  
-  // Reset user inputs if requested
-  if (resetUserInputs) {
-    const freshInputs = {};
-    if (sectionContent && Array.isArray(sectionContent.sections)) {
-      sectionContent.sections.forEach(section => {
-        if (section && section.id) {
-          freshInputs[section.id] = section.placeholder || '';
-        }
-      });
-    }
-    result.userInputs = freshInputs;
-    localStorage.removeItem('paperPlannerData');
+  // Clear specific localStorage items based on options
+  if (resetContent) {
+    storageService.clearData('PROJECT_DATA');
   }
   
-  // Reset chat messages if requested
-  if (resetChatMessages) {
-    const freshChatMessages = {};
-    if (sectionContent && Array.isArray(sectionContent.sections)) {
-      sectionContent.sections.forEach(section => {
-        if (section && section.id) {
-          freshChatMessages[section.id] = [];
-        }
-      });
-    }
-    result.chatMessages = freshChatMessages;
-    localStorage.removeItem('paperPlannerChat');
+  if (resetSectionStates) {
+    storageService.clearData('SECTION_STATES');
   }
   
-  // Reset feedback if requested
   if (resetFeedback) {
-    localStorage.removeItem('savedSectionFeedback');
+    storageService.clearData('FEEDBACK_DATA');
   }
   
-  // Reset section minimization if requested
-  if (resetSectionMinimization) {
-    resetSectionStates();
+  if (resetChat) {
+    storageService.clearData('CHAT_MESSAGES');
   }
   
-  // Reset section progression if requested
-  if (resetSectionProgression) {
-    resetProgressionState();
-  }
+  // Dispatch an event for the partial reset
+  window.dispatchEvent(new CustomEvent('partialStateReset', {
+    detail: { 
+      timestamp: Date.now(),
+      resetContent,
+      resetSectionStates,
+      resetFeedback,
+      resetChat
+    }
+  }));
   
-  // Dispatch an event if any reset was performed
-  if (Object.keys(result).length > 0 || resetFeedback || resetSectionMinimization || resetSectionProgression) {
-    window.dispatchEvent(new CustomEvent('partialStateReset', {
-      detail: { 
-        timestamp: Date.now(),
-        resetOptions: options
-      }
-    }));
-  }
-  
-  return result;
+  return true;
+};
+
+/**
+ * Reset all state and reload the page - a nuclear option
+ * @returns {void}
+ */
+export const hardReset = () => {
+  resetAllState();
+  window.location.reload();
 };
