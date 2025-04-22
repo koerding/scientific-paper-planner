@@ -1,115 +1,125 @@
 // FILE: src/hooks/useSectionState.js
+
+/**
+ * Custom hook for managing section state (minimized, focused, etc.)
+ * Now listens for global section state change events
+ */
 import { useState, useEffect } from 'react';
 import { getSectionMinimizedState, setSectionMinimizedState } from '../services/sectionStateService';
 
 /**
- * Hook for managing section state (minimized, focus, hover, edit tracking)
- * FIXED: Improved tracking of edits after feedback
+ * Hook to manage state for a single section card
+ * @param {string} sectionId - The section ID
+ * @param {object} options - Additional options
+ * @returns {object} Section state and functions
  */
-export const useSectionState = (sectionId, initialState = {}) => {
+const useSectionState = (sectionId, options = {}) => {
+  // Get the last feedback time from options (for editedSinceFeedback tracking)
+  const { lastFeedbackTime = 0 } = options;
+  
+  // State for this section
   const [isMinimized, setIsMinimized] = useState(() => getSectionMinimizedState(sectionId));
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [lastEditTimestamp, setLastEditTimestamp] = useState(null);
+  const [lastEditTimestamp, setLastEditTimestamp] = useState(0);
   const [editedSinceFeedback, setEditedSinceFeedback] = useState(false);
-  const [significantChange, setSignificantChange] = useState(false);
   
-  // Effect to update editedSinceFeedback when lastEditTimestamp or lastFeedbackTime changes
+  // Effect to listen for global section state changes
   useEffect(() => {
-    if (lastEditTimestamp && initialState.lastFeedbackTime && 
-        lastEditTimestamp > initialState.lastFeedbackTime) {
-      setEditedSinceFeedback(true);
-    } else if (!lastEditTimestamp || !initialState.lastFeedbackTime) {
-      setEditedSinceFeedback(false);
-    }
-  }, [lastEditTimestamp, initialState.lastFeedbackTime]);
-  
-  // Reset logic for section state on global events
-  useEffect(() => {
-    const handleProjectReset = () => {
-      console.log(`[useSectionState] Resetting state for section ${sectionId}`);
-      setLastEditTimestamp(null);
-      setSignificantChange(false);
-      setEditedSinceFeedback(false);
-    };
-    
-    // Handle document imports by expanding the section
-    const handleExpandAfterImport = (event) => {
-      if (event.detail?.expandAllSections) {
-        console.log(`[useSectionState] Expanding section ${sectionId} after import`);
+    const handleSectionStatesChanged = (event) => {
+      const detail = event.detail || {};
+      
+      // If all sections were expanded (e.g., from document import)
+      if (detail.allSectionsExpanded) {
         setIsMinimized(false);
-        setSectionMinimizedState(sectionId, false);
+        console.log(`[useSectionState] ${sectionId} expanded due to allSectionsExpanded event`);
+      }
+      
+      // If this specific section was changed
+      else if (detail.sectionId === sectionId) {
+        setIsMinimized(detail.isMinimized);
+        console.log(`[useSectionState] ${sectionId} state updated to ${detail.isMinimized ? 'minimized' : 'expanded'}`);
+      }
+      
+      // If all section states were reset
+      else if (detail.reset || detail.allSectionsReset) {
+        // Default to minimized, except for the question section
+        const defaultState = sectionId !== 'question';
+        setIsMinimized(defaultState);
+        console.log(`[useSectionState] ${sectionId} reset to ${defaultState ? 'minimized' : 'expanded'}`);
       }
     };
     
-    // Add event listeners for reset events
-    window.addEventListener('projectStateReset', handleProjectReset);
-    window.addEventListener('projectDataLoaded', handleProjectReset);
-    window.addEventListener('documentImported', handleExpandAfterImport);
-    
-    return () => {
-      window.removeEventListener('projectStateReset', handleProjectReset);
-      window.removeEventListener('projectDataLoaded', handleProjectReset);
-      window.removeEventListener('documentImported', handleExpandAfterImport);
-    };
-  }, [sectionId]);
-
-  // Listen for changes in the section's minimized state from other components
-  useEffect(() => {
-    const handleSectionStatesChanged = (e) => {
-      // If this is a specific section event and it matches this section
-      if (e?.detail?.sectionId === sectionId) {
-        setIsMinimized(e.detail.isMinimized);
-      } 
-      // Handle global expand/collapse events
-      else if (e?.detail?.allSectionsExpanded || e?.detail?.source === 'documentImport') {
-        setIsMinimized(false);
-      }
-      // Otherwise check if it's a global change
-      else {
-        // Check if state has changed and update if needed
-        const newState = getSectionMinimizedState(sectionId);
-        if (newState !== isMinimized) {
-          setIsMinimized(newState);
-        }
-      }
-    };
-    
+    // Listen for section state change events
     window.addEventListener('sectionStatesChanged', handleSectionStatesChanged);
     
+    // Clean up
     return () => {
       window.removeEventListener('sectionStatesChanged', handleSectionStatesChanged);
     };
-  }, [sectionId, isMinimized]);
+  }, [sectionId]);
   
-  // Effect to reset editedSinceFeedback when new feedback comes in
+  // Effect to update editedSinceFeedback when appropriate
   useEffect(() => {
-    if (initialState.lastFeedbackTime && initialState.lastFeedbackTime > lastEditTimestamp) {
+    if (lastEditTimestamp && lastFeedbackTime && lastEditTimestamp > lastFeedbackTime) {
+      setEditedSinceFeedback(true);
+    } else if (!lastEditTimestamp || !lastFeedbackTime) {
       setEditedSinceFeedback(false);
     }
-  }, [initialState.lastFeedbackTime, lastEditTimestamp]);
+  }, [lastEditTimestamp, lastFeedbackTime]);
+  
+  // Reset editedSinceFeedback when new feedback is received
+  useEffect(() => {
+    if (lastFeedbackTime) {
+      setEditedSinceFeedback(false);
+    }
+  }, [lastFeedbackTime]);
+  
+  // Effect to listen for document import events specifically
+  useEffect(() => {
+    const handleDocumentImported = (event) => {
+      if (event.detail?.expandAllSections) {
+        // Ensure the section is expanded (not minimized)
+        setIsMinimized(false);
+        console.log(`[useSectionState] ${sectionId} expanded due to document import`);
+      }
+    };
+    
+    window.addEventListener('documentImported', handleDocumentImported);
+    
+    return () => {
+      window.removeEventListener('documentImported', handleDocumentImported);
+    };
+  }, [sectionId]);
   
   // Toggle minimized state
   const toggleMinimized = (e) => {
-    if (e) e.stopPropagation();
+    if (e) {
+      e.stopPropagation();
+    }
+    
     const newState = !isMinimized;
+    
+    // Update local state
     setIsMinimized(newState);
+    
+    // Update in localStorage via service
     setSectionMinimizedState(sectionId, newState);
+    
+    return newState;
   };
   
   return {
-    isMinimized, 
+    isMinimized,
     setIsMinimized,
-    isFocused, 
+    isFocused,
     setIsFocused,
-    isHovered, 
+    isHovered,
     setIsHovered,
-    lastEditTimestamp, 
+    lastEditTimestamp,
     setLastEditTimestamp,
-    editedSinceFeedback, 
+    editedSinceFeedback,
     setEditedSinceFeedback,
-    significantChange,
-    setSignificantChange,
     toggleMinimized
   };
 };
