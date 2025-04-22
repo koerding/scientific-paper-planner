@@ -6,10 +6,6 @@ import SectionPreview from './SectionPreview';
 import SectionEditor from './SectionEditor';
 import FeedbackButton from './FeedbackButton';
 
-/**
- * Section card component for displaying and editing a section
- * Refactored to use the new context architecture
- */
 const SectionCard = ({ section, isCurrentSection }) => {
   // Use our custom hook to get all data and functionality
   const {
@@ -25,8 +21,7 @@ const SectionCard = ({ section, isCurrentSection }) => {
     isEditing,
     setIsEditing,
     requestFeedback,
-    handleSignificantEdit,
-    lastFeedbackTime
+    handleSignificantEdit
   } = useProjectSection(section.id);
 
   // Handle text changes
