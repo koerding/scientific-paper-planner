@@ -1,8 +1,9 @@
-// src/hooks/useProjectSection.js
+// FILE: src/hooks/useProjectSection.js
 import { useState, useEffect } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { useSectionState } from '../contexts/SectionContext';
 import { useFeedback } from '../contexts/FeedbackContext';
+import { useUI } from '../contexts/UIContext';
 
 /**
  * Custom hook for working with individual project sections
@@ -12,19 +13,47 @@ import { useFeedback } from '../contexts/FeedbackContext';
  */
 export function useProjectSection(sectionId) {
   // Get data and actions from context providers
-  const { state: projectState, actions: projectActions } = useProject();
-  const sectionState = useSectionState();
-  const feedback = useFeedback();
+  const { 
+    sections, 
+    setSectionContent,
+    sectionContent
+  } = useProject();
+  
+  const {
+    isExpanded,
+    toggleSection,
+    expandSection,
+    collapseSection
+  } = useSectionState();
+  
+  const {
+    hasFeedback,
+    getFeedbackRating,
+    isEditedSinceFeedback,
+    feedback,
+    lastFeedbackTimes,
+    updateEditTimestamp,
+    setFeedback,
+    setLoading: setFeedbackLoading
+  } = useFeedback();
+  
+  const { 
+    loading,
+    setLoading,
+    clearLoading
+  } = useUI();
   
   // Local state
   const [isEditing, setIsEditing] = useState(false);
   
   // Get section content from project state
-  const content = projectState.sections[sectionId] || '';
+  const content = sections[sectionId] || '';
   
   // Get original section structure from sectionContent
-  const originalSection = projectState.sectionContent?.sections?.find(s => s.id === sectionId);
+  const originalSection = sectionContent?.sections?.find(s => s.id === sectionId);
   const placeholder = originalSection?.placeholder || '';
+  const maxLength = originalSection?.maxLength || 3000;
+  const inputPlaceholder = originalSection?.inputPlaceholder || 'Start writing...';
   
   // Check if section has been edited (not just placeholder)
   const hasBeenEdited = content !== '' && content !== placeholder;
@@ -32,19 +61,19 @@ export function useProjectSection(sectionId) {
   // Update edit timestamp when content changes
   useEffect(() => {
     if (hasBeenEdited) {
-      feedback.updateEditTimestamp(sectionId);
+      updateEditTimestamp(sectionId);
     }
-  }, [content, hasBeenEdited, sectionId, feedback]);
+  }, [content, hasBeenEdited, sectionId, updateEditTimestamp]);
   
   // Set the content for this section
   const setContent = (newContent) => {
-    projectActions.setSectionContent(sectionId, newContent);
+    setSectionContent(sectionId, newContent);
   };
   
   // Handle significant edit that should trigger edit timestamp update
   const handleSignificantEdit = () => {
     if (hasBeenEdited) {
-      feedback.updateEditTimestamp(sectionId);
+      updateEditTimestamp(sectionId, Date.now());
     }
   };
   
@@ -52,10 +81,12 @@ export function useProjectSection(sectionId) {
   const requestFeedback = async () => {
     if (!hasBeenEdited) return;
     
-    feedback.setLoading(true);
+    // Set loading state
+    setFeedbackLoading(true);
+    setLoading('improvement');
     
     try {
-      // This would normally call an API for feedback
+      // In a real implementation, this would call the OpenAI API
       // For now, just simulate with a timeout
       await new Promise(resolve => setTimeout(resolve, 1500));
       
@@ -72,13 +103,14 @@ export function useProjectSection(sectionId) {
         })) || []
       };
       
-      feedback.setFeedback(sectionId, mockFeedback);
+      setFeedback(sectionId, mockFeedback);
       return true;
     } catch (error) {
       console.error('Error getting feedback:', error);
       return false;
     } finally {
-      feedback.setLoading(false);
+      setFeedbackLoading(false);
+      clearLoading('improvement');
     }
   };
   
@@ -87,20 +119,25 @@ export function useProjectSection(sectionId) {
     content,
     setContent,
     placeholder,
+    maxLength,
+    inputPlaceholder,
     hasBeenEdited,
     
     // Section state
-    isExpanded: sectionState.isExpanded(sectionId),
-    toggleSection: () => sectionState.toggleSection(sectionId),
-    expandSection: () => sectionState.expandSection(sectionId),
-    collapseSection: () => sectionState.collapseSection(sectionId),
+    isExpanded: isExpanded(sectionId),
+    toggleSection: () => toggleSection(sectionId),
+    expandSection: () => expandSection(sectionId),
+    collapseSection: () => collapseSection(sectionId),
     
     // Feedback state
-    hasFeedback: feedback.hasFeedback(sectionId),
-    feedbackRating: feedback.getFeedbackRating(sectionId),
-    editedSinceFeedback: feedback.isEditedSinceFeedback(sectionId),
-    feedbackDetails: feedback.feedback[sectionId],
-    lastFeedbackTime: feedback.lastFeedbackTimes[sectionId],
+    hasFeedback: hasFeedback(sectionId),
+    feedbackRating: getFeedbackRating(sectionId),
+    editedSinceFeedback: isEditedSinceFeedback(sectionId),
+    feedbackData: feedback[sectionId],
+    lastFeedbackTime: lastFeedbackTimes[sectionId],
+    
+    // Loading state
+    loading: loading.improvement,
     
     // Actions
     requestFeedback,
