@@ -2,7 +2,6 @@
 
 import React from 'react';
 import HeaderCard from '../sections/HeaderCard';
-import SectionControls from '../controls/SectionControls';
 import SectionCard from '../sections/SectionCard';
 import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
 import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
@@ -15,6 +14,7 @@ import {
 
 /**
  * Left panel component that manages rendering sections and toggles
+ * UPDATED: Removed unused SectionControls component
  * UPDATED: Now passes last feedback times to track edits after feedback
  */
 const LeftPanel = ({ 
@@ -34,23 +34,8 @@ const LeftPanel = ({
   handleMagic,
   sectionsWithFeedback = [], // Array of section IDs with feedback
   feedbackRatings = {}, // Object mapping section IDs to ratings
-  lastFeedbackTimes = {} // NEW: Object mapping section IDs to last feedback timestamp
+  lastFeedbackTimes = {} // Object mapping section IDs to last feedback timestamp
 }) => {
-  // Helper to get all visible section IDs for the section controls
-  const getAllVisibleSectionIds = () => {
-    const visibleIds = [];
-    
-    if (Array.isArray(localSectionContent?.sections)) {
-      localSectionContent.sections.forEach(section => {
-        if (section?.id && shouldDisplaySection(section.id, activeApproach, activeDataMethod)) {
-          visibleIds.push(section.id);
-        }
-      });
-    }
-    
-    return visibleIds;
-  };
-  
   // Handle feedback request for a specific section
   const handleSectionFeedback = (sectionId) => {
     if (handleMagic && typeof handleMagic === 'function') {
@@ -95,7 +80,7 @@ const LeftPanel = ({
         onRequestFeedback={handleSectionFeedback}
         hasFeedback={hasFeedback}
         feedbackRating={feedbackRating}
-        lastFeedbackTime={lastFeedbackTime} // NEW: Pass last feedback time
+        lastFeedbackTime={lastFeedbackTime} // Pass last feedback time
         hasOnlyPlaceholder={hasOnlyPlaceholder}
       />
     );
@@ -125,14 +110,6 @@ const LeftPanel = ({
   return (
     <div className="w-half px-4 py-2" style={{ width: '50%' }}>
       <HeaderCard />
-      
-      {/* Section minimization controls */}
-      <SectionControls 
-        sectionIds={getAllVisibleSectionIds()} 
-        onStateChange={() => {
-          // Force a re-render
-        }}
-      />
       
       {/* Display Research Question first */}
       {questionSection && renderSection(questionSection)}
