@@ -4,6 +4,7 @@
  * Service for managing section minimization state
  * Provides functions to get, set, clear, and initialize section states
  * UPDATED: Enhanced event dispatching for better component coordination
+ * UPDATED: Added special handler for document imports to expand all sections
  */
 
 /**
@@ -83,6 +84,8 @@ export const clearAllSectionStates = (defaultMinimized = true) => {
  */
 export const initializeSectionStates = (defaultMinimized = true, sectionIds = []) => {
   try {
+    console.log(`[sectionStateService] Initializing section states with defaultMinimized=${defaultMinimized}`);
+    
     // If specific section IDs were provided, initialize only those
     if (sectionIds.length > 0) {
       sectionIds.forEach(id => {
@@ -93,12 +96,100 @@ export const initializeSectionStates = (defaultMinimized = true, sectionIds = []
     } else {
       // Otherwise, clear all existing states and set defaults
       clearAllSectionStates(defaultMinimized);
+      
+      // If we're expanding all sections (for PDF imports, etc.), we need to set each one explicitly
+      if (!defaultMinimized) {
+        // First find all stored section keys
+        const allSectionKeys = Object.keys(localStorage).filter(key => 
+          key.startsWith('section_minimized_')
+        );
+        
+        // Remove them all 
+        allSectionKeys.forEach(key => localStorage.removeItem(key));
+        
+        // For any section IDs we know about, set them to expanded (not minimized)
+        // We implement this by looking at localStorage keys that might contain section data
+        const possibleSectionKeys = Object.keys(localStorage).filter(key => 
+          key.includes('paperPlanner') || 
+          key.includes('section_') ||
+          key.includes('feedback')
+        );
+        
+        // Extract potential section IDs from these keys
+        const potentialIds = new Set();
+        possibleSectionKeys.forEach(key => {
+          // Try to parse JSON from values that might contain section IDs
+          try {
+            const value = localStorage.getItem(key);
+            if (value && (value.includes('"id"') || value.includes('"section_id"'))) {
+              const parsed = JSON.parse(value);
+              
+              // Handle various formats
+              if (parsed.sections) {
+                parsed.sections.forEach(section => {
+                  if (section && section.id) potentialIds.add(section.id);
+                });
+              }
+              
+              // Check for direct id property
+              if (parsed.id) potentialIds.add(parsed.id);
+              
+              // Check for array of objects with id
+              if (Array.isArray(parsed)) {
+                parsed.forEach(item => {
+                  if (item && item.id) potentialIds.add(item.id);
+                });
+              }
+            }
+          } catch (e) {
+            // Ignore parsing errors for this discovery process
+          }
+        });
+        
+        // Use our discovered IDs or fall back to some common ones
+        const idsToSet = potentialIds.size > 0 ? 
+          Array.from(potentialIds) : 
+          ['question', 'audience', 'hypothesis', 'needsresearch', 'exploratoryresearch',
+           'relatedpapers', 'experiment', 'existingdata', 'theorysimulation', 
+           'analysis', 'process', 'abstract'];
+        
+        // Set all sections to expanded state
+        idsToSet.forEach(id => {
+          localStorage.setItem(`section_minimized_${id}`, 'false');
+        });
+        
+        console.log(`[sectionStateService] Set ${idsToSet.length} sections to expanded state:`, idsToSet);
+      }
     }
     
-    // In either case, ensure Question section is expanded
-    if (!defaultMinimized) {
-      localStorage.setItem('section_minimized_question', 'false');
-    }
+    // Listen for document import events to expand all sections
+    const handleDocumentImported = (event) => {
+      if (event.detail?.expandAllSections) {
+        console.log('[sectionStateService] Document import detected, expanding all sections');
+        
+        // Find all section keys and set them to expanded
+        const allSectionKeys = Object.keys(localStorage).filter(key => 
+          key.startsWith('section_minimized_')
+        );
+        
+        allSectionKeys.forEach(key => {
+          const sectionId = key.replace('section_minimized_', '');
+          localStorage.setItem(key, 'false'); // false = not minimized = expanded
+        });
+        
+        // Dispatch an event to update the UI
+        window.dispatchEvent(new CustomEvent('sectionStatesChanged', {
+          detail: { 
+            allSectionsExpanded: true,
+            source: 'documentImport'
+          }
+        }));
+      }
+    };
+    
+    // Register the event listener once
+    window.removeEventListener('documentImported', handleDocumentImported);
+    window.addEventListener('documentImported', handleDocumentImported);
     
     // Dispatch an event to notify components of the change
     window.dispatchEvent(new CustomEvent('sectionStatesChanged', {
@@ -154,6 +245,14 @@ export const toggleAllSections = (minimize = true) => {
     console.error('Error toggling all sections:', error);
     return false;
   }
+};
+
+/**
+ * Expand all sections (convenience function)
+ * @returns {boolean} - Success flag
+ */
+export const expandAllSections = () => {
+  return toggleAllSections(false); // false = not minimized = expanded
 };
 
 /**
