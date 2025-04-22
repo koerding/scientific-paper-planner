@@ -1,11 +1,6 @@
-// FILE: src/components/sections/HeaderCard.js
-
+// src/components/sections/HeaderCard.js
 import React from 'react';
 
-/**
- * A non-selectable header card that provides orientation and instructions
- * to users at the top of the section list
- */
 const HeaderCard = () => {
   return (
     <div className="bg-white rounded-md border-2 border-gray-200 p-3 mb-4 shadow-sm">
