@@ -1,9 +1,6 @@
+// src/components/toggles/ResearchApproachToggle.js
 import React from 'react';
 
-/**
- * Toggle component for selecting research approach
- * FIXED: Ensured proper active state handling
- */
 const ResearchApproachToggle = ({ activeApproach, setActiveApproach }) => {
   // Helper to generate button classes
   const getButtonClasses = (approach) => `
