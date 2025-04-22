@@ -2,37 +2,16 @@
 
 /**
  * Document processor service for extracting text from various document formats
- * Provides a clean API for other services to use without duplicating code
+ * Refactored to use centralized CDNLoader for library loading
  */
+import { loadPdfJs, loadMammoth, loadDocumentLibraries } from '../utils/cdnLoader';
 
 /**
- * Loads the necessary PDF.js library
+ * Loads the necessary PDF.js library - using centralized CDNLoader
  * @returns {Promise} Resolves when library is loaded
  */
 export const loadPDFJS = async () => {
-  // Only load if it's not already loaded
-  if (window.pdfjsLib) return window.pdfjsLib;
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-    script.async = true;
-    script.onload = () => {
-      console.log("PDF.js loaded from CDN successfully");
-      if (window.pdfjsLib) {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        resolve(window.pdfjsLib);
-      } else {
-        reject(new Error("PDF.js loaded but pdfjsLib not found in window"));
-      }
-    };
-    script.onerror = () => {
-      console.error("Failed to load PDF.js from CDN");
-      reject(new Error("Failed to load PDF.js from CDN"));
-    };
-    document.body.appendChild(script);
-  });
+  return loadPdfJs();
 };
 
 /**
@@ -42,7 +21,9 @@ export const loadPDFJS = async () => {
  */
 export const extractTextFromPDF = async (pdfData) => {
   try {
-    if (!window.pdfjsLib) await loadPDFJS();
+    // Make sure PDF.js is loaded using our centralized loader
+    if (!window.pdfjsLib) await loadPdfJs();
+    
     const loadingTask = window.pdfjsLib.getDocument({data: pdfData});
     const pdf = await loadingTask.promise;
     let fullText = '';
@@ -88,6 +69,8 @@ export const extractTextFromDocument = async (file) => {
         if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
           console.log("Processing as PDF...");
           try {
+            // Ensure PDF.js is loaded
+            await loadPdfJs();
             const pdfText = await extractTextFromPDF(arrayBuffer);
             extractedText = `${extractedText}\n\n${pdfText}`;
             console.log("PDF text extracted. Length:", extractedText.length);
@@ -100,9 +83,16 @@ export const extractTextFromDocument = async (file) => {
         }
         // Handle DOCX files (if mammoth is available)
         else if ((file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                 file.name.toLowerCase().endsWith('.docx')) && typeof window.mammoth !== 'undefined') {
+                 file.name.toLowerCase().endsWith('.docx'))) {
           console.log("Processing as DOCX...");
           try {
+            // Load mammoth through our centralized loader
+            await loadMammoth();
+            
+            if (typeof window.mammoth === 'undefined') {
+              throw new Error("Mammoth library not available");
+            }
+            
             const result = await window.mammoth.extractRawText({ arrayBuffer: arrayBuffer });
             let docxText = result.value || '';
             if (docxText.length > 15000) { // Limit length
@@ -137,39 +127,12 @@ export const extractTextFromDocument = async (file) => {
   });
 };
 
-/**
- * Loads mammoth.js (DOCX parser) if not already loaded
- * @returns {Promise<void>} Resolves when library is loaded
- */
-export const loadMammoth = async () => {
-  if (window.mammoth) return window.mammoth;
-  
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.17/mammoth.browser.min.js';
-    script.async = true;
-    script.onload = () => {
-      console.log("Mammoth.js loaded from CDN successfully");
-      if (window.mammoth) {
-        resolve(window.mammoth);
-      } else {
-        reject(new Error("Mammoth.js loaded but not found in window"));
-      }
-    };
-    script.onerror = () => {
-      console.error("Failed to load Mammoth.js from CDN");
-      reject(new Error("Failed to load Mammoth.js from CDN"));
-    };
-    document.body.appendChild(script);
-  });
-};
-
-// Preload libraries when appropriate
+// Preload libraries when appropriate - using our centralized loaders
 if (typeof window !== 'undefined') {
   window.addEventListener('load', () => {
-    // Preload PDF.js in the background after page load
-    loadPDFJS().catch(error => {
-      console.warn("Preloading PDF.js failed:", error);
+    // Preload document libraries in the background after page load
+    loadDocumentLibraries().catch(error => {
+      console.warn("Preloading document libraries failed:", error);
     });
   });
 }
