@@ -2,6 +2,10 @@
 import React from 'react';
 import { getFeedbackButtonColor, getFeedbackLabel } from '../../utils/sectionUtils';
 
+/**
+ * Feedback button component for sections
+ * FIXED: Improved handling of "edited since feedback" state
+ */
 const FeedbackButton = ({ 
   loading, 
   hasEditedContent, 
@@ -10,8 +14,49 @@ const FeedbackButton = ({
   feedbackRating, 
   handleFeedbackRequest 
 }) => {
-  const buttonColorClass = getFeedbackButtonColor(hasEditedContent, loading, feedbackRating);
-  const buttonLabel = getFeedbackLabel(hasEditedContent, loading, hasFeedback, editedSinceFeedback, feedbackRating);
+  // Get proper button color based on state (including editedSinceFeedback)
+  const getButtonClass = () => {
+    if (!hasEditedContent) return 'bg-gray-400 text-white cursor-not-allowed';
+    if (loading) return 'bg-purple-300 text-white cursor-wait';
+    
+    // Special case: edited since feedback - use purple color regardless of rating
+    if (editedSinceFeedback) {
+      return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
+    }
+    
+    // Otherwise use standard rating-based colors
+    if (!feedbackRating) return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
+    
+    if (feedbackRating <= 3) return 'bg-red-500 text-white hover:bg-red-600';
+    if (feedbackRating <= 5) return 'bg-orange-500 text-white hover:bg-orange-600';
+    if (feedbackRating <= 7) return 'bg-yellow-500 text-white hover:bg-yellow-600';
+    if (feedbackRating <= 9) return 'bg-lime-500 text-white hover:bg-lime-600';
+    return 'bg-green-600 text-white hover:bg-green-700';
+  };
+  
+  // Get proper button label based on state
+  const getButtonLabel = () => {
+    if (!hasEditedContent) return "Add content first";
+    if (loading) return "Processing...";
+    
+    // Special case: if edited after feedback, show "Get new feedback"
+    if (editedSinceFeedback) {
+      return "Get new feedback";
+    }
+    
+    // If not rated yet
+    if (!hasFeedback || !feedbackRating) return "Ready for feedback";
+    
+    // Show rating with descriptive text for unedited sections with feedback
+    if (feedbackRating <= 3) return `Needs work (${feedbackRating}/10)`;
+    if (feedbackRating <= 5) return `Average (${feedbackRating}/10)`;
+    if (feedbackRating <= 7) return `Good (${feedbackRating}/10)`;
+    if (feedbackRating <= 9) return `Very good (${feedbackRating}/10)`;
+    return `Excellent (${feedbackRating}/10)`;
+  };
+  
+  const buttonColorClass = getButtonClass();
+  const buttonLabel = getButtonLabel();
   
   const tooltipText = hasEditedContent ? 
     (editedSinceFeedback ? "Content changed since last feedback" : "Get AI feedback on this section") : 
