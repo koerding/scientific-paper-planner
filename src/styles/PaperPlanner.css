@@ -1,15 +1,17 @@
 /* Core layout and section styles */
 .section-card {
   margin-bottom: 0.5rem !important;
-  transition: all 0.3s ease !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Improved smooth easing */
   border-color: #e5e7eb !important;
   position: relative;
   overflow: hidden;
+  will-change: max-height, opacity; /* Optimize for animations */
 }
 
 .section-card.minimized {
   max-height: 60px;
   background-color: #f9fafb;
+  cursor: pointer;
 }
 
 .section-card.minimized::after {
@@ -18,9 +20,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 5px;
-  background: linear-gradient(transparent, rgba(209, 213, 219, 0.3));
-  display: block;
+  height: 8px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(243,244,246,0.8));
 }
 
 .section-card.expanded {
@@ -44,19 +45,65 @@
 .section-card textarea:focus {
   box-shadow: none !important;
   border: none !important;
-}
-
-.section-card.expanded.current-active {
-  border-color: #3b82f6 !important;
-  background-color: #eff6ff !important;
-}
-
-.section-card textarea:focus {
   background-color: #ffffff !important;
+}
+
+.section-card.expanded.current-active,
+.section-card.minimized.current-active {
+  border-color: #3b82f6 !important;
+  background-color: #eff6ff !important; /* bg-blue-50 with !important to override other styles */
+}
+
+.section-card.current-active textarea {
+  background-color: #eff6ff !important; /* Same blue-50 background */
+}
+
+/* Improve hover state for active sections */
+.section-card.minimized.current-active:hover {
+  background-color: #dbeafe !important; /* blue-100 for hover effect */
+  border-left-color: #3b82f6 !important; /* border-blue-500 !important */
 }
 
 .border-2 {
   border-width: 2px !important;
+}
+
+/* Visual cue for minimized cards */
+.section-card.minimized .minimize-toggle-btn {
+  transform: rotate(180deg);
+}
+
+/* Fix the indicator border for minimized cards */
+.section-card.minimized:not(.current-active) {
+  border-color: #e5e7eb !important; 
+  border-left-width: 4px !important;
+  border-left-color: #9ca3af !important; /* Gray-400 left border indicator */
+}
+
+.section-card.minimized.current-active {
+  border-left-width: 4px !important;
+  border-left-color: #3b82f6 !important; /* Blue-500 left border for active */
+}
+
+/* Animation for minimization */
+@keyframes minimizeCard {
+  from {
+    max-height: 2000px;
+    opacity: 1;
+  }
+  to {
+    max-height: 60px;
+    opacity: 0.9;
+  }
+}
+
+@keyframes expandCard {
+  from {
+    max-height: 60px;
+  }
+  to {
+    max-height: 2000px;
+  }
 }
 
 /* Feedback status indicators */
@@ -86,32 +133,101 @@
 
 /* Feedback buttons */
 .feedback-button {
-  padding: 8px 16px;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  border-radius: 0.375rem;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
-.feedback-button-good {
-  background-color: #10B981;
+/* Default button - gray when content not edited */
+.feedback-button-placeholder {
+  background-color: #9ca3af;
+  color: white;
+  cursor: not-allowed;
+}
+
+/* Loading state */
+.feedback-button-loading {
+  background-color: #a78bfa;
+  color: white;
+  cursor: wait;
+}
+
+/* Default feedback button - purple */
+.feedback-button-default {
+  background-color: #7c3aed;
   color: white;
 }
 
-.feedback-button-fair {
-  background-color: #F59E0B;
+.feedback-button-default:hover {
+  background-color: #6d28d9;
+}
+
+/* Rating-based button colors */
+.feedback-button-1, .feedback-button-2, .feedback-button-3 {
+  background-color: #ef4444;
   color: white;
 }
 
-.feedback-button-poor {
-  background-color: #EF4444;
+.feedback-button-1:hover, .feedback-button-2:hover, .feedback-button-3:hover {
+  background-color: #dc2626;
+}
+
+.feedback-button-4, .feedback-button-5 {
+  background-color: #f97316;
   color: white;
 }
 
-.feedback-button-none {
-  background-color: #6366F1;
+.feedback-button-4:hover, .feedback-button-5:hover {
+  background-color: #ea580c;
+}
+
+.feedback-button-6, .feedback-button-7 {
+  background-color: #facc15;
   color: white;
+}
+
+.feedback-button-6:hover, .feedback-button-7:hover {
+  background-color: #eab308;
+}
+
+.feedback-button-8, .feedback-button-9 {
+  background-color: #84cc16;
+  color: white;
+}
+
+.feedback-button-8:hover, .feedback-button-9:hover {
+  background-color: #65a30d;
+}
+
+.feedback-button-10 {
+  background-color: #22c55e;
+  color: white;
+}
+
+.feedback-button-10:hover {
+  background-color: #16a34a;
+}
+
+/* UPDATED: Button styling for section cards with completed status */
+.section-card .feedback-button-10,
+.section-card .feedback-button-9,
+.section-card .feedback-button-8 {
+  background-color: #059669 !important; /* Tailwind green-600 */
+  color: white;
+}
+
+.section-card .feedback-button-10:hover,
+.section-card .feedback-button-9:hover,
+.section-card .feedback-button-8:hover {
+  background-color: #047857 !important; /* Tailwind green-700 */
 }
 
 /* Research approach and data toggles */
@@ -235,7 +351,7 @@
 }
 
 .text-purple-700 {
-  color: #6D28D9;
+  color: #6D28D9 !important;
 }
 
 .prose-sm a, 
@@ -255,6 +371,89 @@
 
 .prose-sm pre code {
   color: #5b21b6;
+}
+
+/* Green text styles for completed items */
+.text-green-600 {
+  color: #059669 !important; /* Tailwind's green-600 color */
+  font-weight: 500; /* Slightly bolder */
+}
+
+/* Override text color in the instructions panel when marked complete */
+.instructions-content .text-green-600 {
+  color: #059669 !important;
+}
+
+/* Ensure completed items don't get the opacity reduction */
+.mb-5.opacity-90 {
+  opacity: 1 !important; /* Override opacity to keep all items fully visible */
+}
+
+/* Minimized card rating indicator */
+.rating-indicator {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  margin-left: 0.25rem;
+}
+
+/* Rating indicator colors */
+.rating-indicator-1, .rating-indicator-2, .rating-indicator-3 {
+  background-color: #ef4444;
+}
+
+.rating-indicator-4, .rating-indicator-5 {
+  background-color: #f97316;
+}
+
+.rating-indicator-6, .rating-indicator-7 {
+  background-color: #facc15;
+}
+
+.rating-indicator-8, .rating-indicator-9 {
+  background-color: #84cc16;
+}
+
+.rating-indicator-10 {
+  background-color: #059669; /* Changed to match our green-600 color */
+}
+
+/* Rating gradient color stops */
+.rating-gradient-1, .rating-gradient-2 {
+  background: linear-gradient(to right, #ef4444, #f87171);
+}
+
+.rating-gradient-3 {
+  background: linear-gradient(to right, #f87171, #fb923c);
+}
+
+.rating-gradient-4 {
+  background: linear-gradient(to right, #fb923c, #fdba74);
+}
+
+.rating-gradient-5 {
+  background: linear-gradient(to right, #fdba74, #fcd34d);
+}
+
+.rating-gradient-6 {
+  background: linear-gradient(to right, #fcd34d, #d9f99d);
+}
+
+.rating-gradient-7 {
+  background: linear-gradient(to right, #d9f99d, #a3e635);
+}
+
+.rating-gradient-8 {
+  background: linear-gradient(to right, #a3e635, #84cc16);
+}
+
+.rating-gradient-9 {
+  background: linear-gradient(to right, #84cc16, #65a30d);
+}
+
+.rating-gradient-10 {
+  background: linear-gradient(to right, #65a30d, #22c55e);
 }
 
 /* Responsive styles */
@@ -436,381 +635,4 @@ header.bg-white.shadow-sm .container {
 
 body, html {
   overflow-x: hidden;
-}
-/* Add these new styles to PaperPlanner.css to support card minimization */
-
-/* Core minimization styles */
-.section-card {
-  margin-bottom: 0.5rem !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Improved smooth easing */
-  border-color: #e5e7eb !important;
-  position: relative;
-  overflow: hidden;
-  will-change: max-height, opacity; /* Optimize for animations */
-}
-
-.section-card.minimized {
-  max-height: 60px;
-  background-color: #f9fafb;
-}
-
-.section-card.minimized::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background: linear-gradient(transparent, rgba(209, 213, 219, 0.3));
-  display: block;
-}
-
-.section-card.expanded {
-  max-height: 2000px; /* Large value to accommodate any content size */
-  background-color: #ffffff;
-}
-
-.section-card.minimized:hover {
-  background-color: #f3f4f6;
-  border-color: #d1d5db !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-}
-
-/* Add these new styles to PaperPlanner.css to support card minimization */
-
-/* Core minimization styles */
-.section-card {
-  margin-bottom: 0.5rem !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Improved smooth easing */
-  border-color: #e5e7eb !important;
-  position: relative;
-  overflow: hidden;
-  will-change: max-height, opacity; /* Optimize for animations */
-}
-
-.section-card.minimized {
-  max-height: 60px;
-  background-color: #f9fafb;
-}
-
-.section-card.minimized::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background: linear-gradient(transparent, rgba(209, 213, 219, 0.3));
-  display: block;
-}
-
-.section-card.expanded {
-  max-height: 2000px; /* Large value to accommodate any content size */
-  background-color: #ffffff;
-}
-
-.section-card.minimized:hover {
-  background-color: #f3f4f6;
-  border-color: #d1d5db !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-}
-
-/* Visual cue for minimized cards */
-.section-card.minimized .minimize-toggle-btn {
-  transform: rotate(180deg);
-}
-
-/* Animation for minimization */
-@keyframes minimizeCard {
-  from {
-    max-height: 2000px;
-    opacity: 1;
-  }
-  to {
-    max-height: 60px;
-    opacity: 0.9;
-  }
-}
-
-@keyframes expandCard {
-  from {
-    max-height: 60px;
-  }
-  to {
-    max-height: 2000px;
-  }
-}
-
-/* Added style to show a clearer border for minimized cards */
-.section-card.minimized:not(.current-active) {
-  border-color: #e5e7eb !important;
-  border-left-width: 4px !important;
-  border-left-color: #9ca3af !important; /* Gray-400 left border indicator */
-}
-
-/* Pointer cursor for minimized cards to indicate clickable */
-.section-card.minimized {
-  cursor: pointer;
-}
-
-/* Adjust fade gradient for minimized sections */
-.section-card.minimized::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 8px;
-  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(243,244,246,0.8));
-}
-/* Add these styles to PaperPlanner.css to fix the background color issue */
-
-/* Ensure active section highlighting always takes precedence */
-.section-card.expanded.current-active,
-.section-card.minimized.current-active {
-  background-color: #eff6ff !important; /* bg-blue-50 with !important to override other styles */
-  border-color: #3b82f6 !important; /* border-blue-500 !important */
-}
-
-/* Improve hover state for active sections */
-.section-card.minimized.current-active:hover {
-  background-color: #dbeafe !important; /* blue-100 for hover effect */
-  border-left-color: #3b82f6 !important; /* border-blue-500 !important */
-}
-
-/* Ensure textarea in active section keeps the blue background */
-.section-card.current-active textarea {
-  background-color: #eff6ff !important; /* Same blue-50 background */
-}
-
-/* Fix the indicator border for minimized cards to respect active styling */
-.section-card.minimized:not(.current-active) {
-  border-color: #e5e7eb !important; 
-  border-left-width: 4px !important;
-  border-left-color: #9ca3af !important; /* Gray-400 left border indicator */
-}
-
-.section-card.minimized.current-active {
-  border-left-width: 4px !important;
-  border-left-color: #3b82f6 !important; /* Blue-500 left border for active */
-}
-/* Add these styles to PaperPlanner.css */
-
-/* Rating gradient color stops */
-.rating-gradient-1 {
-  background: linear-gradient(to right, #ef4444, #f87171);
-}
-
-.rating-gradient-2 {
-  background: linear-gradient(to right, #ef4444, #f87171);
-}
-
-.rating-gradient-3 {
-  background: linear-gradient(to right, #f87171, #fb923c);
-}
-
-.rating-gradient-4 {
-  background: linear-gradient(to right, #fb923c, #fdba74);
-}
-
-.rating-gradient-5 {
-  background: linear-gradient(to right, #fdba74, #fcd34d);
-}
-
-.rating-gradient-6 {
-  background: linear-gradient(to right, #fcd34d, #d9f99d);
-}
-
-.rating-gradient-7 {
-  background: linear-gradient(to right, #d9f99d, #a3e635);
-}
-
-.rating-gradient-8 {
-  background: linear-gradient(to right, #a3e635, #84cc16);
-}
-
-.rating-gradient-9 {
-  background: linear-gradient(to right, #84cc16, #65a30d);
-}
-
-.rating-gradient-10 {
-  background: linear-gradient(to right, #65a30d, #22c55e);
-}
-
-/* Feedback button styles */
-.feedback-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.25rem;
-  border-radius: 0.375rem;
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-/* Default button - gray when content not edited */
-.feedback-button-placeholder {
-  background-color: #9ca3af;
-  color: white;
-  cursor: not-allowed;
-}
-
-/* Loading state */
-.feedback-button-loading {
-  background-color: #a78bfa;
-  color: white;
-  cursor: wait;
-}
-
-/* Default feedback button - purple */
-.feedback-button-default {
-  background-color: #7c3aed;
-  color: white;
-}
-
-.feedback-button-default:hover {
-  background-color: #6d28d9;
-}
-
-/* Rating-based button colors */
-.feedback-button-1, .feedback-button-2, .feedback-button-3 {
-  background-color: #ef4444;
-  color: white;
-}
-
-.feedback-button-1:hover, .feedback-button-2:hover, .feedback-button-3:hover {
-  background-color: #dc2626;
-}
-
-.feedback-button-4, .feedback-button-5 {
-  background-color: #f97316;
-  color: white;
-}
-
-.feedback-button-4:hover, .feedback-button-5:hover {
-  background-color: #ea580c;
-}
-
-.feedback-button-6, .feedback-button-7 {
-  background-color: #facc15;
-  color: white;
-}
-
-.feedback-button-6:hover, .feedback-button-7:hover {
-  background-color: #eab308;
-}
-
-.feedback-button-8, .feedback-button-9 {
-  background-color: #84cc16;
-  color: white;
-}
-
-.feedback-button-8:hover, .feedback-button-9:hover {
-  background-color: #65a30d;
-}
-
-.feedback-button-10 {
-  background-color: #22c55e;
-  color: white;
-}
-
-.feedback-button-10:hover {
-  background-color: #16a34a;
-}
-
-/* Minimized card rating indicator */
-.rating-indicator {
-  display: inline-block;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 9999px;
-  margin-left: 0.25rem;
-}
-
-.rating-indicator-1, .rating-indicator-2, .rating-indicator-3 {
-  background-color: #ef4444;
-}
-
-.rating-indicator-4, .rating-indicator-5 {
-  background-color: #f97316;
-}
-
-.rating-indicator-6, .rating-indicator-7 {
-  background-color: #facc15;
-}
-
-.rating-indicator-8, .rating-indicator-9 {
-  background-color: #84cc16;
-}
-
-.rating-indicator-10 {
-  background-color: #22c55e;
-}
-/* Add these styles to PaperPlanner.css or replace existing styles */
-
-/* Remove strikethrough styles */
-.line-through {
-  /* Remove strikethrough styles but keep for backward compatibility */
-  color: #059669 !important; /* Green-600 */
-  text-decoration: none !important; /* Explicitly remove strikethrough */
-}
-
-/* Green text styles for completed items */
-.text-green-600 {
-  color: #059669 !important; /* Tailwind's green-600 color */
-  font-weight: 500; /* Slightly bolder */
-}
-
-/* Override text color in the instructions panel when marked complete */
-.instructions-content .text-green-600 {
-  color: #059669 !important;
-}
-
-/* Make sure purple text for AI feedback stands out properly */
-.text-purple-700 {
-  color: #6D28D9 !important;
-}
-
-/* Ensure completed items don't get the opacity reduction */
-.mb-5.opacity-90 {
-  opacity: 1 !important; /* Override opacity to keep all items fully visible */
-}
-
-/* Updated styling for the rating indicator */
-.rating-indicator-1, .rating-indicator-2, .rating-indicator-3 {
-  background-color: #ef4444;
-}
-
-.rating-indicator-4, .rating-indicator-5 {
-  background-color: #f97316;
-}
-
-.rating-indicator-6, .rating-indicator-7 {
-  background-color: #facc15;
-}
-
-.rating-indicator-8, .rating-indicator-9 {
-  background-color: #84cc16;
-}
-
-.rating-indicator-10 {
-  background-color: #059669; /* Changed to match our green-600 color */
-}
-
-/* UPDATED: Button styling for section cards with completed status */
-.section-card .feedback-button-10,
-.section-card .feedback-button-9,
-.section-card .feedback-button-8 {
-  background-color: #059669 !important; /* Tailwind green-600 */
-  color: white;
-}
-
-.section-card .feedback-button-10:hover,
-.section-card .feedback-button-9:hover,
-.section-card .feedback-button-8:hover {
-  background-color: #047857 !important; /* Tailwind green-700 */
 }
