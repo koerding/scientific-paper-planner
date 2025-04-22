@@ -33,8 +33,8 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
         console.warn("[handleDocumentImport] resetAllProjectState function not provided");
       }
       
-      // Turn on Pro Mode for imports
-      // This ensures all sections are visible when importing a document
+      // Turn on Pro Mode for imports - this is all we need to show all sections
+      // Pro Mode overrides the progression system entirely
       setProModeEnabled(true);
       console.log("[handleDocumentImport] Enabled Pro Mode for document import");
       
