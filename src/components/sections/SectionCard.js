@@ -7,7 +7,7 @@ import { getSectionMinimizedState, setSectionMinimizedState } from '../../servic
  * Enhanced section card component with rating-based feedback
  * - Added edit-after-feedback tracking to update button label
  * - Uses green text for completed items instead of strikethrough
- * - UPDATED: Now listens for global reset events
+ * - UPDATED: Now listens for documentImported events to ensure all sections are expanded
  */
 const SectionCard = ({
   section,
@@ -81,6 +81,9 @@ const SectionCard = ({
       setLastEditTimestamp(null);
       setSignificantChange(false);
       setEditedSinceFeedback(false);
+      
+      // Ensure this section is expanded after document import
+      setSectionMinimizedState(section.id, false);
     };
     
     // Listen for various events that should trigger a reset
@@ -114,6 +117,10 @@ const SectionCard = ({
       if (e?.detail?.sectionId === section.id) {
         setIsMinimized(e.detail.isMinimized);
       } 
+      // Special case for document import - ensure this section is expanded
+      else if (e?.detail?.allSectionsExpanded || e?.detail?.source === 'documentImport') {
+        setIsMinimized(false);
+      }
       // Otherwise check if it's a global change
       else {
         // Check if state has changed and update if needed
@@ -131,6 +138,22 @@ const SectionCard = ({
       window.removeEventListener('sectionStatesChanged', handleSectionStatesChanged);
     };
   }, [section.id, isMinimized]);
+
+  // Also listen specifically for document imported events
+  useEffect(() => {
+    const handleDocumentImported = (e) => {
+      if (e?.detail?.expandAllSections) {
+        console.log(`[SectionCard ${section.id}] Document import detected, expanding section`);
+        setIsMinimized(false);
+      }
+    };
+    
+    window.addEventListener('documentImported', handleDocumentImported);
+    
+    return () => {
+      window.removeEventListener('documentImported', handleDocumentImported);
+    };
+  }, [section.id]);
 
   // Auto-resize textarea height - improved version
   const adjustTextareaHeight = () => {
