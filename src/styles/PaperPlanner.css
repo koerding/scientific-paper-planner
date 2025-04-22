@@ -636,3 +636,28 @@ header.bg-white.shadow-sm .container {
 body, html {
   overflow-x: hidden;
 }
+/* Info icon styling */
+.info-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px; /* Doubled from 18px */
+  height: 36px; /* Doubled from 18px */
+  border-radius: 50%;
+  background-color: #EEF2FF;
+  color: #4F46E5;
+  font-size: 20px; /* Increased from 12px for better visibility */
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  margin: 0 4px; /* Doubled from 2px */
+  vertical-align: middle;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); /* Enhanced shadow */
+}
+
+.info-icon-button:hover {
+  background-color: #E0E7FF;
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
