@@ -4,6 +4,7 @@
  * Modified version with feedback tracking and edit-after-feedback detection
  * UPDATED: Now properly implements unified reset functionality 
  * UPDATED: Handles loading of examples and document imports correctly
+ * UPDATED: Fixed card focus after improvement - opens next card but doesn't focus
  */
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
@@ -289,7 +290,7 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // 2. Handles ratings extraction
   // 3. Updates tracking 
   // 4. Records last feedback time
-  // 5. Opens the next section
+  // 5. Opens the next section but DOESN'T focus on it
   const handleMagicClick = (sectionId = null) => {
     const targetSection = sectionId || activeSection;
     
@@ -334,22 +335,11 @@ const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
           if (nextSectionId) {
             console.log(`Opening next section: ${nextSectionId}`);
             
-            // Ensure the next section is expanded
+            // MODIFIED: Ensure the next section is expanded, but don't set it as active
+            // Don't call setActiveSectionWithManualFlag, just expand the section
             setSectionMinimizedState(nextSectionId, false);
             
-            // Set focus to the next section
-            setTimeout(() => {
-              // Set it as the active section
-              setActiveSectionWithManualFlag(nextSectionId);
-              
-              // Scroll to it
-              if (sectionRefs.current[nextSectionId]?.current) {
-                sectionRefs.current[nextSectionId].current.scrollIntoView({ 
-                  behavior: 'smooth',
-                  block: 'start'
-                });
-              }
-            }, 300); // Small delay to ensure the UI updates first
+            // REMOVED: No need to scroll to it or set focus since we're not making it active
           }
         }
       }
