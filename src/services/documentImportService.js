@@ -2,12 +2,12 @@
 
 /**
  * Document import service for PDF and Word documents
- * UPDATED: Now expands all sections after import
+ * UPDATED: Now ensures all sections are expanded after import
  */
 import { callOpenAI } from './openaiService';
 import { loadPDFJS, extractTextFromDocument } from './documentProcessor';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
-import { initializeSectionStates } from '../services/sectionStateService';
+import { initializeSectionStates } from './sectionStateService';
 import sectionContentData from '../data/sectionContent.json';
 
 /**
@@ -203,8 +203,17 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
     
     // IMPORTANT: Initialize all sections as expanded for examples from PDF
     // This ensures the user can see all the content immediately
-    initializeSectionStates(false); // false = expand all sections
-    console.log("Set all sections to expanded state for imported document");
+    console.log("Setting ALL sections to expanded state for imported document");
+    initializeSectionStates(false); // false = expand all sections (not minimized)
+    
+    // Also dispatch a custom event to notify components about the import
+    window.dispatchEvent(new CustomEvent('documentImported', {
+      detail: {
+        fileName: file.name,
+        timestamp: Date.now(),
+        expandAllSections: true // Flag indicating all sections should be expanded
+      }
+    }));
 
     console.log('Successfully processed paper structure');
     return result;
@@ -241,8 +250,18 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
     fallbackResult.userInputs.audience = `Target Audience/Community:\n1. Researchers in the field of ${formattedName}\n2. Policy makers\n3. Practitioners`;
     
     // Initialize all sections as expanded even for fallback data
+    console.log("Setting all sections to expanded state for fallback import");
     initializeSectionStates(false); // false = expand all sections
-    console.log("Set all sections to expanded state for fallback import");
+    
+    // Dispatch an event for the fallback case too
+    window.dispatchEvent(new CustomEvent('documentImported', {
+      detail: {
+        fileName: file.name,
+        timestamp: Date.now(),
+        expandAllSections: true,
+        isFallback: true
+      }
+    }));
     
     return fallbackResult;
   }
