@@ -1,15 +1,19 @@
-// FILE: src/services/storageService.js
+// src/services/storageService.js
+
+// Storage keys
+const STORAGE_KEYS = {
+  PROJECT_DATA: 'scientific-project-data',
+  SECTION_STATES: 'scientific-project-section-states',
+  CHAT_MESSAGES: 'scientific-project-chat',
+  FEEDBACK_DATA: 'scientific-project-feedback',
+  USER_PREFERENCES: 'scientific-project-preferences'
+};
 
 /**
- * Storage service for handling localStorage operations with safe fallbacks
- * Handles "Access to storage is not allowed from this context" errors
+ * Checks if localStorage is available and accessible
+ * @returns {boolean} Whether localStorage is available
  */
-
-/**
- * Safely checks if localStorage is available and accessible
- * @returns {boolean} - True if localStorage is available
- */
-export const isStorageAvailable = () => {
+const isStorageAvailable = () => {
   try {
     // Test if localStorage is available
     const testKey = '__storage_test__';
@@ -23,79 +27,162 @@ export const isStorageAvailable = () => {
 };
 
 /**
- * Safely saves data to localStorage with error handling
- * @param {Object} userInputs - User inputs to save
- * @param {Object} chatMessages - Chat messages to save
- * @returns {boolean} - Success indicator
+ * Storage service for managing localStorage operations
  */
-export const saveToStorage = (userInputs, chatMessages) => {
-  if (!isStorageAvailable()) {
-    console.warn('Skipping save due to unavailable local storage');
-    return false;
-  }
-
-  try {
-    localStorage.setItem('paperPlannerData', JSON.stringify(userInputs));
-    localStorage.setItem('paperPlannerChat', JSON.stringify(chatMessages || {}));
-    return true;
-  } catch (error) {
-    console.error('Error saving progress:', error);
-    return false;
-  }
-};
-
-/**
- * Safely loads data from localStorage with error handling
- * @returns {object} - An object containing loadedInputs and loadedChat
- */
-export const loadFromStorage = () => {
-  let loadedInputs = null;
-  let loadedChat = {}; // Default to empty object
-
-  if (!isStorageAvailable()) {
-    console.warn('Skipping load due to unavailable local storage');
-    return { loadedInputs, loadedChat };
-  }
-
-  try {
-    const savedInputsString = localStorage.getItem('paperPlannerData');
-    const savedChatString = localStorage.getItem('paperPlannerChat');
-
-    if (savedInputsString) {
-      loadedInputs = JSON.parse(savedInputsString);
+export const storageService = {
+  // Project data
+  saveProject: (data) => {
+    if (!isStorageAvailable()) return false;
+    try {
+      localStorage.setItem(STORAGE_KEYS.PROJECT_DATA, JSON.stringify(data));
+      return true;
+    } catch (error) {
+      console.error('Error saving project:', error);
+      return false;
     }
-
-    if (savedChatString) {
-      const parsedChat = JSON.parse(savedChatString);
-      if (typeof parsedChat === 'object' && parsedChat !== null) {
-          loadedChat = parsedChat;
-      }
+  },
+  
+  loadProject: () => {
+    if (!isStorageAvailable()) return null;
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.PROJECT_DATA);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Error loading project:', error);
+      return null;
     }
-  } catch (error) {
-    console.error('[storageService] Error loading progress from storage:', error);
-    loadedInputs = null;
-    loadedChat = {};
+  },
+  
+  // Section states (expansion/collapse)
+  saveSectionStates: (states) => {
+    if (!isStorageAvailable()) return false;
+    try {
+      localStorage.setItem(STORAGE_KEYS.SECTION_STATES, JSON.stringify(states));
+      return true;
+    } catch (error) {
+      console.error('Error saving section states:', error);
+      return false;
+    }
+  },
+  
+  loadSectionStates: () => {
+    if (!isStorageAvailable()) return null;
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.SECTION_STATES);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Error loading section states:', error);
+      return null;
+    }
+  },
+  
+  // Chat messages
+  saveChatMessages: (messages) => {
+    if (!isStorageAvailable()) return false;
+    try {
+      localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(messages));
+      return true;
+    } catch (error) {
+      console.error('Error saving chat messages:', error);
+      return false;
+    }
+  },
+  
+  loadChatMessages: () => {
+    if (!isStorageAvailable()) return null;
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.CHAT_MESSAGES);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Error loading chat messages:', error);
+      return null;
+    }
+  },
+  
+  // Feedback data
+  saveFeedbackData: (feedback) => {
+    if (!isStorageAvailable()) return false;
+    try {
+      localStorage.setItem(STORAGE_KEYS.FEEDBACK_DATA, JSON.stringify(feedback));
+      return true;
+    } catch (error) {
+      console.error('Error saving feedback data:', error);
+      return false;
+    }
+  },
+  
+  loadFeedbackData: () => {
+    if (!isStorageAvailable()) return null;
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.FEEDBACK_DATA);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Error loading feedback data:', error);
+      return null;
+    }
+  },
+  
+  // User preferences
+  saveUserPreferences: (preferences) => {
+    if (!isStorageAvailable()) return false;
+    try {
+      localStorage.setItem(STORAGE_KEYS.USER_PREFERENCES, JSON.stringify(preferences));
+      return true;
+    } catch (error) {
+      console.error('Error saving user preferences:', error);
+      return false;
+    }
+  },
+  
+  loadUserPreferences: () => {
+    if (!isStorageAvailable()) return null;
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.USER_PREFERENCES);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Error loading user preferences:', error);
+      return null;
+    }
+  },
+  
+  // Helper to check if specific data exists
+  hasData: (key) => {
+    if (!isStorageAvailable()) return false;
+    return !!localStorage.getItem(STORAGE_KEYS[key]);
+  },
+  
+  // Clear specific data
+  clearData: (key) => {
+    if (!isStorageAvailable()) return false;
+    try {
+      localStorage.removeItem(STORAGE_KEYS[key]);
+      return true;
+    } catch (error) {
+      console.error(`Error clearing ${key}:`, error);
+      return false;
+    }
+  },
+  
+  // Clear all app data
+  clearAll: () => {
+    if (!isStorageAvailable()) return false;
+    try {
+      Object.values(STORAGE_KEYS).forEach(key => {
+        localStorage.removeItem(key);
+      });
+      
+      // Dispatch an event to notify components of the reset
+      window.dispatchEvent(new CustomEvent('storageReset', {
+        detail: { timestamp: Date.now() }
+      }));
+      
+      return true;
+    } catch (error) {
+      console.error('Error clearing storage:', error);
+      return false;
+    }
   }
-
-  return { loadedInputs, loadedChat };
 };
 
-/**
- * Safely clears localStorage data with error handling
- * @returns {boolean} - Success indicator
- */
-export const clearStorage = () => {
-  if (!isStorageAvailable()) {
-    console.warn('Skipping clear due to unavailable local storage');
-    return false;
-  }
-
-  try {
-    localStorage.removeItem('paperPlannerData');
-    localStorage.removeItem('paperPlannerChat');
-    return true;
-  } catch (error) {
-    console.error('Error clearing storage:', error);
-    return false;
-  }
-};
+// Export the storage keys for direct access if needed
+export const KEYS = STORAGE_KEYS;
