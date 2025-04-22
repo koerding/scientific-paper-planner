@@ -2,10 +2,10 @@
 
 // Storage keys
 const STORAGE_KEYS = {
-  PROJECT_DATA: 'scientific-project-data',
-  SECTION_STATES: 'scientific-project-section-states',
-  CHAT_MESSAGES: 'scientific-project-chat',
-  FEEDBACK_DATA: 'scientific-project-feedback',
+  PROJECT_DATA: 'paperPlannerData',  // Key for existing project data
+  SECTION_STATES: 'section_states',   // Key for existing section states
+  CHAT_MESSAGES: 'paperPlannerChat',  // Key for existing chat messages
+  FEEDBACK_DATA: 'savedSectionFeedback', // Key for existing feedback
   USER_PREFERENCES: 'scientific-project-preferences'
 };
 
@@ -186,3 +186,48 @@ export const storageService = {
 
 // Export the storage keys for direct access if needed
 export const KEYS = STORAGE_KEYS;
+
+// ========== BACKWARD COMPATIBILITY FUNCTIONS ==========
+// These functions are provided for backward compatibility during migration
+// They should be removed once migration is complete
+
+/**
+ * Legacy function for loading from storage
+ * Maps to the new storageService functions
+ * @returns {Object} An object containing loadedInputs and loadedChat
+ */
+export const loadFromStorage = () => {
+  const loadedInputs = storageService.loadProject()?.sections || null;
+  const loadedChat = storageService.loadChatMessages() || {};
+  
+  return { loadedInputs, loadedChat };
+};
+
+/**
+ * Legacy function for saving to storage
+ * Maps to the new storageService functions
+ * @param {Object} userInputs - User inputs to save
+ * @param {Object} chatMessages - Chat messages to save
+ * @returns {boolean} Success indicator
+ */
+export const saveToStorage = (userInputs, chatMessages) => {
+  const projectSuccess = storageService.saveProject({ sections: userInputs });
+  const chatSuccess = storageService.saveChatMessages(chatMessages || {});
+  
+  return projectSuccess && chatSuccess;
+};
+
+/**
+ * Legacy function for checking storage availability
+ * @returns {boolean} Whether storage is available
+ */
+export const isStorageAvailable = () => {
+  try {
+    const testKey = '__storage_test__';
+    localStorage.setItem(testKey, testKey);
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
