@@ -1,12 +1,28 @@
-// src/contexts/SectionContext.js
+// FILE: src/contexts/SectionContext.js
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 
-// Initial state
-const initialState = {
-  expandedSections: { 'question': true }, // Question section is expanded by default
-  lastActiveSectionId: 'question'
+// Load initial state from localStorage or use defaults
+const getInitialSectionStates = () => {
+  // Try to load from localStorage first
+  try {
+    const savedStates = localStorage.getItem('section_states');
+    if (savedStates) {
+      return JSON.parse(savedStates);
+    }
+  } catch (error) {
+    console.warn('Error loading section states from localStorage:', error);
+  }
+  
+  // Default state (question expanded, others minimized)
+  return {
+    expandedSections: { 'question': true },
+    lastActiveSectionId: 'question'
+  };
 };
+
+// Initial state
+const initialState = getInitialSectionStates();
 
 // Action types
 const ACTION_TYPES = {
@@ -56,12 +72,12 @@ function sectionReducer(state, action) {
       action.payload.forEach(sectionId => {
         allCollapsed[sectionId] = false;
       });
-      // Keep question expanded if it's the first time
+      // Keep question expanded for usability
       return {
         ...state,
         expandedSections: { 
           ...allCollapsed,
-          'question': state.expandedSections.question || true
+          'question': true
         }
       };
     }
@@ -85,7 +101,10 @@ function sectionReducer(state, action) {
       };
       
     case ACTION_TYPES.RESET_SECTION_STATES:
-      return initialState;
+      return {
+        expandedSections: { 'question': true },
+        lastActiveSectionId: 'question'
+      };
       
     default:
       return state;
@@ -99,21 +118,35 @@ const SectionContext = createContext();
 export function SectionProvider({ children, sectionIds = [] }) {
   const [state, dispatch] = useReducer(sectionReducer, initialState);
   
-  // Load section states from storage on mount
-  useEffect(() => {
-    const savedState = storageService.loadSectionStates();
-    if (savedState) {
-      dispatch({
-        type: ACTION_TYPES.IMPORT_SECTION_STATES,
-        payload: savedState
-      });
-    }
-  }, []);
-  
   // Save section states when they change
   useEffect(() => {
-    storageService.saveSectionStates(state);
+    localStorage.setItem('section_states', JSON.stringify(state));
   }, [state]);
+  
+  // Listen for storage reset events
+  useEffect(() => {
+    const handleStorageReset = () => {
+      dispatch({ type: ACTION_TYPES.RESET_SECTION_STATES });
+    };
+    
+    window.addEventListener('storageReset', handleStorageReset);
+    return () => window.removeEventListener('storageReset', handleStorageReset);
+  }, []);
+  
+  // Listen for document import event to expand all sections
+  useEffect(() => {
+    const handleDocumentImported = (event) => {
+      if (event.detail?.expandAllSections) {
+        dispatch({ 
+          type: ACTION_TYPES.EXPAND_ALL_SECTIONS, 
+          payload: sectionIds 
+        });
+      }
+    };
+    
+    window.addEventListener('documentImported', handleDocumentImported);
+    return () => window.removeEventListener('documentImported', handleDocumentImported);
+  }, [sectionIds]);
   
   // Define the actions that components can use
   const actions = {
@@ -174,4 +207,22 @@ export function useSectionState() {
     expandedSections: context.state.expandedSections,
     activeSection: context.state.lastActiveSectionId
   };
+}
+
+// Export a direct setter function for compatibility with existing code
+export function setSectionMinimizedState(sectionId, isMinimized) {
+  // This is a compatibility function that works with localStorage directly
+  try {
+    localStorage.setItem(`section_minimized_${sectionId}`, isMinimized.toString());
+    
+    // Dispatch an event to notify components of the change
+    window.dispatchEvent(new CustomEvent('sectionStatesChanged', {
+      detail: { sectionId, isMinimized }
+    }));
+    
+    return true;
+  } catch (error) {
+    console.warn(`Error setting minimized state for ${sectionId}:`, error);
+    return false;
+  }
 }
