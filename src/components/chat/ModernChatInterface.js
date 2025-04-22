@@ -1,18 +1,9 @@
-// FILE: src/components/chat/ModernChatInterface.js
-
+// src/components/chat/ModernChatInterface.js
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { trackChatInteraction, trackPageView } from '../../utils/analyticsUtils';
 import '../../styles/PaperPlanner.css';
 
-/**
- * Modernized chat interface with fixed layout issues
- * UPDATED: Added purple text for AI messages to match FullHeightInstructionsPanel
- * UPDATED: Added GA4 tracking for chat interactions
- * FIXED: Changed "Paper" to "Project" in title
- * FIXED: Better handling of loading states with other AI features
- * FIXED: Now shows proper loading animation when ANY AI feature is processing
- */
 const ModernChatInterface = ({
   currentSection,
   currentSectionTitle,
