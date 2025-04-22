@@ -1,4 +1,5 @@
-// src/App.js
+// FILE: src/App.js
+
 import React, { useEffect } from 'react';
 import PaperPlannerApp from './PaperPlannerApp';
 import { resetAllState } from './services/resetService';
@@ -15,7 +16,7 @@ import sectionContent from './data/sectionContent.json';
 
 function App() {
   // Get all section IDs for the SectionProvider
-  const allSectionIds = sectionContent.sections.map(section => section.id);
+  const allSectionIds = sectionContent.sections.map(section => section.id).filter(Boolean);
 
   // Initialize app and set up any global listeners
   useEffect(() => {
