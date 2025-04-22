@@ -1,4 +1,4 @@
-// src/services/resetService.js
+// FILE: src/services/resetService.js
 
 import { storageService } from './storageService';
 
@@ -50,6 +50,14 @@ export const resetPartialState = (options = {}) => {
   
   if (resetSectionStates) {
     storageService.clearData('SECTION_STATES');
+    
+    // Also clear section_minimized_* keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('section_minimized_')) {
+        localStorage.removeItem(key);
+      }
+    }
   }
   
   if (resetFeedback) {
