@@ -1,12 +1,12 @@
-// src/services/storageService.js
+// FILE: src/services/storageService.js
 
-// Storage keys
+// Storage keys - use original key names for backward compatibility
 const STORAGE_KEYS = {
-  PROJECT_DATA: 'paperPlannerData',  // Key for existing project data
-  SECTION_STATES: 'section_states',   // Key for existing section states
-  CHAT_MESSAGES: 'paperPlannerChat',  // Key for existing chat messages
-  FEEDBACK_DATA: 'savedSectionFeedback', // Key for existing feedback
-  USER_PREFERENCES: 'scientific-project-preferences'
+  PROJECT_DATA: 'paperPlannerData',  // Original project data key
+  SECTION_STATES: 'section_states',   // Original section states key
+  CHAT_MESSAGES: 'paperPlannerChat',  // Original chat messages key
+  FEEDBACK_DATA: 'savedSectionFeedback', // Original feedback data key
+  USER_PREFERENCES: 'userPreferences'
 };
 
 /**
@@ -171,6 +171,14 @@ export const storageService = {
         localStorage.removeItem(key);
       });
       
+      // Also clear legacy keys by section ID for section_minimized_*
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('section_minimized_')) {
+          localStorage.removeItem(key);
+        }
+      }
+      
       // Dispatch an event to notify components of the reset
       window.dispatchEvent(new CustomEvent('storageReset', {
         detail: { timestamp: Date.now() }
@@ -197,8 +205,28 @@ export const KEYS = STORAGE_KEYS;
  * @returns {Object} An object containing loadedInputs and loadedChat
  */
 export const loadFromStorage = () => {
-  const loadedInputs = storageService.loadProject()?.sections || null;
-  const loadedChat = storageService.loadChatMessages() || {};
+  let loadedInputs = null;
+  let loadedChat = {};
+  
+  try {
+    // Try to load project data
+    const projectData = storageService.loadProject();
+    if (projectData && projectData.sections) {
+      loadedInputs = projectData.sections;
+    } else {
+      // Direct load as fallback
+      const savedInputsString = localStorage.getItem(STORAGE_KEYS.PROJECT_DATA);
+      if (savedInputsString) {
+        loadedInputs = JSON.parse(savedInputsString);
+      }
+    }
+    
+    // Try to load chat data
+    loadedChat = storageService.loadChatMessages() || {};
+    
+  } catch (error) {
+    console.error('[storageService] Error in loadFromStorage:', error);
+  }
   
   return { loadedInputs, loadedChat };
 };
@@ -211,10 +239,26 @@ export const loadFromStorage = () => {
  * @returns {boolean} Success indicator
  */
 export const saveToStorage = (userInputs, chatMessages) => {
-  const projectSuccess = storageService.saveProject({ sections: userInputs });
-  const chatSuccess = storageService.saveChatMessages(chatMessages || {});
-  
-  return projectSuccess && chatSuccess;
+  try {
+    // Save user inputs
+    let projectSuccess = false;
+    if (userInputs) {
+      // Save in both formats for compatibility
+      projectSuccess = storageService.saveProject({ sections: userInputs });
+      localStorage.setItem(STORAGE_KEYS.PROJECT_DATA, JSON.stringify(userInputs));
+    }
+    
+    // Save chat messages
+    let chatSuccess = false;
+    if (chatMessages) {
+      chatSuccess = storageService.saveChatMessages(chatMessages);
+    }
+    
+    return projectSuccess || chatSuccess;
+  } catch (error) {
+    console.error('[storageService] Error in saveToStorage:', error);
+    return false;
+  }
 };
 
 // Export the isStorageAvailable function for backward compatibility
