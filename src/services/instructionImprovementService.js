@@ -4,6 +4,7 @@
  * Enhanced service for improving instructions based on user progress
  * ADDED: Now includes numerical rating on a 1-10 scale
  * FIXED: Only processes sections that aren't just placeholder content
+ * ADDED: Now saves feedback to localStorage
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt } from '../utils/promptUtils';
@@ -296,6 +297,7 @@ function transformSingleAnalysisToInstructions(analysis, originalSection) {
  * Updates section content object with improved instructions.
  * FIXED: Ensures improvement object has correct structure for the UI
  * ADDED: Now includes the numerical rating
+ * ADDED: Saves feedback to localStorage
  * @param {Object} currentSections - The current sections object from state.
  * @param {Array} improvedData - Array of improved section data objects.
  * @returns {Object} - A new object with updated section content.
@@ -359,6 +361,16 @@ export const updateSectionWithImprovedInstructions = (currentSections, improvedD
 
   if (!changesApplied) {
     console.warn("[updateSectionWithImprovedInstructions] No changes were applied");
+  }
+
+  // Save to localStorage whenever we update feedback
+  try {
+    if (changesApplied) {
+      localStorage.setItem('savedSectionFeedback', JSON.stringify(updatedSections));
+      console.log("[updateSectionWithImprovedInstructions] Saved feedback to localStorage");
+    }
+  } catch (error) {
+    console.error("[updateSectionWithImprovedInstructions] Error saving to localStorage:", error);
   }
 
   return updatedSections;
