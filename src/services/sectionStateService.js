@@ -3,7 +3,6 @@
 /**
  * Service for managing section minimization state
  * Provides functions to get, set, clear, and initialize section states
- * UPDATED: Removed unused toggleAllSections function
  * UPDATED: Enhanced event dispatching for better component coordination
  * UPDATED: Added special handler for document imports to expand all sections
  */
