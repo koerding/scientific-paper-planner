@@ -3,6 +3,7 @@
 /**
  * Main hook that combines all specialized hooks into a unified API
  * UPDATED: Now uses the resetService for consistent reset functionality
+ * UPDATED: Sets the correct research approach and data method based on document import
  */
 import { useState, useEffect } from 'react';
 import { useProjectState } from './useProjectState';
@@ -189,16 +190,36 @@ const usePaperPlanner = () => {
     console.log("[usePaperPlanner] Reset completed");
   };
   
-  // Final load project function - now uses reset
+  // UPDATED: Load project function - now sets appropriate toggles
   const loadProject = (data) => {
     const result = loadProjectAction(data);
     if (result) {
-      handleSectionChange(sectionContent.sections[0].id);
-      
-      // Reset approach and method to defaults 
-      // (Note: project loading handles the rest of the reset already)
-      setActiveApproach('hypothesis');
-      setActiveDataMethod('experiment');
+      // If data contains detected toggles from document import, use those
+      if (data.detectedToggles) {
+        const { approach, dataMethod } = data.detectedToggles;
+        console.log(`[usePaperPlanner] Setting detected toggles: approach=${approach}, dataMethod=${dataMethod}`);
+        
+        // Update approach state if valid
+        if (approach && ['hypothesis', 'needsresearch', 'exploratoryresearch'].includes(approach)) {
+          setActiveApproach(approach);
+        }
+        
+        // Update data method state if valid
+        if (dataMethod && ['experiment', 'existingdata', 'theorysimulation'].includes(dataMethod)) {
+          setActiveDataMethod(dataMethod);
+        }
+        
+        // Set the active section to the detected approach (this is the main section to show)
+        handleSectionChange(approach || sectionContent.sections[0].id);
+      } else {
+        // Default section for regular project loads (not from document import)
+        handleSectionChange(sectionContent.sections[0].id);
+        
+        // Reset approach and method to defaults 
+        // (Note: project loading handles the rest of the reset already)
+        setActiveApproach('hypothesis');
+        setActiveDataMethod('experiment');
+      }
     }
     return result;
   };
@@ -233,6 +254,28 @@ const usePaperPlanner = () => {
     
     return () => {
       window.removeEventListener('projectStateReset', handleGlobalReset);
+    };
+  }, []);
+  
+  // Effect to listen for document import events to update toggles
+  useEffect(() => {
+    const handleDocumentImported = (event) => {
+      const { detectedApproach, detectedDataMethod } = event.detail || {};
+      
+      if (detectedApproach) {
+        console.log(`[usePaperPlanner] Setting approach from document import: ${detectedApproach}`);
+        setActiveApproach(detectedApproach);
+      }
+      
+      if (detectedDataMethod) {
+        console.log(`[usePaperPlanner] Setting data method from document import: ${detectedDataMethod}`);
+        setActiveDataMethod(detectedDataMethod);
+      }
+    };
+    
+    window.addEventListener('documentImported', handleDocumentImported);
+    return () => {
+      window.removeEventListener('documentImported', handleDocumentImported);
     };
   }, []);
   
