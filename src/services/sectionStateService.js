@@ -3,6 +3,7 @@
 /**
  * Service for managing section minimization state
  * Provides functions to get, set, clear, and initialize section states
+ * UPDATED: Removed unused toggleAllSections function
  * UPDATED: Enhanced event dispatching for better component coordination
  * UPDATED: Added special handler for document imports to expand all sections
  */
@@ -219,40 +220,31 @@ export const toggleSectionMinimizedState = (sectionId) => {
 };
 
 /**
- * Toggle all sections to a specific state
- * @param {boolean} minimize - Whether to minimize (true) or expand (false) all sections
+ * Expand all sections (convenience function)
  * @returns {boolean} - Success flag
  */
-export const toggleAllSections = (minimize = true) => {
+export const expandAllSections = () => {
   try {
     // Get all section keys from localStorage
     const allSectionKeys = Object.keys(localStorage)
       .filter(key => key.startsWith('section_minimized_'))
       .map(key => key.replace('section_minimized_', ''));
     
-    // Set all sections to the requested state
+    // Set all sections to expanded (not minimized)
     allSectionKeys.forEach(sectionId => {
-      localStorage.setItem(`section_minimized_${sectionId}`, minimize.toString());
+      localStorage.setItem(`section_minimized_${sectionId}`, 'false');
     });
     
     // Dispatch an event to notify components of the change
     window.dispatchEvent(new CustomEvent('sectionStatesChanged', {
-      detail: { allSectionsToggled: true, minimize }
+      detail: { allSectionsExpanded: true }
     }));
     
     return true;
   } catch (error) {
-    console.error('Error toggling all sections:', error);
+    console.error('Error expanding all sections:', error);
     return false;
   }
-};
-
-/**
- * Expand all sections (convenience function)
- * @returns {boolean} - Success flag
- */
-export const expandAllSections = () => {
-  return toggleAllSections(false); // false = not minimized = expanded
 };
 
 /**
