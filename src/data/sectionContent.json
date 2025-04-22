@@ -77,7 +77,7 @@
       "type": "text",
       "maxLength": 2000,
       "inputPlaceholder": "Start writing your hypotheses here...",
-      "introText": "Hypotheses translate your research question into specific, testable ideas. They clarify what you are trying to discover or differentiate and provide structure for your experimental or analytical design. Clear hypotheses improve transparency and strengthen the logic of your work.",
+      "introText": "Hypotheses are alternative ideas about how an aspect of the world are, they are competing ideas, of which only one can be true. Hypotheses  are not predictions about the outcomes of research. Hypotheses  clarify what you are trying to discover or differentiate and provide structure for your experimental or analytical design. Clear hypotheses are essential for transparency and the logic of your work.",
       "subsections": [
         {
           "id": "hypothesis_alignment_with_your_question",
@@ -159,7 +159,7 @@
       "type": "text",
       "maxLength": 2000,
       "inputPlaceholder": "Define the needs your research addresses...",
-      "introText": "Needs-based research starts from a real-world problem that someone experiences and builds the project around addressing it. This ensures your work is relevant and impactful for specific stakeholders. It also clarifies the value of your contribution beyond academia.",
+      "introText": "Needs-based research starts from a real-world problem that someone experiences and builds the project around addressing it. Many times the needs are those of the scientific community: building useful tools is almost always needs based. This ensures your work is relevant and impactful for specific stakeholders. It also clarifies the value of your contribution beyond academia.",
       "subsections": [
         {
           "id": "needsresearch_alignment_with_your_question",
