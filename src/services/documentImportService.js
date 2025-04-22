@@ -2,7 +2,7 @@
 
 /**
  * Document import service for PDF and Word documents
- * UPDATED: Now ensures all sections are expanded after import
+ * UPDATED: Now uses the refactored documentProcessor
  */
 import { callOpenAI } from './openaiService';
 import { loadPDFJS, extractTextFromDocument } from './documentProcessor';
