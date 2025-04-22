@@ -3,10 +3,12 @@
 /**
  * Centralized reset service to ensure consistent state reset across the application
  * This service handles clearing all user data and returning to initial state
+ * UPDATED: Now also resets section progression state
  */
 
 import { clearStorage } from './storageService';
 import { resetSectionStates } from './sectionStateService';
+import { resetProgressionState } from './progressionStateService';
 import sectionContent from '../data/sectionContent.json';
 
 /**
@@ -26,7 +28,10 @@ export const resetAllState = () => {
   // 3. Reset section minimization states
   resetSectionStates();
   
-  // 4. Create fresh default values with placeholders for all sections
+  // 4. Reset section progression state (unlocked sections)
+  resetProgressionState();
+  
+  // 5. Create fresh default values with placeholders for all sections
   const freshInputs = {};
   const freshChatMessages = {};
   
@@ -41,7 +46,7 @@ export const resetAllState = () => {
     });
   }
   
-  // 5. Dispatch a global event to notify components that need to reset
+  // 6. Dispatch a global event to notify components that need to reset
   window.dispatchEvent(new CustomEvent('projectStateReset', {
     detail: { 
       timestamp: Date.now(),
@@ -68,7 +73,8 @@ export const resetPartialState = (options = {}) => {
     resetUserInputs = false,
     resetChatMessages = false,
     resetFeedback = false,
-    resetSectionMinimization = false
+    resetSectionMinimization = false,
+    resetSectionProgression = false
   } = options;
   
   console.log(`[resetService] Performing partial reset with options:`, options);
@@ -113,8 +119,13 @@ export const resetPartialState = (options = {}) => {
     resetSectionStates();
   }
   
+  // Reset section progression if requested
+  if (resetSectionProgression) {
+    resetProgressionState();
+  }
+  
   // Dispatch an event if any reset was performed
-  if (Object.keys(result).length > 0 || resetFeedback || resetSectionMinimization) {
+  if (Object.keys(result).length > 0 || resetFeedback || resetSectionMinimization || resetSectionProgression) {
     window.dispatchEvent(new CustomEvent('partialStateReset', {
       detail: { 
         timestamp: Date.now(),
