@@ -1,9 +1,5 @@
-// FILE: src/hooks/useDocumentImport.js
+// FILE: src/hooks/useDocumentImport.js - Modified to set proper toggles
 
-/**
- * Hook for managing document import functionality
- * UPDATED: Now properly expands all sections after import
- */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
 import { expandAllSections } from '../services/sectionStateService';
@@ -24,7 +20,6 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       console.log(`Starting import process for ${file.name}`);
       
       // First, reset all state to ensure clean slate
-      // This will clear feedback, reset section states, and clear localStorage
       if (resetAllProjectState && typeof resetAllProjectState === 'function') {
         resetAllProjectState();
         console.log("[handleDocumentImport] Reset all project state before import");
@@ -43,11 +38,56 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       
       // Load the imported data using the loadProject function
       if (importedData) {
+        // DETECT WHICH TOGGLES SHOULD BE ACTIVE BASED ON IMPORTED DATA
+        let detectedApproach = 'hypothesis'; // Default
+        let detectedDataMethod = 'experiment'; // Default
+        
+        // Check which research approach has content
+        if (importedData.userInputs.needsresearch && 
+            importedData.userInputs.needsresearch.trim() !== '') {
+          detectedApproach = 'needsresearch';
+        } else if (importedData.userInputs.exploratoryresearch && 
+                  importedData.userInputs.exploratoryresearch.trim() !== '') {
+          detectedApproach = 'exploratoryresearch';
+        } else if (importedData.userInputs.hypothesis && 
+                  importedData.userInputs.hypothesis.trim() !== '') {
+          detectedApproach = 'hypothesis';
+        }
+        
+        // Check which data method has content
+        if (importedData.userInputs.existingdata && 
+            importedData.userInputs.existingdata.trim() !== '') {
+          detectedDataMethod = 'existingdata';
+        } else if (importedData.userInputs.theorysimulation && 
+                  importedData.userInputs.theorysimulation.trim() !== '') {
+          detectedDataMethod = 'theorysimulation';
+        } else if (importedData.userInputs.experiment && 
+                  importedData.userInputs.experiment.trim() !== '') {
+          detectedDataMethod = 'experiment';
+        }
+        
+        // Include detected toggles in the loaded data
+        importedData.detectedToggles = {
+          approach: detectedApproach,
+          dataMethod: detectedDataMethod
+        };
+        
+        console.log(`[handleDocumentImport] Detected approach: ${detectedApproach}, data method: ${detectedDataMethod}`);
+        
         const result = loadProject(importedData);
         if (result) {
           console.log(`Document ${file.name} successfully imported`);
           
-          // A specific event for document imports is already dispatched in the importDocumentContent function
+          // Dispatch event with toggle information
+          window.dispatchEvent(new CustomEvent('documentImported', {
+            detail: { 
+              fileName: file.name,
+              timestamp: Date.now(),
+              expandAllSections: true,
+              detectedApproach,
+              detectedDataMethod
+            }
+          }));
           
           return true;
         }
