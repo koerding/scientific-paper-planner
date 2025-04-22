@@ -2,17 +2,16 @@
 
 /**
  * Enhanced service for improving instructions based on user progress
- * ADDED: Now includes numerical rating on a 1-10 scale
- * FIXED: Only processes sections that aren't just placeholder content
- * ADDED: Now saves feedback to localStorage
+ * UPDATED: Now integrates with progression system to unlock sections
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt } from '../utils/promptUtils';
+import { updateSectionScore } from './progressionStateService';
 
 /**
  * Improves instructions for multiple sections using a structured JSON approach.
  * Each section's subsections are evaluated separately for completion status and feedback.
- * Now also includes a numerical rating from 1-10.
+ * Now also includes a numerical rating from 1-10 and updates progression state.
  * 
  * @param {Array} currentSections - Array of section objects from the main state
  * @param {Object} userInputs - User inputs for all sections
@@ -161,6 +160,16 @@ export const improveBatchInstructions = async (
       sectionContent.sections
     );
     
+    // Update progression state based on scores
+    analysisResults.forEach(analysis => {
+      if (analysis.id && typeof analysis.rating === 'number') {
+        // Update progression state with rating
+        const rating = Math.round(analysis.rating);
+        console.log(`[Instruction Improvement] Updating progression for ${analysis.id} with score ${rating}`);
+        updateSectionScore(analysis.id, rating);
+      }
+    });
+    
     console.log(`[Instruction Improvement] Successfully processed ${improvedData.length} improved sections`);
     console.timeEnd("instructionImprovementTime");
 
@@ -200,6 +209,9 @@ export const improveBatchInstructions = async (
           }))
         };
         
+        // Update progression with fallback rating
+        updateSectionScore(id, fallbackAnalysis.rating);
+        
         // Transform to instructions format
         return transformSingleAnalysisToInstructions(fallbackAnalysis, section);
       })
@@ -222,19 +234,29 @@ export const improveBatchInstructions = async (
  * @returns {Array} - Fallback analysis results
  */
 function createFallbackAnalysis(sectionsForAnalysis) {
-  return sectionsForAnalysis.map(section => ({
-    id: section.id,
-    overallFeedback: `Great work on your ${section.title.toLowerCase()}!`,
-    completionStatus: "complete",
-    rating: 6, // Default middle-good rating for fallback
-    subsections: (section.subsections || []).map((subsection, index) => ({
-      id: subsection.id,
-      isComplete: Math.random() > 0.3, // Randomly mark some as complete
-      feedback: index % 2 === 0 
-        ? "You've addressed this point well." 
-        : "Consider adding more detail here."
-    }))
-  }));
+  const results = sectionsForAnalysis.map(section => {
+    const rating = Math.floor(Math.random() * 6) + 5; // Random rating between 5-10
+    const fallback = {
+      id: section.id,
+      overallFeedback: `Great work on your ${section.title.toLowerCase()}!`,
+      completionStatus: "complete",
+      rating: rating,
+      subsections: (section.subsections || []).map((subsection, index) => ({
+        id: subsection.id,
+        isComplete: index % 3 !== 0, // Mark 2/3 of subsections as complete for testing
+        feedback: index % 3 !== 0
+          ? "You've addressed this point effectively with clear examples."
+          : "Consider elaborating further on this aspect to strengthen your work."
+      }))
+    };
+    
+    // Update progression with fallback rating
+    updateSectionScore(section.id, rating);
+    
+    return fallback;
+  });
+  
+  return results;
 }
 
 /**
