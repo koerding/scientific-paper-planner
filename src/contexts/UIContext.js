@@ -1,5 +1,5 @@
-// src/contexts/UIContext.js
-import React, { createContext, useReducer, useContext } from 'react';
+// FILE: src/contexts/UIContext.js
+import React, { createContext, useReducer, useContext, useEffect } from 'react';
 
 // Initial state
 const initialState = {
@@ -112,11 +112,21 @@ export function UIProvider({ children }) {
   const [state, dispatch] = useReducer(uiReducer, initialState);
   
   // Load help splash preference
-  React.useEffect(() => {
+  useEffect(() => {
     const hideHelpSplash = localStorage.getItem('hideWelcomeSplash') === 'true';
     if (hideHelpSplash) {
       dispatch({ type: ACTION_TYPES.HIDE_HELP_SPLASH });
     }
+  }, []);
+  
+  // Listen for events that should open modals
+  useEffect(() => {
+    const handleOpenPrivacyPolicy = () => {
+      dispatch({ type: ACTION_TYPES.SHOW_MODAL, payload: 'privacyPolicy' });
+    };
+    
+    window.addEventListener('openPrivacyPolicy', handleOpenPrivacyPolicy);
+    return () => window.removeEventListener('openPrivacyPolicy', handleOpenPrivacyPolicy);
   }, []);
   
   // Actions
@@ -192,7 +202,7 @@ export function useUI() {
     onboarding: context.onboarding,
     isAnyLoading: context.isAnyLoading,
     
-    // Modal actions with easier names
+    // Actions with simpler names
     openModal: context.actions.showModal,
     closeModal: context.actions.hideModal,
     
