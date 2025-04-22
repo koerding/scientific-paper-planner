@@ -9,7 +9,7 @@ import { trackInstructionImprovement } from '../utils/analyticsUtils';
 
 /**
  * Hook for managing instruction improvement logic
- * UPDATED: Now properly resets to original sectionContent on reset
+ * UPDATED: Now properly persists improvement feedback to localStorage
  * FIXED: Reset logic now correctly clears localStorage feedback data
  */
 export const useImprovementLogic = (userInputs, sectionContent) => {
