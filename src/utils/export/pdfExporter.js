@@ -2,9 +2,10 @@
 
 /**
  * PDF exporter for the Scientific Paper Planner
+ * Updated to use the refactored CDNLoader
  */
 import { getFormattedContent, promptForFilename } from './exportBase';
-import { loadExternalLibrary } from '../cdnLoader';
+import { loadMultipleLibraries, LIBRARY_URLS } from '../cdnLoader';
 
 /**
  * Exports the project as a PDF file using jsPDF
@@ -38,11 +39,11 @@ export const exportAsPdf = async (userInputs, chatMessages, sectionContent) => {
       return false;
     }
     
-    // Load the jsPDF library from CDN
+    // Load the PDF generation libraries from CDN
     try {
-      await Promise.all([
-        loadExternalLibrary('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
-        loadExternalLibrary('https://unpkg.com/markdown-it@12.3.2/dist/markdown-it.min.js')
+      await loadMultipleLibraries([
+        LIBRARY_URLS.JSPDF,
+        LIBRARY_URLS.MARKDOWN_IT
       ]);
     } catch (error) {
       console.error("Failed to load PDF libraries:", error);
