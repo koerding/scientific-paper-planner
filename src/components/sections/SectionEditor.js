@@ -1,5 +1,5 @@
-// components/sections/SectionEditor.js
-import { useRef, useEffect } from 'react';
+// FILE: src/components/sections/SectionEditor.js
+import React, { useRef, useEffect } from 'react';
 
 const SectionEditor = ({ 
   textValue, 
@@ -77,3 +77,5 @@ const SectionEditor = ({
     </div>
   );
 };
+
+export default SectionEditor;
