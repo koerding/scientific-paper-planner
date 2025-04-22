@@ -1,7 +1,7 @@
 // FILE: src/utils/cdnLoader.js
 
 /**
- * Utilities for dynamically loading external JavaScript libraries from CDN
+ * Centralized utilities for dynamically loading external JavaScript libraries from CDN
  */
 
 /**
@@ -50,20 +50,65 @@ export const loadMultipleLibraries = async (urls) => {
 };
 
 /**
+ * Library URL constants
+ */
+export const LIBRARY_URLS = {
+  PDF_JS: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  PDF_WORKER: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+  MAMMOTH: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.17/mammoth.browser.min.js',
+  JSPDF: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  DOCX: 'https://unpkg.com/docx@5.0.2/build/index.js',
+  MARKDOWN_IT: 'https://unpkg.com/markdown-it@12.3.2/dist/markdown-it.min.js'
+};
+
+/**
+ * Load PDF.js library and configure worker
+ * @returns {Promise} - Resolves when PDF.js is loaded and configured
+ */
+export const loadPdfJs = async () => {
+  try {
+    await loadExternalLibrary(LIBRARY_URLS.PDF_JS);
+    
+    // Configure PDF.js worker
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = LIBRARY_URLS.PDF_WORKER;
+    }
+    
+    return window.pdfjsLib;
+  } catch (error) {
+    console.error("Failed to load PDF.js:", error);
+    throw error;
+  }
+};
+
+/**
+ * Load Mammoth.js library for DOCX processing
+ * @returns {Promise} - Resolves when Mammoth.js is loaded
+ */
+export const loadMammoth = async () => {
+  try {
+    await loadExternalLibrary(LIBRARY_URLS.MAMMOTH);
+    return window.mammoth;
+  } catch (error) {
+    console.error("Failed to load Mammoth.js:", error);
+    throw error;
+  }
+};
+
+/**
  * Load common document processing libraries
- * @returns {Promise} - Resolves when libraries are loaded
+ * @returns {Promise} - Resolves when all document libraries are loaded
  */
 export const loadDocumentLibraries = async () => {
   try {
     await loadMultipleLibraries([
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.17/mammoth.browser.min.js'
+      LIBRARY_URLS.PDF_JS,
+      LIBRARY_URLS.MAMMOTH
     ]);
     
     // Configure PDF.js worker
     if (window.pdfjsLib) {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = LIBRARY_URLS.PDF_WORKER;
     }
     
     return true;
@@ -75,14 +120,14 @@ export const loadDocumentLibraries = async () => {
 
 /**
  * Load export-related libraries (jsPDF, docx, markdown-it)
- * @returns {Promise} - Resolves when libraries are loaded
+ * @returns {Promise} - Resolves when all export libraries are loaded
  */
 export const loadExportLibraries = async () => {
   try {
     await loadMultipleLibraries([
-      'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-      'https://unpkg.com/docx@5.0.2/build/index.js',
-      'https://unpkg.com/markdown-it@12.3.2/dist/markdown-it.min.js'
+      LIBRARY_URLS.JSPDF,
+      LIBRARY_URLS.DOCX,
+      LIBRARY_URLS.MARKDOWN_IT
     ]);
     return true;
   } catch (error) {
