@@ -217,17 +217,5 @@ export const saveToStorage = (userInputs, chatMessages) => {
   return projectSuccess && chatSuccess;
 };
 
-/**
- * Legacy function for checking storage availability
- * @returns {boolean} Whether storage is available
- */
-export const isStorageAvailable = () => {
-  try {
-    const testKey = '__storage_test__';
-    localStorage.setItem(testKey, testKey);
-    localStorage.removeItem(testKey);
-    return true;
-  } catch (e) {
-    return false;
-  }
-};
+// Export the isStorageAvailable function for backward compatibility
+export { isStorageAvailable };
