@@ -4,6 +4,7 @@ import { getSectionMinimizedState, setSectionMinimizedState } from '../services/
 
 /**
  * Hook for managing section state (minimized, focus, hover, edit tracking)
+ * FIXED: Improved tracking of edits after feedback
  */
 export const useSectionState = (sectionId, initialState = {}) => {
   const [isMinimized, setIsMinimized] = useState(() => getSectionMinimizedState(sectionId));
@@ -13,7 +14,7 @@ export const useSectionState = (sectionId, initialState = {}) => {
   const [editedSinceFeedback, setEditedSinceFeedback] = useState(false);
   const [significantChange, setSignificantChange] = useState(false);
   
-  // Effect to update editedSinceFeedback
+  // Effect to update editedSinceFeedback when lastEditTimestamp or lastFeedbackTime changes
   useEffect(() => {
     if (lastEditTimestamp && initialState.lastFeedbackTime && 
         lastEditTimestamp > initialState.lastFeedbackTime) {
@@ -80,6 +81,13 @@ export const useSectionState = (sectionId, initialState = {}) => {
       window.removeEventListener('sectionStatesChanged', handleSectionStatesChanged);
     };
   }, [sectionId, isMinimized]);
+  
+  // Effect to reset editedSinceFeedback when new feedback comes in
+  useEffect(() => {
+    if (initialState.lastFeedbackTime && initialState.lastFeedbackTime > lastEditTimestamp) {
+      setEditedSinceFeedback(false);
+    }
+  }, [initialState.lastFeedbackTime, lastEditTimestamp]);
   
   // Toggle minimized state
   const toggleMinimized = (e) => {
