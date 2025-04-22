@@ -8,6 +8,7 @@ import { logSectionData, validateImprovementData } from '../../utils/debugUtils'
  * UPDATED: Displays numeric rating and colored indicator
  * UPDATED: Now uses green text for completed items instead of strikethrough
  * UPDATED: Listens for reset events to clear state
+ * UPDATED: No more inline styles - uses global CSS
  */
 const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, loading }) => {
   // Track which tooltips are expanded
@@ -159,7 +160,6 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
   /**
    * Renders improved instructions with AI feedback
    * All AI-generated content is styled with purple text
-   * UPDATED: Complete items now use green text instead of strikethrough
    */
   const renderImprovedInstructions = () => {
     if (!currentSection || !currentSection.instructions?.improvement) return null;
@@ -187,7 +187,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
           {improvement.overallFeedback || "Great work on this section! Here's some feedback to consider."}
         </div>
         
-        {/* NEW: Show the numeric rating if available */}
+        {/* Show the numeric rating if available */}
         {rating && (
           <div className={`text-base mb-5 font-bold ${ratingColor} flex items-center`}>
             Rating: {rating}/10
@@ -242,7 +242,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
           return (
             <div key={index} className={`mb-5 ${isComplete ? 'opacity-90' : ''}`}>
               <div className="text-base leading-relaxed">
-                {/* UPDATED: Use green text instead of strikethrough for completed items */}
+                {/* Use green text for completed items */}
                 <strong className={`font-bold ${isComplete ? 'text-green-600' : ''}`}>
                   {subsection.title}:
                 </strong>{' '}
@@ -282,7 +282,7 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
 
   return (
     <div
-      className="h-full overflow-y-auto section-instruction-panel"
+      className="section-instruction-panel"
       style={{
         position: 'fixed',
         top: 0,
@@ -314,70 +314,6 @@ const FullHeightInstructionsPanel = ({ currentSection, improveInstructions, load
           </>
         )}
       </div>
-      
-      {/* Styles from PaperPlanner.css, included inline for direct integration */}
-      <style jsx>{`
-        /* Info button styling from PaperPlanner.css */
-        .info-icon-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background-color: #EEF2FF;
-          color: #4F46E5;
-          font-size: 12px;
-          font-weight: bold;
-          cursor: pointer;
-          border: none;
-          transition: all 0.2s ease;
-          margin: 0 2px;
-          vertical-align: middle;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        
-        .info-icon-button:hover {
-          background-color: #E0E7FF;
-          transform: scale(1.1);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Animation for expanding content */
-        @keyframes fadeInExpand {
-          from { opacity: 0; max-height: 0; }
-          to { opacity: 1; max-height: 500px; }
-        }
-        
-        /* Section styling from PaperPlanner.css */
-        .section-instruction-panel .prose p {
-          margin-top: 1em;
-          margin-bottom: 1em;
-        }
-        
-        /* REMOVED: Styling for crossed out text */
-        /* .line-through {
-          text-decoration: line-through;
-          color: #6B7280;
-        } */
-        
-        /* Added styling for completed items - green text */
-        .text-green-600 {
-          color: #059669; /* Tailwind's green-600 color */
-        }
-        
-        /* Enhanced Purple styling for AI-generated content */
-        .text-purple-700 {
-          color: #6D28D9;
-        }
-        
-        /* Add a subtle background to highlight AI feedback */
-        .instructions-content .text-purple-700 {
-          background-color: rgba(237, 233, 254, 0.3);
-          border-radius: 4px;
-          padding: 2px 4px;
-        }
-      `}</style>
     </div>
   );
 };
