@@ -1,5 +1,10 @@
-// FILE: src/hooks/useDocumentImport.js - Modified to set proper toggles
+// FILE: src/hooks/useDocumentImport.js
 
+/**
+ * Hook for managing document import functionality
+ * UPDATED: Now properly expands all sections after import
+ * UPDATED: Detects appropriate research approach and data method
+ */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
 import { expandAllSections } from '../services/sectionStateService';
@@ -20,6 +25,7 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       console.log(`Starting import process for ${file.name}`);
       
       // First, reset all state to ensure clean slate
+      // This will clear feedback, reset section states, and clear localStorage
       if (resetAllProjectState && typeof resetAllProjectState === 'function') {
         resetAllProjectState();
         console.log("[handleDocumentImport] Reset all project state before import");
