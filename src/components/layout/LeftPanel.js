@@ -1,6 +1,6 @@
 // FILE: src/components/layout/LeftPanel.js
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import HeaderCard from '../sections/HeaderCard';
 import SectionCard from '../sections/SectionCard';
 import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
@@ -11,11 +11,15 @@ import {
   getApproachSectionIds,
   getDataMethodSectionIds
 } from '../../utils/sectionOrderUtils';
+import {
+  getUnlockedSections,
+  isToggleUnlocked,
+  isProModeEnabled
+} from '../../services/progressionStateService';
 
 /**
  * Left panel component that manages rendering sections and toggles
- * UPDATED: Removed unused SectionControls component
- * UPDATED: Now passes last feedback times to track edits after feedback
+ * UPDATED: Now implements progressive section unlocking based on feedback scores
  */
 const LeftPanel = ({ 
   activeSection,
@@ -36,6 +40,47 @@ const LeftPanel = ({
   feedbackRatings = {}, // Object mapping section IDs to ratings
   lastFeedbackTimes = {} // Object mapping section IDs to last feedback timestamp
 }) => {
+  // State to track unlocked sections based on progression state
+  const [unlockedSections, setUnlockedSections] = useState(['question']);
+  const [isApproachToggleUnlocked, setIsApproachToggleUnlocked] = useState(false);
+  const [isDataToggleUnlocked, setIsDataToggleUnlocked] = useState(false);
+  const [isProMode, setIsProMode] = useState(false);
+  
+  // Update unlocked sections when progression state changes
+  useEffect(() => {
+    // Initialize state
+    updateUnlockedState();
+    
+    // Listen for progression state changes
+    const handleProgressionChange = () => {
+      updateUnlockedState();
+    };
+    
+    const handleProModeChange = (event) => {
+      setIsProMode(event.detail.enabled);
+      updateUnlockedState(); // Update unlocked state when Pro Mode changes
+    };
+    
+    // Update the unlocked state whenever feedback is provided
+    window.addEventListener('progressionStateChanged', handleProgressionChange);
+    window.addEventListener('progressionStateReset', handleProgressionChange);
+    window.addEventListener('proModeChanged', handleProModeChange);
+    
+    return () => {
+      window.removeEventListener('progressionStateChanged', handleProgressionChange);
+      window.removeEventListener('progressionStateReset', handleProgressionChange);
+      window.removeEventListener('proModeChanged', handleProModeChange);
+    };
+  }, []);
+  
+  // Update the unlocked state
+  const updateUnlockedState = () => {
+    setUnlockedSections(getUnlockedSections());
+    setIsApproachToggleUnlocked(isToggleUnlocked('approach_toggle'));
+    setIsDataToggleUnlocked(isToggleUnlocked('data_toggle'));
+    setIsProMode(isProModeEnabled());
+  };
+  
   // Handle feedback request for a specific section
   const handleSectionFeedback = (sectionId) => {
     if (handleMagic && typeof handleMagic === 'function') {
@@ -53,9 +98,23 @@ const LeftPanel = ({
     return content === placeholder || content.trim() === '';
   };
   
+  // Check if section should be visible based on progression state
+  const isSectionVisible = (sectionId) => {
+    // In Pro Mode, all sections are visible
+    if (isProMode) return true;
+    
+    // Otherwise, check if it's in the unlockedSections array
+    return unlockedSections.includes(sectionId);
+  };
+  
   // Rendering function for a section
   const renderSection = (section) => {
     if (!section || !section.id) return null;
+    
+    // Check if section should be visible
+    if (!isSectionVisible(section.id)) {
+      return null; // Skip this section
+    }
     
     const isCurrentActive = activeSection === section.id;
     const hasFeedback = sectionsWithFeedback.includes(section.id);
@@ -114,32 +173,48 @@ const LeftPanel = ({
       {/* Display Research Question first */}
       {questionSection && renderSection(questionSection)}
 
-      {/* Research Approach Toggle */}
-      <ResearchApproachToggle
-        activeApproach={activeApproach}
-        setActiveApproach={handleApproachToggle}
-      />
+      {/* Research Approach Toggle - only if unlocked */}
+      {isApproachToggleUnlocked && (
+        <ResearchApproachToggle
+          activeApproach={activeApproach}
+          setActiveApproach={handleApproachToggle}
+        />
+      )}
 
-      {/* Display active approach section */}
+      {/* Display active approach section if unlocked */}
       {approachSection && renderSection(approachSection)}
 
-      {/* Target Audience section */}
+      {/* Target Audience section if unlocked */}
       {audienceSection && renderSection(audienceSection)}
 
-      {/* Related Papers Section */}
+      {/* Related Papers Section if unlocked */}
       {relatedPapersSection && renderSection(relatedPapersSection)}
 
-      {/* Data Acquisition Toggle */}
-      <DataAcquisitionToggle
-        activeMethod={activeDataMethod}
-        setActiveMethod={handleDataMethodToggle}
-      />
+      {/* Data Acquisition Toggle - only if unlocked */}
+      {isDataToggleUnlocked && (
+        <DataAcquisitionToggle
+          activeMethod={activeDataMethod}
+          setActiveMethod={handleDataMethodToggle}
+        />
+      )}
 
-      {/* Display active data acquisition section */}
+      {/* Display active data acquisition section if unlocked */}
       {dataMethodSection && renderSection(dataMethodSection)}
 
-      {/* Display remaining sections */}
+      {/* Display remaining sections if unlocked */}
       {remainingSections.map(section => renderSection(section))}
+      
+      {/* Pro Mode Info - Only shown when Pro Mode is disabled and sections are still locked */}
+      {!isProMode && unlockedSections.length < 11 && (
+        <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 mt-6">
+          <p className="text-sm text-gray-700">
+            <span className="font-medium">Progressive Mode:</span> New sections unlock as you complete each part with a score of 6 or higher.
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Enable "Pro Mode" in the header to see all sections.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
