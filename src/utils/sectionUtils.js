@@ -2,6 +2,7 @@
 
 /**
  * Utility functions for working with section content
+ * FIXED: Improved handling of "edited since feedback" state
  */
 
 /**
@@ -37,11 +38,17 @@ export const getPreviewText = (textValue) => {
  * @param {boolean} hasEditedContent - Whether the section has been edited
  * @param {boolean} loading - Whether the section is loading
  * @param {number} feedbackRating - The feedback rating (1-10)
+ * @param {boolean} editedSinceFeedback - Whether content was edited since last feedback
  * @returns {string} - CSS class for button color
  */
-export const getFeedbackButtonColor = (hasEditedContent, loading, feedbackRating) => {
+export const getFeedbackButtonColor = (hasEditedContent, loading, feedbackRating, editedSinceFeedback) => {
   if (!hasEditedContent) return 'bg-gray-400 text-white cursor-not-allowed'; // Gray when content not edited
   if (loading) return 'bg-purple-300 text-white cursor-wait'; // Light purple when loading
+  
+  // Special case: if edited after feedback, show purple regardless of rating
+  if (editedSinceFeedback) {
+    return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
+  }
   
   // Default state (not yet rated)
   if (!feedbackRating) return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
@@ -67,11 +74,13 @@ export const getFeedbackLabel = (hasEditedContent, loading, hasFeedback, editedS
   if (!hasEditedContent) return "Add content first";
   if (loading) return "Processing...";
   
-  // If not rated yet or edited after feedback
-  if (!hasFeedback) return "Ready for feedback";
+  // Special case: if edited after feedback, show "Get new feedback"
+  if (editedSinceFeedback) {
+    return "Get new feedback";
+  }
   
-  // If edited since feedback
-  if (editedSinceFeedback) return "Get new feedback";
+  // If not rated yet
+  if (!hasFeedback) return "Ready for feedback";
   
   // Otherwise show the rating with descriptive text
   if (!feedbackRating) return "Get new feedback";
