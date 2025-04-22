@@ -1,9 +1,6 @@
+// src/components/toggles/DataAcquisitionToggle.js
 import React from 'react';
 
-/**
- * Toggle component for selecting data acquisition method
- * FIXED: Ensured proper active state handling
- */
 const DataAcquisitionToggle = ({ activeMethod, setActiveMethod }) => {
   // Helper to generate button classes
   const getButtonClasses = (method) => `
