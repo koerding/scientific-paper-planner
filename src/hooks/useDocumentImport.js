@@ -2,12 +2,12 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Now sets Pro Mode to true when importing documents
+ * UPDATED: Now properly expands all sections after import
+ * UPDATED: Detects appropriate research approach and data method
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
 import { expandAllSections } from '../services/sectionStateService';
-import { setProModeEnabled } from '../services/progressionStateService';
 
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
   const [importLoading, setImportLoading] = useState(false);
@@ -32,11 +32,6 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       } else {
         console.warn("[handleDocumentImport] resetAllProjectState function not provided");
       }
-      
-      // Turn on Pro Mode for imports - this is all we need to show all sections
-      // Pro Mode overrides the progression system entirely
-      setProModeEnabled(true);
-      console.log("[handleDocumentImport] Enabled Pro Mode for document import");
       
       // Pass sectionContent to the import service
       const importedData = await importDocumentContent(file, sectionContent);
@@ -96,8 +91,7 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
               timestamp: Date.now(),
               expandAllSections: true,
               detectedApproach,
-              detectedDataMethod,
-              proModeEnabled: true
+              detectedDataMethod
             }
           }));
           
