@@ -106,6 +106,12 @@
   }
 }
 
+/* Animation for expanding tooltip content */
+@keyframes fadeInExpand {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 500px; }
+}
+
 /* Feedback status indicators */
 .status-indicator {
   width: 12px;
@@ -379,14 +385,11 @@
   font-weight: 500; /* Slightly bolder */
 }
 
-/* Override text color in the instructions panel when marked complete */
-.instructions-content .text-green-600 {
-  color: #059669 !important;
-}
-
-/* Ensure completed items don't get the opacity reduction */
-.mb-5.opacity-90 {
-  opacity: 1 !important; /* Override opacity to keep all items fully visible */
+/* Add a subtle background to highlight AI feedback */
+.instructions-content .text-purple-700 {
+  background-color: rgba(237, 233, 254, 0.3);
+  border-radius: 4px;
+  padding: 2px 4px;
 }
 
 /* Minimized card rating indicator */
@@ -547,30 +550,30 @@ textarea::placeholder {
   font-style: italic;
 }
 
-/* Info icon styling */
+/* Info icon styling - DOUBLED IN SIZE */
 .info-icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 36px; /* Doubled from 18px */
+  height: 36px; /* Doubled from 18px */
   border-radius: 50%;
   background-color: #EEF2FF;
   color: #4F46E5;
-  font-size: 12px;
+  font-size: 20px; /* Increased from 12px for better visibility */
   font-weight: bold;
   cursor: pointer;
   border: none;
   transition: all 0.2s ease;
-  margin: 0 2px;
+  margin: 0 4px; /* Doubled from 2px */
   vertical-align: middle;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); /* Enhanced shadow */
 }
 
 .info-icon-button:hover {
   background-color: #E0E7FF;
   transform: scale(1.1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* Layout fixes */
@@ -635,29 +638,4 @@ header.bg-white.shadow-sm .container {
 
 body, html {
   overflow-x: hidden;
-}
-/* Info icon styling */
-.info-icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px; /* Doubled from 18px */
-  height: 36px; /* Doubled from 18px */
-  border-radius: 50%;
-  background-color: #EEF2FF;
-  color: #4F46E5;
-  font-size: 20px; /* Increased from 12px for better visibility */
-  font-weight: bold;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s ease;
-  margin: 0 4px; /* Doubled from 2px */
-  vertical-align: middle;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); /* Enhanced shadow */
-}
-
-.info-icon-button:hover {
-  background-color: #E0E7FF;
-  transform: scale(1.1);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
