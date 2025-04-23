@@ -131,7 +131,7 @@ const renderSection = (section) => {
       hasOnlyPlaceholder={hasOnlyPlaceholder}
     />
   );
-};  
+};
   // Get section IDs by category
   const approachSectionIds = getApproachSectionIds();
   const dataMethodSectionIds = getDataMethodSectionIds();
