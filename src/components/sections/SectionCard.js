@@ -16,6 +16,9 @@ const SectionCard = ({
   const section = useAppStore(useCallback((state) => state.sections[sectionId], [sectionId]));
   const updateSectionContent = useAppStore((state) => state.updateSectionContent);
   const toggleMinimize = useAppStore((state) => state.toggleMinimize);
+  // Get specific loading flag for *this* section's potential improvement request
+  // Note: We still use the GLOBAL isAnyAiBusy in FeedbackButton for disabling
+  const isImprovementLoading = useAppStore((state) => state.loading.improvement);
 
   // Local state for hover/focus within the card itself
   const [isHovered, setIsHovered] = useState(false);
@@ -26,11 +29,13 @@ const SectionCard = ({
   const {
     title = 'Untitled', content = '', placeholder = 'Start writing...',
     isMinimized = true, aiInstructions, feedbackRating, editedSinceFeedback,
-    maxLength // Get maxLength if needed for editor
+    maxLength
   } = section || {};
   const hasFeedback = !!feedbackRating;
   const hasOnlyPlaceholder = content === (placeholder || '') || content.trim() === '';
-  const isLoadingFeedback = false; // Placeholder for actual loading state
+  // isLoadingFeedback is derived from the store now
+  // const isLoadingFeedback = isImprovementLoading; // This reflects the improvement loading state
+
 
   // --- Callbacks ---
   const handleTextChange = useCallback((e) => {
@@ -40,8 +45,7 @@ const SectionCard = ({
   const handleToggleMinimize = useCallback((e) => {
       if(e) e.stopPropagation();
       toggleMinimize(sectionId);
-      // If expanding, set focus to this section in parent
-       if (isMinimized && typeof handleSectionFocus === 'function') { // check isMinimized before toggle
+       if (isMinimized && typeof handleSectionFocus === 'function') {
             handleSectionFocus(sectionId);
        }
   }, [sectionId, toggleMinimize, isMinimized, handleSectionFocus]);
@@ -52,26 +56,21 @@ const SectionCard = ({
     }
   }, [sectionId, onRequestFeedback]);
 
-   // Set focus in parent when the card area (outside textarea) is clicked
    const handleCardClick = () => {
       if (isMinimized) {
-          handleToggleMinimize(); // This already handles focus when expanding
+          handleToggleMinimize();
       } else if (typeof handleSectionFocus === 'function') {
-        // If already expanded, just set focus
         handleSectionFocus(sectionId);
       }
    };
 
-   // Callback for when the SectionEditor's textarea gains focus
    const handleEditorFocus = useCallback(() => {
        setIsTextareaFocused(true);
-       // Also trigger the parent's focus handler
        if (typeof handleSectionFocus === 'function') {
            handleSectionFocus(sectionId);
        }
    }, [sectionId, handleSectionFocus]);
 
-   // Callback for when the SectionEditor's textarea loses focus
    const handleEditorBlur = useCallback(() => {
        setIsTextareaFocused(false);
    }, []);
@@ -96,54 +95,51 @@ const SectionCard = ({
         onClick={handleCardClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        // ref is removed as it wasn't used and caused potential errors
       >
-      {/* Pass parent focus state (isCurrentSection) for header highlight */}
        <SectionHeader
          title={title}
          isMinimized={isMinimized}
          hasFeedback={hasFeedback}
          feedbackRating={feedbackRating}
          editedSinceFeedback={editedSinceFeedback}
-         isHovered={isHovered || isTextareaFocused} // Show edit icon on hover or if textarea focused
-         isFocused={isCurrentSection} // Highlight based on parent's focus state
+         isHovered={isHovered || isTextareaFocused}
+         isFocused={isCurrentSection}
          toggleMinimized={handleToggleMinimize}
        />
 
-      {/* Preview for minimized state */}
       {isMinimized && ( <SectionPreview textValue={content} /> )}
 
-      {/* Editor Component - Only show when expanded */}
       {!isMinimized && (
         <>
-          {/* Remove the stopPropagation wrapper div */}
-          {/* <div onClick={(e) => e.stopPropagation()}> */}
-              <SectionEditor
-                 sectionId={sectionId} // Pass sectionId for context if needed
-                 textValue={content}
-                 placeholder={placeholder || "Start writing..."}
-                 maxLength={maxLength}
-                 // --- Pass focus handlers down ---
-                 onFocus={handleEditorFocus}
-                 onBlur={handleEditorBlur}
-                 // Pass other props for consistency, though not used by editor directly here
-                 isHovered={isHovered}
-                 handleTextChange={handleTextChange}
-              />
-          {/* </div> */}
-
-          <FeedbackButton
-             loading={isLoadingFeedback}
-             hasEditedContent={!hasOnlyPlaceholder}
-             hasFeedback={hasFeedback}
-             editedSinceFeedback={editedSinceFeedback}
-             feedbackRating={feedbackRating}
-             handleFeedbackRequest={handleFeedbackRequest}
+          {/* --- MODIFICATION: Pass onFocus/onBlur to SectionEditor --- */}
+           <SectionEditor
+              sectionId={sectionId}
+              textValue={content}
+              placeholder={placeholder || "Start writing..."}
+              maxLength={maxLength}
+              onFocus={handleEditorFocus} // Pass handler
+              onBlur={handleEditorBlur}  // Pass handler
+              // isFocused/isHovered are managed internally by SectionEditor now based on its own state
+              // isFocused={isTextareaFocused}
+              // isHovered={isHovered}
+              handleTextChange={handleTextChange}
            />
+           {/* --- END MODIFICATION --- */}
+
+           {/* --- MODIFICATION: Pass sectionId to FeedbackButton --- */}
+           <FeedbackButton
+              // loading prop removed - uses store state internally
+              hasEditedContent={!hasOnlyPlaceholder}
+              hasFeedback={hasFeedback}
+              editedSinceFeedback={editedSinceFeedback}
+              feedbackRating={feedbackRating}
+              handleFeedbackRequest={handleFeedbackRequest}
+              sectionId={sectionId} // Pass the section ID
+            />
+            {/* --- END MODIFICATION --- */}
         </>
       )}
 
-      {/* Fade gradient at bottom of minimized cards */}
       {isMinimized && ( <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-t from-gray-100 via-gray-50 to-transparent pointer-events-none"></div> )}
     </div>
   );
