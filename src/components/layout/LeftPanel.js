@@ -64,7 +64,7 @@ const LeftPanel = ({
   return (
     // --- UPDATED PADDING ---
     // Increased pt-5 to pt-20 (adjust if needed based on actual header height)
-    <div className="w-1/2 h-full overflow-y-auto px-4 pt-40 pb-12 box-border flex-shrink-0">
+    <div className="w-1/2 h-full overflow-y-auto px-4 pt-10 pb-12 box-border flex-shrink-0">
       <HeaderCard />
 
       {/* Question Section */}
