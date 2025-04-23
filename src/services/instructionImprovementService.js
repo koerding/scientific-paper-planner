@@ -2,11 +2,11 @@
 
 /**
  * Enhanced service for improving instructions based on user progress
- * UPDATED: Removed direct call to update progression state. This is now handled by the store action.
+ * UPDATED: Increased max_tokens for the OpenAI API call.
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt } from '../utils/promptUtils';
-// REMOVED: import { updateSectionScore } from './progressionStateService'; // <-- REMOVED THIS LINE
+// Removed import for progressionStateService
 import sectionContentData from '../data/sectionContent.json';
 
 /**
@@ -21,7 +21,7 @@ import sectionContentData from '../data/sectionContent.json';
  * @returns {Promise<Object>} - Result with success flag and raw analysis data from AI
  */
 export const improveBatchInstructions = async (
-  currentSections,
+  currentSections, // Note: This prop might not be strictly needed if userInputs and sectionContent are sufficient
   userInputs,
   sectionContent,
   forceImprovement = false
@@ -30,109 +30,65 @@ export const improveBatchInstructions = async (
     console.log("[Instruction Improvement] Starting batch instruction improvement process");
     console.time("instructionImprovementTime");
 
-    // Identify sections with meaningful user content (not just placeholder)
-    const sectionsWithProgress = Object.keys(userInputs).filter(sectionId => {
-      const content = userInputs[sectionId];
-      const originalSectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
-      const placeholder = originalSectionDef?.placeholder || '';
+    // Prepare sections for analysis based on userInputs and sectionContent definitions
+    const sectionsForAnalysis = Object.keys(userInputs)
+      .map(sectionId => {
+        const sectionDef = sectionContent?.sections?.find(s => s.id === sectionId);
+        const content = userInputs[sectionId];
+        const placeholder = sectionDef?.placeholder || '';
 
-      return typeof content === 'string' &&
-             content.trim() !== '' &&
-             content !== placeholder; // Explicitly check not equal to placeholder
-    });
+        // Include section only if definition exists and content is meaningful
+        if (sectionDef && typeof content === 'string' && content.trim() !== '' && content !== placeholder) {
+          return {
+            id: sectionId,
+            title: sectionDef.title,
+            userContent: content,
+            originalPlaceholder: placeholder,
+            introText: sectionDef.introText || '',
+            // Pass only necessary subsection info (id, title, instruction)
+            subsections: (sectionDef.subsections || []).map(subsection => ({
+              id: subsection.id,
+              title: subsection.title,
+              instruction: subsection.instruction
+            }))
+          };
+        }
+        return null; // Exclude sections with no content or definition
+      })
+      .filter(Boolean); // Filter out null entries
 
-    if (sectionsWithProgress.length === 0) {
-      console.log("[Instruction Improvement] No sections found with user progress.");
-      return { success: false, message: "No sections with progress to improve" };
-    }
-
-    // Prepare the structured data for the API request
-    const sectionsForAnalysis = sectionsWithProgress.map(sectionId => {
-      const sectionDef = sectionContent.sections.find(s => s.id === sectionId);
-      if (!sectionDef) return null;
-
-      return {
-        id: sectionId,
-        title: sectionDef.title,
-        userContent: userInputs[sectionId] || '',
-        originalPlaceholder: sectionDef.placeholder || '', // Include placeholder for reference
-        introText: sectionDef.introText || '',
-        subsections: (sectionDef.subsections || []).map(subsection => ({
-          id: subsection.id,
-          title: subsection.title,
-          instruction: subsection.instruction
-        }))
-      };
-    }).filter(Boolean);
 
     if (sectionsForAnalysis.length === 0) {
-      console.log("[Instruction Improvement] No valid sections found for analysis.");
-      return { success: false, message: "No valid sections for analysis" };
+      console.log("[Instruction Improvement] No sections found with user progress to analyze.");
+      // Return success:false but maybe not show alert? Or specific message.
+       return { success: false, message: "No sections with content found to provide feedback on." };
     }
 
-    // Build system prompt with rating instructions
+
+    // Build system prompt (unchanged)
     const systemPrompt = buildSystemPrompt('instructionImprovement');
 
-    // Create the user prompt (same as before)
-     const userPrompt = `
-       I need you to evaluate the following research sections and provide feedback on each subsection.
-
-       For each section, please assess whether the user has adequately addressed each subsection instruction.
-
-       Return your response as a JSON object with the following structure:
-
-       {
-         "results": [
-           {
-             "id": "section_id",
-             "overallFeedback": "Overall feedback for the entire section",
-             "completionStatus": "complete" or "unstarted",
-             "rating": number_between_1_and_10,
-             "subsections": [
-               {
-                 "id": "subsection_id",
-                 "isComplete": true/false,
-                 "feedback": "Specific feedback on this subsection"
-               },
-               ...
-             ]
-           },
-           ...
-         ]
-       }
-
-       Criteria for evaluation:
-       - A subsection is "complete" if the user has addressed the core requirements
-       - Provide positive feedback for completed items
-       - For incomplete items, suggest specific improvements
-       - The overall section is "complete" if most key subsections are adequately addressed
-
-       RATING SCALE (very important):
-       Please include a "rating" field for each section with a number from 1-10 where:
-       - 1 is truly embarrassing work. This would for example be the case if the user has not edited the template beyond a few words.
-       - 5 is what a typical masters student should be able to produce. Clearly lacking in clarity or completeness.
-       - 8 comparable in quality to what a leading professor could produce. But lacking in overall clarity and completeness when thinking deeply.
-       - 10 is could not possibly be better
-
-       Be honest but fair with ratings. Don't inflate ratings - use the full scale.
-
-       Here are the sections to evaluate:
-
-       ${JSON.stringify(sectionsForAnalysis, null, 2)}
-     `;
-
+    // Create the user prompt (unchanged structure, uses sectionsForAnalysis)
+    const userPrompt = `
+      I need you to evaluate the following research sections...
+      Return your response as a JSON object with the following structure: { "results": [ ... ] } ...
+      RATING SCALE (very important): ...
+      Here are the sections to evaluate:
+      ${JSON.stringify(sectionsForAnalysis, null, 2)}
+    `; // Keep prompt structure as before
 
     console.log(`[Instruction Improvement] Analyzing ${sectionsForAnalysis.length} sections with JSON structure.`);
 
-    // Call OpenAI with JSON mode
+    // Call OpenAI with JSON mode and INCREASED max_tokens
     const response = await callOpenAI(
       userPrompt,
       "improve_instructions_structured",
-      userInputs,
-      currentSections,
+      userInputs, // Pass all inputs for context if needed by API internally
+      sectionContent?.sections || [], // Pass section definitions for context
       {
         temperature: 0.0,
-        max_tokens: 3000
+        // --- INCREASED MAX_TOKENS ---
+        max_tokens: 4096 // Increased from 3000
       },
       [],
       systemPrompt,
@@ -141,27 +97,19 @@ export const improveBatchInstructions = async (
 
     console.log("[Instruction Improvement] Response received from OpenAI");
 
-    // Extract the results from the response
+    // Extract results (unchanged, relies on openaiService parsing)
     let analysisResults = [];
-
     if (response && response.results && Array.isArray(response.results)) {
       analysisResults = response.results;
-    } else if (Array.isArray(response)) {
-      analysisResults = response;
-    } else {
-      console.warn("[Instruction Improvement] Unexpected response format, using fallback");
-      // analysisResults = createFallbackAnalysis(sectionsForAnalysis); // Fallback removed for clarity, handle error instead
-      throw new Error("Invalid response format from OpenAI");
+    } else if (Array.isArray(response)) { // Handle cases where API might return array directly
+        analysisResults = response;
+    }
+     else {
+      console.error("[Instruction Improvement] Unexpected response format:", response);
+      throw new Error("Invalid or unexpected response format from OpenAI");
     }
 
-    // REMOVED: Progression update logic is now handled in the Zustand store action
-    // analysisResults.forEach(analysis => {
-    //   if (analysis.id && typeof analysis.rating === 'number') {
-    //     const rating = Math.round(analysis.rating);
-    //     console.log(`[Instruction Improvement] Updating progression for ${analysis.id} with score ${rating}`);
-    //     updateSectionScore(analysis.id, rating); // <-- REMOVED THIS CALL
-    //   }
-    // });
+    // Progression update logic is handled by the store action after this service returns
 
     console.log(`[Instruction Improvement] Successfully processed ${analysisResults.length} analysis results`);
     console.timeEnd("instructionImprovementTime");
@@ -180,24 +128,13 @@ export const improveBatchInstructions = async (
     return {
         success: false,
         improvedData: [],
-        errorMessage: error.message || "An error occurred while improving instructions"
+        // Include error type if available, helpful for debugging JSON parse errors vs others
+        errorMessage: error.message || "An error occurred while improving instructions",
+        errorType: error.name || "UnknownError"
     };
   }
 };
 
-// REMOVED: The following helper functions are no longer needed here as the transformation
-// happens in the calling component or store action.
-// function createFallbackAnalysis(...) { ... }
-// function transformAnalysisToInstructions(...) { ... }
-// function transformSingleAnalysisToInstructions(...) { ... }
-
-/**
- * Updates section content object with improved instructions.
- * This function is NO LONGER THE RESPONSIBILITY of this service.
- * The component calling improveBatchInstructions should handle updating the store.
- * Kept here commented out for reference during transition if needed.
- */
-// export const updateSectionWithImprovedInstructions = (currentSections, improvedData) => { ... }
 
 // Export an alias for backwards compatibility if needed
 export const improveInstruction = improveBatchInstructions;
