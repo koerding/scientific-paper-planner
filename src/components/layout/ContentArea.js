@@ -5,19 +5,24 @@ import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPan
 
 const ContentArea = ({
   // Props for LeftPanel
-  activeSection, sections, activeApproach, activeDataMethod,
-  handleSectionFocus, handleApproachToggle, handleDataMethodToggle,
+  activeSection,
+  // sections, // sections prop likely no longer needed by LeftPanel
+  activeApproach,
+  activeDataMethod,
+  handleSectionFocus,
+  handleApproachToggle,
+  handleDataMethodToggle,
   proMode,
   // Props for RightPanel
-  handleMagic, isAnyAiLoading,
+  handleMagic,
+  isAnyAiLoading,
 }) => {
 
   return (
-    // Ensure the flex container itself can take up screen height
-    // The parent container (in MainLayout) might need h-screen or similar
-    <div className="flex min-h-[calc(100vh-64px)]"> {/* Adjust 64px based on actual header height */}
+    // Make flex container take full height of its parent and hide its own overflow
+    <div className="flex flex-grow h-full overflow-hidden">
 
-      {/* Left panel: Uses CSS for overflow and height */}
+      {/* Left panel: Relies on CSS for overflow and width. Height comes from flex parent */}
       <LeftPanel
         activeSection={activeSection}
         handleSectionFocus={handleSectionFocus}
@@ -25,10 +30,9 @@ const ContentArea = ({
         handleDataMethodToggle={handleDataMethodToggle}
         handleMagic={handleMagic}
         proMode={proMode}
-        // Note: 'sections' prop might not be needed if LeftPanel reads from store
       />
 
-      {/* Right panel: Now uses inline styles for height and overflow */}
+      {/* Right panel: Uses inline styles for overflow and width. Height comes from flex parent */}
       <FullHeightInstructionsPanel
         activeSectionId={activeSection}
         improveInstructions={handleMagic}
