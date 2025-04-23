@@ -9,21 +9,23 @@ import SaveDialog from '../PaperPlanner/SaveDialog';
 const ModalManager = ({
   modals,
   actions,
-  handleReviewPaper, // Keep if needed by ReviewPaperModal
-  loadProject, // Keep if needed by ExamplesDialog
-  saveWithFilename // Keep if needed by SaveDialog
+  handleReviewPaper,
+  loadProject,
+  saveWithFilename
 }) => {
-  // Log the received props during render
-  console.log("[ModalManager] Rendering with modals state:", modals); // <-- ADD LOG
+  console.log("[ModalManager] Rendering with modals state:", modals);
 
+  // --- CORRECTED DESTRUCTURING ---
+  // Use the actual keys from the state object in UIContext
   const {
-    showConfirmDialog,
-    showExamplesDialog,
-    showReviewModal,
-    showPrivacyPolicy,
-    showSaveDialog,
-    reviewData // Destructure reviewData if needed by ReviewPaperModal
-  } = modals || {}; // Add fallback for safety during initial renders
+    confirmDialog, // Changed from showConfirmDialog
+    examplesDialog, // Assuming this matches the key in UIContext state
+    reviewModal,    // Assuming this matches the key in UIContext state
+    privacyPolicy,  // Assuming this matches the key in UIContext state
+    saveDialog,     // Assuming this matches the key in UIContext state
+    reviewData      // Keep reviewData if it's part of the modals state slice passed down
+  } = modals || {};
+  // --- END CORRECTION ---
 
   const {
     closeConfirmDialog,
@@ -32,12 +34,12 @@ const ModalManager = ({
     closePrivacyPolicy,
     closeSaveDialog,
     onConfirmReset
-  } = actions || {}; // Add fallback for safety
+  } = actions || {};
 
-  // Log the specific value being passed
-  console.log(`[ModalManager] showConfirmDialog value: ${showConfirmDialog}`); // <-- ADD LOG
+  // Log the specific value using the CORRECT variable name
+  console.log(`[ModalManager] confirmDialog value: ${confirmDialog}`); // Changed variable name
 
-  // Ensure actions are functions before passing down (optional safety)
+  // Ensure actions are functions before passing down
   const handleReset = typeof onConfirmReset === 'function' ? onConfirmReset : () => console.error("onConfirmReset action missing");
   const handleCloseConfirm = typeof closeConfirmDialog === 'function' ? closeConfirmDialog : () => console.error("closeConfirmDialog action missing");
   // Add similar checks for other actions if needed
@@ -45,37 +47,42 @@ const ModalManager = ({
   return (
     <>
       {/* Confirmation Dialog */}
+      {/* Pass the correct variable 'confirmDialog' to the prop */}
       <ConfirmDialog
-        showConfirmDialog={showConfirmDialog} // Pass the boolean value
-        setShowConfirmDialog={handleCloseConfirm} // Pass the close function
-        resetProject={handleReset} // Pass the reset execution function
+        showConfirmDialog={confirmDialog} // Pass the correct destructured variable
+        setShowConfirmDialog={handleCloseConfirm}
+        resetProject={handleReset}
       />
 
       {/* Examples Dialog */}
+       {/* Assuming key was 'examplesDialog' and prop for ExamplesDialog is 'showExamplesDialog' */}
       <ExamplesDialog
-        showExamplesDialog={showExamplesDialog}
-        setShowExamplesDialog={closeExamplesDialog} // Assuming this exists in actions
+        showExamplesDialog={examplesDialog}
+        setShowExamplesDialog={closeExamplesDialog}
         loadProject={loadProject}
       />
 
       {/* Review Paper Modal */}
+       {/* Assuming key was 'reviewModal' and prop for ReviewPaperModal is 'showModal' */}
       <ReviewPaperModal
-        showModal={showReviewModal}
-        onClose={closeReviewModal} // Assuming this exists in actions
-        reviewData={reviewData}
+        showModal={reviewModal}
+        onClose={closeReviewModal}
+        reviewData={reviewData} // Make sure reviewData is actually part of modals state or passed separately
         handleReviewPaper={handleReviewPaper}
       />
 
       {/* Privacy Policy Modal */}
+      {/* Assuming key was 'privacyPolicy' and prop for PrivacyPolicyModal is 'showModal' */}
       <PrivacyPolicyModal
-        showModal={showPrivacyPolicy}
-        onClose={closePrivacyPolicy} // Assuming this exists in actions
+        showModal={privacyPolicy}
+        onClose={closePrivacyPolicy}
       />
 
       {/* Save Dialog */}
+      {/* Assuming key was 'saveDialog' and prop for SaveDialog is 'showSaveDialog' */}
       <SaveDialog
-        showSaveDialog={showSaveDialog}
-        setShowSaveDialog={closeSaveDialog} // Assuming this exists in actions
+        showSaveDialog={saveDialog}
+        setShowSaveDialog={closeSaveDialog}
         saveProject={saveWithFilename}
       />
     </>
