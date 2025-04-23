@@ -1,3 +1,4 @@
+// src/components/PaperPlanner/index.js
 import React from 'react';
 import VerticalPaperPlannerApp from './VerticalPaperPlannerApp'; // Component being rendered
 import usePaperPlanner from '../../hooks/usePaperPlanner';     // The hook managing state
