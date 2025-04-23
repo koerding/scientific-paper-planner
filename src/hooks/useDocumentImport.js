@@ -2,23 +2,27 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Fixed syntax error in conditional checks for toggle detection.
- * UPDATED: Correctly handles the loading process without expecting a boolean return from the loadProject prop.
+ * UPDATED: Now uses Zustand store for loading state management
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
-// Removed import from sectionStateService
+import useAppStore from '../store/appStore'; // Import the Zustand store
 
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
-  const [importLoading, setImportLoading] = useState(false);
+  // Get the setLoading function from the Zustand store
+  const setLoading = useAppStore(state => state.setLoading);
+  // Get the import loading state for local reference
+  const importLoading = useAppStore(state => state.loadingStates.import);
 
   const handleDocumentImport = useCallback(async (file) => {
-    setImportLoading(true);
+    // Set loading state using Zustand
+    setLoading('import', true);
 
     try {
       // Ask for confirmation
       if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
-        setImportLoading(false);
+        // Set loading state to false if user cancels
+        setLoading('import', false);
         return false; // User cancelled
       }
 
@@ -43,8 +47,7 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
         let detectedApproach = 'hypothesis'; // Default
         let detectedDataMethod = 'experiment'; // Default
 
-        // --- CORRECTED CONDITIONS START ---
-        // Check which research approach has content (using consistent optional chaining)
+        // Check which research approach has content
         if (importedData.userInputs?.needsresearch?.trim() !== '') {
           detectedApproach = 'needsresearch';
         } else if (importedData.userInputs?.exploratoryresearch?.trim() !== '') {
@@ -54,7 +57,7 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
           detectedApproach = 'hypothesis';
         }
 
-        // Check which data method has content (using consistent optional chaining)
+        // Check which data method has content
         if (importedData.userInputs?.existingdata?.trim() !== '') {
           detectedDataMethod = 'existingdata';
         } else if (importedData.userInputs?.theorysimulation?.trim() !== '') {
@@ -63,8 +66,6 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
            // Keep experiment as default unless others are present and non-empty
           detectedDataMethod = 'experiment';
         }
-        // --- CORRECTED CONDITIONS END ---
-
 
         // Include detected toggles in the loaded data
         importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
@@ -76,30 +77,32 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
             console.log(`Document ${file.name} successfully processed and loaded into store.`);
 
             // Dispatch event (unchanged)
-            window.dispatchEvent(new CustomEvent('documentImported', { /* ... details ... */ }));
+            window.dispatchEvent(new CustomEvent('documentImported', { 
+              detail: {
+                fileName: file.name,
+                timestamp: Date.now()
+              }
+            }));
 
-            setImportLoading(false);
+            setLoading('import', false);
             return true; // Indicate success
-
         } catch (loadError) {
              console.error("Error during the loadProject (store update) step:", loadError);
              throw new Error(`Failed to load processed data into application state: ${loadError.message}`);
         }
-
       } else {
           throw new Error("Failed to retrieve valid data from document processing service.");
       }
-
     } catch (error) {
       console.error("Error importing document:", error);
       alert("Error importing document: " + (error.message || "Unknown error"));
-      setImportLoading(false);
+      setLoading('import', false);
       return false; // Indicate failure
     }
-  }, [loadProject, sectionContent, resetAllProjectState]);
+  }, [loadProject, sectionContent, resetAllProjectState, setLoading]);
 
   return {
-    importLoading,
+    importLoading, // Return the loading state from Zustand
     handleDocumentImport
   };
 };
