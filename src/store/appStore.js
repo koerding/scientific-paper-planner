@@ -1,4 +1,5 @@
 // FILE: src/store/appStore.js
+// No changes needed. The existing structure supports the requirement.
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import sectionContent from '../data/sectionContent.json'; // Adjust path as needed
@@ -71,6 +72,7 @@ const useAppStore = create(
       ...initialChatState,
 
       // --- Combined Loading Getter ---
+      // This is the single source of truth for whether ANY AI task is running
       isAnyLoading: () => Object.values(get().loading).some(Boolean),
 
       // --- Actions for Core State ---
