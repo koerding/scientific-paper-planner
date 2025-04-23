@@ -6,7 +6,15 @@ import SectionPreview from './SectionPreview';
 import SectionEditor from './SectionEditor';
 import FeedbackButton from './FeedbackButton';
 
-const SectionCard = ({ section, isCurrentSection }) => {
+const SectionCard = ({ 
+  section, 
+  isCurrentSection,
+  onRequestFeedback,
+  hasFeedback = false,
+  feedbackRating = null,
+  lastFeedbackTime = null,
+  hasOnlyPlaceholder = false
+}) => {
   // Use our custom hook to get all data and functionality
   const {
     content,
@@ -15,14 +23,15 @@ const SectionCard = ({ section, isCurrentSection }) => {
     isExpanded,
     toggleSection,
     hasBeenEdited,
-    hasFeedback,
-    feedbackRating,
-    editedSinceFeedback,
     isEditing,
     setIsEditing,
-    requestFeedback,
-    handleSignificantEdit
-  } = useProjectSection(section.id);
+    handleSignificantEdit,
+    requestFeedback
+  } = useProjectSection(section.id, onRequestFeedback);
+
+  // Calculate if content was edited since feedback
+  const editedSinceFeedback = lastFeedbackTime ? 
+    (section.lastEditTime && section.lastEditTime > lastFeedbackTime) : false;
 
   // Handle text changes
   const handleTextChange = (e) => {
@@ -71,10 +80,14 @@ const SectionCard = ({ section, isCurrentSection }) => {
     ${isCurrentSection ? 'current-active' : ''}
   `;
 
+  // This will be called when feedback button is clicked
+  const handleFeedbackRequest = () => {
+    console.log(`SectionCard: Feedback requested for ${section.id}`);
+    requestFeedback();
+  };
+
   return (
-    <div
-      className={sectionClasses}
-    >
+    <div className={sectionClasses}>
       {/* Header Component */}
       <SectionHeader
         title={section.title}
@@ -110,11 +123,11 @@ const SectionCard = ({ section, isCurrentSection }) => {
           {/* Feedback Button */}
           <FeedbackButton
             loading={false} // Will be connected to feedback loading state
-            hasEditedContent={hasBeenEdited}
+            hasEditedContent={hasBeenEdited || !hasOnlyPlaceholder}
             hasFeedback={hasFeedback}
             editedSinceFeedback={editedSinceFeedback}
             feedbackRating={feedbackRating}
-            handleFeedbackRequest={requestFeedback}
+            handleFeedbackRequest={handleFeedbackRequest}
           />
         </>
       )}
