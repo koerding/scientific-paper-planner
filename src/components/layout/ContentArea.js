@@ -1,13 +1,8 @@
-// FILE: src/components/layout/ContentArea.js
-
+// src/components/layout/ContentArea.js
 import React from 'react';
 import LeftPanel from './LeftPanel';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 
-/**
- * Component for the main content area with left and right panels
- * UPDATED: Now passes last feedback times to track edits made after feedback
- */
 const ContentArea = ({
   // Left panel props
   activeSection,
