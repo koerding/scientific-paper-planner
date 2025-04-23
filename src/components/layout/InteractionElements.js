@@ -4,21 +4,19 @@ import ModernChatInterface from '../chat/ModernChatInterface';
 
 /**
  * Component for interactive UI elements like chat
- * Now receives chat state/actions as props from parent (originating from Zustand store)
+ * Now receives chat state/actions AND the global busy state as props
  */
 const InteractionElements = ({
   // Chat props (passed down from VerticalPaperPlannerApp)
-  currentSection, // This is now currentChatSectionId
+  currentSection,
   currentSectionTitle,
   chatMessages,
   currentMessage,
   setCurrentMessage,
   handleSendMessage,
-  loading, // This is now loadingFlags.chat
-  currentSectionData, // Data for the current chat section
-
-  // Other props (kept for compatibility if needed, but likely unused now)
-  // handleMagicClick, userInputs, lastImprovementTime, significantEditsMade
+  loading, // This is the specific chat loading state
+  isAiBusy, // This is the GLOBAL AI busy state
+  currentSectionData,
 }) => {
   return (
     <>
@@ -28,11 +26,11 @@ const InteractionElements = ({
         currentSectionTitle={currentSectionTitle}
         chatMessages={chatMessages}
         currentMessage={currentMessage}
-        setCurrentMessage={setCurrentMessage} // Pass action
-        handleSendMessage={handleSendMessage} // Pass action
-        loading={loading} // Pass chat loading state
-        currentSectionData={currentSectionData} // Pass relevant section data
-        // onboardingStep prop can be added if needed, selected from store in parent
+        setCurrentMessage={setCurrentMessage}
+        handleSendMessage={handleSendMessage}
+        loading={loading} // Pass chat-specific loading flag
+        isAiBusy={isAiBusy} // Pass the GLOBAL busy flag
+        currentSectionData={currentSectionData}
       />
     </>
   );
