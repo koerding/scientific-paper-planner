@@ -97,7 +97,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
                 </svg>
               </div>
               <div>
-                <p className="font-medium text-gray-800">Feeling stuck? Try the PDF import</p>
+                <p className="font-medium text-gray-800">Feeling stuck? Try Pdf->Example to see how the authors might have filled this form</p>
                 <p className="text-gray-600 text-sm">Upload your favorite paper and let the AI create an example project structure based on it</p>
               </div>
             </div>
