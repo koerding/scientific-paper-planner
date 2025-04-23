@@ -1,5 +1,4 @@
-// FILE: src/components/modals/ModalManager.js
-
+// src/components/modals/ModalManager.js
 import React from 'react';
 import ConfirmDialog from '../PaperPlanner/ConfirmDialog';  // Updated path
 import ExamplesDialog from '../PaperPlanner/ExamplesDialog';  // Updated path
@@ -7,9 +6,6 @@ import ReviewPaperModal from './ReviewPaperModal';  // This one should be correc
 import PrivacyPolicyModal from './PrivacyPolicyModal';  // This one should be correct
 import SaveDialog from '../PaperPlanner/SaveDialog';  // Updated path
 
-/**
- * Centralized modal manager component
- */
 const ModalManager = ({ 
   modals, 
   actions,
