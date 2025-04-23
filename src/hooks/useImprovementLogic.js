@@ -36,7 +36,6 @@ export const useImprovementLogic = (sectionContent) => { // Pass sectionContent 
     // Simple validation: Check if target section exists and has content
      const sectionData = allSections[targetSectionId];
      if (targetSectionId && (!sectionData || sectionData.content === (sectionData.placeholder || '') || sectionData.content.trim() === '')) {
-        console.warn(`[useImprovementLogic] Skipping feedback for ${targetSectionId} - no content or placeholder only`);
         return { success: false, message: "Section has no content to review" };
      }
 
@@ -65,7 +64,6 @@ export const useImprovementLogic = (sectionContent) => { // Pass sectionContent 
        } else {
            // Logic to select multiple sections if targetSectionId is null (if needed)
            // sectionsToAnalyzeConfig = Object.values(allSections)... filter ... map ...
-           console.warn("[useImprovementLogic] handleMagic called without targetSectionId - batch improvement not fully implemented here.");
            // For now, only handle single section improvement requests via this hook
            if (!targetSectionId) {
               setImprovingInstructions(false);
@@ -74,7 +72,6 @@ export const useImprovementLogic = (sectionContent) => { // Pass sectionContent 
        }
 
         if (sectionsToAnalyzeConfig.length === 0) {
-           console.warn(`[handleMagic] Target section "${targetSectionId}" not found or invalid for analysis`);
            setImprovingInstructions(false);
            return { success: false, message: "Target section not found or invalid" };
         }
@@ -92,16 +89,13 @@ export const useImprovementLogic = (sectionContent) => { // Pass sectionContent 
         // **IMPORTANT:** Instead of updating state here, just return the results.
         // The calling component (VerticalPaperPlannerApp) will use these results
         // to call the `updateSectionFeedback` action in the store.
-        console.log("[useImprovementLogic] Improvement successful, returning results:", result.improvedData[0]);
         // REMOVED: No longer calls updateSectionScore here
         return { success: true, feedbackData: result.improvedData[0] }; // Return feedback for the single section
       } else {
-          console.warn("[useImprovementLogic] Improvement call failed or returned no data:", result);
            return { success: false, message: result.message || "Improvement failed" };
       }
 
     } catch (error) {
-      console.error("[useImprovementLogic] Error during improvement process:", error);
       return { success: false, message: error.message || "An error occurred" };
     } finally {
       setImprovingInstructions(false);
@@ -120,7 +114,6 @@ export const useImprovementLogic = (sectionContent) => { // Pass sectionContent 
 
   // Reset function (less critical now as store reset handles main state)
   const resetImprovementState = useCallback(() => {
-    console.log("[useImprovementLogic] Resetting local improvement state (edit tracking)");
     setLastImprovementTime(Date.now());
     setEditEvents([]);
     setSignificantEditsMade(false);
