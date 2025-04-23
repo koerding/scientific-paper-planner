@@ -23,7 +23,7 @@ const VerticalPaperPlannerApp = () => {
   const updateSectionContent = useAppStore((state) => state.updateSectionContent);
   const setActiveToggle = useAppStore((state) => state.setActiveToggle);
   const updateSectionFeedback = useAppStore((state) => state.updateSectionFeedback);
-  const resetState = useAppStore((state) => state.resetState); // Get reset action from store
+  const resetState = useAppStore((state) => state.resetState);
   const loadStoreProjectData = useAppStore((state) => state.loadProjectData);
   const expandAllSections = useAppStore((state) => state.expandAllSections);
 
@@ -36,8 +36,12 @@ const VerticalPaperPlannerApp = () => {
 
   // --- UI Context for Modals ---
   const {
-      modals, openModal, closeModal, // useUI provides functions to control modals
-      setReviewData, setLoading: setUILoading
+      modals, // Get the modals state object from the context
+      openModal,
+      closeModal,
+      setReviewData,
+      setLoading: setUILoading // Assuming useUI provides setLoading directly
+      // Destructure other necessary values/actions from useUI if needed
   } = useUI();
 
   // --- Get Current Section Data (with fallback) ---
@@ -56,7 +60,7 @@ const VerticalPaperPlannerApp = () => {
   const { importLoading, handleDocumentImport } = useDocumentImport(
     loadStoreProjectData,
     { sections: sections ? Object.values(sections).map(s => ({...(s || {}), subsections: s?.originalInstructions || [] })) : [] },
-    resetState // Pass the store's reset action here
+    resetState
   );
 
   // Combined loading state
@@ -64,11 +68,15 @@ const VerticalPaperPlannerApp = () => {
 
   // --- Effects ---
   useEffect(() => {
-    ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` });
+    // ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` }); // Moved below
     window.splashManagerRef = splashManagerRef;
-  }, []); // Initial setup
+    // Log initial state on mount
+    console.log("[VerticalPaperPlannerApp] Mounted. Initial activeSectionId:", activeSectionId);
+    console.log("[VerticalPaperPlannerApp] Mounted. Initial UI modals state:", modals);
+  }, []); // Run only on mount
 
-   useEffect(() => { // Track subsequent section changes
+   useEffect(() => { // Track section changes
+       console.log(`[VerticalPaperPlannerApp] activeSectionId changed to: ${activeSectionId}`);
        ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` });
    }, [activeSectionId]);
 
@@ -85,8 +93,8 @@ const VerticalPaperPlannerApp = () => {
 
   const handleSectionFocus = (sectionId) => {
     if (sectionId && sectionId !== activeSectionId) {
-      setActiveSectionId(sectionId);
-      trackSectionChange(sectionId, sections?.[sectionId]?.title || 'Unknown');
+      setActiveSectionId(sectionId); // Update local state
+      // Analytics tracked in useEffect for activeSectionId
     }
   };
 
@@ -95,32 +103,32 @@ const VerticalPaperPlannerApp = () => {
   };
 
   const handleApproachToggle = (approachId) => {
-      console.log(`Setting research approach to: ${approachId}`);
+      // console.log(`Setting research approach to: ${approachId}`); // Keep logs minimal unless debugging specific features
       trackApproachToggle(approachId);
       setActiveToggle('approach', approachId);
   };
 
   const handleDataMethodToggle = (methodId) => {
-      console.log(`Setting data acquisition method to: ${methodId}`);
+      // console.log(`Setting data acquisition method to: ${methodId}`);
       trackDataMethodToggle(methodId);
       setActiveToggle('dataMethod', methodId);
   };
 
   // Reset Project -> Show Confirm Dialog
    const handleResetRequest = () => {
-       console.log("[VerticalPaperPlannerApp] handleResetRequest called."); // <-- ADDED LOG
-       openModal('confirmDialog'); // Use function from useUI hook
-       console.log("[VerticalPaperPlannerApp] openModal('confirmDialog') executed."); // <-- ADDED LOG
+       console.log("[VerticalPaperPlannerApp] handleResetRequest called.");
+       openModal('confirmDialog');
+       console.log("[VerticalPaperPlannerApp] openModal('confirmDialog') executed.");
    };
 
 
   // Confirm Reset -> Call Store Action
   const handleConfirmReset = () => {
-      console.log("[VerticalPaperPlannerApp] handleConfirmReset called."); // <-- ADDED LOG
-      resetState(); // Call the store action to reset state
+      console.log("[VerticalPaperPlannerApp] handleConfirmReset called.");
+      resetState(); // Reset Zustand store
       setActiveSectionId('question'); // Reset local focus state
-      closeModal('confirmDialog'); // Use function from useUI hook
-      console.log("[VerticalPaperPlannerApp] resetState() and closeModal() executed."); // <-- ADDED LOG
+      closeModal('confirmDialog'); // Close modal via UIContext
+      console.log("[VerticalPaperPlannerApp] resetState() and closeModal() executed.");
   };
 
   // Load Project from file -> Call Store Action
@@ -132,7 +140,7 @@ const VerticalPaperPlannerApp = () => {
 
    // Save Project -> Show Save Dialog
    const handleSaveRequest = () => {
-     openModal('saveDialog'); // Use function from useUI hook
+     openModal('saveDialog');
    };
 
    // Save with Filename -> Use Util
@@ -140,7 +148,7 @@ const VerticalPaperPlannerApp = () => {
      trackSave();
      const sectionsToSave = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
      saveProjectAsJson(sectionsToSave, chatMessages, fileName);
-     closeModal('saveDialog'); // Use function from useUI hook
+     closeModal('saveDialog');
    };
 
   // Export Project -> Use Util
@@ -152,12 +160,12 @@ const VerticalPaperPlannerApp = () => {
 
    // Show Examples Dialog
    const handleOpenExamples = () => {
-     openModal('examplesDialog'); // Use function from useUI hook
+     openModal('examplesDialog');
    };
 
    // Show Privacy Policy
    const handleOpenPrivacy = () => {
-       openModal('privacyPolicy'); // Use function from useUI hook
+       openModal('privacyPolicy');
    };
     useEffect(() => { window.addEventListener('openPrivacyPolicy', handleOpenPrivacy); return () => window.removeEventListener('openPrivacyPolicy', handleOpenPrivacy); }, []);
 
@@ -169,14 +177,13 @@ const VerticalPaperPlannerApp = () => {
   const handleReviewPaperRequest = async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
-      setIsReviewing(true);
-      setUILoading('review', true);
+      setIsReviewing(true); setUILoading('review', true); // Use the specific type 'review'
       try {
           const result = await reviewScientificPaper(file);
           if (result.success) { setReviewData(result); openModal('reviewModal'); }
           else { alert(`Error reviewing paper: ${result.error || 'Unknown error'}`); }
       } catch (error) { alert(`Error reviewing paper: ${error.message || 'Unknown error'}`); }
-      finally { setIsReviewing(false); setUILoading('review', false); }
+      finally { setIsReviewing(false); setUILoading('review', false); } // Set status to false
   };
 
 
@@ -188,14 +195,13 @@ const VerticalPaperPlannerApp = () => {
     if (!sectionToImprove || sectionToImprove.content === (sectionToImprove.placeholder || '') || sectionToImprove.content.trim() === '') {
       alert("Please add some content to this section before requesting feedback."); return;
     }
-    setIsImproving(true);
-    setUILoading('improvement', true);
+    setIsImproving(true); setUILoading('improvement', true); // Use specific type 'improvement'
     try {
         const sectionDefinitions = { sections: sections ? Object.values(sections).map(s => ({...(s || {}), subsections: s?.originalInstructions || [] })) : [] };
         const currentInputs = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
         const result = await improveBatchInstructions([sectionToImprove], currentInputs, sectionDefinitions, true);
         if (result.success && result.improvedData && result.improvedData.length > 0) {
-            updateSectionFeedback(targetSectionId, result.improvedData[0]); // Update store
+            updateSectionFeedback(targetSectionId, result.improvedData[0]);
             const nextSectionId = getNextVisibleSectionId(targetSectionId, activeToggles.approach, activeToggles.dataMethod);
             if (nextSectionId && sections?.[nextSectionId]?.isMinimized) {
                 useAppStore.getState().toggleMinimize(nextSectionId);
@@ -203,7 +209,7 @@ const VerticalPaperPlannerApp = () => {
             }
         } else { console.error("Instruction improvement failed or returned no data", result); alert("Failed to get feedback for this section. Please try again."); }
     } catch (error) { console.error("Error requesting instruction improvement:", error); alert(`Error getting feedback: ${error.message || 'Unknown error'}`); }
-    finally { setIsImproving(false); setUILoading('improvement', false); }
+    finally { setIsImproving(false); setUILoading('improvement', false); } // Set status to false
   };
 
   // --- Props for Child Components ---
@@ -220,14 +226,17 @@ const VerticalPaperPlannerApp = () => {
   };
 
   // --- Render ---
+  // Add console log here to check modal state before passing down
+  console.log("[VerticalPaperPlannerApp] Rendering. Current modals state:", modals); // <-- ADD LOG
+
   if (!sections || Object.keys(sections).length === 0) { return null; }
 
   return (
     <MainLayout
       splashManagerRef={splashManagerRef}
-      resetProject={handleResetRequest} // Pass the function that opens the modal
+      resetProject={handleResetRequest}
       exportProject={handleExportRequest}
-      saveProject={handleSaveRequest} // Pass the function that opens the save dialog
+      saveProject={handleSaveRequest}
       loadProject={handleLoadProject}
       importDocumentContent={handleDocumentImport}
       openReviewModal={() => openModal('reviewModal')}
@@ -235,14 +244,14 @@ const VerticalPaperPlannerApp = () => {
       showHelpSplash={handleShowHelpSplash}
       contentAreaProps={contentAreaProps}
       interactionProps={interactionProps}
-      modalState={modals} // Pass modal visibility flags from UIContext state
-      modalActions={{ // Pass actions to control modals
+      modalState={modals} // Pass the modals object obtained from useUI()
+      modalActions={{ // Actions needed by ModalManager/children
           closeConfirmDialog: () => closeModal('confirmDialog'),
           closeExamplesDialog: () => closeModal('examplesDialog'),
           closeReviewModal: () => closeModal('reviewModal'),
           closePrivacyPolicy: () => closeModal('privacyPolicy'),
           closeSaveDialog: () => closeModal('saveDialog'),
-          onConfirmReset: handleConfirmReset, // Pass the function that performs the reset
+          onConfirmReset: handleConfirmReset, // Make sure this is passed
       }}
       handleReviewPaper={handleReviewPaperRequest}
       saveWithFilename={handleSaveWithFilename}
