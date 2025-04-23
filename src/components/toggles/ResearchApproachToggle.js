@@ -1,55 +1,46 @@
-// src/components/toggles/ResearchApproachToggle.js
+// FILE: src/components/toggles/ResearchApproachToggle.js
 import React from 'react';
+import useAppStore from '../../store/appStore'; // Import the Zustand store
 
 const ResearchApproachToggle = ({ activeApproach, setActiveApproach }) => {
-  // Helper to generate button classes
+  // No need to select state from store here if parent (LeftPanel) handles it
+
   const getButtonClasses = (approach) => `
     px-3 py-1 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex-grow
     ${activeApproach === approach
-      ? 'active font-semibold text-indigo-600 bg-indigo-100' // Subtle active style
-      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' // Subtle default/hover
+      ? 'active font-semibold text-indigo-600 bg-indigo-100'
+      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
     }
   `;
 
-  // Handler for approach selection
+  // Use the setActiveApproach function passed from the parent (which calls the store action)
   const handleApproachChange = (approach) => {
-    console.log(`Changing research approach to: ${approach}`);
     if (setActiveApproach && typeof setActiveApproach === 'function') {
       setActiveApproach(approach);
     }
   };
 
   return (
-    // Removed heavy container styles, added padding/margin
     <div className="approach-toggle mb-3">
       <h3 className="font-medium text-sm text-gray-800 mb-2">Research Approach:</h3>
-
       <div className="flex flex-wrap gap-1">
         <button
           onClick={() => handleApproachChange('hypothesis')}
           className={getButtonClasses('hypothesis')}
         >
-          <div className="flex items-center justify-center">
-            Hypothesis Testing
-          </div>
+          Hypothesis Testing
         </button>
-
         <button
           onClick={() => handleApproachChange('needsresearch')}
           className={getButtonClasses('needsresearch')}
         >
-          <div className="flex items-center justify-center">
-            Needs-Based
-          </div>
+          Needs-Based
         </button>
-
         <button
           onClick={() => handleApproachChange('exploratoryresearch')}
           className={getButtonClasses('exploratoryresearch')}
         >
-          <div className="flex items-center justify-center">
-            Exploratory
-          </div>
+          Exploratory
         </button>
       </div>
     </div>
