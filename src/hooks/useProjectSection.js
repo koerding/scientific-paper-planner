@@ -1,21 +1,17 @@
 // src/hooks/useProjectSection.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { useSectionState } from '../contexts/SectionContext';
-import { useFeedback } from '../contexts/FeedbackContext';
 import sectionContent from '../data/sectionContent.json';
 
-export const useProjectSection = (sectionId) => {
+/**
+ * Hook for managing a single section's state and behaviors
+ * @param {string} sectionId - The ID of the section
+ * @param {function} onRequestFeedback - Optional callback for feedback requests
+ */
+export const useProjectSection = (sectionId, onRequestFeedback) => {
   const { sections, setSectionContent } = useProject();
   const { isExpanded, toggleSection } = useSectionState();
-  
-  // Get feedback context functions, defaulting to empty functions if they don't exist
-  const feedbackContext = useFeedback();
-  const hasFeedback = feedbackContext?.hasFeedback || (() => false);
-  const getFeedbackRating = feedbackContext?.getFeedbackRating || (() => null);
-  const isEditedSinceFeedback = feedbackContext?.isEditedSinceFeedback || (() => false);
-  const updateEditTimestamp = feedbackContext?.updateEditTimestamp || (() => {});
-  const requestFeedback = feedbackContext?.requestFeedback;
   
   const [isEditing, setIsEditing] = useState(false);
   
@@ -29,34 +25,39 @@ export const useProjectSection = (sectionId) => {
   // Check if content has been edited (not just placeholder)
   const hasBeenEdited = content !== placeholder && content.trim() !== '';
   
-  // Get feedback status
-  const sectionHasFeedback = hasFeedback(sectionId);
-  const feedbackRating = getFeedbackRating(sectionId);
-  const editedSinceFeedback = isEditedSinceFeedback(sectionId);
+  // These would normally come from FeedbackContext, but for now we'll simulate them
+  // or get them from props passed to SectionCard
+  const hasFeedback = false; // Will be passed as props
+  const feedbackRating = null; // Will be passed as props
+  const editedSinceFeedback = false; // Will be passed as props
   
   // Update content
   const setContent = useCallback((newContent) => {
     setSectionContent(sectionId, newContent);
-    updateEditTimestamp(sectionId);
-  }, [sectionId, setSectionContent, updateEditTimestamp]);
+    // Normally we'd call updateEditTimestamp here
+  }, [sectionId, setSectionContent]);
   
   // Handle significant edit (for tracking purposes)
   const handleSignificantEdit = useCallback(() => {
-    updateEditTimestamp(sectionId, true); // Mark as significant edit
-  }, [sectionId, updateEditTimestamp]);
+    // We'd update a timestamp or dispatch an event here
+    console.log(`Significant edit detected for section ${sectionId}`);
+    window.dispatchEvent(new CustomEvent('significantEdit', { 
+      detail: { sectionId } 
+    }));
+  }, [sectionId]);
   
   // Request feedback for this section
   const handleRequestFeedback = useCallback(() => {
-    if (typeof requestFeedback === 'function') {
-      requestFeedback(sectionId);
+    console.log(`Requesting feedback for section ${sectionId}`);
+    if (typeof onRequestFeedback === 'function') {
+      onRequestFeedback(sectionId);
     } else {
-      console.warn(`No feedback request function available for section ${sectionId}`);
-      // Fallback behavior - could trigger an event or show a toast notification
+      // Fallback - dispatch an event
       window.dispatchEvent(new CustomEvent('feedbackRequested', { 
         detail: { sectionId } 
       }));
     }
-  }, [sectionId, requestFeedback]);
+  }, [sectionId, onRequestFeedback]);
   
   return {
     content,
@@ -65,7 +66,7 @@ export const useProjectSection = (sectionId) => {
     isExpanded: isExpanded(sectionId),
     toggleSection: () => toggleSection(sectionId),
     hasBeenEdited,
-    hasFeedback: sectionHasFeedback,
+    hasFeedback,
     feedbackRating,
     editedSinceFeedback,
     isEditing,
