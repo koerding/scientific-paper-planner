@@ -23,7 +23,7 @@ const VerticalPaperPlannerApp = () => {
   const updateSectionContent = useAppStore((state) => state.updateSectionContent);
   const setActiveToggle = useAppStore((state) => state.setActiveToggle);
   const updateSectionFeedback = useAppStore((state) => state.updateSectionFeedback);
-  const resetState = useAppStore((state) => state.resetState);
+  const resetState = useAppStore((state) => state.resetState); // Get reset action from store
   const loadStoreProjectData = useAppStore((state) => state.loadProjectData);
   const expandAllSections = useAppStore((state) => state.expandAllSections);
 
@@ -60,7 +60,7 @@ const VerticalPaperPlannerApp = () => {
   const { importLoading, handleDocumentImport } = useDocumentImport(
     loadStoreProjectData,
     { sections: sections ? Object.values(sections).map(s => ({...(s || {}), subsections: s?.originalInstructions || [] })) : [] },
-    resetState
+    resetState // Pass the store's reset action here
   );
 
   // Combined loading state
@@ -75,7 +75,7 @@ const VerticalPaperPlannerApp = () => {
     console.log("[VerticalPaperPlannerApp] Mounted. Initial UI modals state:", modals);
   }, []); // Run only on mount
 
-   useEffect(() => { // Track section changes
+   useEffect(() => { // Track subsequent section changes
        console.log(`[VerticalPaperPlannerApp] activeSectionId changed to: ${activeSectionId}`);
        ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` });
    }, [activeSectionId]);
@@ -117,7 +117,7 @@ const VerticalPaperPlannerApp = () => {
   // Reset Project -> Show Confirm Dialog
    const handleResetRequest = () => {
        console.log("[VerticalPaperPlannerApp] handleResetRequest called.");
-       openModal('confirmDialog');
+       openModal('confirmDialog'); // Use function from useUI hook
        console.log("[VerticalPaperPlannerApp] openModal('confirmDialog') executed.");
    };
 
@@ -125,9 +125,9 @@ const VerticalPaperPlannerApp = () => {
   // Confirm Reset -> Call Store Action
   const handleConfirmReset = () => {
       console.log("[VerticalPaperPlannerApp] handleConfirmReset called.");
-      resetState(); // Reset Zustand store
+      resetState(); // Call the store action to reset state
       setActiveSectionId('question'); // Reset local focus state
-      closeModal('confirmDialog'); // Close modal via UIContext
+      closeModal('confirmDialog'); // Use function from useUI hook
       console.log("[VerticalPaperPlannerApp] resetState() and closeModal() executed.");
   };
 
@@ -172,6 +172,12 @@ const VerticalPaperPlannerApp = () => {
   // Show Help Splash Screen
   const handleShowHelpSplash = () => { if (splashManagerRef.current) { splashManagerRef.current.showSplash(); } };
 
+  // Define handler for opening review modal to add logging
+  const handleOpenReviewModal = () => {
+      console.log("[VerticalPaperPlannerApp] handleOpenReviewModal called."); // <-- ADDED LOG
+      openModal('reviewModal');
+      console.log("[VerticalPaperPlannerApp] openModal('reviewModal') executed."); // <-- ADDED LOG
+  };
 
   // Handle Paper Review
   const handleReviewPaperRequest = async (event) => {
@@ -226,8 +232,7 @@ const VerticalPaperPlannerApp = () => {
   };
 
   // --- Render ---
-  // Add console log here to check modal state before passing down
-  console.log("[VerticalPaperPlannerApp] Rendering. Current modals state:", modals); // <-- ADD LOG
+  console.log("[VerticalPaperPlannerApp] Rendering. Current modals state:", modals); // Keep this log
 
   if (!sections || Object.keys(sections).length === 0) { return null; }
 
@@ -239,7 +244,7 @@ const VerticalPaperPlannerApp = () => {
       saveProject={handleSaveRequest}
       loadProject={handleLoadProject}
       importDocumentContent={handleDocumentImport}
-      openReviewModal={() => openModal('reviewModal')}
+      onOpenReviewModal={handleOpenReviewModal} // Pass the new handler function
       openExamplesDialog={handleOpenExamples}
       showHelpSplash={handleShowHelpSplash}
       contentAreaProps={contentAreaProps}
@@ -248,10 +253,10 @@ const VerticalPaperPlannerApp = () => {
       modalActions={{ // Actions needed by ModalManager/children
           closeConfirmDialog: () => closeModal('confirmDialog'),
           closeExamplesDialog: () => closeModal('examplesDialog'),
-          closeReviewModal: () => closeModal('reviewModal'),
+          closeReviewModal: () => closeModal('reviewModal'), // Ensure close action is passed
           closePrivacyPolicy: () => closeModal('privacyPolicy'),
           closeSaveDialog: () => closeModal('saveDialog'),
-          onConfirmReset: handleConfirmReset, // Make sure this is passed
+          onConfirmReset: handleConfirmReset,
       }}
       handleReviewPaper={handleReviewPaperRequest}
       saveWithFilename={handleSaveWithFilename}
