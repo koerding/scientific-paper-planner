@@ -15,8 +15,8 @@ const MainLayout = ({
   saveProject,
   loadProject,
   importDocumentContent,
-  onOpenReviewModal, // Ensure correct prop name if passed from AppHeader via VPPApp
-  openExamplesDialog, // Changed name to match VPPApp handler
+  onOpenReviewModal, // Ensure correct prop name is received and passed down
+  openExamplesDialog,
   showHelpSplash,
   // Content area props
   contentAreaProps,
