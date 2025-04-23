@@ -1,7 +1,12 @@
 // src/components/layout/InteractionElements.js
+
 import React from 'react';
 import ModernChatInterface from '../chat/ModernChatInterface';
 
+/**
+ * Component for interactive UI elements like chat
+ * UPDATED: Removed FloatingMagicButton and ImprovementReminderToast
+ */
 const InteractionElements = ({
   // Chat props
   currentSection,
@@ -29,3 +34,11 @@ const InteractionElements = ({
         currentMessage={currentMessage}
         setCurrentMessage={setCurrentMessage}
         handleSendMessage={handleSendMessage}
+        loading={loading}
+        currentSectionData={currentSectionData}
+      />
+    </>
+  );
+};
+
+export default InteractionElements;
