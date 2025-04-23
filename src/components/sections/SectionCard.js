@@ -122,7 +122,7 @@ const SectionCard = ({
        />
 
 
-      {/* Preview for minimized state */}
+      {/* Preview for minimized state - Now clickable via the parent div */}
       {isMinimized && (
         <SectionPreview textValue={content} />
       )}
@@ -130,7 +130,7 @@ const SectionCard = ({
       {/* Editor Component - Only show when expanded */}
       {!isMinimized && (
         <>
-          {/* Prevent card click propagation when clicking inside editor */}
+          {/* Editor needs to prevent propagation to avoid triggering card click */}
           <div onClick={(e) => e.stopPropagation()}>
               <SectionEditor
                  textValue={content}
