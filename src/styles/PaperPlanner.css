@@ -246,3 +246,48 @@ textarea::placeholder { color: #9ca3af; font-style: italic; } /* gray-400 */
 body, html {
   overflow-x: hidden;
 }
+/* Add these styles to src/styles/PaperPlanner.css */
+
+/* Integrated toggle styles */
+.integrated-toggle {
+  margin-bottom: 0.25rem;
+}
+
+.integrated-toggle .text-xs {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #4B5563; /* gray-600 */
+}
+
+.integrated-toggle .flex {
+  border-bottom: 2px solid #2563EB; /* blue-600 */
+  margin-bottom: 0;
+}
+
+.integrated-toggle button {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.integrated-toggle button.active {
+  background-color: #2563EB; /* blue-600 */
+  color: white;
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
+  font-weight: 500;
+}
+
+/* Adjust spacing for sections that follow the toggle */
+.section-card.minimized {
+  margin-top: 0.25rem;
+}
+
+/* Mobile-friendly adjustments */
+@media (max-width: 768px) {
+  .integrated-toggle button {
+    padding: 0.25rem 0.35rem;
+    font-size: 0.7rem;
+  }
+}
