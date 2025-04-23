@@ -10,11 +10,14 @@ const MainLayout = ({
   // Props...
   splashManagerRef, resetProject, exportProject, saveProject, loadProject,
   importDocumentContent, onOpenReviewModal, openExamplesDialog, showHelpSplash,
-  contentAreaProps, interactionProps, modalState, modalActions,
+  contentAreaProps, interactionProps, modalState,
+  currentReviewData, // *** ADDED: Accept reviewData prop ***
+  modalActions,
   handleReviewPaper, saveWithFilename, isAnyAiLoading
 }) => {
 
-  // console.log("[MainLayout] Rendering with modalState prop:", modalState); // Keep logs if needed
+  // console.log("[MainLayout] Rendering with modalState:", modalState);
+  // console.log("[MainLayout] Rendering with currentReviewData:", currentReviewData); // Log received prop
 
   const appHeaderProps = {
       resetProject, exportProject, saveProject, loadProject, importDocumentContent,
@@ -23,31 +26,21 @@ const MainLayout = ({
   };
 
   return (
-    // Keep h-screen flex flex-col overflow-hidden
     <div className="h-screen flex flex-col bg-gray-50 text-gray-900 overflow-hidden">
       <ForwardedSplashScreenManager ref={splashManagerRef} />
-
-      {/* Header remains fixed height (implicitly, ensure its component sets a height) */}
       <AppHeader {...appHeaderProps} />
-
-      {/* This div will contain the main growing content area */}
-      {/* ADDED: relative. Kept: flex-grow, overflow-hidden */}
       <div className="flex flex-col flex-grow overflow-hidden relative">
-
-        {/* ContentArea will be positioned absolutely within this div */}
         <ContentArea {...contentAreaProps} />
-
-        {/* Fixed position elements remain outside the main flow */}
         <InteractionElements {...interactionProps} />
         <ModalManager
-          modals={modalState}
+          modals={modalState} // Pass modal visibility flags
+          reviewData={currentReviewData} // *** CHANGED: Pass reviewData directly ***
           actions={modalActions}
           handleReviewPaper={handleReviewPaper}
-          loadProject={loadProject}
-          saveWithFilename={saveWithFilename}
+          loadProject={loadProject} // Pass loadProject needed by ExamplesDialog
+          saveWithFilename={saveWithFilename} // Pass saveWithFilename needed by SaveDialog
         />
       </div>
-       {/* Footer removed or placed elsewhere */}
     </div>
   );
 };
