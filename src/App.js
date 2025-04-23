@@ -1,51 +1,36 @@
 // FILE: src/App.js
-
 import React, { useEffect } from 'react';
-import PaperPlannerApp from './PaperPlannerApp';
-import { resetAllState } from './services/resetService';
+import PaperPlannerApp from './PaperPlannerApp'; // Uses the wrapper
+import useAppStore from './store/appStore'; // Import the zustand store
+import { UIProvider } from './contexts/UIContext'; // Keep UI context for modals etc.
+import { ChatProvider } from './contexts/ChatContext'; // Keep Chat context for now
 
-// Import all context providers
-import { ProjectProvider } from './contexts/ProjectContext';
-import { SectionProvider } from './contexts/SectionContext';
-import { UIProvider } from './contexts/UIContext';
-import { ChatProvider } from './contexts/ChatContext';
-import { FeedbackProvider } from './contexts/FeedbackContext';
-
-// Import section data to get the section IDs
-import sectionContent from './data/sectionContent.json';
+// No longer needed: ProjectProvider, SectionProvider, FeedbackProvider
 
 function App() {
-  // Get all section IDs for the SectionProvider
-  const allSectionIds = sectionContent.sections.map(section => section.id).filter(Boolean);
+  // You can optionally call store actions here on initial load if needed
+  // e.g., const initialize = useAppStore(state => state.initialize);
+  // useEffect(() => { initialize(); }, [initialize]);
 
-  // Initialize app and set up any global listeners
+  // Reset function using the store's action
   useEffect(() => {
-    // Set up a global handler for handling reset commands from anywhere in the app
     window.resetApp = () => {
-      console.log("Global app reset triggered");
-      resetAllState();
+      console.log("Global app reset triggered via store");
+      useAppStore.getState().resetState(); // Call the store's reset action
     };
-
-    // Clean up on unmount
-    return () => {
-      delete window.resetApp;
-    };
+    return () => { delete window.resetApp; };
   }, []);
+
 
   return (
     <div className="App">
-      {/* Wrap the entire app with all context providers */}
-      <ProjectProvider>
-        <SectionProvider sectionIds={allSectionIds}>
-          <FeedbackProvider>
-            <ChatProvider>
-              <UIProvider>
-                <PaperPlannerApp />
-              </UIProvider>
-            </ChatProvider>
-          </FeedbackProvider>
-        </SectionProvider>
-      </ProjectProvider>
+      {/* Remove ProjectProvider, SectionProvider, FeedbackProvider */}
+      {/* Keep UIProvider and ChatProvider if their state isn't merged */}
+      <ChatProvider>
+        <UIProvider>
+            <PaperPlannerApp />
+        </UIProvider>
+      </ChatProvider>
     </div>
   );
 }
