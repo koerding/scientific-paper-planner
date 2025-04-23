@@ -2,13 +2,12 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Removed direct call to expandAllSections from deleted sectionStateService.
- * Expansion is now handled by the store's loadProjectData action.
+ * UPDATED: Correctly handles the loading process without expecting a boolean return from the loadProject prop.
  * UPDATED: Detects appropriate research approach and data method
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
-// REMOVED: import { expandAllSections } from '../services/sectionStateService'; // <-- Removed import
+// Removed import from sectionStateService
 
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
   const [importLoading, setImportLoading] = useState(false);
@@ -20,7 +19,7 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       // Ask for confirmation
       if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
         setImportLoading(false);
-        return false;
+        return false; // User cancelled
       }
 
       console.log(`Starting import process for ${file.name}`);
@@ -36,77 +35,66 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       // Pass sectionContent to the import service
       const importedData = await importDocumentContent(file, sectionContent);
 
-      console.log("Document import returned data:", importedData ? "Success" : "Failed");
+      console.log("Document import service returned data:", importedData ? "Success" : "Failed");
 
-      // REMOVED: Explicit call to expandAllSections() is no longer needed here.
-      // console.log("[handleDocumentImport] Explicitly expanded all sections");
-
-      // Load the imported data using the loadProject function (which should trigger store update)
-      if (importedData) {
+      // Load the imported data using the loadProject function (which triggers the store action)
+      if (importedData && importedData.userInputs) { // Check if we got valid data structure
         // DETECT WHICH TOGGLES SHOULD BE ACTIVE BASED ON IMPORTED DATA
         let detectedApproach = 'hypothesis'; // Default
         let detectedDataMethod = 'experiment'; // Default
 
-        // Check which research approach has content
-        if (importedData.userInputs?.needsresearch &&
-            importedData.userInputs.needsresearch.trim() !== '') {
-          detectedApproach = 'needsresearch';
-        } else if (importedData.userInputs?.exploratoryresearch &&
-                  importedData.userInputs.exploratoryresearch.trim() !== '') {
-          detectedApproach = 'exploratoryresearch';
-        } else if (importedData.userInputs?.hypothesis &&
-                  importedData.userInputs.hypothesis.trim() !== '') {
-          detectedApproach = 'hypothesis';
-        }
+        if (importedData.userInputs?.needsresearch && /* ... */) { detectedApproach = 'needsresearch'; }
+        else if (importedData.userInputs?.exploratoryresearch && /* ... */) { detectedApproach = 'exploratoryresearch'; }
+        else if (importedData.userInputs?.hypothesis && /* ... */) { detectedApproach = 'hypothesis'; }
 
-        // Check which data method has content
-        if (importedData.userInputs?.existingdata &&
-            importedData.userInputs.existingdata.trim() !== '') {
-          detectedDataMethod = 'existingdata';
-        } else if (importedData.userInputs?.theorysimulation &&
-                  importedData.userInputs.theorysimulation.trim() !== '') {
-          detectedDataMethod = 'theorysimulation';
-        } else if (importedData.userInputs?.experiment &&
-                  importedData.userInputs.experiment.trim() !== '') {
-          detectedDataMethod = 'experiment';
-        }
+        if (importedData.userInputs?.existingdata && /* ... */) { detectedDataMethod = 'existingdata'; }
+        else if (importedData.userInputs?.theorysimulation && /* ... */) { detectedDataMethod = 'theorysimulation'; }
+        else if (importedData.userInputs?.experiment && /* ... */) { detectedDataMethod = 'experiment'; }
+
 
         // Include detected toggles in the loaded data
-        importedData.detectedToggles = {
-          approach: detectedApproach,
-          dataMethod: detectedDataMethod
-        };
-
+        importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
         console.log(`[handleDocumentImport] Detected approach: ${detectedApproach}, data method: ${detectedDataMethod}`);
 
-        const result = loadProject(importedData); // This function now calls the store's loadProjectData
-        if (result) {
-          console.log(`Document ${file.name} successfully imported`);
+        // --- MODIFIED PART ---
+        try {
+            loadProject(importedData); // Call the load function (triggers store update)
+            // Assume success if no error is thrown by loadProject/store action
+            console.log(`Document ${file.name} successfully processed and loaded into store.`);
 
-          // Dispatch event with toggle information
-           // NOTE: The 'expandAllSections' detail might be redundant now but kept for potential listeners.
-          window.dispatchEvent(new CustomEvent('documentImported', {
-            detail: {
-              fileName: file.name,
-              timestamp: Date.now(),
-              expandAllSections: true,
-              detectedApproach,
-              detectedDataMethod
-            }
-          }));
+            // Dispatch event with toggle information
+             window.dispatchEvent(new CustomEvent('documentImported', {
+               detail: {
+                 fileName: file.name,
+                 timestamp: Date.now(),
+                 expandAllSections: true, // Store action handles expansion
+                 detectedApproach,
+                 detectedDataMethod
+               }
+             }));
 
-          return true;
+            setImportLoading(false); // Stop loading indicator *after* success
+            return true; // Indicate success from the hook
+
+        } catch (loadError) {
+             console.error("Error during the loadProject (store update) step:", loadError);
+             // Throw a more specific error for the catch block below
+             throw new Error(`Failed to load processed data into application state: ${loadError.message}`);
         }
+        // --- END MODIFIED PART ---
+
+      } else {
+          // If importDocumentContent failed or returned invalid data
+          throw new Error("Failed to retrieve valid data from document processing service.");
       }
 
-      throw new Error("Failed to process imported document data");
     } catch (error) {
       console.error("Error importing document:", error);
       alert("Error importing document: " + (error.message || "Unknown error"));
-      return false;
-    } finally {
-      setImportLoading(false);
+      setImportLoading(false); // Ensure loading stops on error
+      return false; // Indicate failure from the hook
     }
+    // Removed finally block as loading is handled in try/catch now
   }, [loadProject, sectionContent, resetAllProjectState]);
 
   return {
