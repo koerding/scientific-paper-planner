@@ -102,44 +102,36 @@ const LeftPanel = ({
     return unlockedSections.includes(sectionId);
   };
   
-  // Rendering function for a section
-  const renderSection = (section) => {
-    if (!section || !section.id) return null;
-    
-    // Check if section should be visible
-    if (!isSectionVisible(section.id)) {
-      return null; // Skip this section
-    }
-    
-    const isCurrentActive = activeSection === section.id;
-    const hasFeedback = sectionsWithFeedback.includes(section.id);
-    const feedbackRating = feedbackRatings[section.id]; // Get rating if available
-    const lastFeedbackTime = lastFeedbackTimes[section.id] || null; // Get last feedback time
-    
-    // Check if this section has only placeholder content
-    const hasOnlyPlaceholder = isPlaceholderContent(section.id);
-    
-    return (
-      <SectionCard
-        key={section.id}
-        section={section}
-        isCurrentSection={isCurrentActive}
-        userInputs={userInputs}
-        handleInputChange={handleInputChange}
-        loading={isAnyAiLoading}
-        sectionRef={sectionRefs.current[section.id]}
-        onClick={() => setActiveSectionWithManualFlag(section.id)}
-        onEdit={handleEdit}
-        onSignificantEdit={handleSignificantEdit}
-        onRequestFeedback={handleSectionFeedback}
-        hasFeedback={hasFeedback}
-        feedbackRating={feedbackRating}
-        lastFeedbackTime={lastFeedbackTime} // Pass last feedback time
-        hasOnlyPlaceholder={hasOnlyPlaceholder}
-      />
-    );
-  };
+// Updated renderSection function in LeftPanel.js
+const renderSection = (section) => {
+  if (!section || !section.id) return null;
   
+  // Check if section should be visible
+  if (!isSectionVisible(section.id)) {
+    return null; // Skip this section
+  }
+  
+  const isCurrentActive = activeSection === section.id;
+  const hasFeedback = sectionsWithFeedback.includes(section.id);
+  const feedbackRating = feedbackRatings[section.id]; // Get rating if available
+  const lastFeedbackTime = lastFeedbackTimes[section.id] || null; // Get last feedback time
+  
+  // Check if this section has only placeholder content
+  const hasOnlyPlaceholder = isPlaceholderContent(section.id);
+  
+  return (
+    <SectionCard
+      key={section.id}
+      section={section}
+      isCurrentSection={isCurrentActive}
+      onRequestFeedback={handleSectionFeedback} // Pass the feedback handler
+      hasFeedback={hasFeedback}
+      feedbackRating={feedbackRating}
+      lastFeedbackTime={lastFeedbackTime}
+      hasOnlyPlaceholder={hasOnlyPlaceholder}
+    />
+  );
+};  
   // Get section IDs by category
   const approachSectionIds = getApproachSectionIds();
   const dataMethodSectionIds = getDataMethodSectionIds();
