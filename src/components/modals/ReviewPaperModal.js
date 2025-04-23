@@ -1,7 +1,7 @@
 // FILE: src/components/modals/ReviewPaperModal.js
 import React, { useState, useEffect, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import { exportReview } from '../../services/paperReviewService'; // Assuming path is correct
+// import ReactMarkdown from 'react-markdown'; // Temporarily commented out
+import { exportReview } from '../../services/paperReviewService';
 
 const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper }) => {
   // --- Component State ---
@@ -118,7 +118,7 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
   const displayContent = activeTab === 'current' ? currentReviewContent : pastReviewContent;
   const displayPaperName = activeTab === 'current' ? reviewData?.paperName : selectedPastReview?.paperName;
   const displayTimestamp = activeTab === 'current' ? reviewData?.timestamp : selectedPastReview?.timestamp;
-  const hasDisplayableContent = !!displayContent; // Check if there's content to show for the active tab
+  const hasDisplayableContent = !!displayContent;
 
   // --- DETAILED LOGGING BEFORE RENDER ---
   console.log(`[ReviewPaperModal] PRE-RENDER CHECK: showModal=${showModal}, activeTab=${activeTab}`);
@@ -196,9 +196,15 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
                         </div>
                         {/* Review Content */}
                         <div className="p-6 overflow-y-auto flex-grow">
+                             {/* --- FIX: Use <pre> tag for raw text display --- */}
+                             <pre style={{ backgroundColor: 'lightyellow', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'sans-serif', fontSize: '14px' }}>
+                                {displayContent}
+                             </pre>
+                             {/* --- Original ReactMarkdown (commented out) ---
                              <div className="prose prose-teal max-w-none">
                                 <ReactMarkdown>{displayContent}</ReactMarkdown>
                              </div>
+                             */}
                         </div>
                     </div>
                 ) : (
@@ -214,7 +220,6 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
                       <p className="text-base mb-6">
                         {activeTab === 'current' ? "Upload a paper using the 'New Review' button." : (pastReviews.length > 0 ? 'Select a review from the list on the left.' : 'Upload a paper to generate your first review.')}
                       </p>
-                       {/* Debug info if reviewData exists but content is missing */}
                        {(activeTab === 'current' && reviewData && !reviewData.review) && (
                            <p className="text-xs text-red-500 mt-2">Debug: Review data exists but content is missing.</p>
                        )}
@@ -227,7 +232,6 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
         <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-between items-center border-t border-gray-200 flex-shrink-0">
             <div className="text-sm text-gray-600"><p>AI-generated reviews provide supplementary feedback.</p></div>
             <div className="flex space-x-3">
-                 {/* Only show actions if there is content to act upon */}
                  {hasDisplayableContent && (
                     <>
                       <button onClick={handleCopyToClipboard} className={`flex items-center px-4 py-2 rounded text-sm ${ copySuccess ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }`} disabled={copySuccess}> {/* Copy Button Content */} </button>
