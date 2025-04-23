@@ -39,49 +39,32 @@ const LeftPanel = ({
 
 
   // --- Derived State & Logic ---
-  // Ensure sections is an object before getting values
   const allSectionsArray = sections && typeof sections === 'object' ? Object.values(sections) : [];
-
-  // Filter visible sections based on progression and toggles
   const visibleSections = getVisibleSectionsInDisplayOrder(
       allSectionsArray,
       activeToggles.approach,
       activeToggles.dataMethod
-  ).filter(section => section && isSectionVisible(section.id, storeState)); // Filter based on progression/proMode
+  ).filter(section => section && isSectionVisible(section.id, storeState));
 
   const showApproachToggle = isToggleVisible('approach', storeState);
   const showDataToggle = isToggleVisible('data', storeState);
 
-  // Group sections for rendering order
   const approachSectionIds = getApproachSectionIds();
   const dataMethodSectionIds = getDataMethodSectionIds();
-
   const questionSection = visibleSections.find(section => section?.id === 'question');
-  // Find the currently active approach section among visible ones
   const approachSection = visibleSections.find(section => section && approachSectionIds.includes(section.id) && section.id === activeToggles.approach);
   const audienceSection = visibleSections.find(section => section?.id === 'audience');
   const relatedPapersSection = visibleSections.find(section => section?.id === 'relatedpapers');
-  // Find the currently active data method section among visible ones
   const dataMethodSection = visibleSections.find(section => section && dataMethodSectionIds.includes(section.id) && section.id === activeToggles.dataMethod);
-  // Find remaining fixed sections among visible ones
-  const remainingSections = visibleSections.filter(section =>
-    section && ['analysis', 'process', 'abstract'].includes(section.id)
-  );
-
-   // Check if any sections are locked (only relevant if not in Pro Mode)
-   const totalPossibleSections = 11; // Update if sections change
-   const sectionsStillLocked = !proMode && visibleSections.length < totalPossibleSections;
+  const remainingSections = visibleSections.filter(section => section && ['analysis', 'process', 'abstract'].includes(section.id) );
+  const totalPossibleSections = 11;
+  const sectionsStillLocked = !proMode && visibleSections.length < totalPossibleSections;
 
 
   return (
-    // Use Tailwind classes for layout and scrolling
-    // w-1/2: Takes half the width of the flex container
-    // h-full: Takes the full height of the flex container (ContentArea)
-    // overflow-y-auto: Adds vertical scrollbar *only* if content exceeds height
-    // px-4 pt-5 pb-12: Padding (adjust pt/pb as needed for visual spacing)
-    // box-border: Ensures padding is included within the width/height
-    // flex-shrink-0: Prevents shrinking if content is too wide (usually not needed here)
-    <div className="w-1/2 h-full overflow-y-auto px-4 pt-5 pb-12 box-border flex-shrink-0">
+    // --- UPDATED PADDING ---
+    // Increased pt-5 to pt-20 (adjust if needed based on actual header height)
+    <div className="w-1/2 h-full overflow-y-auto px-4 pt-20 pb-12 box-border flex-shrink-0">
       <HeaderCard />
 
       {/* Question Section */}
