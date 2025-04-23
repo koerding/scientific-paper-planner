@@ -1,68 +1,86 @@
-// src/components/sections/FeedbackButton.js
+// FILE: src/components/sections/FeedbackButton.js
 import React from 'react';
-import { getFeedbackButtonColor, getFeedbackLabel } from '../../utils/sectionUtils';
+import useAppStore from '../../store/appStore'; // Import store to get specific loading flag
 
-const FeedbackButton = ({ 
-  loading, 
-  hasEditedContent, 
+const FeedbackButton = ({
+  // loading, // REMOVED - will use global state + specific flag from store
+  hasEditedContent,
   hasFeedback,
   editedSinceFeedback,
-  feedbackRating, 
-  handleFeedbackRequest 
+  feedbackRating,
+  handleFeedbackRequest,
+  sectionId // Assume sectionId is passed to know WHICH section this button belongs to
 }) => {
-  // Get proper button color based on state (including editedSinceFeedback)
+  // --- MODIFICATION START ---
+  // Get necessary state from store
+  const isImprovementLoading = useAppStore((state) => state.loading.improvement);
+  const isAnyAiBusy = useAppStore((state) => state.isAnyLoading()); // Use the combined loading getter
+
+  // Determine if THIS specific section's improvement is loading
+  // This might need refinement if multiple improvements can happen concurrently
+  // For now, assume `isImprovementLoading` applies to the action triggered by this button
+  const isCurrentSectionLoading = isImprovementLoading; // Simple check for now
+  // --- MODIFICATION END ---
+
+
+  // Get proper button color based on feedback state (unchanged logic)
   const getButtonClass = () => {
+    // --- MODIFICATION: Use isAnyAiBusy for disabling style ---
+    if (isAnyAiBusy) return 'bg-gray-300 text-gray-400 cursor-wait'; // General disabled style
+    // --- END MODIFICATION ---
+
     if (!hasEditedContent) return 'bg-gray-400 text-white cursor-not-allowed';
-    if (loading) return 'bg-purple-300 text-white cursor-wait';
-    
+    // if (loading) return 'bg-purple-300 text-white cursor-wait'; // Old loading style removed
+
     // Special case: edited since feedback - use purple color regardless of rating
     if (editedSinceFeedback) {
       return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
     }
-    
+
     // Otherwise use standard rating-based colors
     if (!feedbackRating) return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
-    
+
     if (feedbackRating <= 3) return 'bg-red-500 text-white hover:bg-red-600';
     if (feedbackRating <= 5) return 'bg-orange-500 text-white hover:bg-orange-600';
     if (feedbackRating <= 7) return 'bg-yellow-500 text-white hover:bg-yellow-600';
     if (feedbackRating <= 9) return 'bg-lime-500 text-white hover:bg-lime-600';
     return 'bg-green-600 text-white hover:bg-green-700';
   };
-  
-  // Get proper button label based on state
+
+  // Get proper button label based on feedback state (unchanged logic)
   const getButtonLabel = () => {
+    // --- MODIFICATION: Show generic "Processing..." if any AI is busy but not this one ---
+    if (isAnyAiBusy && !isCurrentSectionLoading) return "Processing..."; // Generic busy state
+    if (isCurrentSectionLoading) return "Processing..."; // Specific loading state
+    // --- END MODIFICATION ---
+
     if (!hasEditedContent) return "Add content first";
-    if (loading) return "Processing...";
-    
-    // Special case: if edited after feedback, show "Get new feedback"
-    if (editedSinceFeedback) {
-      return "Get new feedback";
-    }
-    
-    // If not rated yet
+    // if (loading) return "Processing..."; // Old check removed
+
+    if (editedSinceFeedback) return "Get new feedback";
     if (!hasFeedback || !feedbackRating) return "Ready for feedback";
-    
-    // Show rating with descriptive text for unedited sections with feedback
     if (feedbackRating <= 3) return `Needs work (${feedbackRating}/10)`;
     if (feedbackRating <= 5) return `Average (${feedbackRating}/10)`;
     if (feedbackRating <= 7) return `Good (${feedbackRating}/10)`;
     if (feedbackRating <= 9) return `Very good (${feedbackRating}/10)`;
     return `Excellent (${feedbackRating}/10)`;
   };
-  
+
   const buttonColorClass = getButtonClass();
   const buttonLabel = getButtonLabel();
-  
-  const tooltipText = hasEditedContent ? 
-    (editedSinceFeedback ? "Content changed since last feedback" : "Get AI feedback on this section") : 
-    "Add content before requesting feedback";
+
+  const tooltipText = isAnyAiBusy ? "AI is busy processing another request..." :
+    (hasEditedContent ?
+    (editedSinceFeedback ? "Content changed since last feedback" : "Get AI feedback on this section") :
+    "Add content before requesting feedback");
 
   return (
     <div className="flex justify-end mt-2">
       <button
         onClick={handleFeedbackRequest}
-        disabled={loading || !hasEditedContent}
+        // --- MODIFICATION: Disable if *any* AI is busy ---
+        disabled={isAnyAiBusy || !hasEditedContent}
+        // --- END MODIFICATION ---
         className={`
           feedback-button text-sm font-medium
           px-3 py-1.5 rounded
@@ -72,22 +90,27 @@ const FeedbackButton = ({
         `}
         title={tooltipText}
       >
-        {loading ? (
+        {/* --- MODIFICATION: Show spinner only if this specific improvement is loading --- */}
+        {isCurrentSectionLoading ? (
           <>
             <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Processing...
+            {buttonLabel} {/* Shows "Processing..." */}
           </>
         ) : (
           <>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+             {/* Show feedback icon only if not busy */}
+             {!isAnyAiBusy && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+             )}
             {buttonLabel}
           </>
         )}
+         {/* --- END MODIFICATION --- */}
       </button>
     </div>
   );
