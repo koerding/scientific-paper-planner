@@ -4,25 +4,19 @@ import LeftPanel from './LeftPanel';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 
 const ContentArea = ({
-  // Props for LeftPanel
-  activeSection,
-  // sections, // sections prop likely no longer needed by LeftPanel
-  activeApproach,
-  activeDataMethod,
-  handleSectionFocus,
-  handleApproachToggle,
-  handleDataMethodToggle,
-  proMode,
-  // Props for RightPanel
-  handleMagic,
-  isAnyAiLoading,
+  // Props needed by children
+  activeSection, activeApproach, activeDataMethod,
+  handleSectionFocus, handleApproachToggle, handleDataMethodToggle,
+  proMode, handleMagic, isAnyAiLoading,
 }) => {
 
   return (
-    // Make flex container take full height of its parent and hide its own overflow
-    <div className="flex flex-grow h-full overflow-hidden">
+    // Position absolutely to fill parent, remain flex row
+    // REMOVED: flex-grow h-full overflow-hidden
+    // ADDED: absolute inset-0
+    <div className="absolute inset-0 flex">
 
-      {/* Left panel: Relies on CSS for overflow and width. Height comes from flex parent */}
+      {/* Left panel: Add necessary classes directly */}
       <LeftPanel
         activeSection={activeSection}
         handleSectionFocus={handleSectionFocus}
@@ -32,7 +26,7 @@ const ContentArea = ({
         proMode={proMode}
       />
 
-      {/* Right panel: Uses inline styles for overflow and width. Height comes from flex parent */}
+      {/* Right panel: Add necessary classes directly */}
       <FullHeightInstructionsPanel
         activeSectionId={activeSection}
         improveInstructions={handleMagic}
