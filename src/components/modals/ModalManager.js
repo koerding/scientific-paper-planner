@@ -7,22 +7,24 @@ import PrivacyPolicyModal from './PrivacyPolicyModal';
 import SaveDialog from '../PaperPlanner/SaveDialog';
 
 const ModalManager = ({
-  modals,
-  actions,
-  handleReviewPaper,
-  loadProject,
-  saveWithFilename
+  modals, // Modal visibility flags { confirmDialog: bool, ... }
+  reviewData, // *** ADDED: Accept reviewData directly ***
+  actions, // Modal closing actions { closeConfirmDialog: fn, ... }
+  handleReviewPaper, // Function passed down to ReviewPaperModal
+  loadProject, // Function passed down to ExamplesDialog
+  saveWithFilename // Function passed down to SaveDialog
 }) => {
-  console.log("[ModalManager] Rendering with modals state:", modals); // Keep this log for debugging
+  // console.log("[ModalManager] Rendering with modals state:", modals);
+  // console.log("[ModalManager] Rendering with DIRECT reviewData prop:", reviewData); // Log direct prop
 
-  // Destructure modal states from the modals object
+  // Destructure modal visibility states from the modals object
   const {
     confirmDialog = false,
     examplesDialog = false,
-    reviewModal = false,
+    reviewModal = false, // Use this for visibility only
     privacyPolicy = false,
     saveDialog = false,
-    reviewData
+    // reviewData is now received as a direct prop, remove from here if present
   } = modals || {};
 
   // Destructure modal actions
@@ -36,8 +38,8 @@ const ModalManager = ({
   } = actions || {};
 
   // Log specific modal states for debugging
-  console.log(`[ModalManager] confirmDialog value: ${confirmDialog}`);
-  console.log(`[ModalManager] reviewModal value: ${reviewModal}`);
+  // console.log(`[ModalManager] confirmDialog value: ${confirmDialog}`);
+  // console.log(`[ModalManager] reviewModal visibility value: ${reviewModal}`);
 
   // Ensure actions are functions before passing them down
   const handleReset = typeof onConfirmReset === 'function' ? onConfirmReset : () => console.error("onConfirmReset action missing");
@@ -52,22 +54,22 @@ const ModalManager = ({
       {/* Confirmation Dialog */}
       <ConfirmDialog
         showConfirmDialog={confirmDialog}
-        setShowConfirmDialog={handleCloseConfirm}
+        setShowConfirmDialog={handleCloseConfirm} // Prop name change intentional if ConfirmDialog expects this
         resetProject={handleReset}
       />
 
       {/* Examples Dialog */}
       <ExamplesDialog
         showExamplesDialog={examplesDialog}
-        setShowExamplesDialog={handleCloseExamples}
+        setShowExamplesDialog={handleCloseExamples} // Prop name change intentional
         loadProject={loadProject}
       />
 
       {/* Review Paper Modal */}
       <ReviewPaperModal
-        showModal={reviewModal}
+        showModal={reviewModal} // Controls visibility
         onClose={handleCloseReview}
-        reviewData={reviewData}
+        reviewData={reviewData} // *** CHANGED: Pass the direct prop ***
         handleReviewPaper={handleReviewPaper}
       />
 
@@ -80,7 +82,7 @@ const ModalManager = ({
       {/* Save Dialog */}
       <SaveDialog
         showSaveDialog={saveDialog}
-        setShowShowDialog={handleCloseSave}
+        setShowSaveDialog={handleCloseSave} // Prop name change intentional
         saveProject={saveWithFilename}
       />
     </>
