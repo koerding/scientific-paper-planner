@@ -1,20 +1,36 @@
 // FILE: src/components/layout/LeftPanel.js
 import React from 'react';
-import useAppStore from '../../store/appStore'; // Import the Zustand store
-import { isSectionVisible, isToggleVisible } from '../../logic/progressionLogic'; // Import visibility logic
-import { getVisibleSectionsInDisplayOrder, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils'; // Keep section ordering utils
+import useAppStore from '../../store/appStore';
+import { isSectionVisible, isToggleVisible } from '../../logic/progressionLogic';
+import { getVisibleSectionsInDisplayOrder, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
 import HeaderCard from '../sections/HeaderCard';
-import SectionCard from '../sections/SectionCard'; // SectionCard will also be updated
-import ResearchApproachToggle from '../toggles/ResearchApproachToggle'; // Toggle will be updated
-import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle'; // Toggle will be updated
+import SectionCard from '../sections/SectionCard';
+import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
+import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
+
+// Helper function to render SectionCard
+const renderSectionCard = (section, activeSection, handleSectionFocus, handleMagic) => {
+  if (!section || !section.id) return null;
+  const isCurrentActive = activeSection === section.id;
+  return (
+    <SectionCard
+      key={section.id}
+      sectionId={section.id}
+      isCurrentSection={isCurrentActive}
+      onRequestFeedback={handleMagic}
+      handleSectionFocus={handleSectionFocus}
+    />
+  );
+};
+
 
 const LeftPanel = ({
-  activeSection, // Focused section ID (local state from parent)
-  handleSectionFocus, // Callback to set the focused section ID in parent
-  handleApproachToggle, // Callback to set active approach toggle in store
-  handleDataMethodToggle, // Callback to set active data method toggle in store
-  handleMagic, // Callback to request feedback/improvement
-  proMode,
+  activeSection,          // ID string of the currently focused section
+  handleSectionFocus,     // Function to call when a section should be focused
+  handleApproachToggle,   // Function to call when approach toggle changes
+  handleDataMethodToggle, // Function to call when data method toggle changes
+  handleMagic,            // Function to call for feedback request
+  proMode,                // Boolean indicating if pro mode is active
 }) => {
   // --- Select State from Zustand Store ---
   const sections = useAppStore((state) => state.sections);
@@ -23,7 +39,10 @@ const LeftPanel = ({
 
 
   // --- Derived State & Logic ---
-  const allSectionsArray = Object.values(sections); // Convert sections object to array
+  // Ensure sections is an object before getting values
+  const allSectionsArray = sections && typeof sections === 'object' ? Object.values(sections) : [];
+
+  // Filter visible sections based on progression and toggles
   const visibleSections = getVisibleSectionsInDisplayOrder(
       allSectionsArray,
       activeToggles.approach,
@@ -38,10 +57,13 @@ const LeftPanel = ({
   const dataMethodSectionIds = getDataMethodSectionIds();
 
   const questionSection = visibleSections.find(section => section?.id === 'question');
-  const approachSection = visibleSections.find(section => section && approachSectionIds.includes(section.id));
+  // Find the currently active approach section among visible ones
+  const approachSection = visibleSections.find(section => section && approachSectionIds.includes(section.id) && section.id === activeToggles.approach);
   const audienceSection = visibleSections.find(section => section?.id === 'audience');
   const relatedPapersSection = visibleSections.find(section => section?.id === 'relatedpapers');
-  const dataMethodSection = visibleSections.find(section => section && dataMethodSectionIds.includes(section.id));
+  // Find the currently active data method section among visible ones
+  const dataMethodSection = visibleSections.find(section => section && dataMethodSectionIds.includes(section.id) && section.id === activeToggles.dataMethod);
+  // Find remaining fixed sections among visible ones
   const remainingSections = visibleSections.filter(section =>
     section && ['analysis', 'process', 'abstract'].includes(section.id)
   );
@@ -50,63 +72,53 @@ const LeftPanel = ({
    const totalPossibleSections = 11; // Update if sections change
    const sectionsStillLocked = !proMode && visibleSections.length < totalPossibleSections;
 
-  // Render a single section card
-  const renderSection = (section) => {
-    if (!section || !section.id) return null;
-
-    const isCurrentActive = activeSection === section.id; // Check against focused section ID
-
-    return (
-      <SectionCard
-        key={section.id}
-        sectionId={section.id} // Pass sectionId instead of full section object
-        isCurrentSection={isCurrentActive}
-        onRequestFeedback={handleMagic} // Pass feedback handler down
-        handleSectionFocus={handleSectionFocus} // Pass focus handler down
-      />
-    );
-  };
-
 
   return (
-    <div className="w-half px-4 py-2" style={{ width: '50%' }}>
+    // Use Tailwind classes for layout and scrolling
+    // w-1/2: Takes half the width of the flex container
+    // h-full: Takes the full height of the flex container (ContentArea)
+    // overflow-y-auto: Adds vertical scrollbar *only* if content exceeds height
+    // px-4 pt-5 pb-12: Padding (adjust pt/pb as needed for visual spacing)
+    // box-border: Ensures padding is included within the width/height
+    // flex-shrink-0: Prevents shrinking if content is too wide (usually not needed here)
+    <div className="w-1/2 h-full overflow-y-auto px-4 pt-5 pb-12 box-border flex-shrink-0">
       <HeaderCard />
 
       {/* Question Section */}
-      {questionSection && renderSection(questionSection)}
+      {questionSection && renderSectionCard(questionSection, activeSection, handleSectionFocus, handleMagic)}
 
       {/* Research Approach Toggle */}
       {showApproachToggle && (
         <ResearchApproachToggle
           activeApproach={activeToggles.approach}
-          setActiveApproach={handleApproachToggle} // Use callback from parent
+          setActiveApproach={handleApproachToggle}
         />
       )}
 
       {/* Active Approach Section */}
-      {approachSection && renderSection(approachSection)}
+      {approachSection && renderSectionCard(approachSection, activeSection, handleSectionFocus, handleMagic)}
 
       {/* Audience Section */}
-      {audienceSection && renderSection(audienceSection)}
+      {audienceSection && renderSectionCard(audienceSection, activeSection, handleSectionFocus, handleMagic)}
 
       {/* Related Papers Section */}
-      {relatedPapersSection && renderSection(relatedPapersSection)}
+      {relatedPapersSection && renderSectionCard(relatedPapersSection, activeSection, handleSectionFocus, handleMagic)}
 
       {/* Data Acquisition Toggle */}
       {showDataToggle && (
         <DataAcquisitionToggle
           activeMethod={activeToggles.dataMethod}
-          setActiveMethod={handleDataMethodToggle} // Use callback from parent
+          setActiveMethod={handleDataMethodToggle}
         />
       )}
 
       {/* Active Data Method Section */}
-      {dataMethodSection && renderSection(dataMethodSection)}
+      {dataMethodSection && renderSectionCard(dataMethodSection, activeSection, handleSectionFocus, handleMagic)}
 
       {/* Remaining Sections */}
-      {remainingSections.map(section => renderSection(section))}
+      {remainingSections.map(section => renderSectionCard(section, activeSection, handleSectionFocus, handleMagic))}
 
-        {/* Pro Mode Info - Only shown when Pro Mode is disabled and sections are still locked */}
+      {/* Pro Mode Info */}
       {sectionsStillLocked && (
         <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 mt-6">
           <p className="text-sm text-gray-700">
