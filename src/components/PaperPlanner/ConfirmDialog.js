@@ -1,29 +1,29 @@
 // FILE: src/components/PaperPlanner/ConfirmDialog.js
 
 import React from 'react';
-import { resetAllState } from '../../services/resetService';
+// REMOVED: import { resetAllState } from '../../services/resetService'; // <-- Removed import
 
 /**
  * Confirmation dialog for resetting the project
- * UPDATED: Now uses the resetAllState from resetService
+ * UPDATED: Removed direct import from deleted resetService.
  */
 const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }) => {
   if (!showConfirmDialog) return null;
-  
-  // Handle confirmed reset with centralized resetService
+
+  // Handle confirmed reset by calling the function passed via props
   const handleConfirmReset = () => {
-    // Call the passed resetProject function if available
+    // Call the passed resetProject function (connected to the store action)
     if (typeof resetProject === 'function') {
       resetProject();
     } else {
-      // Fallback to directly calling resetAllState
-      resetAllState();
+      // Log an error if the prop function is missing, but don't try to call the old service
+      console.error("ConfirmDialog: resetProject prop function is missing!");
     }
-    
+
     // Close the dialog
     setShowConfirmDialog(false);
   };
-  
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-xl max-w-md mx-auto">
