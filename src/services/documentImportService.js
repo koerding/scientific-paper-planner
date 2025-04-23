@@ -3,11 +3,12 @@
 /**
  * Document import service for PDF and Word documents
  * UPDATED: Now uses the refactored documentProcessor
+ * UPDATED: Removed import from deleted sectionStateService
  */
 import { callOpenAI } from './openaiService';
 import { loadPDFJS, extractTextFromDocument } from './documentProcessor';
 import { buildSystemPrompt, buildTaskPrompt } from '../utils/promptUtils';
-import { initializeSectionStates } from './sectionStateService';
+// REMOVED: import { initializeSectionStates } from './sectionStateService'; // <-- This line is removed
 import sectionContentData from '../data/sectionContent.json';
 
 /**
@@ -16,33 +17,33 @@ import sectionContentData from '../data/sectionContent.json';
  */
 function extractGradingCriteria() {
   const criteria = [];
-  
+
   sectionContentData.sections.forEach(section => {
     if (!section || !section.id || !section.subsections) return;
-    
+
     // Add section title
     criteria.push(`## ${section.title} [id: ${section.id}]`);
-    
+
     // Add intro text if available
     if (section.introText) {
       criteria.push(`${section.introText.substring(0, 250)}${section.introText.length > 250 ? '...' : ''}`);
     }
-    
+
     // Add subsection criteria
     section.subsections.forEach(subsection => {
       if (!subsection || !subsection.id) return;
       criteria.push(`- ${subsection.title}: ${subsection.instruction.substring(0, 100)}${subsection.instruction.length > 100 ? '...' : ''}`);
     });
-    
+
     criteria.push(''); // Add a blank line between sections
   });
-  
+
   const criteriaStr = criteria.join('\n');
-  
+
   // Log the full criteria to the console for inspection
-  console.log("GRADING CRITERIA FOR IMPORT:");
-  console.log(criteriaStr);
-  
+  // console.log("GRADING CRITERIA FOR IMPORT:"); // Keep commented out unless debugging
+  // console.log(criteriaStr);
+
   return criteriaStr;
 }
 
@@ -56,7 +57,7 @@ export async function importDocumentContent(file, sections = null) {
   // Ensure we have the section content data (either passed in or from import)
   const sectionContent = sections || sectionContentData;
   let documentText = '';
-  
+
   try {
     // Preload PDF.js if needed for PDF files
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
@@ -71,10 +72,10 @@ export async function importDocumentContent(file, sections = null) {
     // Extract grading criteria
     const gradingCriteria = extractGradingCriteria();
     console.log("Extracted grading criteria for prompt context");
-    console.log("GRADING CRITERIA LENGTH:", gradingCriteria.length, "characters");
+    // console.log("GRADING CRITERIA LENGTH:", gradingCriteria.length, "characters"); // Keep commented out unless debugging
 
     // Build improved system prompt with clear requirements
-    const enhancedSystemPrompt = `You are analyzing a scientific paper to extract its structure based on specific grading criteria. 
+    const enhancedSystemPrompt = `You are analyzing a scientific paper to extract its structure based on specific grading criteria.
 Be methodical, accurate, and ensure your output aligns with the evaluation standards.
 
 IMPORTANT: Your output will be graded based on how well it meets the criteria for each section outlined below.
@@ -145,26 +146,22 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
     // Format the result correctly
     let result = {
       userInputs: {},
-      chatMessages: {},
+      chatMessages: {}, // Keep chatMessages empty for import result
       timestamp: new Date().toISOString(),
       version: "1.0-document-import"
     };
-    
+
     // Check if we have a valid API response and extract userInputs
     if (apiResponse && typeof apiResponse === 'object') {
-      // If the API just returned userInputs directly
       if (apiResponse.userInputs && typeof apiResponse.userInputs === 'object') {
         result.userInputs = apiResponse.userInputs;
         console.log("Processed userInputs from API response structure");
-      } 
-      // If the API returned some other format, try to use it directly
+      }
       else if (Object.keys(apiResponse).length > 0) {
-        // Look for common fields to determine if this is already a userInputs object
         if (apiResponse.question || apiResponse.abstract || apiResponse.audience) {
           result.userInputs = apiResponse;
           console.log("Using API response directly as userInputs");
         } else {
-          // Last resort: treat the entire response as userInputs
           result.userInputs = apiResponse;
           console.log("Using entire API response as userInputs (fallback)");
         }
@@ -175,52 +172,52 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
     } else {
       throw new Error("API returned invalid or empty response");
     }
-    
-    // Validate that we have at least basic required fields
+
+    // Validate required fields
     const validateFields = ['question', 'audience', 'abstract'];
-    const missingRequiredFields = validateFields.filter(field => 
-      !result.userInputs[field] || typeof result.userInputs[field] !== 'string' || 
+    const missingRequiredFields = validateFields.filter(field =>
+      !result.userInputs[field] || typeof result.userInputs[field] !== 'string' ||
       result.userInputs[field].trim() === ''
     );
-    
+
     if (missingRequiredFields.length > 0) {
       console.error("Missing required fields in API response:", missingRequiredFields);
       throw new Error(`API response missing required fields: ${missingRequiredFields.join(', ')}`);
     }
-    
+
     // Add any missing fields from templates
     if (sectionContent && Array.isArray(sectionContent.sections)) {
       sectionContent.sections.forEach(section => {
-        if (section && section.id && section.placeholder && 
+        if (section && section.id && section.placeholder &&
             (!result.userInputs[section.id] || result.userInputs[section.id].trim() === '')) {
           result.userInputs[section.id] = section.placeholder;
         }
       });
     }
 
-    console.log("Final import structure with userInputs:", 
+    console.log("Final import structure with userInputs:",
                 Object.keys(result.userInputs).length, "fields");
-    
-    // IMPORTANT: Initialize all sections as expanded for examples from PDF
-    // This ensures the user can see all the content immediately
-    console.log("Setting ALL sections to expanded state for imported document");
-    initializeSectionStates(false); // false = expand all sections (not minimized)
-    
-    // Also dispatch a custom event to notify components about the import
+
+    // NOTE: Expansion of sections is now handled by the loadProjectData action in the store.
+    // No need to call initializeSectionStates(false) here.
+
+    // Dispatch a custom event to notify components about the import
+    // The loadProjectData action in the store will handle the state update.
     window.dispatchEvent(new CustomEvent('documentImported', {
       detail: {
         fileName: file.name,
         timestamp: Date.now(),
-        expandAllSections: true // Flag indicating all sections should be expanded
+        // expandAllSections: true // This flag is no longer strictly needed here
+                                 // as loadProjectData handles expansion.
       }
     }));
 
     console.log('Successfully processed paper structure');
-    return result;
+    return result; // Return the structured data
 
   } catch (error) {
     console.error('Error during document import process:', error);
-    
+
     // Create a fallback result if there was an error
     const fallbackResult = {
       userInputs: {},
@@ -228,41 +225,38 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
       timestamp: new Date().toISOString(),
       version: "1.0-import-fallback"
     };
-    
+
     // Fill with template data from sectionContent
     if (sectionContent && Array.isArray(sectionContent.sections)) {
       sectionContent.sections.forEach(section => {
         if (section && section.id && section.placeholder) {
-          // Use a modified placeholder that indicates this is fallback data
           fallbackResult.userInputs[section.id] = `[Imported from ${file.name}]\n\n${section.placeholder}`;
         }
       });
     }
-    
+
     // Add a basic project structure based on the filename
     const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
     const formattedName = fileName
       .replace(/[_-]/g, " ")
       .replace(/\b\w/g, c => c.toUpperCase()); // Capitalize words
-    
-    // Add some derived content
+
     fallbackResult.userInputs.question = `Research Question: How does ${formattedName} affect research outcomes?\n\nSignificance/Impact: Understanding the impact of ${formattedName} could lead to improved methodologies.`;
     fallbackResult.userInputs.audience = `Target Audience/Community:\n1. Researchers in the field of ${formattedName}\n2. Policy makers\n3. Practitioners`;
-    
-    // Initialize all sections as expanded even for fallback data
-    console.log("Setting all sections to expanded state for fallback import");
-    initializeSectionStates(false); // false = expand all sections
-    
+
+    // NOTE: Section expansion is handled by loadProjectData in the store.
+
     // Dispatch an event for the fallback case too
     window.dispatchEvent(new CustomEvent('documentImported', {
       detail: {
         fileName: file.name,
         timestamp: Date.now(),
-        expandAllSections: true,
+        // expandAllSections: true, // No longer needed here
         isFallback: true
       }
     }));
-    
+
+    // Return fallback data instead of throwing error immediately
     return fallbackResult;
   }
 }
