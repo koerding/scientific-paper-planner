@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { useSectionState } from '../contexts/SectionContext';
 import { useFeedback } from '../contexts/FeedbackContext';
+import sectionContent from '../data/sectionContent.json'; // Added import for sectionContent
 
 export const useProjectSection = (sectionId) => {
   const { sections, setSectionContent } = useProject();
