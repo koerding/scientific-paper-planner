@@ -1,5 +1,4 @@
-// FILE: src/components/layout/MainLayout.js
-
+// src/components/layout/MainLayout.js
 import React from 'react';
 import AppHeader from './AppHeader';
 import ContentArea from './ContentArea';
@@ -7,9 +6,6 @@ import InteractionElements from './InteractionElements';
 import ModalManager from '../modals/ModalManager';
 import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
 
-/**
- * Main layout component for the application
- */
 const MainLayout = ({
   // Refs
   splashManagerRef,
