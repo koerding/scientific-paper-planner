@@ -8,6 +8,7 @@ import React from 'react';
  * UPDATED: Changed "Paper" to "Project" throughout
  * UPDATED: Adjusted icon colors to match actual app interface elements
  * ADDED: "Feeling stuck" section about PDF import feature
+ * UPDATED: Increased z-index to appear above chat button
  */
 const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   const handleDontShowAgain = () => {
@@ -17,7 +18,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center z-50" style={{ zIndex: 1000 }}>
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 overflow-hidden">
         {/* Header with title and logo - FIXED: Changed "Paper" to "Project" */}
         <div className="bg-purple-600 px-6 py-4 flex items-center">
