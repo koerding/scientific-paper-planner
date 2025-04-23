@@ -1,7 +1,6 @@
 // FILE: src/components/PaperPlanner/ConfirmDialog.js
 
 import React from 'react';
-// REMOVED: import { resetAllState } from '../../services/resetService'; // <-- Removed import
 
 /**
  * Confirmation dialog for resetting the project
