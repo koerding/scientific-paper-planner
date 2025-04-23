@@ -14,6 +14,7 @@ import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager'; //
 import '../../styles/PaperPlanner.css';
 import { getNextVisibleSectionId } from '../../utils/sectionOrderUtils'; // Keep utils
 
+
 const VerticalPaperPlannerApp = () => {
   // --- Get State and Actions from Zustand Store ---
   const sections = useAppStore((state) => state.sections);
@@ -22,7 +23,7 @@ const VerticalPaperPlannerApp = () => {
   const updateSectionContent = useAppStore((state) => state.updateSectionContent);
   const setActiveToggle = useAppStore((state) => state.setActiveToggle);
   const updateSectionFeedback = useAppStore((state) => state.updateSectionFeedback);
-  const resetState = useAppStore((state) => state.resetState);
+  const resetState = useAppStore((state) => state.resetState); // Get reset action from store
   const loadStoreProjectData = useAppStore((state) => state.loadProjectData);
   const expandAllSections = useAppStore((state) => state.expandAllSections);
 
@@ -35,34 +36,27 @@ const VerticalPaperPlannerApp = () => {
 
   // --- UI Context for Modals ---
   const {
-      modals, openModal, closeModal, setReviewData, setLoading: setUILoading
+      modals, openModal, closeModal, // useUI provides functions to control modals
+      setReviewData, setLoading: setUILoading
   } = useUI();
 
   // --- Get Current Section Data (with fallback) ---
-  const currentSectionData = sections?.[activeSectionId] || null; // Use null as fallback
+  const currentSectionData = sections?.[activeSectionId] || null;
 
   // --- Chat Hook ---
    const {
-       currentMessage,
-       setCurrentMessage,
-       loading: chatLoading,
-       handleSendMessage,
-       chatMessages,
+       currentMessage, setCurrentMessage, loading: chatLoading, handleSendMessage, chatMessages,
    } = useChat(
-      Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {}), // Handle potentially undefined sections
-      {},
-      () => {},
-      activeSectionId,
-       // Pass section definitions, ensuring sections exists
-       { sections: sections ? Object.values(sections).map(s => ({...(s || {}), subsections: s?.originalInstructions || [] })) : [] }
+      Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {}),
+      {}, () => {}, activeSectionId,
+      { sections: sections ? Object.values(sections).map(s => ({...(s || {}), subsections: s?.originalInstructions || [] })) : [] }
     );
 
   // --- Document Import Hook ---
   const { importLoading, handleDocumentImport } = useDocumentImport(
     loadStoreProjectData,
-    // Pass section definitions, ensuring sections exists
     { sections: sections ? Object.values(sections).map(s => ({...(s || {}), subsections: s?.originalInstructions || [] })) : [] },
-    resetState
+    resetState // Pass the store's reset action here
   );
 
   // Combined loading state
@@ -72,35 +66,32 @@ const VerticalPaperPlannerApp = () => {
   useEffect(() => {
     ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` });
     window.splashManagerRef = splashManagerRef;
-  }, []); // Keep GA initialization simple
+  }, []); // Initial setup
 
-   // Update GA page view when activeSectionId changes
-   useEffect(() => {
+   useEffect(() => { // Track subsequent section changes
        ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` });
    }, [activeSectionId]);
 
 
-  useEffect(() => {
-    if (sections) { // Ensure sections exist before mapping refs
+  useEffect(() => { // Map refs
+    if (sections) {
         Object.keys(sections).forEach(sectionId => {
          sectionRefs.current[sectionId] = sectionRefs.current[sectionId] || React.createRef();
         });
     }
   }, [sections]);
 
-  // --- Core Functions (Implementations mostly unchanged, just ensure data exists) ---
+  // --- Core Functions ---
 
   const handleSectionFocus = (sectionId) => {
-    if (sectionId && sectionId !== activeSectionId) { // Ensure sectionId is valid
+    if (sectionId && sectionId !== activeSectionId) {
       setActiveSectionId(sectionId);
       trackSectionChange(sectionId, sections?.[sectionId]?.title || 'Unknown');
     }
   };
 
   const handleContentChange = (sectionId, value) => {
-     if (sectionId) { // Ensure sectionId is valid
-         updateSectionContent(sectionId, value);
-     }
+     if (sectionId) { updateSectionContent(sectionId, value); }
   };
 
   const handleApproachToggle = (approachId) => {
@@ -115,26 +106,66 @@ const VerticalPaperPlannerApp = () => {
       setActiveToggle('dataMethod', methodId);
   };
 
-  const handleResetRequest = () => { openModal('confirmDialog'); };
-  const handleConfirmReset = () => { resetState(); setActiveSectionId('question'); closeModal('confirmDialog'); };
-  const handleLoadProject = (data) => { loadStoreProjectData(data); setActiveSectionId(data?.detectedToggles?.approach || 'question'); expandAllSections(); };
-  const handleSaveRequest = () => { openModal('saveDialog'); };
+  // Reset Project -> Show Confirm Dialog
+   const handleResetRequest = () => {
+       console.log("[VerticalPaperPlannerApp] handleResetRequest called."); // <-- ADDED LOG
+       openModal('confirmDialog'); // Use function from useUI hook
+       console.log("[VerticalPaperPlannerApp] openModal('confirmDialog') executed."); // <-- ADDED LOG
+   };
+
+
+  // Confirm Reset -> Call Store Action
+  const handleConfirmReset = () => {
+      console.log("[VerticalPaperPlannerApp] handleConfirmReset called."); // <-- ADDED LOG
+      resetState(); // Call the store action to reset state
+      setActiveSectionId('question'); // Reset local focus state
+      closeModal('confirmDialog'); // Use function from useUI hook
+      console.log("[VerticalPaperPlannerApp] resetState() and closeModal() executed."); // <-- ADDED LOG
+  };
+
+  // Load Project from file -> Call Store Action
+  const handleLoadProject = (data) => {
+     loadStoreProjectData(data);
+     setActiveSectionId(data?.detectedToggles?.approach || 'question');
+     expandAllSections();
+  };
+
+   // Save Project -> Show Save Dialog
+   const handleSaveRequest = () => {
+     openModal('saveDialog'); // Use function from useUI hook
+   };
+
+   // Save with Filename -> Use Util
   const handleSaveWithFilename = (fileName) => {
-      trackSave();
-      const sectionsToSave = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
-      saveProjectAsJson(sectionsToSave, chatMessages, fileName);
-      closeModal('saveDialog');
-  };
-  const handleExportRequest = () => {
-      trackExport('any');
-      const sectionsToExport = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
-      exportProject(sectionsToExport, chatMessages);
-  };
-  const handleOpenExamples = () => { openModal('examplesDialog'); };
-  const handleOpenPrivacy = () => { openModal('privacyPolicy'); };
-  useEffect(() => { window.addEventListener('openPrivacyPolicy', handleOpenPrivacy); return () => window.removeEventListener('openPrivacyPolicy', handleOpenPrivacy); }, []);
+     trackSave();
+     const sectionsToSave = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
+     saveProjectAsJson(sectionsToSave, chatMessages, fileName);
+     closeModal('saveDialog'); // Use function from useUI hook
+   };
+
+  // Export Project -> Use Util
+   const handleExportRequest = () => {
+     trackExport('any');
+     const sectionsToExport = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
+     exportProject(sectionsToExport, chatMessages);
+   };
+
+   // Show Examples Dialog
+   const handleOpenExamples = () => {
+     openModal('examplesDialog'); // Use function from useUI hook
+   };
+
+   // Show Privacy Policy
+   const handleOpenPrivacy = () => {
+       openModal('privacyPolicy'); // Use function from useUI hook
+   };
+    useEffect(() => { window.addEventListener('openPrivacyPolicy', handleOpenPrivacy); return () => window.removeEventListener('openPrivacyPolicy', handleOpenPrivacy); }, []);
+
+  // Show Help Splash Screen
   const handleShowHelpSplash = () => { if (splashManagerRef.current) { splashManagerRef.current.showSplash(); } };
 
+
+  // Handle Paper Review
   const handleReviewPaperRequest = async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
@@ -148,13 +179,14 @@ const VerticalPaperPlannerApp = () => {
       finally { setIsReviewing(false); setUILoading('review', false); }
   };
 
+
+  // Handle Instruction Improvement (Magic Button)
   const handleImprovementRequest = async (sectionId = null) => {
     const targetSectionId = sectionId || activeSectionId;
-    const sectionToImprove = sections?.[targetSectionId]; // Use safe access
+    const sectionToImprove = sections?.[targetSectionId];
 
     if (!sectionToImprove || sectionToImprove.content === (sectionToImprove.placeholder || '') || sectionToImprove.content.trim() === '') {
-      alert("Please add some content to this section before requesting feedback.");
-      return;
+      alert("Please add some content to this section before requesting feedback."); return;
     }
     setIsImproving(true);
     setUILoading('improvement', true);
@@ -163,57 +195,39 @@ const VerticalPaperPlannerApp = () => {
         const currentInputs = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
         const result = await improveBatchInstructions([sectionToImprove], currentInputs, sectionDefinitions, true);
         if (result.success && result.improvedData && result.improvedData.length > 0) {
-            updateSectionFeedback(targetSectionId, result.improvedData[0]);
+            updateSectionFeedback(targetSectionId, result.improvedData[0]); // Update store
             const nextSectionId = getNextVisibleSectionId(targetSectionId, activeToggles.approach, activeToggles.dataMethod);
-            // Ensure next section and sections state exist before toggling
             if (nextSectionId && sections?.[nextSectionId]?.isMinimized) {
                 useAppStore.getState().toggleMinimize(nextSectionId);
                 console.log(`Automatically expanded next section: ${nextSectionId}`);
             }
-        } else {
-            console.error("Instruction improvement failed or returned no data", result);
-            alert("Failed to get feedback for this section. Please try again.");
-        }
+        } else { console.error("Instruction improvement failed or returned no data", result); alert("Failed to get feedback for this section. Please try again."); }
     } catch (error) { console.error("Error requesting instruction improvement:", error); alert(`Error getting feedback: ${error.message || 'Unknown error'}`); }
     finally { setIsImproving(false); setUILoading('improvement', false); }
   };
 
   // --- Props for Child Components ---
-  // Ensure sections object exists before trying to create props
   const safeSections = sections || {};
   const contentAreaProps = {
-    activeSection: activeSectionId,
-    sections: safeSections, // Pass the potentially empty object initially
-    activeApproach: activeToggles.approach,
-    activeDataMethod: activeToggles.dataMethod,
-    handleSectionFocus, handleContentChange, handleApproachToggle, handleDataMethodToggle,
-    sectionRefs, handleMagic: handleImprovementRequest, isAnyAiLoading, proMode,
+    activeSection: activeSectionId, sections: safeSections, activeApproach: activeToggles.approach, activeDataMethod: activeToggles.dataMethod,
+    handleSectionFocus, handleContentChange, handleApproachToggle, handleDataMethodToggle, sectionRefs, handleMagic: handleImprovementRequest,
+    isAnyAiLoading, proMode,
   };
 
   const interactionProps = {
-      currentSection: activeSectionId,
-      currentSectionTitle: currentSectionData?.title || '', // Use safe access with fallback
-      chatMessages: chatMessages,
-      currentMessage, setCurrentMessage, handleSendMessage,
-      loading: chatLoading,
-      currentSectionData: currentSectionData, // Pass the potentially null data
+      currentSection: activeSectionId, currentSectionTitle: currentSectionData?.title || '', chatMessages: chatMessages,
+      currentMessage, setCurrentMessage, handleSendMessage, loading: chatLoading, currentSectionData: currentSectionData,
   };
 
   // --- Render ---
-  // Prevent rendering MainLayout if core sections state isn't ready
-  if (!sections || Object.keys(sections).length === 0) {
-     // Optionally return a loading spinner or null
-     console.log("Sections not ready, delaying render...");
-     return null;
-   }
-
+  if (!sections || Object.keys(sections).length === 0) { return null; }
 
   return (
     <MainLayout
       splashManagerRef={splashManagerRef}
-      resetProject={handleResetRequest}
+      resetProject={handleResetRequest} // Pass the function that opens the modal
       exportProject={handleExportRequest}
-      saveProject={handleSaveRequest}
+      saveProject={handleSaveRequest} // Pass the function that opens the save dialog
       loadProject={handleLoadProject}
       importDocumentContent={handleDocumentImport}
       openReviewModal={() => openModal('reviewModal')}
@@ -221,14 +235,14 @@ const VerticalPaperPlannerApp = () => {
       showHelpSplash={handleShowHelpSplash}
       contentAreaProps={contentAreaProps}
       interactionProps={interactionProps}
-      modalState={modals}
-      modalActions={{
+      modalState={modals} // Pass modal visibility flags from UIContext state
+      modalActions={{ // Pass actions to control modals
           closeConfirmDialog: () => closeModal('confirmDialog'),
           closeExamplesDialog: () => closeModal('examplesDialog'),
           closeReviewModal: () => closeModal('reviewModal'),
           closePrivacyPolicy: () => closeModal('privacyPolicy'),
           closeSaveDialog: () => closeModal('saveDialog'),
-          onConfirmReset: handleConfirmReset,
+          onConfirmReset: handleConfirmReset, // Pass the function that performs the reset
       }}
       handleReviewPaper={handleReviewPaperRequest}
       saveWithFilename={handleSaveWithFilename}
