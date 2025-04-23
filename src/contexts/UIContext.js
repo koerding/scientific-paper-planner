@@ -43,11 +43,14 @@ function uiReducer(state, action) {
   switch (action.type) {
     case ACTION_TYPES.SHOW_MODAL:
       console.log(`[UIContext] Showing modal: ${action.payload}`); // <-- ADDED LOG
-      // Ensure only one modal can be open at a time (optional, depends on desired behavior)
-      // const newModals = { ...initialState.modals, [action.payload]: true };
-      // return { ...state, modals: newModals };
-       return { ...state, modals: { ...state.modals, [action.payload]: true } }; // Allow multiple modals? Check logic.
-
+      // Directly set the specified modal to true in the modals object
+      return { 
+        ...state, 
+        modals: { 
+          ...state.modals, 
+          [action.payload]: true 
+        } 
+      };
 
     case ACTION_TYPES.HIDE_MODAL:
        console.log(`[UIContext] Hiding modal: ${action.payload}`); // <-- ADDED LOG
