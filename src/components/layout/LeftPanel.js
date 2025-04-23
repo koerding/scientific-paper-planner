@@ -70,15 +70,17 @@ const LeftPanel = ({
       {/* Question Section */}
       {questionSection && renderSectionCard(questionSection, activeSection, handleSectionFocus, handleMagic)}
 
-      {/* Research Approach Toggle */}
+      {/* Research Approach Toggle integrated more closely with the section card */}
       {showApproachToggle && (
-        <ResearchApproachToggle
-          activeApproach={activeToggles.approach}
-          setActiveApproach={handleApproachToggle}
-        />
+        <div className="mt-3 mb-1">
+          <ResearchApproachToggle
+            activeApproach={activeToggles.approach}
+            setActiveApproach={handleApproachToggle}
+          />
+        </div>
       )}
 
-      {/* Active Approach Section */}
+      {/* Active Approach Section - closer to its toggle */}
       {approachSection && renderSectionCard(approachSection, activeSection, handleSectionFocus, handleMagic)}
 
       {/* Audience Section */}
@@ -87,15 +89,17 @@ const LeftPanel = ({
       {/* Related Papers Section */}
       {relatedPapersSection && renderSectionCard(relatedPapersSection, activeSection, handleSectionFocus, handleMagic)}
 
-      {/* Data Acquisition Toggle */}
+      {/* Data Acquisition Toggle integrated with its section */}
       {showDataToggle && (
-        <DataAcquisitionToggle
-          activeMethod={activeToggles.dataMethod}
-          setActiveMethod={handleDataMethodToggle}
-        />
+        <div className="mt-3 mb-1">
+          <DataAcquisitionToggle
+            activeMethod={activeToggles.dataMethod}
+            setActiveMethod={handleDataMethodToggle}
+          />
+        </div>
       )}
 
-      {/* Active Data Method Section */}
+      {/* Active Data Method Section - closer to its toggle */}
       {dataMethodSection && renderSectionCard(dataMethodSection, activeSection, handleSectionFocus, handleMagic)}
 
       {/* Remaining Sections */}
