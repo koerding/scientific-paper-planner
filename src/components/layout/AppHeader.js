@@ -89,9 +89,9 @@ const AppHeader = ({
       <div className="container mx-auto px-4 py-2">
         <div className="flex items-center justify-between">
           {/* Logo and title */}
-          <div className="flex items-center">
+          <div className="flex items-left">
             <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center mr-2">
-              <span className="font-bold text-lg">SP</span>
+              <span className="font-bold text-lg">SciPlan</span>
             </div>
           </div>
 
