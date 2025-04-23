@@ -1,11 +1,4 @@
-// FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
-
-/**
- * Modified version with feedback tracking and edit-after-feedback detection
- * UPDATED: Now properly implements unified reset functionality 
- * UPDATED: Handles loading of examples and document imports correctly
- * UPDATED: Fixed card focus after improvement - opens next card but doesn't focus
- */
+// src/components/PaperPlanner/VerticalPaperPlannerApp.js
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
 import sectionContent from '../../data/sectionContent.json';
@@ -22,10 +15,6 @@ import {
 import { getNextVisibleSectionId } from '../../utils/sectionOrderUtils';
 import '../../styles/PaperPlanner.css';
 
-/**
- * Enhanced Project Planner component
- * UPDATED: Uses unified reset approach for consistent behavior
- */
 const VerticalPaperPlannerApp = ({ usePaperPlannerHook }) => {
   // Destructure the hook data
   const {
