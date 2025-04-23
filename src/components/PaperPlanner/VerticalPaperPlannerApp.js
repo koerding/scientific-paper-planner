@@ -97,7 +97,15 @@ const VerticalPaperPlannerApp = () => {
   const handleSaveWithFilename = (fileName) => { trackSave(); const sectionsToSave = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {}); saveProjectAsJson(sectionsToSave, chatMessages, fileName); closeModal('saveDialog'); };
   const handleExportRequest = () => { trackExport('any'); const sectionsToExport = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {}); exportProject(sectionsToExport, chatMessages); };
   const handleOpenExamples = () => openModal('examplesDialog');
-  const handleShowHelpSplash = () => zustandShowHelpSplash();
+  const handleShowHelpSplash = () => {
+    // Call the store action (clears localStorage, updates state)
+    zustandShowHelpSplash();
+    if (splashManagerRef.current && typeof splashManagerRef.current.showSplash === 'function') {
+      splashManagerRef.current.showSplash();
+    } else {
+      console.warn("Could not call showSplash on splashManagerRef");
+    }
+  };
   const handleOpenReviewModal = () => openModal('reviewModal');
 
   const handleReviewPaperRequest = async (event) => { /* ... (no change needed) ... */
