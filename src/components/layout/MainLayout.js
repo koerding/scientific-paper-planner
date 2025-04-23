@@ -15,15 +15,15 @@ const MainLayout = ({
   saveProject,
   loadProject,
   importDocumentContent,
-  onOpenReviewModal, // Ensure correct prop name is received and passed down
-  openExamplesDialog,
+  onOpenReviewModal, // Ensure correct prop name if passed from AppHeader via VPPApp
+  openExamplesDialog, // Changed name to match VPPApp handler
   showHelpSplash,
   // Content area props
   contentAreaProps,
   // Interaction elements props
   interactionProps,
   // Modal props
-  modalState, // <<< Prop being passed (The `modals` object from VPPApp's useUI)
+  modalState,
   modalActions,
   handleReviewPaper, // Prop for ReviewPaperModal
   saveWithFilename, // Prop for SaveDialog
@@ -31,13 +31,8 @@ const MainLayout = ({
   isAnyAiLoading
 }) => {
 
-  // --- ADDED LOG ---
-  // Log the modalState prop received by MainLayout during render
-  console.log("[MainLayout] Rendering with modalState prop:", modalState);
-  // --- END ADDED LOG ---
+  // console.log("[MainLayout] Rendering with modalState prop:", modalState); // Keep logs if needed
 
-
-  // Destructure necessary props for AppHeader (ensure names match)
   const appHeaderProps = {
       resetProject, exportProject, saveProject, loadProject, importDocumentContent,
       onOpenReviewModal, // Pass down the handler for the review modal button
@@ -46,32 +41,36 @@ const MainLayout = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    // Make this main div the screen height flex container
+    <div className="h-screen flex flex-col bg-gray-50 text-gray-900 overflow-hidden"> {/* Added overflow-hidden */}
       {/* Splash screen manager */}
       <ForwardedSplashScreenManager ref={splashManagerRef} />
 
-      <div className="w-full pb-6">
-        {/* Header */}
-        <AppHeader {...appHeaderProps} />
+      {/* Header remains fixed height (implicitly) */}
+      <AppHeader {...appHeaderProps} />
 
-        {/* Main content area */}
+      {/* This div will contain the main growing content area */}
+      {/* Added flex-grow and overflow-hidden */}
+      <div className="flex flex-col flex-grow overflow-hidden">
+
+        {/* Content area needs to grow and manage its children's overflow */}
         {/* Pass necessary props down to ContentArea */}
         <ContentArea {...contentAreaProps} />
 
-        {/* Interactive UI elements */}
-        {/* Pass necessary props down to InteractionElements */}
+        {/* Interactive UI elements (Chat) - positioned fixed, outside main scroll flow */}
+        {/* Ensure InteractionElements doesn't interfere with layout height */}
         <InteractionElements {...interactionProps} />
 
-        {/* Centralized modal management */}
+        {/* Modals - positioned fixed, outside main scroll flow */}
         <ModalManager
-          modals={modalState} // Pass the received modalState down
+          modals={modalState}
           actions={modalActions}
-          handleReviewPaper={handleReviewPaper} // Pass handler down
-          loadProject={loadProject} // Pass loadProject down for ExamplesDialog
-          saveWithFilename={saveWithFilename} // Pass saveWithFilename down for SaveDialog
+          handleReviewPaper={handleReviewPaper}
+          loadProject={loadProject} // Pass loadProject down for ExamplesDialog via ModalManager
+          saveWithFilename={saveWithFilename}
         />
       </div>
-       {/* Footer moved outside or managed elsewhere if needed */}
+       {/* Footer - If needed, place it outside the flex-grow div or adjust layout */}
        {/* <div className="text-center ...">Footer</div> */}
     </div>
   );
