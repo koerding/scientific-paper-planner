@@ -1,28 +1,28 @@
 // FILE: src/App.js
 import React, { useEffect } from 'react';
-// highlight-start
-// Import directly from the component file, not the index file
 import PaperPlannerApp from './components/PaperPlanner/VerticalPaperPlannerApp';
-// highlight-end
-import useAppStore from './store/appStore'; // Import the zustand store
-import { UIProvider } from './contexts/UIContext';
-import { ChatProvider } from './contexts/ChatContext';
+import useAppStore from './store/appStore';
+// import { UIProvider } from './contexts/UIContext'; // REMOVED
+import { ChatProvider } from './contexts/ChatContext'; // Keep ChatProvider if still used
 
 function App() {
   useEffect(() => {
     window.resetApp = () => {
       useAppStore.getState().resetState();
     };
+    // Initialize onboarding check after store potentially hydrates
+    // useAppStore.getState()._initializeOnboarding(); // Moved to store onRehydrate
+
     return () => { delete window.resetApp; };
   }, []);
 
   return (
     <div className="App">
+      {/* Keep ChatProvider if chat state is separate */}
       <ChatProvider>
-        <UIProvider>
-            {/* Render the component directly */}
+         {/* <UIProvider> REMOVED */}
             <PaperPlannerApp />
-        </UIProvider>
+         {/* </UIProvider> REMOVED */}
       </ChatProvider>
     </div>
   );
