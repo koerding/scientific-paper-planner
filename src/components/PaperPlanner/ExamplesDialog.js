@@ -1,10 +1,11 @@
+// FILE: src/components/PaperPlanner/ExamplesDialog.js
 import React, { useState, useEffect } from 'react';
 import { loadExamples } from '../../utils/ExampleUtils.js';
-import { initializeSectionStates } from '../../services/sectionStateService';
+// REMOVED: import { initializeSectionStates } from '../../services/sectionStateService'; // <-- Removed import
 
 /**
  * Dialog for loading example projects
- * - Added initialization of section states as expanded for examples
+ * UPDATED: Removed call to initializeSectionStates as the store's load action handles it.
  */
 const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject }) => {
   const [examples, setExamples] = useState([]);
@@ -17,24 +18,18 @@ const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject
     if (showExamplesDialog) {
       setLoading(true);
       setError(null);
+      setSelectedExample(null); // Reset selection when dialog opens
 
-      try {
-        // Load examples with proper error handling
-        loadExamples()
-          .then(exampleData => {
-            setExamples(exampleData || []);
-            setLoading(false);
-          })
-          .catch(err => {
-            console.error('Error loading examples:', err);
-            setError('Failed to load examples. Please try again.');
-            setLoading(false);
-          });
-      } catch (error) {
-        console.error('Error in loadExamples:', error);
-        setError('Failed to load examples. Please try again.');
-        setLoading(false);
-      }
+      loadExamples()
+        .then(exampleData => {
+          setExamples(exampleData || []);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Error loading examples:', err);
+          setError('Failed to load examples. Please try again.');
+          setLoading(false);
+        });
     }
   }, [showExamplesDialog]);
 
@@ -43,26 +38,29 @@ const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject
     setSelectedExample(example.id);
   };
 
-  // Handle loading the selected example with expanded sections
+  // Handle loading the selected example
   const handleLoadExample = () => {
     if (!selectedExample) return;
 
     const example = examples.find(ex => ex?.id === selectedExample);
     if (example && example.data) {
-      // Mark as an example with expanded sections
-      initializeSectionStates(false); // false = this is an example, not a new project
-      
-      // Tag the data as coming from an example
+      // REMOVED: initializeSectionStates(false); // State setup now handled by loadProject (store action)
+
+      // Tag the data as coming from an example (optional, but might be useful)
       if (example.data) {
-        if (!example.data.version) {
-          example.data.version = "example";
-        } else if (!example.data.version.includes("example")) {
-          example.data.version += "-example";
-        }
+          example.data.source = "example"; // Add a source flag
+          if (!example.data.version) {
+            example.data.version = "example";
+          } else if (!example.data.version.includes("example")) {
+            example.data.version += "-example";
+          }
       }
-      
-      loadProject(example.data);
+
+      loadProject(example.data); // This function now calls the store's loadProjectData action
       setShowExamplesDialog(false);
+    } else {
+        console.error("Selected example data not found:", selectedExample);
+        setError("Could not load the selected example.");
     }
   };
 
@@ -76,6 +74,7 @@ const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject
           <button
             onClick={() => setShowExamplesDialog(false)}
             className="text-gray-500 hover:text-gray-700 focus:outline-none"
+            aria-label="Close"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -100,23 +99,23 @@ const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject
               </p>
             </div>
 
-            <div className="max-h-96 overflow-y-auto mb-6">
+            <div className="max-h-96 overflow-y-auto mb-6 border rounded-md">
               {examples.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">No examples available.</p>
               ) : (
-                <div className="space-y-2">
+                <div className="divide-y divide-gray-200">
                   {examples.map(example => (
                     <div
                       key={example.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      className={`p-4 cursor-pointer transition-colors ${
                         selectedExample === example.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'
+                          ? 'bg-blue-100'
+                          : 'hover:bg-gray-50'
                       }`}
                       onClick={() => handleSelectExample(example)}
                     >
                       <h3 className="font-medium text-lg text-gray-800">{example.name}</h3>
-                      <p className="text-gray-600 mt-1">{example.description}</p>
+                      <p className="text-gray-600 mt-1 text-sm">{example.description}</p>
                     </div>
                   ))}
                 </div>
@@ -133,7 +132,7 @@ const ExamplesDialog = ({ showExamplesDialog, setShowExamplesDialog, loadProject
               <button
                 onClick={handleLoadExample}
                 disabled={!selectedExample}
-                className={`px-4 py-2 rounded ${
+                className={`px-4 py-2 rounded transition-colors ${
                   !selectedExample
                     ? 'bg-blue-300 text-white cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
