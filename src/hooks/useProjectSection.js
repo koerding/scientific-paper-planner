@@ -3,12 +3,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { useSectionState } from '../contexts/SectionContext';
 import { useFeedback } from '../contexts/FeedbackContext';
-import sectionContent from '../data/sectionContent.json'; // Added import for sectionContent
+import sectionContent from '../data/sectionContent.json';
 
 export const useProjectSection = (sectionId) => {
   const { sections, setSectionContent } = useProject();
   const { isExpanded, toggleSection } = useSectionState();
-  const { hasFeedback, getFeedbackRating, isEditedSinceFeedback, updateEditTimestamp, requestFeedback } = useFeedback();
+  
+  // Get feedback context functions, defaulting to empty functions if they don't exist
+  const feedbackContext = useFeedback();
+  const hasFeedback = feedbackContext?.hasFeedback || (() => false);
+  const getFeedbackRating = feedbackContext?.getFeedbackRating || (() => null);
+  const isEditedSinceFeedback = feedbackContext?.isEditedSinceFeedback || (() => false);
+  const updateEditTimestamp = feedbackContext?.updateEditTimestamp || (() => {});
+  const requestFeedback = feedbackContext?.requestFeedback;
   
   const [isEditing, setIsEditing] = useState(false);
   
@@ -40,7 +47,15 @@ export const useProjectSection = (sectionId) => {
   
   // Request feedback for this section
   const handleRequestFeedback = useCallback(() => {
-    requestFeedback(sectionId);
+    if (typeof requestFeedback === 'function') {
+      requestFeedback(sectionId);
+    } else {
+      console.warn(`No feedback request function available for section ${sectionId}`);
+      // Fallback behavior - could trigger an event or show a toast notification
+      window.dispatchEvent(new CustomEvent('feedbackRequested', { 
+        detail: { sectionId } 
+      }));
+    }
   }, [sectionId, requestFeedback]);
   
   return {
