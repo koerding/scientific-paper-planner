@@ -1,41 +1,38 @@
-// src/components/layout/InteractionElements.js
-
+// FILE: src/components/layout/InteractionElements.js
 import React from 'react';
 import ModernChatInterface from '../chat/ModernChatInterface';
 
 /**
  * Component for interactive UI elements like chat
- * UPDATED: Removed FloatingMagicButton and ImprovementReminderToast
+ * Now receives chat state/actions as props from parent (originating from Zustand store)
  */
 const InteractionElements = ({
-  // Chat props
-  currentSection,
+  // Chat props (passed down from VerticalPaperPlannerApp)
+  currentSection, // This is now currentChatSectionId
   currentSectionTitle,
   chatMessages,
   currentMessage,
   setCurrentMessage,
   handleSendMessage,
-  loading,
-  currentSectionData,
-  
-  // Other props kept for compatibility but not used
-  handleMagicClick,
-  userInputs,
-  lastImprovementTime,
-  significantEditsMade
+  loading, // This is now loadingFlags.chat
+  currentSectionData, // Data for the current chat section
+
+  // Other props (kept for compatibility if needed, but likely unused now)
+  // handleMagicClick, userInputs, lastImprovementTime, significantEditsMade
 }) => {
   return (
     <>
-      {/* Chat interface */}
+      {/* Chat interface - Pass props directly */}
       <ModernChatInterface
         currentSection={currentSection}
         currentSectionTitle={currentSectionTitle}
         chatMessages={chatMessages}
         currentMessage={currentMessage}
-        setCurrentMessage={setCurrentMessage}
-        handleSendMessage={handleSendMessage}
-        loading={loading}
-        currentSectionData={currentSectionData}
+        setCurrentMessage={setCurrentMessage} // Pass action
+        handleSendMessage={handleSendMessage} // Pass action
+        loading={loading} // Pass chat loading state
+        currentSectionData={currentSectionData} // Pass relevant section data
+        // onboardingStep prop can be added if needed, selected from store in parent
       />
     </>
   );
