@@ -1,70 +1,42 @@
-// FILE: src/components/toggles/ProModeToggle.js
-
+// src/components/toggles/ProModeToggle.js
 import React, { useState, useEffect } from 'react';
-import { isProModeEnabled, setProModeEnabled } from '../../services/progressionStateService';
-import { trackFeatureUsage } from '../../utils/analyticsUtils';
+import { isProModeEnabled, toggleProMode } from '../../services/progressionStateService';
 
-/**
- * Pro Mode toggle button component for the header
- * Enables/disables the progressive unlocking feature
- */
 const ProModeToggle = () => {
   const [enabled, setEnabled] = useState(false);
   
-  // Load initial state
+  // Initialize state
   useEffect(() => {
     setEnabled(isProModeEnabled());
     
-    // Listen for pro mode changes from other components
+    // Listen for pro mode changes
     const handleProModeChange = (event) => {
       setEnabled(event.detail.enabled);
     };
     
     window.addEventListener('proModeChanged', handleProModeChange);
-    return () => {
-      window.removeEventListener('proModeChanged', handleProModeChange);
-    };
+    return () => window.removeEventListener('proModeChanged', handleProModeChange);
   }, []);
   
-  // Handle toggle button click
+  // Toggle pro mode
   const handleToggle = () => {
-    const newState = !enabled;
-    setProModeEnabled(newState);
+    const newState = toggleProMode();
     setEnabled(newState);
-    
-    // Track usage in analytics
-    trackFeatureUsage('Pro Mode', newState ? 'Enabled' : 'Disabled');
   };
   
   return (
-    <button
+    <button 
       onClick={handleToggle}
-      className={`
-        inline-flex items-center px-3 py-1.5 border rounded-md shadow-sm text-xs font-medium
-        transition-colors duration-200 ease-in-out relative
+      className={`inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium 
         ${enabled 
-          ? 'border-green-500 bg-green-600 text-white hover:bg-green-700' 
-          : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-        }
-      `}
-      title={enabled ? 'Disable guided progression' : 'Enable all sections'}
+          ? 'border-green-500 bg-green-600 hover:bg-green-700 text-white' 
+          : 'border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-700'}`}
+      title={enabled ? "Disable Pro Mode" : "Enable Pro Mode to see all sections"}
     >
-      <div className="flex items-center">
-        {/* Switch track and handle */}
-        <span 
-          className={`relative inline-block w-8 h-4 mr-2 rounded-full transition-colors duration-200 ease-in-out ${enabled ? 'bg-green-300' : 'bg-gray-300'}`}
-        >
-          <span 
-            className={`absolute inset-y-0 left-0 w-4 h-4 rounded-full transition-transform duration-200 ease-in-out transform ${enabled ? 'translate-x-4 bg-white' : 'translate-x-0 bg-white'}`}
-          ></span>
-        </span>
-        
-        {/* Button text */}
-        Pro Mode
-        {enabled && (
-          <span className="ml-1 text-xxs bg-green-200 text-green-800 py-0.5 px-1 rounded">ON</span>
-        )}
-      </div>
+      <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+      Pro Mode: {enabled ? "On" : "Off"}
     </button>
   );
 };
