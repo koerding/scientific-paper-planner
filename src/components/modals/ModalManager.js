@@ -80,7 +80,7 @@ const ModalManager = ({
       {/* Save Dialog */}
       <SaveDialog
         showSaveDialog={saveDialog}
-        setShowSaveDialog={handleCloseSave}
+        setShowShowDialog={handleCloseSave}
         saveProject={saveWithFilename}
       />
     </>
