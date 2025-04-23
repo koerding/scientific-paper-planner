@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import { useSectionState } from '../contexts/SectionContext';
 import sectionContent from '../data/sectionContent.json';
-
+ 
 /**
  * Hook for managing a single section's state and behaviors
  * @param {string} sectionId - The ID of the section
