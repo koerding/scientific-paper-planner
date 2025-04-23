@@ -14,6 +14,13 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
 
   // --- ADDED LOG ---
   console.log(`[ReviewPaperModal] Rendering with showModal: ${showModal}`);
+  // Additional debugging for reviewData
+  console.log("[ReviewPaperModal] Current reviewData:", reviewData ? {
+    success: reviewData.success,
+    timestamp: reviewData.timestamp,
+    paperName: reviewData.paperName,
+    reviewLength: reviewData.review ? reviewData.review.length : 0
+  } : "No review data");
   // --- END ADDED LOG ---
 
   // --- Effects and Handlers ---
@@ -134,11 +141,20 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
     return null;
   }
 
-  // Determine content based on active tab (keep as is)
-  const showCurrentReview = activeTab === 'current' && reviewData?.review;
-  const showPastReviewList = activeTab === 'past' && pastReviews.length > 0;
+  // Determine content based on active tab
+  // FIX: Don't be overly specific in checking, as it might prevent display
+  const showCurrentReview = activeTab === 'current' && reviewData && reviewData.review;
+  const showPastReviewList = activeTab === 'past' && pastReviews && pastReviews.length > 0;
   const showPastReviewContent = activeTab === 'past' && selectedPastReview;
-  const showEmptyPastReviews = activeTab === 'past' && pastReviews.length === 0;
+  const showEmptyPastReviews = activeTab === 'past' && (!pastReviews || pastReviews.length === 0);
+
+  console.log("[ReviewPaperModal] Display flags:", {
+    showCurrentReview,
+    showPastReviewList,
+    showPastReviewContent,
+    showEmptyPastReviews,
+    activeTab
+  });
 
 
   return (
@@ -180,12 +196,20 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
                      {/* Review Content */}
                      <div className="px-6 py-4 overflow-y-auto flex-grow">
                        {showCurrentReview ? (
-                         <div className="prose prose-teal max-w-none"><ReactMarkdown>{reviewData.review}</ReactMarkdown></div>
+                         <div className="prose prose-teal max-w-none">
+                           <ReactMarkdown>{reviewData.review}</ReactMarkdown>
+                         </div>
                        ) : (
                           <div className="flex flex-col items-center justify-center h-full text-gray-500 text-center">
                                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                <p className="text-lg mb-2">No current review</p>
                                <p className="text-base mb-6">Upload a paper using the 'New Review' button above.</p>
+                               {reviewData && (
+                                 <div className="text-red-500 text-sm mt-2">
+                                   <p>Review data exists but cannot be displayed. Please try uploading the paper again.</p>
+                                   <p className="mt-2">Debug info: {reviewData.success ? "Success" : "Failed"}, {typeof reviewData.review}</p>
+                                 </div>
+                               )}
                            </div>
                        )}
                      </div>
