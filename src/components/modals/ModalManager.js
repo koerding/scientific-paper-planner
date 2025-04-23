@@ -13,36 +13,39 @@ const ModalManager = ({
   loadProject,
   saveWithFilename
 }) => {
-  console.log("[ModalManager] Rendering with modals state:", modals); // Keep this
+  console.log("[ModalManager] Rendering with modals state:", modals); // Keep this log for debugging
 
-  // Use the actual keys from the state object in UIContext
+  // Destructure modal states from the modals object
   const {
-    confirmDialog, // Correct key
-    examplesDialog,
-    reviewModal,    // Correct key
-    privacyPolicy,
-    saveDialog,
+    confirmDialog = false,
+    examplesDialog = false,
+    reviewModal = false,
+    privacyPolicy = false,
+    saveDialog = false,
     reviewData
   } = modals || {};
 
+  // Destructure modal actions
   const {
     closeConfirmDialog,
     closeExamplesDialog,
-    closeReviewModal, // Get the close function
+    closeReviewModal,
     closePrivacyPolicy,
     closeSaveDialog,
     onConfirmReset
   } = actions || {};
 
-  // Log the specific value for reviewModal
-  console.log(`[ModalManager] confirmDialog value: ${confirmDialog}`); // Keep log for confirmDialog
-  console.log(`[ModalManager] reviewModal value: ${reviewModal}`); // <-- ADDED LOG
+  // Log specific modal states for debugging
+  console.log(`[ModalManager] confirmDialog value: ${confirmDialog}`);
+  console.log(`[ModalManager] reviewModal value: ${reviewModal}`);
 
-  // Ensure actions are functions before passing down (optional safety)
+  // Ensure actions are functions before passing them down
   const handleReset = typeof onConfirmReset === 'function' ? onConfirmReset : () => console.error("onConfirmReset action missing");
   const handleCloseConfirm = typeof closeConfirmDialog === 'function' ? closeConfirmDialog : () => console.error("closeConfirmDialog action missing");
   const handleCloseReview = typeof closeReviewModal === 'function' ? closeReviewModal : () => console.error("closeReviewModal action missing");
-  // Add similar checks for other actions if needed
+  const handleCloseExamples = typeof closeExamplesDialog === 'function' ? closeExamplesDialog : () => console.error("closeExamplesDialog action missing");
+  const handleClosePrivacy = typeof closePrivacyPolicy === 'function' ? closePrivacyPolicy : () => console.error("closePrivacyPolicy action missing");
+  const handleCloseSave = typeof closeSaveDialog === 'function' ? closeSaveDialog : () => console.error("closeSaveDialog action missing");
 
   return (
     <>
@@ -56,14 +59,14 @@ const ModalManager = ({
       {/* Examples Dialog */}
       <ExamplesDialog
         showExamplesDialog={examplesDialog}
-        setShowExamplesDialog={closeExamplesDialog}
+        setShowExamplesDialog={handleCloseExamples}
         loadProject={loadProject}
       />
 
       {/* Review Paper Modal */}
       <ReviewPaperModal
-        showModal={reviewModal} // Pass the correct destructured variable
-        onClose={handleCloseReview} // Pass the correct close function
+        showModal={reviewModal}
+        onClose={handleCloseReview}
         reviewData={reviewData}
         handleReviewPaper={handleReviewPaper}
       />
@@ -71,13 +74,13 @@ const ModalManager = ({
       {/* Privacy Policy Modal */}
       <PrivacyPolicyModal
         showModal={privacyPolicy}
-        onClose={closePrivacyPolicy}
+        onClose={handleClosePrivacy}
       />
 
       {/* Save Dialog */}
       <SaveDialog
         showSaveDialog={saveDialog}
-        setShowSaveDialog={closeSaveDialog}
+        setShowSaveDialog={handleCloseSave}
         saveProject={saveWithFilename}
       />
     </>
