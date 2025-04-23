@@ -5,44 +5,35 @@ import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPan
 
 const ContentArea = ({
   // Props for LeftPanel
-  activeSection, // This is the activeSectionId string
-  sections, // Passed down from store for LeftPanel rendering logic
-  activeApproach,
-  activeDataMethod,
-  handleSectionFocus,
-  handleApproachToggle,
-  handleDataMethodToggle,
-  proMode, // Pass proMode down
+  activeSection, sections, activeApproach, activeDataMethod,
+  handleSectionFocus, handleApproachToggle, handleDataMethodToggle,
+  proMode,
   // Props for RightPanel
-  handleMagic, // Passed down to RightPanel
-  isAnyAiLoading, // Passed down to RightPanel
+  handleMagic, isAnyAiLoading,
 }) => {
 
   return (
-    // Removed the extra paddingTop div, assuming header handles spacing
-    <div className="flex">
-      {/* Left panel with sections */}
+    // Ensure the flex container itself can take up screen height
+    // The parent container (in MainLayout) might need h-screen or similar
+    <div className="flex min-h-[calc(100vh-64px)]"> {/* Adjust 64px based on actual header height */}
+
+      {/* Left panel: Uses CSS for overflow and height */}
       <LeftPanel
-        activeSection={activeSection} // Pass focused section ID
-        handleSectionFocus={handleSectionFocus} // Pass focus handler
-        handleApproachToggle={handleApproachToggle} // Pass toggle handler
-        handleDataMethodToggle={handleDataMethodToggle} // Pass toggle handler
-        handleMagic={handleMagic} // Pass feedback handler
-        proMode={proMode} // Pass proMode down
-        // Removed props that LeftPanel now gets directly from store:
-        // userInputs, localSectionContent, sectionsWithFeedback, feedbackRatings, lastFeedbackTimes
+        activeSection={activeSection}
+        handleSectionFocus={handleSectionFocus}
+        handleApproachToggle={handleApproachToggle}
+        handleDataMethodToggle={handleDataMethodToggle}
+        handleMagic={handleMagic}
+        proMode={proMode}
+        // Note: 'sections' prop might not be needed if LeftPanel reads from store
       />
 
-      {/* Right panel with instructions */}
+      {/* Right panel: Now uses inline styles for height and overflow */}
       <FullHeightInstructionsPanel
-        activeSectionId={activeSection} // <<< PASS THE ID HERE
-        improveInstructions={handleMagic} // Pass feedback handler
-        loading={isAnyAiLoading} // Pass loading state
-        // Removed currentSection prop, as panel gets it from store via ID
+        activeSectionId={activeSection}
+        improveInstructions={handleMagic}
+        loading={isAnyAiLoading}
       />
-
-      {/* Footer was moved outside ContentArea in MainLayout if necessary, or keep it here if preferred */}
-      {/* <div className="text-center text-gray-500 text-sm mt-6 border-t border-gray-200 pt-3 pb-3 bg-white"> ... </div> */}
     </div>
   );
 };
