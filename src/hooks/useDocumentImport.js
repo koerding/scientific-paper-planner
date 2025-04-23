@@ -2,12 +2,13 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Now properly expands all sections after import
- * UPDATED: Detects appropriate research approach and data method
+ * UPDATED: Removed direct dependency on sectionStateService. Section expansion
+ * is now handled by the loadProjectData action in the store and the
+ * 'documentImported' event listener in VerticalPaperPlannerApp.
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
-import { expandAllSections } from '../services/sectionStateService';
+// Removed import: import { expandAllSections } from '../services/sectionStateService';
 
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
   const [importLoading, setImportLoading] = useState(false);
@@ -16,93 +17,73 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
     setImportLoading(true);
 
     try {
-      // Ask for confirmation
       if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
         setImportLoading(false);
         return false;
       }
-
       console.log(`Starting import process for ${file.name}`);
-      
-      // First, reset all state to ensure clean slate
-      // This will clear feedback, reset section states, and clear localStorage
+
       if (resetAllProjectState && typeof resetAllProjectState === 'function') {
         resetAllProjectState();
         console.log("[handleDocumentImport] Reset all project state before import");
       } else {
         console.warn("[handleDocumentImport] resetAllProjectState function not provided");
       }
-      
-      // Pass sectionContent to the import service
+
       const importedData = await importDocumentContent(file, sectionContent);
-      
       console.log("Document import returned data:", importedData ? "Success" : "Failed");
-      
-      // Explicitly ensure all sections are expanded after import
-      expandAllSections();
-      console.log("[handleDocumentImport] Explicitly expanded all sections");
-      
-      // Load the imported data using the loadProject function
+
+      // Section expansion is now handled by the loadProjectData action in the store
+      // which sets isMinimized to false for all sections upon loading.
+      // No need to call expandAllSections() here directly.
+      // console.log("[handleDocumentImport] Explicitly expanded all sections"); <-- Removed this call
+
       if (importedData) {
-        // DETECT WHICH TOGGLES SHOULD BE ACTIVE BASED ON IMPORTED DATA
-        let detectedApproach = 'hypothesis'; // Default
-        let detectedDataMethod = 'experiment'; // Default
-        
-        // Check which research approach has content
-        if (importedData.userInputs.needsresearch && 
-            importedData.userInputs.needsresearch.trim() !== '') {
+        let detectedApproach = 'hypothesis';
+        let detectedDataMethod = 'experiment';
+
+        if (importedData.userInputs.needsresearch?.trim()) {
           detectedApproach = 'needsresearch';
-        } else if (importedData.userInputs.exploratoryresearch && 
-                  importedData.userInputs.exploratoryresearch.trim() !== '') {
+        } else if (importedData.userInputs.exploratoryresearch?.trim()) {
           detectedApproach = 'exploratoryresearch';
-        } else if (importedData.userInputs.hypothesis && 
-                  importedData.userInputs.hypothesis.trim() !== '') {
+        } else if (importedData.userInputs.hypothesis?.trim()) {
           detectedApproach = 'hypothesis';
         }
-        
-        // Check which data method has content
-        if (importedData.userInputs.existingdata && 
-            importedData.userInputs.existingdata.trim() !== '') {
+
+        if (importedData.userInputs.existingdata?.trim()) {
           detectedDataMethod = 'existingdata';
-        } else if (importedData.userInputs.theorysimulation && 
-                  importedData.userInputs.theorysimulation.trim() !== '') {
+        } else if (importedData.userInputs.theorysimulation?.trim()) {
           detectedDataMethod = 'theorysimulation';
-        } else if (importedData.userInputs.experiment && 
-                  importedData.userInputs.experiment.trim() !== '') {
+        } else if (importedData.userInputs.experiment?.trim()) {
           detectedDataMethod = 'experiment';
         }
-        
-        // Include detected toggles in the loaded data
-        importedData.detectedToggles = {
-          approach: detectedApproach,
-          dataMethod: detectedDataMethod
-        };
-        
+
+        importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
         console.log(`[handleDocumentImport] Detected approach: ${detectedApproach}, data method: ${detectedDataMethod}`);
-        
-        const result = loadProject(importedData);
+
+        const result = loadProject(importedData); // This now loads into the Zustand store
+
         if (result) {
           console.log(`Document ${file.name} successfully imported`);
-          
-          // Dispatch event with toggle information
+          // Event dispatched to notify components (e.g., for analytics or minor UI updates)
+          // The store handles the core state update (including expansion).
           window.dispatchEvent(new CustomEvent('documentImported', {
-            detail: { 
+            detail: {
               fileName: file.name,
               timestamp: Date.now(),
-              expandAllSections: true,
+              expandAllSections: true, // Keep flag for potential listeners
               detectedApproach,
               detectedDataMethod
             }
           }));
-          
           return true;
         }
       }
-      
       throw new Error("Failed to process imported document data");
     } catch (error) {
       console.error("Error importing document:", error);
       alert("Error importing document: " + (error.message || "Unknown error"));
+      // Consider if you want to load fallback data here or just return false
       return false;
     } finally {
       setImportLoading(false);
