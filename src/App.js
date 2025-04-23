@@ -11,7 +11,6 @@ import { ChatProvider } from './contexts/ChatContext';
 function App() {
   useEffect(() => {
     window.resetApp = () => {
-      console.log("Global app reset triggered via store");
       useAppStore.getState().resetState();
     };
     return () => { delete window.resetApp; };
