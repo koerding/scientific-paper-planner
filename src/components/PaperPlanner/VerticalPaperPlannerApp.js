@@ -40,8 +40,8 @@ const VerticalPaperPlannerApp = () => {
       openModal,
       closeModal,
       setReviewData,
+      clearReviewData, // Get the clear action from context
       setLoading: setUILoading // Assuming useUI provides setLoading directly
-      // Destructure other necessary values/actions from useUI if needed
   } = useUI();
 
   // --- Get Current Section Data (with fallback) ---
@@ -68,9 +68,7 @@ const VerticalPaperPlannerApp = () => {
 
   // --- Effects ---
   useEffect(() => {
-    // ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` }); // Moved below
     window.splashManagerRef = splashManagerRef;
-    // Log initial state on mount
     console.log("[VerticalPaperPlannerApp] Mounted. Initial activeSectionId:", activeSectionId);
     console.log("[VerticalPaperPlannerApp] Mounted. Initial UI modals state:", modals);
   }, []); // Run only on mount
@@ -94,7 +92,6 @@ const VerticalPaperPlannerApp = () => {
   const handleSectionFocus = (sectionId) => {
     if (sectionId && sectionId !== activeSectionId) {
       setActiveSectionId(sectionId); // Update local state
-      // Analytics tracked in useEffect for activeSectionId
     }
   };
 
@@ -103,13 +100,11 @@ const VerticalPaperPlannerApp = () => {
   };
 
   const handleApproachToggle = (approachId) => {
-      // console.log(`Setting research approach to: ${approachId}`); // Keep logs minimal unless debugging specific features
       trackApproachToggle(approachId);
       setActiveToggle('approach', approachId);
   };
 
   const handleDataMethodToggle = (methodId) => {
-      // console.log(`Setting data acquisition method to: ${methodId}`);
       trackDataMethodToggle(methodId);
       setActiveToggle('dataMethod', methodId);
   };
@@ -117,7 +112,7 @@ const VerticalPaperPlannerApp = () => {
   // Reset Project -> Show Confirm Dialog
    const handleResetRequest = () => {
        console.log("[VerticalPaperPlannerApp] handleResetRequest called.");
-       openModal('confirmDialog'); // Use function from useUI hook
+       openModal('confirmDialog');
        console.log("[VerticalPaperPlannerApp] openModal('confirmDialog') executed.");
    };
 
@@ -127,7 +122,7 @@ const VerticalPaperPlannerApp = () => {
       console.log("[VerticalPaperPlannerApp] handleConfirmReset called.");
       resetState(); // Call the store action to reset state
       setActiveSectionId('question'); // Reset local focus state
-      closeModal('confirmDialog'); // Use function from useUI hook
+      closeModal('confirmDialog');
       console.log("[VerticalPaperPlannerApp] resetState() and closeModal() executed.");
   };
 
@@ -153,8 +148,9 @@ const VerticalPaperPlannerApp = () => {
 
   // Export Project -> Use Util
    const handleExportRequest = () => {
-     trackExport('any');
+     trackExport('any'); // Will trigger format selection dialog
      const sectionsToExport = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
+     // Assuming exportProject handles the format selection internally now
      exportProject(sectionsToExport, chatMessages);
    };
 
@@ -172,24 +168,41 @@ const VerticalPaperPlannerApp = () => {
   // Show Help Splash Screen
   const handleShowHelpSplash = () => { if (splashManagerRef.current) { splashManagerRef.current.showSplash(); } };
 
-  // Define handler for opening review modal to add logging
+  // Handler for opening review modal
   const handleOpenReviewModal = () => {
-      console.log("[VerticalPaperPlannerApp] handleOpenReviewModal called."); // <-- ADDED LOG
+      console.log("[VerticalPaperPlannerApp] handleOpenReviewModal called.");
+      // --- FIX: Don't clear review data here. Let it persist or clear explicitly ---
+      // clearReviewData(); // Removed this line
       openModal('reviewModal');
-      console.log("[VerticalPaperPlannerApp] openModal('reviewModal') executed."); // <-- ADDED LOG
+      console.log("[VerticalPaperPlannerApp] openModal('reviewModal') executed.");
   };
 
-  // Handle Paper Review
+  // Handle Paper Review Request (when file is selected)
   const handleReviewPaperRequest = async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
-      setIsReviewing(true); setUILoading('review', true); // Use the specific type 'review'
+      setIsReviewing(true); setUILoading('review', true);
       try {
+          console.log(`[VerticalPaperPlannerApp] Requesting review for: ${file.name}`);
           const result = await reviewScientificPaper(file);
-          if (result.success) { setReviewData(result); openModal('reviewModal'); }
-          else { alert(`Error reviewing paper: ${result.error || 'Unknown error'}`); }
-      } catch (error) { alert(`Error reviewing paper: ${error.message || 'Unknown error'}`); }
-      finally { setIsReviewing(false); setUILoading('review', false); } // Set status to false
+          if (result.success) {
+              console.log("[VerticalPaperPlannerApp] Review successful, setting review data and opening modal.");
+              setReviewData(result); // Update context state
+              openModal('reviewModal'); // Open the modal
+          }
+          else {
+              console.error("[VerticalPaperPlannerApp] Review failed:", result.error);
+              // --- FIX: Clear review data on failure ---
+              clearReviewData();
+              alert(`Error reviewing paper: ${result.error || 'Unknown error'}`);
+          }
+      } catch (error) {
+           console.error("[VerticalPaperPlannerApp] Exception during review:", error);
+           // --- FIX: Clear review data on exception ---
+           clearReviewData();
+           alert(`Error reviewing paper: ${error.message || 'Unknown error'}`);
+      }
+      finally { setIsReviewing(false); setUILoading('review', false); }
   };
 
 
@@ -201,7 +214,7 @@ const VerticalPaperPlannerApp = () => {
     if (!sectionToImprove || sectionToImprove.content === (sectionToImprove.placeholder || '') || sectionToImprove.content.trim() === '') {
       alert("Please add some content to this section before requesting feedback."); return;
     }
-    setIsImproving(true); setUILoading('improvement', true); // Use specific type 'improvement'
+    setIsImproving(true); setUILoading('improvement', true);
     try {
         const sectionDefinitions = { sections: sections ? Object.values(sections).map(s => ({...(s || {}), subsections: s?.originalInstructions || [] })) : [] };
         const currentInputs = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
@@ -215,8 +228,17 @@ const VerticalPaperPlannerApp = () => {
             }
         } else { console.error("Instruction improvement failed or returned no data", result); alert("Failed to get feedback for this section. Please try again."); }
     } catch (error) { console.error("Error requesting instruction improvement:", error); alert(`Error getting feedback: ${error.message || 'Unknown error'}`); }
-    finally { setIsImproving(false); setUILoading('improvement', false); } // Set status to false
+    finally { setIsImproving(false); setUILoading('improvement', false); }
   };
+
+  // --- Action Handler for Closing Review Modal ---
+  const handleCloseReviewModal = () => {
+      closeModal('reviewModal');
+      // --- FIX: Explicitly clear review data when modal is closed ---
+      // clearReviewData(); // Decide if you want to clear data on close, or let it persist
+      console.log("[VerticalPaperPlannerApp] Review modal closed.");
+  };
+
 
   // --- Props for Child Components ---
   const safeSections = sections || {};
@@ -232,7 +254,7 @@ const VerticalPaperPlannerApp = () => {
   };
 
   // --- Render ---
-  console.log("[VerticalPaperPlannerApp] Rendering. Current modals state:", modals); // Keep this log
+  console.log("[VerticalPaperPlannerApp] Rendering. Current modals state:", modals);
 
   if (!sections || Object.keys(sections).length === 0) { return null; }
 
@@ -244,7 +266,7 @@ const VerticalPaperPlannerApp = () => {
       saveProject={handleSaveRequest}
       loadProject={handleLoadProject}
       importDocumentContent={handleDocumentImport}
-      onOpenReviewModal={handleOpenReviewModal} // Pass the new handler function
+      onOpenReviewModal={handleOpenReviewModal} // Pass handler to open modal
       openExamplesDialog={handleOpenExamples}
       showHelpSplash={handleShowHelpSplash}
       contentAreaProps={contentAreaProps}
@@ -253,12 +275,12 @@ const VerticalPaperPlannerApp = () => {
       modalActions={{ // Actions needed by ModalManager/children
           closeConfirmDialog: () => closeModal('confirmDialog'),
           closeExamplesDialog: () => closeModal('examplesDialog'),
-          closeReviewModal: () => closeModal('reviewModal'), // Ensure close action is passed
+          closeReviewModal: handleCloseReviewModal, // Pass the specific close handler
           closePrivacyPolicy: () => closeModal('privacyPolicy'),
           closeSaveDialog: () => closeModal('saveDialog'),
           onConfirmReset: handleConfirmReset,
       }}
-      handleReviewPaper={handleReviewPaperRequest}
+      handleReviewPaper={handleReviewPaperRequest} // Pass handler for file upload
       saveWithFilename={handleSaveWithFilename}
       isAnyAiLoading={isAnyAiLoading}
     />
