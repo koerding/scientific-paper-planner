@@ -6,15 +6,13 @@ import { useChat } from '../../hooks/useChat'; // Keep using the chat hook
 import { useUI } from '../../contexts/UIContext'; // Use UI context for modals
 import { useDocumentImport } from '../../hooks/useDocumentImport'; // Keep for import logic
 import { reviewScientificPaper } from '../../services/paperReviewService'; // Keep service
-import { improveBatchInstructions, updateSectionWithImprovedInstructions } from '../../services/instructionImprovementService'; // Keep service
+import { improveBatchInstructions } from '../../services/instructionImprovementService'; // Keep service
 import { exportProject, saveProjectAsJson } from '../../utils/export'; // Keep utils
 import { trackSectionChange, trackApproachToggle, trackDataMethodToggle, trackExport, trackSave } from '../../utils/analyticsUtils'; // Keep utils
 import MainLayout from '../layout/MainLayout';
 import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager'; // Keep for help splash
 import '../../styles/PaperPlanner.css';
-import { getNextVisibleSectionId, getVisibleSectionsInDisplayOrder } from '../../utils/sectionOrderUtils'; // Keep utils
-
-// Removed usePaperPlanner hook import
+import { getNextVisibleSectionId } from '../../utils/sectionOrderUtils'; // Keep utils
 
 const VerticalPaperPlannerApp = () => {
   // --- Get State and Actions from Zustand Store ---
@@ -28,305 +26,212 @@ const VerticalPaperPlannerApp = () => {
   const loadStoreProjectData = useAppStore((state) => state.loadProjectData);
   const expandAllSections = useAppStore((state) => state.expandAllSections);
 
-
   // --- Local State & Refs ---
   const [activeSectionId, setActiveSectionId] = useState('question'); // Track focused section locally
-  const [isImproving, setIsImproving] = useState(false); // Local loading state for improvements
-  const [isReviewing, setIsReviewing] = useState(false); // Local loading state for paper review
+  const [isImproving, setIsImproving] = useState(false);
+  const [isReviewing, setIsReviewing] = useState(false);
   const sectionRefs = useRef({});
-  const splashManagerRef = useRef(null); // Ref for splash screen
+  const splashManagerRef = useRef(null);
 
   // --- UI Context for Modals ---
   const {
-      modals,          // Object containing boolean flags for modal visibility
-      openModal,       // Function to open a modal by name
-      closeModal,      // Function to close a modal by name
-      setReviewData,   // Function to set review data for the review modal
-      setLoading: setUILoading, // Function to set global loading states (optional)
+      modals, openModal, closeModal, setReviewData, setLoading: setUILoading
   } = useUI();
 
-  // --- Chat Hook ---
-  // Pass sections.map(s => s.content) or similar if chat needs all content
-  const currentSectionContent = sections[activeSectionId]?.content || '';
-  const {
-      currentMessage,
-      setCurrentMessage,
-      loading: chatLoading,
-      handleSendMessage,
-      chatMessages, // Assuming useChat now manages its own messages state internally or via context
-      // ... other chat return values if needed
-  } = useChat(
-     Object.entries(sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {}), // Pass current content of all sections
-     {}, // Initial chat messages (ChatProvider likely handles persistence)
-     () => {}, // setChatMessages might not be needed if ChatProvider handles it
-     activeSectionId,
-     { sections: Object.values(sections).map(s => ({...s, subsections: s.originalInstructions })) } // Pass section definitions
-   );
+  // --- Get Current Section Data (with fallback) ---
+  const currentSectionData = sections?.[activeSectionId] || null; // Use null as fallback
 
+  // --- Chat Hook ---
+   const {
+       currentMessage,
+       setCurrentMessage,
+       loading: chatLoading,
+       handleSendMessage,
+       chatMessages,
+   } = useChat(
+      Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {}), // Handle potentially undefined sections
+      {},
+      () => {},
+      activeSectionId,
+       // Pass section definitions, ensuring sections exists
+       { sections: sections ? Object.values(sections).map(s => ({...(s || {}), subsections: s?.originalInstructions || [] })) : [] }
+    );
 
   // --- Document Import Hook ---
   const { importLoading, handleDocumentImport } = useDocumentImport(
-    loadStoreProjectData, // Pass the store's load action
-    { sections: Object.values(sections).map(s => ({...s, subsections: s.originalInstructions })) }, // Pass section definitions
-    resetState // Pass the store's reset action
+    loadStoreProjectData,
+    // Pass section definitions, ensuring sections exists
+    { sections: sections ? Object.values(sections).map(s => ({...(s || {}), subsections: s?.originalInstructions || [] })) : [] },
+    resetState
   );
 
   // Combined loading state
   const isAnyAiLoading = chatLoading || importLoading || isImproving || isReviewing;
 
   // --- Effects ---
-  useEffect(() => { // Initialize GA and splash ref
+  useEffect(() => {
     ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` });
     window.splashManagerRef = splashManagerRef;
-  }, []);
+  }, []); // Keep GA initialization simple
 
-  // Map refs when sections change (e.g., on load)
+   // Update GA page view when activeSectionId changes
+   useEffect(() => {
+       ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` });
+   }, [activeSectionId]);
+
+
   useEffect(() => {
-    Object.keys(sections).forEach(sectionId => {
-      sectionRefs.current[sectionId] = sectionRefs.current[sectionId] || React.createRef();
-    });
+    if (sections) { // Ensure sections exist before mapping refs
+        Object.keys(sections).forEach(sectionId => {
+         sectionRefs.current[sectionId] = sectionRefs.current[sectionId] || React.createRef();
+        });
+    }
   }, [sections]);
 
-  // --- Core Functions ---
+  // --- Core Functions (Implementations mostly unchanged, just ensure data exists) ---
 
-  // Handle section focus change
   const handleSectionFocus = (sectionId) => {
-    if (sectionId !== activeSectionId) {
+    if (sectionId && sectionId !== activeSectionId) { // Ensure sectionId is valid
       setActiveSectionId(sectionId);
-      trackSectionChange(sectionId, sections[sectionId]?.title || 'Unknown');
+      trackSectionChange(sectionId, sections?.[sectionId]?.title || 'Unknown');
     }
   };
 
-  // Handle input changes -> update store
   const handleContentChange = (sectionId, value) => {
-    updateSectionContent(sectionId, value);
-    // Optional: Debounced analytics tracking
-    // trackInputChange(sectionId, value.length);
+     if (sectionId) { // Ensure sectionId is valid
+         updateSectionContent(sectionId, value);
+     }
   };
 
-   // Handle approach toggle -> update store
   const handleApproachToggle = (approachId) => {
-     console.log(`Setting research approach to: ${approachId}`);
-     trackApproachToggle(approachId);
-     setActiveToggle('approach', approachId);
-     // Optionally set focus to the newly selected section
-     // handleSectionFocus(approachId);
-   };
+      console.log(`Setting research approach to: ${approachId}`);
+      trackApproachToggle(approachId);
+      setActiveToggle('approach', approachId);
+  };
 
-   // Handle data method toggle -> update store
   const handleDataMethodToggle = (methodId) => {
-     console.log(`Setting data acquisition method to: ${methodId}`);
-     trackDataMethodToggle(methodId);
-     setActiveToggle('dataMethod', methodId);
-      // Optionally set focus to the newly selected section
-     // handleSectionFocus(methodId);
-   };
-
-   // Reset Project -> Show Confirm Dialog
-   const handleResetRequest = () => {
-      openModal('confirmDialog');
-   };
-
-  // Confirm Reset -> Call Store Action
-  const handleConfirmReset = () => {
-      resetState();
-      setActiveSectionId('question'); // Reset focus
-      closeModal('confirmDialog');
+      console.log(`Setting data acquisition method to: ${methodId}`);
+      trackDataMethodToggle(methodId);
+      setActiveToggle('dataMethod', methodId);
   };
 
-  // Load Project from file -> Call Store Action
-  const handleLoadProject = (data) => {
-     loadStoreProjectData(data);
-     // Logic to set activeSectionId might be needed based on loaded data,
-     // e.g., set to the first section or the detected approach.
-     // The loadProjectData action now handles setting toggles and visibility.
-     setActiveSectionId(data?.detectedToggles?.approach || 'question');
-     expandAllSections(); // Ensure sections are expanded after load
-  };
-
-   // Save Project -> Show Save Dialog
-   const handleSaveRequest = () => {
-     openModal('saveDialog');
-   };
-
-   // Save with Filename -> Use Util
+  const handleResetRequest = () => { openModal('confirmDialog'); };
+  const handleConfirmReset = () => { resetState(); setActiveSectionId('question'); closeModal('confirmDialog'); };
+  const handleLoadProject = (data) => { loadStoreProjectData(data); setActiveSectionId(data?.detectedToggles?.approach || 'question'); expandAllSections(); };
+  const handleSaveRequest = () => { openModal('saveDialog'); };
   const handleSaveWithFilename = (fileName) => {
-     trackSave();
-     // Pass current sections state for saving
-     const sectionsToSave = Object.entries(sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {});
-     // Pass current chat messages if managed by ChatProvider/Hook
-     // const chatMessagesToSave = ...;
-     saveProjectAsJson(sectionsToSave, chatMessages, fileName); // Pass chatMessages if available
-     closeModal('saveDialog');
-   };
-
-  // Export Project -> Use Util
-   const handleExportRequest = () => {
-     trackExport('any');
-     const sectionsToExport = Object.entries(sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {});
-      // Pass current chat messages if managed by ChatProvider/Hook
-     // const chatMessagesToExport = ...;
-     exportProject(sectionsToExport, chatMessages); // Pass chatMessages if available
-   };
-
-   // Show Examples Dialog
-   const handleOpenExamples = () => {
-     openModal('examplesDialog');
-   };
-
-   // Show Privacy Policy
-   const handleOpenPrivacy = () => {
-       openModal('privacyPolicy');
-   };
-    // Add this listener if not already present globally
-    useEffect(() => {
-      window.addEventListener('openPrivacyPolicy', handleOpenPrivacy);
-      return () => window.removeEventListener('openPrivacyPolicy', handleOpenPrivacy);
-    }, []);
-
-  // Show Help Splash Screen
-  const handleShowHelpSplash = () => {
-    if (splashManagerRef.current) {
-      splashManagerRef.current.showSplash();
-    }
+      trackSave();
+      const sectionsToSave = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
+      saveProjectAsJson(sectionsToSave, chatMessages, fileName);
+      closeModal('saveDialog');
   };
+  const handleExportRequest = () => {
+      trackExport('any');
+      const sectionsToExport = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
+      exportProject(sectionsToExport, chatMessages);
+  };
+  const handleOpenExamples = () => { openModal('examplesDialog'); };
+  const handleOpenPrivacy = () => { openModal('privacyPolicy'); };
+  useEffect(() => { window.addEventListener('openPrivacyPolicy', handleOpenPrivacy); return () => window.removeEventListener('openPrivacyPolicy', handleOpenPrivacy); }, []);
+  const handleShowHelpSplash = () => { if (splashManagerRef.current) { splashManagerRef.current.showSplash(); } };
 
-
-  // Handle Paper Review
   const handleReviewPaperRequest = async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
       setIsReviewing(true);
-      setUILoading('review', true); // Use UI context loading if desired
+      setUILoading('review', true);
       try {
           const result = await reviewScientificPaper(file);
-          if (result.success) {
-              setReviewData(result); // Set data in UI context
-              openModal('reviewModal');
-          } else {
-              alert(`Error reviewing paper: ${result.error || 'Unknown error'}`);
-          }
-      } catch (error) {
-          alert(`Error reviewing paper: ${error.message || 'Unknown error'}`);
-      } finally {
-          setIsReviewing(false);
-          setUILoading('review', false);
-      }
+          if (result.success) { setReviewData(result); openModal('reviewModal'); }
+          else { alert(`Error reviewing paper: ${result.error || 'Unknown error'}`); }
+      } catch (error) { alert(`Error reviewing paper: ${error.message || 'Unknown error'}`); }
+      finally { setIsReviewing(false); setUILoading('review', false); }
   };
 
-
-  // Handle Instruction Improvement (Magic Button)
   const handleImprovementRequest = async (sectionId = null) => {
     const targetSectionId = sectionId || activeSectionId;
-    const sectionToImprove = sections[targetSectionId];
+    const sectionToImprove = sections?.[targetSectionId]; // Use safe access
 
-    // Basic check if content exists (beyond placeholder)
     if (!sectionToImprove || sectionToImprove.content === (sectionToImprove.placeholder || '') || sectionToImprove.content.trim() === '') {
       alert("Please add some content to this section before requesting feedback.");
       return;
     }
-
     setIsImproving(true);
-    setUILoading('improvement', true); // Use UI context loading if desired
-
+    setUILoading('improvement', true);
     try {
-        const sectionDefinitions = { sections: Object.values(sections).map(s => ({...s, subsections: s.originalInstructions })) };
-        const currentInputs = Object.entries(sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {});
-
-      // Call the service function - it handles calling OpenAI
-      const result = await improveBatchInstructions(
-        [sectionToImprove], // Pass only the target section as an array
-        currentInputs,      // Pass all current inputs for context
-        sectionDefinitions, // Pass definitions
-        true                // Force improvement on button click
-      );
-
-      if (result.success && result.improvedData && result.improvedData.length > 0) {
-        // Update the store with the feedback data
-        updateSectionFeedback(targetSectionId, result.improvedData[0]);
-
-        // Progression logic is now handled *inside* updateSectionFeedback
-
-        // Optionally open the next section visually (without changing focus)
-         const nextSectionId = getNextVisibleSectionId(
-            targetSectionId,
-            activeToggles.approach,
-            activeToggles.dataMethod
-          );
-          if (nextSectionId && sections[nextSectionId]?.isMinimized) {
-              // Use a local toggle function if SectionCard doesn't expose it directly,
-              // or potentially add an action to the store to set isMinimized directly.
-               useAppStore.getState().toggleMinimize(nextSectionId); // Example using store action
-              console.log(`Automatically expanded next section: ${nextSectionId}`);
-          }
-
-      } else {
-        console.error("Instruction improvement failed or returned no data", result);
-        alert("Failed to get feedback for this section. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error requesting instruction improvement:", error);
-      alert(`Error getting feedback: ${error.message || 'Unknown error'}`);
-    } finally {
-      setIsImproving(false);
-      setUILoading('improvement', false);
-    }
+        const sectionDefinitions = { sections: sections ? Object.values(sections).map(s => ({...(s || {}), subsections: s?.originalInstructions || [] })) : [] };
+        const currentInputs = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {});
+        const result = await improveBatchInstructions([sectionToImprove], currentInputs, sectionDefinitions, true);
+        if (result.success && result.improvedData && result.improvedData.length > 0) {
+            updateSectionFeedback(targetSectionId, result.improvedData[0]);
+            const nextSectionId = getNextVisibleSectionId(targetSectionId, activeToggles.approach, activeToggles.dataMethod);
+            // Ensure next section and sections state exist before toggling
+            if (nextSectionId && sections?.[nextSectionId]?.isMinimized) {
+                useAppStore.getState().toggleMinimize(nextSectionId);
+                console.log(`Automatically expanded next section: ${nextSectionId}`);
+            }
+        } else {
+            console.error("Instruction improvement failed or returned no data", result);
+            alert("Failed to get feedback for this section. Please try again.");
+        }
+    } catch (error) { console.error("Error requesting instruction improvement:", error); alert(`Error getting feedback: ${error.message || 'Unknown error'}`); }
+    finally { setIsImproving(false); setUILoading('improvement', false); }
   };
 
-
   // --- Props for Child Components ---
-   const contentAreaProps = {
-    activeSection: activeSectionId, // Pass the locally tracked active section ID
-    sections, // Pass the sections object from the store
+  // Ensure sections object exists before trying to create props
+  const safeSections = sections || {};
+  const contentAreaProps = {
+    activeSection: activeSectionId,
+    sections: safeSections, // Pass the potentially empty object initially
     activeApproach: activeToggles.approach,
     activeDataMethod: activeToggles.dataMethod,
-    handleSectionFocus, // Pass the focus handler
-    handleContentChange, // Pass the content change handler
-    handleApproachToggle,
-    handleDataMethodToggle,
-    sectionRefs,
-    handleMagic: handleImprovementRequest, // Pass the improvement handler
-    isAnyAiLoading,
-    proMode,
-   };
+    handleSectionFocus, handleContentChange, handleApproachToggle, handleDataMethodToggle,
+    sectionRefs, handleMagic: handleImprovementRequest, isAnyAiLoading, proMode,
+  };
 
   const interactionProps = {
       currentSection: activeSectionId,
-      currentSectionTitle: sections[activeSectionId]?.title,
-      chatMessages: chatMessages, // Get from useChat or ChatProvider
-      currentMessage,
-      setCurrentMessage,
-      handleSendMessage,
-      loading: chatLoading, // Pass specific chat loading state
-      currentSectionData: sections[activeSectionId], // Pass current section data for context
+      currentSectionTitle: currentSectionData?.title || '', // Use safe access with fallback
+      chatMessages: chatMessages,
+      currentMessage, setCurrentMessage, handleSendMessage,
+      loading: chatLoading,
+      currentSectionData: currentSectionData, // Pass the potentially null data
   };
 
-
   // --- Render ---
+  // Prevent rendering MainLayout if core sections state isn't ready
+  if (!sections || Object.keys(sections).length === 0) {
+     // Optionally return a loading spinner or null
+     console.log("Sections not ready, delaying render...");
+     return null;
+   }
+
+
   return (
     <MainLayout
       splashManagerRef={splashManagerRef}
-      resetProject={handleResetRequest} // Open confirm dialog
+      resetProject={handleResetRequest}
       exportProject={handleExportRequest}
-      saveProject={handleSaveRequest} // Open save dialog
-      loadProject={handleLoadProject} // Loads data into store
-      importDocumentContent={handleDocumentImport} // Uses import hook
-      openReviewModal={() => openModal('reviewModal')} // Open review modal
-      openExamplesDialog={handleOpenExamples} // Open examples dialog
-      showHelpSplash={handleShowHelpSplash} // Show help
+      saveProject={handleSaveRequest}
+      loadProject={handleLoadProject}
+      importDocumentContent={handleDocumentImport}
+      openReviewModal={() => openModal('reviewModal')}
+      openExamplesDialog={handleOpenExamples}
+      showHelpSplash={handleShowHelpSplash}
       contentAreaProps={contentAreaProps}
       interactionProps={interactionProps}
-      modalState={modals} // Pass modal visibility flags from UIContext
-      modalActions={{ // Pass actions to control modals
+      modalState={modals}
+      modalActions={{
           closeConfirmDialog: () => closeModal('confirmDialog'),
           closeExamplesDialog: () => closeModal('examplesDialog'),
           closeReviewModal: () => closeModal('reviewModal'),
           closePrivacyPolicy: () => closeModal('privacyPolicy'),
           closeSaveDialog: () => closeModal('saveDialog'),
-          onConfirmReset: handleConfirmReset, // Use the reset handler defined above
+          onConfirmReset: handleConfirmReset,
       }}
-      handleReviewPaper={handleReviewPaperRequest} // Pass paper review handler
-      saveWithFilename={handleSaveWithFilename} // Pass save handler
+      handleReviewPaper={handleReviewPaperRequest}
+      saveWithFilename={handleSaveWithFilename}
       isAnyAiLoading={isAnyAiLoading}
     />
   );
