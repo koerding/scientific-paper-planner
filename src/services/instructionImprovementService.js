@@ -4,6 +4,7 @@
  * Enhanced service for improving instructions based on user progress
  * UPDATED: Increased max_tokens for the OpenAI API call.
  * UPDATED: Filters sections to only send those edited since last feedback (or never reviewed).
+ * UPDATED: Excludes 'tooltip' text from subsection data sent to OpenAI to reduce payload size.
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt } from '../utils/promptUtils';
@@ -30,10 +31,9 @@ export const improveBatchInstructions = async (
   forceImprovement = false // Not used anymore due to filtering logic
 ) => {
   try {
-    console.log("[Instruction Improvement] Starting instruction improvement process (filtered for edited sections)");
+    console.log("[Instruction Improvement] Starting instruction improvement process (filtered for edited sections, excluding tooltips)");
     console.time("instructionImprovementTime");
 
-    // --- MODIFICATION START ---
     // Get the full, current sections state from the Zustand store
     const allSectionsState = useAppStore.getState().sections;
     const sectionDefs = sectionContent || sectionContentData; // Use passed-in or imported definitions
@@ -57,18 +57,21 @@ export const improveBatchInstructions = async (
             userContent: content,
             originalPlaceholder: placeholder,
             introText: sectionDef.introText || '',
+            // --- MODIFICATION START: Exclude tooltip ---
             // Pass only necessary subsection info (id, title, instruction)
+            // Tooltip is excluded as it's context for the UI, not essential for AI evaluation
             subsections: (sectionDef.subsections || []).map(subsection => ({
               id: subsection.id,
               title: subsection.title,
               instruction: subsection.instruction
+              // tooltip: subsection.tooltip // <-- EXCLUDED PROPERTY
             }))
+            // --- MODIFICATION END ---
           };
         }
         return null; // Exclude sections that don't meet criteria
       })
       .filter(Boolean); // Filter out null entries
-    // --- MODIFICATION END ---
 
 
     if (sectionsForAnalysis.length === 0) {
@@ -80,17 +83,18 @@ export const improveBatchInstructions = async (
     // Build system prompt (unchanged)
     const systemPrompt = buildSystemPrompt('instructionImprovement');
 
-    // Create the user prompt (structure unchanged, but content is now filtered)
+    // Create the user prompt (structure unchanged, but subsection context is smaller)
     const userPrompt = `
-      I need you to evaluate the following research sections...
-      Return your response as a JSON object with the following structure: { "results": [ ... ] } ...
-      RATING SCALE (very important): ...
-      Here are the sections to evaluate:
+      I need you to evaluate the following research sections based on their content against the provided instructions for each subsection.
+      Return your response as a JSON object with the following structure: { "results": [ ... ] } where each result object contains 'id', 'overallFeedback', 'completionStatus', 'rating', and a 'subsections' array.
+      The 'subsections' array should contain objects with 'id', 'isComplete' (boolean), and 'feedback' (string).
+      RATING SCALE (very important): Provide a numerical rating from 1-10 for each section based on the quality and completeness of the user's content against the instructions. 1=very poor, 5=average student work, 10=publication quality.
+      Here are the sections and their subsection instructions to evaluate:
       ${JSON.stringify(sectionsForAnalysis, null, 2)}
-    `; // Keep prompt structure as before
+    `; // Removed explicit mention of RATING SCALE prompt example as it's in system prompt now.
 
-    console.log(`[Instruction Improvement] Analyzing ${sectionsForAnalysis.length} edited/new sections with JSON structure.`);
-    // console.log("Sections being sent:", sectionsForAnalysis.map(s => s.id)); // Optional: log which sections are sent
+    console.log(`[Instruction Improvement] Analyzing ${sectionsForAnalysis.length} edited/new sections with JSON structure (tooltips excluded).`);
+    // console.log("Sections being sent:", sectionsForAnalysis.map(s => s.id));
 
     // Call OpenAI with JSON mode and INCREASED max_tokens
     const response = await callOpenAI(
@@ -101,7 +105,7 @@ export const improveBatchInstructions = async (
       sectionDefs?.sections || [], // Pass section definitions for context
       {
         temperature: 0.0,
-        max_tokens: 4096 // Increased from 3000
+        max_tokens: 4096 // Keep increased tokens
       },
       [],
       systemPrompt,
@@ -121,13 +125,10 @@ export const improveBatchInstructions = async (
       throw new Error("Invalid or unexpected response format from OpenAI");
     }
 
-    // Progression update logic is handled by the store action after this service returns
-
     console.log(`[Instruction Improvement] Successfully processed ${analysisResults.length} analysis results for edited sections`);
     console.timeEnd("instructionImprovementTime");
 
     // Return the raw analysis data for the sections that were analyzed.
-    // The calling component will use this to update the store.
     return {
       success: true,
       improvedData: analysisResults
