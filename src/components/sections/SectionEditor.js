@@ -44,11 +44,36 @@ const SectionEditor = ({
     return baseClasses;
   };
 
+  // Safe event handlers that check if the setters are functions
+  const handleMouseEnter = () => {
+    if (typeof setIsHovered === 'function') {
+      setIsHovered(true);
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    if (typeof setIsHovered === 'function') {
+      setIsHovered(false);
+    }
+  };
+  
+  const handleFocus = () => {
+    if (typeof setIsFocused === 'function') {
+      setIsFocused(true);
+    }
+  };
+  
+  const handleBlur = () => {
+    if (typeof setIsFocused === 'function') {
+      setIsFocused(false);
+    }
+  };
+
   return (
     <div 
       className="relative"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Visual edit indicator for empty textareas */}
       {textValue.trim() === '' && !isFocused && (
@@ -63,8 +88,8 @@ const SectionEditor = ({
         value={textValue}
         onChange={handleTextChange}
         onInput={adjustTextareaHeight}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         rows="1"
         maxLength={maxLength}
         placeholder={inputPlaceholder || "Start writing..."}
