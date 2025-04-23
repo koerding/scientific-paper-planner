@@ -16,34 +16,76 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
   console.log(`[ReviewPaperModal] Rendering with showModal: ${showModal}`);
   // --- END ADDED LOG ---
 
-
   // --- Effects and Handlers ---
   // Load past reviews effect
   useEffect(() => {
+      // Always try to log showModal state for debugging
+      console.log(`[ReviewPaperModal] showModal changed to: ${showModal}`);
+      
       if (showModal) {
+        console.log("[ReviewPaperModal] Modal is visible, loading past reviews");
         try {
           const savedReviews = localStorage.getItem('paperReviews');
-          if (savedReviews) { setPastReviews(JSON.parse(savedReviews)); }
-          else { setPastReviews([]); } // Ensure it's an empty array if nothing is stored
+          if (savedReviews) {
+            const parsed = JSON.parse(savedReviews);
+            console.log(`[ReviewPaperModal] Found ${parsed.length} past reviews`);
+            setPastReviews(parsed);
+          } else { 
+            console.log("[ReviewPaperModal] No saved reviews found");
+            setPastReviews([]); 
+          }
           setActiveTab('current'); // Default to current tab when opening
           setSelectedPastReview(null); // Clear selection when opening
-        } catch (error) { console.error("Error loading past reviews:", error); setPastReviews([]); }
+        } catch (error) { 
+          console.error("[ReviewPaperModal] Error loading past reviews:", error); 
+          setPastReviews([]); 
+        }
       }
   }, [showModal]);
 
   // Save current review effect
   useEffect(() => {
+      // Log whenever reviewData changes
+      console.log("[ReviewPaperModal] reviewData changed:", reviewData ? "Has data" : "No data");
+      
       if (reviewData && reviewData.success && reviewData.review) {
+        console.log("[ReviewPaperModal] Saving new review to localStorage");
         try {
+          // Get existing reviews or use empty array
           const savedReviews = localStorage.getItem('paperReviews') || '[]';
           const parsedReviews = JSON.parse(savedReviews);
+          
+          // Check if this review already exists
           const existingIndex = parsedReviews.findIndex(r => r.timestamp === reviewData.timestamp);
+          
+          // Only add if this is a new review
           if (existingIndex === -1) {
-            const updatedReviews = [ { id: Date.now().toString(), paperName: reviewData.paperName, timestamp: reviewData.timestamp, review: reviewData.review, preview: reviewData.review.substring(0, 150) + '...' }, ...parsedReviews ].slice(0, 10);
+            console.log("[ReviewPaperModal] Adding new review to saved reviews");
+            
+            // Create new review object
+            const newReview = { 
+              id: Date.now().toString(), 
+              paperName: reviewData.paperName || "Unnamed Paper", 
+              timestamp: reviewData.timestamp || Date.now(), 
+              review: reviewData.review,
+              preview: reviewData.review.substring(0, 150) + '...'
+            };
+            
+            // Add to beginning of list and limit to 10 items
+            const updatedReviews = [newReview, ...parsedReviews].slice(0, 10);
+            
+            // Save to localStorage
             localStorage.setItem('paperReviews', JSON.stringify(updatedReviews));
-            setPastReviews(updatedReviews); // Update local state as well
+            
+            // Update component state
+            setPastReviews(updatedReviews);
+            console.log("[ReviewPaperModal] Review saved successfully");
+          } else {
+            console.log("[ReviewPaperModal] Review already exists, not saving duplicate");
           }
-        } catch (error) { console.error("Error saving review:", error); }
+        } catch (error) { 
+          console.error("[ReviewPaperModal] Error saving review:", error); 
+        }
       }
   }, [reviewData]);
 
@@ -117,7 +159,7 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
              {/* New Review Button (file upload) */}
              <div className="ml-auto flex items-center px-3">
                 <label className={`flex items-center px-4 py-2 rounded ${ newReviewLoading ? 'bg-teal-400 cursor-wait' : 'bg-teal-600 hover:bg-teal-700 cursor-pointer' } text-white font-medium text-sm`}>
-                    {newReviewLoading ? ( <><svg className="animate-spin h-4 w-4 mr-2" /*...*/></svg> Reviewing... </>) : ( <><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" /*...*/></svg> New Review </>)}
+                    {newReviewLoading ? ( <><svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Reviewing... </>) : ( <><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg> New Review </>)}
                    <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={handleFileUpload} disabled={newReviewLoading} />
                 </label>
              </div>
@@ -155,8 +197,8 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
                     {/* Past Reviews List */}
                      <div className="w-full md:w-1/3 border-r border-gray-200 overflow-y-auto max-h-[calc(90vh-9rem)]">
                          <div className="p-4 bg-gray-50 border-b border-gray-200"> <h3 className="font-medium text-gray-700">Past Reviews</h3> <p className="text-xs text-gray-500">Select a review to view</p> </div>
-                         {showEmptyPastReviews ? ( <div className="flex flex-col items-center justify-center py-12 px-4 text-center text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300 mb-3" /*...*/></svg><p>No past reviews found</p></div> ) :
-                         ( <ul className="divide-y divide-gray-200"> {pastReviews.map(review => ( <li key={review.id} className={`hover:bg-gray-50 transition-colors cursor-pointer ${ selectedPastReview?.id === review.id ? 'bg-teal-50 border-l-4 border-teal-500' : '' }`} onClick={() => handleSelectPastReview(review)}> <div className="p-4"> <div className="flex justify-between items-start"> <h4 className="font-medium text-sm text-gray-800 mb-1 truncate flex-grow">{review.paperName}</h4> <button onClick={(e) => { e.stopPropagation(); handleDeleteReview(review.id); }} className="text-gray-400 hover:text-red-500 transition-colors" title="Delete review"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" /*...*/></svg></button> </div> <div className="text-xs text-gray-500 mb-2">{new Date(review.timestamp).toLocaleString()}</div> <p className="text-xs text-gray-600 line-clamp-2">{review.preview}</p> </div> </li> ))} </ul> )}
+                         {showEmptyPastReviews ? ( <div className="flex flex-col items-center justify-center py-12 px-4 text-center text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><p>No past reviews found</p></div> ) :
+                         ( <ul className="divide-y divide-gray-200"> {pastReviews.map(review => ( <li key={review.id} className={`hover:bg-gray-50 transition-colors cursor-pointer ${ selectedPastReview?.id === review.id ? 'bg-teal-50 border-l-4 border-teal-500' : '' }`} onClick={() => handleSelectPastReview(review)}> <div className="p-4"> <div className="flex justify-between items-start"> <h4 className="font-medium text-sm text-gray-800 mb-1 truncate flex-grow">{review.paperName}</h4> <button onClick={(e) => { e.stopPropagation(); handleDeleteReview(review.id); }} className="text-gray-400 hover:text-red-500 transition-colors" title="Delete review"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button> </div> <div className="text-xs text-gray-500 mb-2">{new Date(review.timestamp).toLocaleString()}</div> <p className="text-xs text-gray-600 line-clamp-2">{review.preview}</p> </div> </li> ))} </ul> )}
                      </div>
                      {/* Selected Past Review Content */}
                      <div className="w-full md:w-2/3 overflow-y-auto max-h-[calc(90vh-9rem)]">
@@ -173,8 +215,8 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
             <div className="flex space-x-3">
                  {(showCurrentReview || showPastReviewContent) && (
                     <>
-                      <button onClick={handleCopyToClipboard} className={`flex items-center px-4 py-2 rounded ${ copySuccess ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }`} disabled={copySuccess}> {copySuccess ? ( <><svg /*...*/></svg> Copied! </>) : ( <><svg /*...*/></svg> Copy </>) } </button>
-                      <button onClick={handleExport} disabled={exportLoading} className="flex items-center px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"> {exportLoading ? ( <><svg className="animate-spin h-5 w-5 mr-1" /*...*/></svg> Exporting... </>) : ( <><svg /*...*/></svg> Export </>) } </button>
+                      <button onClick={handleCopyToClipboard} className={`flex items-center px-4 py-2 rounded ${ copySuccess ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }`} disabled={copySuccess}> {copySuccess ? ( <><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Copied! </>) : ( <><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg> Copy </>) } </button>
+                      <button onClick={handleExport} disabled={exportLoading} className="flex items-center px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"> {exportLoading ? ( <><svg className="animate-spin h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Exporting... </>) : ( <><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Export </>) } </button>
                     </>
                   )}
              </div>
