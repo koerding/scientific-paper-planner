@@ -1,22 +1,20 @@
 // FILE: src/components/modals/ReviewPaperModal.js
 import React, { useState, useEffect, useRef } from 'react';
-import ReactMarkdown from 'react-markdown'; // Restoring ReactMarkdown
+import ReactMarkdown from 'react-markdown';
 import { exportReview } from '../../services/paperReviewService';
 
 const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper }) => {
   // --- State and Refs ---
   const [exportLoading, setExportLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  // --- FORCE CURRENT TAB FOR TESTING ---
-  const [activeTab, setActiveTab] = useState('current'); // Keep it on current for now
-  const [pastReviews, setPastReviews] = useState([]); // Still load for count, but won't display list
-  const [selectedPastReview, setSelectedPastReview] = useState(null); // Keep state but won't be selectable
+  const [activeTab, setActiveTab] = useState('current');
+  const [pastReviews, setPastReviews] = useState([]);
+  const [selectedPastReview, setSelectedPastReview] = useState(null);
   const [newReviewLoading, setNewReviewLoading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // --- Load/Save Effects ---
+  // --- Load/Save Effects (same as Round 3) ---
   useEffect(() => {
-    // Load past reviews when modal becomes visible (still needed for count)
     if (showModal) {
       console.log("[ReviewPaperModal] Effect (Load Past Reviews): Modal visible.");
       try {
@@ -24,29 +22,24 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
         const parsed = savedReviews ? JSON.parse(savedReviews) : [];
         setPastReviews(parsed);
         console.log(`[ReviewPaperModal] Effect (Load Past Reviews): Loaded ${parsed.length} reviews.`);
-      } catch (error) {
-        console.error("[ReviewPaperModal] Effect (Load Past Reviews): Error loading:", error);
-        setPastReviews([]);
-      }
-      // --- FORCE CURRENT TAB ON LOAD ---
-      setActiveTab('current'); // Always start/reset to current tab
-      setSelectedPastReview(null); // Clear selection
+      } catch (error) { console.error("[ReviewPaperModal] Effect (Load Past Reviews): Error loading:", error); setPastReviews([]); }
+      setActiveTab(reviewData?.review ? 'current' : 'past');
+      setSelectedPastReview(null);
     }
-  }, [showModal]); // Rerun only when modal visibility changes
+  }, [showModal]);
 
   useEffect(() => {
-    // Save new valid review data
     if (reviewData?.success && reviewData.review) {
         console.log("[ReviewPaperModal] Effect (Save Review): Valid reviewData detected.");
         try {
-            // ... (saving logic remains the same) ...
-             const savedReviews = localStorage.getItem('paperReviews') || '[]';
+            // ... (saving logic) ...
+            const savedReviews = localStorage.getItem('paperReviews') || '[]';
             let parsedReviews = [];
             try { parsedReviews = JSON.parse(savedReviews); if (!Array.isArray(parsedReviews)) parsedReviews = []; }
             catch (parseError) { parsedReviews = []; console.warn("Corrupted past reviews, starting fresh.", parseError); }
             const existingIndex = parsedReviews.findIndex(r => r.timestamp === reviewData.timestamp && r.paperName === reviewData.paperName);
             if (existingIndex === -1) {
-                const newReview = {
+                 const newReview = {
                     id: `${reviewData.timestamp}_${(reviewData.paperName || "Unnamed").replace(/\s+/g, '_')}`,
                     paperName: reviewData.paperName || "Unnamed Paper",
                     timestamp: reviewData.timestamp || new Date().toISOString(),
@@ -57,35 +50,32 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
                  localStorage.setItem('paperReviews', JSON.stringify(updatedReviews));
                  setPastReviews(updatedReviews);
                  console.log("[ReviewPaperModal] Effect (Save Review): New review saved and state updated.");
-             } else {
-                 console.log("[ReviewPaperModal] Effect (Save Review): Review already exists, not saving duplicate.");
-             }
+            } else { console.log("[ReviewPaperModal] Effect (Save Review): Review already exists, not saving duplicate."); }
         } catch (error) { console.error("[ReviewPaperModal] Effect (Save Review): Error saving review:", error); }
-        // --- FORCE CURRENT TAB on new data ---
         setActiveTab('current');
         setSelectedPastReview(null);
     }
+     // --- Log when reviewData changes (even if not saved) ---
+     console.log("[ReviewPaperModal] Effect (Save Review): reviewData changed, current value:", reviewData ? "Exists" : "null/undefined");
   }, [reviewData]);
 
 
-  // --- UI Handlers (remains the same) ---
-  const handleSelectPastReview = (review) => { /* This won't be callable in UI */ };
+  // --- UI Handlers (same as Round 3) ---
+  const handleSelectPastReview = (review) => { setSelectedPastReview(review); };
   const handleExport = async () => { /* ... export logic ... */
         setExportLoading(true);
       try {
-        // Export should still work based on reviewData if tab is 'current'
-        const reviewToExport = reviewData?.review;
-        const paperName = reviewData?.paperName;
-        if (!reviewToExport || reviewToExport.trim() === '') { alert('No current review content found to export.'); return; }
+        const reviewToExport = activeTab === 'past' && selectedPastReview ? selectedPastReview.review : reviewData?.review;
+        const paperName = activeTab === 'past' && selectedPastReview ? selectedPastReview.paperName : reviewData?.paperName;
+        if (!reviewToExport || reviewToExport.trim() === '') { alert('No review content found to export.'); return; }
         const success = exportReview(reviewToExport, paperName || 'paper-review');
         if (!success) { alert('There was an error initiating the review export.'); }
       } catch (error) { console.error("Error exporting review:", error); alert('Error exporting review: ' + (error.message || 'Unknown error')); }
       finally { setExportLoading(false); } };
   const handleCopyToClipboard = async () => { /* ... copy logic ... */
        try {
-         // Copy should still work based on reviewData if tab is 'current'
-         const textToCopy = reviewData?.review;
-         if (!textToCopy || textToCopy.trim() === '') { alert('No current review content found to copy.'); return; }
+         const textToCopy = activeTab === 'past' && selectedPastReview ? selectedPastReview.review : reviewData?.review;
+         if (!textToCopy || textToCopy.trim() === '') { alert('No review content found to copy.'); return; }
          await navigator.clipboard.writeText(textToCopy);
          setCopySuccess(true);
          setTimeout(() => setCopySuccess(false), 2000);
@@ -99,18 +89,32 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
        try { await handleReviewPaper(event); }
        catch (error) { console.error("Error during paper review:", error); alert("Error reviewing paper: " + (error.message || "Unknown error")); }
        finally { setNewReviewLoading(false); if (fileInputRef.current) fileInputRef.current.value = ''; } };
-  const handleDeleteReview = (reviewId) => { /* This won't be callable in UI */ };
+  const handleDeleteReview = (reviewId) => { /* ... delete logic ... */
+       if (window.confirm("Are you sure you want to delete this review? This cannot be undone.")) {
+         try {
+           const updatedReviews = pastReviews.filter(r => r.id !== reviewId);
+           localStorage.setItem('paperReviews', JSON.stringify(updatedReviews));
+           setPastReviews(updatedReviews);
+           if (selectedPastReview && selectedPastReview.id === reviewId) { setSelectedPastReview(null); }
+           console.log(`[ReviewPaperModal] Deleted review ${reviewId}`);
+         } catch (error) { console.error("Error deleting review:", error); alert("Failed to delete review."); }
+       } };
+
 
   // --- Prepare variables for rendering ---
-  // Simplified: only care about current review for display test
-  const displayContent = reviewData?.review || null;
-  const displayPaperName = reviewData?.paperName;
-  const displayTimestamp = reviewData?.timestamp;
+  const currentReviewContent = reviewData?.review || null;
+  const pastReviewContent = selectedPastReview?.review || null;
+  const displayContent = activeTab === 'current' ? currentReviewContent : pastReviewContent;
+  const displayPaperName = activeTab === 'current' ? reviewData?.paperName : selectedPastReview?.paperName;
+  const displayTimestamp = activeTab === 'current' ? reviewData?.timestamp : selectedPastReview?.timestamp;
   const hasDisplayableContent = !!displayContent;
 
   // --- Logging ---
-  console.log(`[ReviewPaperModal] PRE-RENDER CHECK (Simplified Layout): showModal=${showModal}, activeTab=${activeTab}, hasDisplayableContent=${hasDisplayableContent}`);
-  console.log(`[ReviewPaperModal] PRE-RENDER CHECK (Simplified Layout): reviewData present=${!!reviewData}, reviewData.review length=${reviewData?.review?.length || 0}`);
+  // Use the direct prop 'reviewData' for logging here
+  console.log(`[ReviewPaperModal] PRE-RENDER CHECK: showModal=${showModal}, activeTab=${activeTab}, hasDisplayableContent=${hasDisplayableContent}`);
+  console.log(`[ReviewPaperModal] PRE-RENDER CHECK: direct reviewData prop present=${!!reviewData}, reviewData.review length=${reviewData?.review?.length || 0}`);
+  console.log(`[ReviewPaperModal] PRE-RENDER CHECK: pastReviews count=${pastReviews.length}, selectedPastReview present=${!!selectedPastReview}`);
+
 
   // --- Conditional Render ---
   if (!showModal) {
@@ -118,7 +122,7 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
   }
 
   return (
-    // Maintain overall modal structure
+    // Restore overall modal structure from Round 3
     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 overflow-y-auto p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-auto max-h-[90vh] flex flex-col">
 
@@ -128,10 +132,10 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
              <button onClick={onClose} className="text-white hover:text-gray-200 focus:outline-none" aria-label="Close">{/* Close Icon */}</button>
         </div>
 
-        {/* Tabs Navigation - Simplified: Hide 'Past Reviews' tab for now */}
+        {/* Tabs Navigation */}
         <div className="bg-gray-100 border-b border-gray-200 flex flex-shrink-0">
-             <button className={`px-6 py-3 font-medium text-sm focus:outline-none bg-white text-teal-700 border-t-2 border-teal-500`} > Current Review </button>
-             {/* <button className={`px-6 py-3 font-medium text-sm focus:outline-none ${ activeTab === 'past' ? 'bg-white text-teal-700 border-t-2 border-teal-500' : 'text-gray-600 hover:text-gray-800' }`} onClick={() => setActiveTab('past')} > Past Reviews ({pastReviews.length}) </button> */}
+             <button className={`px-6 py-3 font-medium text-sm focus:outline-none ${ activeTab === 'current' ? 'bg-white text-teal-700 border-t-2 border-teal-500' : 'text-gray-600 hover:text-gray-800' }`} onClick={() => { setActiveTab('current'); setSelectedPastReview(null); }} > Current Review </button>
+             <button className={`px-6 py-3 font-medium text-sm focus:outline-none ${ activeTab === 'past' ? 'bg-white text-teal-700 border-t-2 border-teal-500' : 'text-gray-600 hover:text-gray-800' }`} onClick={() => setActiveTab('past')} > Past Reviews ({pastReviews.length}) </button>
              <div className="ml-auto flex items-center px-3">
                 <label className={`flex items-center px-4 py-2 rounded ${ newReviewLoading ? 'bg-teal-400 cursor-wait' : 'bg-teal-600 hover:bg-teal-700 cursor-pointer' } text-white font-medium text-sm`}>
                     {newReviewLoading ? ( <>{/* Spinner */} Reviewing... </>) : ( <>{/* Icon */} New Review </>)}
@@ -140,44 +144,85 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
              </div>
         </div>
 
-        {/* Content Area - Simplified: No horizontal flex, just direct content display */}
-        {/* --- FIX: Apply flex-grow and overflow-y directly to this container --- */}
-        <div className="flex-grow overflow-y-auto p-6"> {/* Added padding directly here */}
-            {hasDisplayableContent ? (
-                // Display current review directly
-                <>
-                    {/* Paper Info Header */}
-                    <div className="bg-gray-50 px-6 py-3 border border-gray-200 rounded-t-md -m-6 mb-4"> {/* Adjust margin for padding */}
-                       <h3 className="font-medium text-gray-800">{displayPaperName || 'Current Review'}</h3>
-                       <p className="text-sm text-gray-500">
-                         Generated: {displayTimestamp ? new Date(displayTimestamp).toLocaleString() : 'N/A'}
-                       </p>
-                    </div>
-                    {/* Review Content */}
-                    <div className="prose prose-teal max-w-none">
-                        <ReactMarkdown>{displayContent}</ReactMarkdown>
-                    </div>
-                </>
-            ) : (
-                // Placeholder when no content is available
-                <div className="flex flex-col items-center justify-center h-full text-gray-500 text-center">
-                  {/* Placeholder Icon & Text */}
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  <p className="text-lg mb-2">No current review available</p>
-                  <p className="text-base mb-6">Upload a paper using the 'New Review' button.</p>
-                   {(reviewData && !reviewData.review) && (<p className="text-xs text-red-500 mt-2">Debug: Review data exists but content is missing.</p>)}
-                </div>
+        {/* Content Area - Restore Round 3 Layout */}
+        <div className="flex-grow overflow-y-auto flex min-h-[300px]">
+
+            {/* Past Reviews List */}
+            {activeTab === 'past' && (
+              <div className="w-full md:w-1/3 border-r border-gray-200 flex-shrink-0 overflow-y-auto">
+                 <div className="p-4 bg-gray-50 border-b border-gray-200 sticky top-0 z-10"> <h3 className="font-medium text-gray-700">Past Reviews</h3> <p className="text-xs text-gray-500">Select a review</p> </div>
+                 {pastReviews.length === 0 ? (
+                     <div className="flex flex-col items-center justify-center py-12 px-4 text-center text-gray-500">{/* Placeholder Icon */}<p>No past reviews</p></div>
+                   ) : (
+                     <ul className="divide-y divide-gray-200">
+                       {pastReviews.map(review => (
+                         <li key={review.id} className={`hover:bg-gray-50 transition-colors cursor-pointer ${ selectedPastReview?.id === review.id ? 'bg-teal-50 border-l-4 border-teal-500' : '' }`} onClick={() => handleSelectPastReview(review)}>
+                           {/* ... list item content ... */}
+                            <div className="p-4">
+                             <div className="flex justify-between items-start">
+                               <h4 className="font-medium text-sm text-gray-800 mb-1 truncate flex-grow pr-2">{review.paperName}</h4>
+                               <button onClick={(e) => { e.stopPropagation(); handleDeleteReview(review.id); }} className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0" title="Delete review">{/* Delete Icon */}</button>
+                             </div>
+                             <div className="text-xs text-gray-500 mb-2">{new Date(review.timestamp).toLocaleString()}</div>
+                             <p className="text-xs text-gray-600 line-clamp-2">{review.preview}</p>
+                           </div>
+                         </li>
+                       ))}
+                     </ul>
+                   )}
+              </div>
             )}
+
+            {/* Main Content Display Area */}
+            <div className={`flex-grow overflow-y-auto ${activeTab === 'past' ? 'w-full md:w-2/3' : 'w-full'}`}>
+                {hasDisplayableContent ? (
+                   // *** ADDED LOG INSIDE RENDER BLOCK ***
+                   () => {
+                     console.log(`[ReviewPaperModal] RENDERING CONTENT for tab: ${activeTab}`);
+                     return (
+                       <>
+                         {/* Paper Info Header */}
+                         <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                            <h3 className="font-medium text-gray-800">{displayPaperName || (activeTab === 'current' ? 'Current Review' : 'Selected Review')}</h3>
+                            <p className="text-sm text-gray-500">
+                              {activeTab === 'past' ? 'Reviewed on' : 'Generated:'} {displayTimestamp ? new Date(displayTimestamp).toLocaleString() : 'N/A'}
+                            </p>
+                         </div>
+                         {/* Review Content */}
+                         <div className="p-6">
+                              <div className="prose prose-teal max-w-none">
+                                 <ReactMarkdown>{displayContent}</ReactMarkdown>
+                              </div>
+                         </div>
+                       </>
+                     );
+                   }
+                )() : (
+                   // *** ADDED LOG INSIDE RENDER BLOCK ***
+                   () => {
+                     console.log(`[ReviewPaperModal] RENDERING PLACEHOLDER for tab: ${activeTab}`);
+                     return (
+                       <div className="flex flex-col items-center justify-center h-full text-gray-500 text-center p-6">
+                         {/* Placeholder Icon & Text */}
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                          <p className="text-lg mb-2">{activeTab === 'current' ? 'No current review available' : 'No review selected'}</p>
+                          <p className="text-base mb-6">{activeTab === 'current' ? "Upload a paper using the 'New Review' button." : (pastReviews.length > 0 ? 'Select a review from the list.' : 'Upload a paper to generate a review.')}</p>
+                          {(activeTab === 'current' && reviewData && !reviewData.review) && (<p className="text-xs text-red-500 mt-2">Debug: Review data exists but content is missing.</p>)}
+                       </div>
+                     );
+                   }
+                )()}
+            </div>
         </div>
 
-        {/* Actions Footer (fixed height) */}
+        {/* Actions Footer */}
         <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-between items-center border-t border-gray-200 flex-shrink-0">
             <div className="text-sm text-gray-600"><p>AI-generated reviews provide supplementary feedback.</p></div>
             <div className="flex space-x-3">
-                 {hasDisplayableContent && ( // Action buttons only if current review content exists
+                 {hasDisplayableContent && (
                     <>
-                      <button onClick={handleCopyToClipboard} className={`flex items-center px-4 py-2 rounded text-sm ${ copySuccess ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }`} disabled={copySuccess}> {/* Copy Button Content */} </button>
-                      <button onClick={handleExport} disabled={exportLoading} className="flex items-center px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-sm"> {/* Export Button Content */} </button>
+                      <button onClick={handleCopyToClipboard} className={`flex items-center px-4 py-2 rounded text-sm ${ copySuccess ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }`} disabled={copySuccess}> {/* Copy Button */} </button>
+                      <button onClick={handleExport} disabled={exportLoading} className="flex items-center px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-sm"> {/* Export Button */} </button>
                     </>
                   )}
              </div>
