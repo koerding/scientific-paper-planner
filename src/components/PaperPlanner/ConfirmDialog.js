@@ -1,26 +1,34 @@
 // FILE: src/components/PaperPlanner/ConfirmDialog.js
 
 import React from 'react';
+// Removed import from resetService
 
 /**
  * Confirmation dialog for resetting the project
- * UPDATED: Removed direct import from deleted resetService.
  */
 const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }) => {
-  if (!showConfirmDialog) return null;
+
+  // Log the crucial prop value
+  console.log(`[ConfirmDialog] Rendering with showConfirmDialog: ${showConfirmDialog}`); // <-- ADD LOG
+
+  if (!showConfirmDialog) {
+      return null; // Don't render if false
+  }
 
   // Handle confirmed reset by calling the function passed via props
   const handleConfirmReset = () => {
-    // Call the passed resetProject function (connected to the store action)
     if (typeof resetProject === 'function') {
       resetProject();
     } else {
-      // Log an error if the prop function is missing, but don't try to call the old service
       console.error("ConfirmDialog: resetProject prop function is missing!");
     }
-
-    // Close the dialog
-    setShowConfirmDialog(false);
+    // The component itself doesn't control visibility directly anymore,
+    // it relies on the parent changing the prop.
+    // We can still call the close function if provided, though it might be redundant
+    // if the parent closes it upon reset.
+    if (typeof setShowConfirmDialog === 'function') {
+        setShowConfirmDialog(); // Call the close function passed via props
+    }
   };
 
   return (
@@ -32,7 +40,7 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
         </p>
         <div className="flex justify-end space-x-4">
           <button
-            onClick={() => setShowConfirmDialog(false)}
+            onClick={setShowConfirmDialog} // Call close function directly on cancel
             className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
           >
             Cancel
