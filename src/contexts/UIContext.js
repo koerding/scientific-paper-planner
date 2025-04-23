@@ -32,35 +32,41 @@ const ACTION_TYPES = {
   SET_LOADING: 'SET_LOADING',
   CLEAR_LOADING: 'CLEAR_LOADING',
   SET_REVIEW_DATA: 'SET_REVIEW_DATA',
+  CLEAR_REVIEW_DATA: 'CLEAR_REVIEW_DATA', // Action to explicitly clear review data
   SET_ONBOARDING_STEP: 'SET_ONBOARDING_STEP',
-  SHOW_HELP_SPLASH: 'SHOW_HELP_SPLASH', // Renamed for clarity
+  SHOW_HELP_SPLASH: 'SHOW_HELP_SPLASH',
   HIDE_HELP_SPLASH: 'HIDE_HELP_SPLASH'
 };
 
 // Reducer
 function uiReducer(state, action) {
-  console.log("[UIContext] Reducer received action:", action); // <-- ADDED LOG
+  console.log("[UIContext] Reducer received action:", action);
   switch (action.type) {
     case ACTION_TYPES.SHOW_MODAL:
-      console.log(`[UIContext] Showing modal: ${action.payload}`); // <-- ADDED LOG
+      console.log(`[UIContext] Showing modal: ${action.payload}`);
       // Directly set the specified modal to true in the modals object
-      return { 
-        ...state, 
-        modals: { 
-          ...state.modals, 
-          [action.payload]: true 
-        } 
-      };
-
-    case ACTION_TYPES.HIDE_MODAL:
-       console.log(`[UIContext] Hiding modal: ${action.payload}`); // <-- ADDED LOG
       return {
         ...state,
         modals: {
           ...state.modals,
-          [action.payload]: false
+          [action.payload]: true
         }
       };
+
+    case ACTION_TYPES.HIDE_MODAL:
+       console.log(`[UIContext] Hiding modal: ${action.payload}`);
+       // --- FIX: Don't clear reviewData when hiding reviewModal ---
+       // Let the component decide when to clear it via CLEAR_REVIEW_DATA
+       // const updatedModals = { ...state.modals, [action.payload]: false };
+       // const updatedReviewData = action.payload === 'reviewModal' ? state.reviewData : state.reviewData; // Keep reviewData when hiding reviewModal
+       return {
+         ...state,
+         modals: {
+           ...state.modals,
+           [action.payload]: false
+         }
+         // reviewData: updatedReviewData // Removed automatic clearing
+       };
 
     case ACTION_TYPES.SET_LOADING:
       return {
@@ -81,7 +87,12 @@ function uiReducer(state, action) {
       };
 
     case ACTION_TYPES.SET_REVIEW_DATA:
+      console.log("[UIContext] Setting review data:", action.payload ? "Data provided" : "Data is null");
       return { ...state, reviewData: action.payload };
+
+    case ACTION_TYPES.CLEAR_REVIEW_DATA: // --- NEW ACTION HANDLER ---
+      console.log("[UIContext] Clearing review data");
+      return { ...state, reviewData: null };
 
     case ACTION_TYPES.SET_ONBOARDING_STEP:
       return { ...state, onboarding: { ...state.onboarding, step: action.payload } };
@@ -111,13 +122,12 @@ export function UIProvider({ children }) {
         // Dispatch HIDE only if preference is set
         dispatch({ type: ACTION_TYPES.HIDE_HELP_SPLASH });
     }
-    // Otherwise, showHelpSplash remains false by default unless explicitly shown
   }, []);
 
   // Listen for global event to open privacy policy
   useEffect(() => {
     const handleOpenPrivacyPolicy = () => {
-        console.log("[UIContext] Received 'openPrivacyPolicy' event."); // <-- ADD LOG
+        console.log("[UIContext] Received 'openPrivacyPolicy' event.");
         dispatch({ type: ACTION_TYPES.SHOW_MODAL, payload: 'privacyPolicy' });
     };
     window.addEventListener('openPrivacyPolicy', handleOpenPrivacyPolicy);
@@ -128,11 +138,11 @@ export function UIProvider({ children }) {
   // Actions object passed in context value
   const actions = {
     showModal: (modalName) => {
-      console.log(`[UIContext] Dispatching SHOW_MODAL for: ${modalName}`); // <-- ADDED LOG
+      console.log(`[UIContext] Dispatching SHOW_MODAL for: ${modalName}`);
       dispatch({ type: ACTION_TYPES.SHOW_MODAL, payload: modalName });
     },
     hideModal: (modalName) => {
-       console.log(`[UIContext] Dispatching HIDE_MODAL for: ${modalName}`); // <-- ADDED LOG
+       console.log(`[UIContext] Dispatching HIDE_MODAL for: ${modalName}`);
       dispatch({ type: ACTION_TYPES.HIDE_MODAL, payload: modalName });
     },
     setLoading: (loadingType, status = true) => { // status defaults to true
@@ -142,6 +152,7 @@ export function UIProvider({ children }) {
       dispatch({ type: ACTION_TYPES.SET_LOADING, payload: { type: loadingType, status: false } });
     },
     setReviewData: (data) => { dispatch({ type: ACTION_TYPES.SET_REVIEW_DATA, payload: data }); },
+    clearReviewData: () => { dispatch({ type: ACTION_TYPES.CLEAR_REVIEW_DATA }); }, // --- NEW ACTION ---
     setOnboardingStep: (step) => { dispatch({ type: ACTION_TYPES.SET_ONBOARDING_STEP, payload: step }); },
     hideHelpSplash: () => { // Hides and saves preference
         localStorage.setItem('hideWelcomeSplash', 'true');
@@ -169,6 +180,7 @@ export function UIProvider({ children }) {
       setLoading: actions.setLoading,
       clearLoading: actions.clearLoading,
       setReviewData: actions.setReviewData,
+      clearReviewData: actions.clearReviewData, // Pass new action
       setOnboardingStep: actions.setOnboardingStep,
       hideHelpSplash: actions.hideHelpSplash,
       showHelpSplash: actions.showHelpSplash
