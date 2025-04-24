@@ -34,19 +34,6 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             Design a scientific project, step-by-step. Structured for clarity, enhanced by AI.
           </p>
           
-          <div className="space-y-4 mb-6">
-            {/* Fill out sections systematically - light blue to match section UI */}
-            <div className="flex items-start">
-              <div className="bg-blue-50 p-2 rounded-full mr-3 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Fill out each section systematically</p>
-                <p className="text-gray-600 text-sm">The app guides you through all essential components of a scientific project</p>
-              </div>
-            </div>
             
             {/* AI Chat - solid blue to match chat button */}
             <div className="flex items-start">
@@ -71,21 +58,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               </div>
               <div>
                 <p className="font-medium text-gray-800">Get adaptive guidance as you work</p>
-                <p className="text-gray-600 text-sm">The "Improve Instructions" button analyzes your progress and tailors the guidance to your specific needs</p>
-              </div>
-            </div>
-            
-            {/* Save/Export - gray to match header buttons */}
-            <div className="flex items-start">
-              <div className="bg-gray-200 p-2 rounded-full mr-3 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                  <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2a2 2 0 011.44.6l2.41 2.7A1 1 0 0017 14v1a1 1 0 01-1 1h-1.05a2.5 2.5 0 01-4.9 0H10a2.5 2.5 0 01-4.9 0H4a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v2.784a2 2 0 01-.47 1.282l-2.7 3.13a2 2 0 01-1.44.804H15V9a1 1 0 00-1-1H4a1 1 0 000 2h9a1 1 0 110 2H5a1 1 0 000 2h7a1 1 0 001-1v-1h1.596a1 1 0 00.67-.248l1.042-2.5A.993.993 0 0017 8.226V7a1 1 0 00-1-1h-3.5V4a1 1 0 00-1-1H3z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Save, export, and share</p>
-                <p className="text-gray-600 text-sm">Use the header buttons to save your work, load examples, or export to PDF/DOCX/MD</p>
+                <p className="text-gray-600 text-sm">The "Improve Instructions" button analyzes your progress and tailors the guidance to where you are/p>
               </div>
             </div>
             
@@ -111,7 +84,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               </div>
               <div>
                 <p className="font-medium text-gray-800">Review existing papers</p>
-                <p className="text-gray-600 text-sm">Use paper review to see checks for the issues you work on here in other papers</p>
+                <p className="text-gray-600 text-sm">Checks for the issues you work on here in other papers</p>
               </div>
             </div>
           </div>
