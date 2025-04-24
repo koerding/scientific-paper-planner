@@ -1,7 +1,8 @@
 // FILE: src/store/appStore.js
 // Modified to add a separate global loading indicator
 // Modified loadProjectData to handle new save format
-// ADDED: Custom merge function for persist middleware to handle state versioning
+// ADDED: Custom merge function for persist middleware
+// MODIFIED: Simplified initial state for visibility/proMode
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -20,16 +21,18 @@ const getInitialSectionStates = () => {
     return sectionContent.sections.reduce((acc, section) => {
         if (!section || !section.id) return acc; // Skip invalid sections
         acc[section.id] = {
-        id: section.id,
-        title: section.title || 'Untitled Section',
-        content: section.placeholder || '',
-        originalInstructions: section.subsections || [], // Keep original instructions
-        aiInstructions: null, // AI feedback starts as null
-        isMinimized: section.id !== 'question', // Start with only question expanded
-        isVisible: section.id === 'question', // Start with only question visible
-        feedbackRating: null, // Feedback rating starts as null
-        editedSinceFeedback: false, // Not edited initially
-        lastEditTimestamp: 0, // Timestamp for edit tracking
+            id: section.id,
+            title: section.title || 'Untitled Section',
+            content: section.placeholder || '',
+            originalInstructions: section.subsections || [], // Keep original instructions
+            aiInstructions: null, // AI feedback starts as null
+            // --- SIMPLIFIED INITIAL STATE ---
+            isMinimized: section.id !== 'question', // Start with only question expanded
+            isVisible: true, // Make ALL sections initially visible
+            // --- END SIMPLIFICATION ---
+            feedbackRating: null, // Feedback rating starts as null
+            editedSinceFeedback: false, // Not edited initially
+            lastEditTimestamp: 0, // Timestamp for edit tracking
         };
         return acc;
     }, {});
@@ -40,7 +43,9 @@ const initialState = {
     sections: getInitialSectionStates(),
     activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
     scores: {},
-    proMode: false,
+    // --- SIMPLIFIED INITIAL STATE ---
+    proMode: true, // Start with proMode true to match initial visibility
+    // --- END SIMPLIFICATION ---
     modals: {
         confirmDialog: false, examplesDialog: false, reviewModal: false,
         privacyPolicy: false, saveDialog: false
@@ -97,7 +102,9 @@ const useAppStore = create(
             Object.keys(updatedSections).forEach(sId => {
               if (!updatedSections[sId]) return;
               const sectionDef = sectionContent.sections.find(s => s.id === sId);
+              // Visibility depends on proMode OR being unlocked
               let isVisible = state.proMode || unlockedSections.includes(sId);
+              // If visible, check if it should be hidden due to inactive toggle
               if (isVisible) {
                 if (sectionDef?.category === 'approach' && sId !== newActiveToggles.approach) isVisible = false;
                 else if (sectionDef?.category === 'dataMethod' && sId !== newActiveToggles.dataMethod) isVisible = false;
@@ -106,15 +113,25 @@ const useAppStore = create(
             });
             return { activeToggles: newActiveToggles, sections: updatedSections };
        }),
-      setProMode: (enabled) => set((state) => {
+       // Modified setProMode to correctly calculate visibility when toggled
+       setProMode: (enabled) => set((state) => {
           const updatedSections = { ...state.sections };
-            // Update visibility for all sections based on proMode
-            Object.keys(updatedSections).forEach(sId => {
-                if (!updatedSections[sId]) return;
-                updatedSections[sId].isVisible = isSectionVisible(sId, { ...state, proMode: enabled });
-            });
-            return { proMode: enabled, sections: updatedSections };
-       }),
+          const currentScores = state.scores;
+          const currentToggles = state.activeToggles;
+          const { unlockedSections } = calculateUnlockedSections(currentScores, currentToggles);
+
+          Object.keys(updatedSections).forEach(sId => {
+              if (!updatedSections[sId]) return;
+              const sectionDef = sectionContent.sections.find(s => s.id === sId);
+              let isVisible = enabled || unlockedSections.includes(sId); // Use 'enabled' directly
+              if (isVisible) {
+                  if (sectionDef?.category === 'approach' && sId !== currentToggles.approach) isVisible = false;
+                  else if (sectionDef?.category === 'dataMethod' && sId !== currentToggles.dataMethod) isVisible = false;
+              }
+              updatedSections[sId] = { ...updatedSections[sId], isVisible: isVisible };
+          });
+          return { proMode: enabled, sections: updatedSections };
+      }),
       updateSectionFeedback: (sectionId, feedbackData) => set((state) => {
             if (!state.sections[sectionId]) return state;
             const rating = feedbackData?.rating;
@@ -144,7 +161,7 @@ const useAppStore = create(
             return { sections: updatedSections, scores: newScores };
        }),
       resetState: () => set({
-        ...initialState, // Reset to the full initial state
+        ...initialState, // Reset to the full initial state (which now has proMode: true)
         // Reset onboarding state, but keep showHelpSplash potentially true if it was set by user action
         onboarding: { ...initialState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
       }),
@@ -332,13 +349,13 @@ const useAppStore = create(
             console.error("Error rehydrating Zustand state:", error);
           } else {
             console.log("Zustand state hydration finished successfully.");
-            // Potentially recalculate visibility after hydration if needed,
-            // although the merge function should handle structure mismatches.
-            // Example: get().setProMode(get().proMode); // Re-trigger visibility calculation
+            // After hydration, ensure visibility is correct based on the hydrated state
+            // We can trigger a re-calculation by calling setProMode with the current proMode value
+            useAppStore.getState().setProMode(useAppStore.getState().proMode);
           }
         }
       },
-      // --- ADDED: Custom merge function ---
+      // Custom merge function to handle state versioning safely
       merge: (persistedState, currentState) => {
         console.log("Merging persisted state with current state...");
         if (!persistedState || typeof persistedState !== 'object') {
@@ -363,8 +380,11 @@ const useAppStore = create(
                       ...merged.sections[sectionId], // Ensure all initial fields exist
                       ...persistedState.sections[sectionId] // Overwrite with persisted data
                     };
+                    // Ensure originalInstructions always comes from the *current* definition
+                    const currentSectionDef = sectionContent.sections.find(s => s.id === sectionId);
+                    merged.sections[sectionId].originalInstructions = currentSectionDef?.subsections || [];
+
                   } else if (Object.hasOwnProperty.call(persistedState.sections, sectionId)) {
-                     // If a section exists in persisted state but not initial, log warning (shouldn't happen ideally)
                      console.warn(`Persisted section "${sectionId}" not found in initial state. Ignoring.`);
                   }
                 }
@@ -372,6 +392,9 @@ const useAppStore = create(
                 for (const sectionId in currentState.sections) {
                     if (!merged.sections[sectionId]) {
                         merged.sections[sectionId] = currentState.sections[sectionId];
+                         // Ensure originalInstructions always comes from the *current* definition
+                        const currentSectionDef = sectionContent.sections.find(s => s.id === sectionId);
+                        merged.sections[sectionId].originalInstructions = currentSectionDef?.subsections || [];
                     }
                 }
 
@@ -389,9 +412,10 @@ const useAppStore = create(
           }
         }
         console.log("State merge complete.");
+        // Ensure proMode is correctly set based on merged state or default
+        merged.proMode = merged.proMode !== undefined ? merged.proMode : initialState.proMode;
         return merged;
       },
-      // --- END ADDED ---
     }
   )
 );
