@@ -1,8 +1,4 @@
 // FILE: src/components/chat/ModernChatInterface.js
-// Key changes:
-// 1. Use the global isAnyLoading() function directly instead of passing isAiBusy as a prop
-// 2. Apply consistent disabling logic to all interactive elements
-
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import ReactGA from 'react-ga4';
@@ -26,8 +22,12 @@ const ModernChatInterface = ({
   const previousSectionRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Get global loading state directly from store
-  const isAnyStoreLoading = useAppStore((state) => state.isAnyLoading());
+  // Get both specific loading states and global loading state
+  const isAnyAiBusy = useAppStore((state) => state.isAnyLoading());
+  const isImportLoading = useAppStore((state) => state.loading.import);
+  
+  // Combined loading state - chat should be disabled during ANY AI operation
+  const isButtonDisabled = loading || isAnyAiBusy || isImportLoading;
 
   // Scroll to bottom when messages change or chat is opened
   useEffect(() => {
@@ -45,7 +45,7 @@ const ModernChatInterface = ({
 
   // Toggle chat window open/closed
   const toggleChat = () => {
-    if (!currentSection || isAnyStoreLoading) return;
+    if (!currentSection || isButtonDisabled) return;
     
     const newState = !isMinimized;
     setIsMinimized(newState);
@@ -68,7 +68,7 @@ const ModernChatInterface = ({
 
   // Handle sending messages with analytics tracking
   const handleSendMessageWithTracking = () => {
-    if (!currentSection || loading || isAnyStoreLoading || currentMessage.trim() === '') return;
+    if (!currentSection || isButtonDisabled || currentMessage.trim() === '') return;
     
     // Track interaction if analytics is initialized
     if (ReactGA && typeof ReactGA.isInitialized === 'function' && ReactGA.isInitialized()) {
@@ -93,7 +93,6 @@ const ModernChatInterface = ({
     return null;
   }
 
-  const isButtonDisabled = loading || isAnyStoreLoading;
   const buttonBgClass = isButtonDisabled ? 'bg-indigo-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700';
 
   return (
@@ -108,10 +107,10 @@ const ModernChatInterface = ({
             onClick={toggleChat}
             disabled={isButtonDisabled}
             className={`flex items-center justify-center px-4 py-3 rounded-full shadow-lg transition-colors text-white font-medium ${buttonBgClass}`}
-            title={isAnyStoreLoading ? "AI is busy..." : `Ask AI for help on ${currentSectionTitle}`}
+            title={isButtonDisabled ? "AI is busy..." : `Ask AI for help on ${currentSectionTitle}`}
             aria-label="Open chat"
           >
-            {loading ? (
+            {isButtonDisabled ? (
               <div className="flex items-center">
                 <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -124,7 +123,7 @@ const ModernChatInterface = ({
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
-                <span>{isAnyStoreLoading ? "AI Busy..." : `Let's talk about ${currentSectionTitle}`}</span>
+                <span>Let's talk about {currentSectionTitle}</span>
               </div>
             )}
           </button>
@@ -237,20 +236,20 @@ const ModernChatInterface = ({
                     value={currentMessage}
                     onChange={(e) => setCurrentMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder={`Ask about ${currentSectionTitle}...`}
+                    placeholder={isButtonDisabled ? "AI is busy..." : `Ask about ${currentSectionTitle}...`}
                     className="flex-grow px-4 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    disabled={loading || isAnyStoreLoading}
+                    disabled={isButtonDisabled}
                   />
                   <button
                     onClick={handleSendMessageWithTracking}
-                    disabled={currentMessage.trim() === '' || loading || isAnyStoreLoading}
+                    disabled={currentMessage.trim() === '' || isButtonDisabled}
                     className={`px-4 flex items-center justify-center transition-colors ${
-                      currentMessage.trim() === '' || loading || isAnyStoreLoading
+                      currentMessage.trim() === '' || isButtonDisabled
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : 'bg-indigo-600 text-white hover:bg-indigo-700'
                     }`}
                   >
-                    {loading ? (
+                    {isButtonDisabled ? (
                       <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
