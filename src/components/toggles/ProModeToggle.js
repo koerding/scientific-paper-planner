@@ -16,9 +16,9 @@ const ProModeToggle = () => {
   return (
     <button
       onClick={handleToggle}
-      className={`inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-indigo-500
+      className={`inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-gray-500
         ${proModeEnabled
-          ? 'border-green-500 bg-green-600 hover:bg-green-700 text-white'
+          ? 'border-gray-600 bg-gray-700 hover:bg-gray-800 text-white'
           : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900'}`}
       title={proModeEnabled ? "Disable Pro Mode (will hide locked sections)" : "Enable Pro Mode (shows all sections)"}
     >
