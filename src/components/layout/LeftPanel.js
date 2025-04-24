@@ -1,5 +1,5 @@
 // FILE: src/components/layout/LeftPanel.js
-import React from 'react';
+import React, { useEffect } from 'react'; // Import useEffect
 import useAppStore from '../../store/appStore';
 import { isSectionVisible, isToggleVisible } from '../../logic/progressionLogic';
 import { getVisibleSectionsInDisplayOrder, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
@@ -23,26 +23,26 @@ const renderSectionCard = (section, activeSection, handleSectionFocus, handleMag
 
 // Helper function to render a toggle section
 const renderToggleSection = (
-  sectionId, 
-  options, 
-  activeOptionId, 
-  handleToggle, 
-  activeSection, 
-  handleSectionFocus, 
+  sectionId,
+  options,
+  activeOptionId,
+  handleToggle,
+  activeSection,
+  handleSectionFocus,
   handleMagic
 ) => {
   if (!options || options.length === 0) return null;
   const isCurrentActive = activeSection === activeOptionId;
-  
+
   return (
     <SectionCard
-      key={sectionId}
-      sectionId={activeOptionId} // Show the active toggle section
+      key={sectionId} // Use a stable key for the toggle group itself
+      sectionId={activeOptionId} // Pass the *active* section ID for content rendering
       isCurrentSection={isCurrentActive}
       onRequestFeedback={handleMagic}
       handleSectionFocus={handleSectionFocus}
       options={options}
-      activeOption={activeOptionId}
+      activeOption={activeOptionId} // Explicitly pass the active option for styling
       onToggle={handleToggle}
       isToggleSection={true}
     />
@@ -62,6 +62,12 @@ const LeftPanel = ({
   const activeToggles = useAppStore((state) => state.activeToggles);
   const storeState = useAppStore((state) => state); // Get full state for visibility checks
 
+  // --- ADD THIS useEffect for Debugging ---
+  useEffect(() => {
+    console.log("DEBUG [LeftPanel]: activeToggles updated in store:", activeToggles);
+  }, [activeToggles]);
+  // --- END ADD ---
+
   // --- Derived State & Logic ---
   const allSectionsArray = sections && typeof sections === 'object' ? Object.values(sections) : [];
   const visibleSections = getVisibleSectionsInDisplayOrder(
@@ -79,7 +85,7 @@ const LeftPanel = ({
     { id: 'needsresearch', label: 'Needs-Based' },
     { id: 'exploratoryresearch', label: 'Exploratory' }
   ];
-  
+
   const dataMethodOptions = [
     { id: 'experiment', label: 'Experiment' },
     { id: 'existingdata', label: 'Existing Data' },
@@ -91,12 +97,12 @@ const LeftPanel = ({
   const questionSection = visibleSections.find(section => section?.id === 'question');
   const audienceSection = visibleSections.find(section => section?.id === 'audience');
   const relatedPapersSection = visibleSections.find(section => section?.id === 'relatedpapers');
-  const remainingSections = visibleSections.filter(section => 
-    section && 
+  const remainingSections = visibleSections.filter(section =>
+    section &&
     ['analysis', 'process', 'abstract'].includes(section.id)
   );
-  
-  const totalPossibleSections = 11;
+
+  const totalPossibleSections = 11; // Update if total sections change
   const sectionsStillLocked = !proMode && visibleSections.length < totalPossibleSections;
 
   return (
@@ -108,9 +114,9 @@ const LeftPanel = ({
 
       {/* Research Approach Toggle Section */}
       {showApproachToggle && renderToggleSection(
-        'approach_toggle',
+        'approach_toggle', // Stable key for the toggle group
         approachOptions,
-        activeToggles.approach,
+        activeToggles.approach, // Pass the active toggle ID from store
         handleApproachToggle,
         activeSection,
         handleSectionFocus,
@@ -125,9 +131,9 @@ const LeftPanel = ({
 
       {/* Data Acquisition Toggle Section */}
       {showDataToggle && renderToggleSection(
-        'data_toggle',
+        'data_toggle', // Stable key for the toggle group
         dataMethodOptions,
-        activeToggles.dataMethod,
+        activeToggles.dataMethod, // Pass the active toggle ID from store
         handleDataMethodToggle,
         activeSection,
         handleSectionFocus,
