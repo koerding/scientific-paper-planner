@@ -2,43 +2,69 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Uses the new globalAiLoading mechanism for consistent UI feedback
+ * UPDATED: Replaced window.confirm with a custom non-blocking approach
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
-import useAppStore from '../store/appStore'; // Import store to access setLoading and setGlobalAiLoading
+import useAppStore from '../store/appStore'; // Import store to access setLoading
+
+// We'll need to create a custom confirmation dialog component
+// This will be controlled directly by the store
+const showCustomConfirmation = async (message) => {
+  return new Promise(resolve => {
+    // Use the Zustand store to show a modal
+    const openConfirmDialog = useAppStore.getState().openModal;
+    
+    // Store the resolution function so it can be called when confirmed or canceled
+    window._importConfirmResolve = resolve;
+    
+    // Show the confirm dialog
+    openConfirmDialog('confirmDialog');
+    
+    // We'll use a custom prop on the state to track what to do when confirmed
+    // See the ConfirmDialog component for how this is used
+    useAppStore.setState({
+      _importConfirmOperation: {
+        message: message,
+        active: true
+      }
+    });
+  });
+};
 
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
-  // Local loading state (still useful for the hook's internal logic)
+  // We maintain local loading state for internal use while also setting
+  // the global loading state in the store for consistent UI blocking
   const [importLoading, setImportLoading] = useState(false);
   
-  // Get both loading setters from the store
+  // Get setLoading from the store
   const setLoading = useAppStore((state) => state.setLoading);
-  const setGlobalAiLoading = useAppStore((state) => state.setGlobalAiLoading);
-
+  
   const handleDocumentImport = useCallback(async (file) => {
     if (!file) return false;
     
     console.log(`Starting document import for ${file.name}`);
     
-    // Set all loading states at the start
+    // Set both loading states at the start
     console.log("Setting loading states to TRUE");
     setImportLoading(true);
     setLoading('import', true);
-    setGlobalAiLoading(true); // <-- This is the important addition for consistent UI
+    
+    // Force a small delay to ensure state updates propagate
+    await new Promise(resolve => setTimeout(resolve, 50));
     
     try {
-      // Use window.confirm which won't affect our global loading state
-      const confirmed = window.confirm(
+      // DON'T use window.confirm - instead use our custom approach
+      // that doesn't block JS execution
+      const confirmed = await showCustomConfirmation(
         "Creating an example from this document will replace your current work. Continue?"
       );
       
       if (!confirmed) {
         console.log("User cancelled import operation");
-        // Clear all loading states
+        // Only clear loading states if actually cancelled
         setImportLoading(false);
         setLoading('import', false);
-        setGlobalAiLoading(false);
         return false;
       }
       
@@ -94,38 +120,34 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
                 } 
             }));
 
-            // Clear all loading states AFTER everything is done
+            // Clear loading states AFTER everything is done
             console.log("Setting loading states to FALSE after successful import");
             setImportLoading(false);
             setLoading('import', false);
-            setGlobalAiLoading(false);
 
             return true; // Success
         } catch (loadError) {
              console.error("Error during the loadProject step:", loadError);
-             // Clear all loading states on error
+             // Clear loading states on error
              setImportLoading(false);
              setLoading('import', false);
-             setGlobalAiLoading(false);
              throw new Error(`Failed to load processed data: ${loadError.message}`);
         }
       } else {
-          // Clear all loading states if import service returns invalid data
+          // Clear loading states if import service returns invalid data
           setImportLoading(false);
           setLoading('import', false);
-          setGlobalAiLoading(false);
           throw new Error("Failed to retrieve valid data from document processing service.");
       }
     } catch (error) {
       console.error("Error importing document:", error);
       alert("Error importing document: " + (error.message || "Unknown error"));
-      // Clear all loading states on general error
+      // Clear loading states on general error
       setImportLoading(false);
       setLoading('import', false);
-      setGlobalAiLoading(false);
       return false; // Failure
     }
-  }, [loadProject, sectionContent, resetAllProjectState, setLoading, setGlobalAiLoading]);
+  }, [loadProject, sectionContent, resetAllProjectState, setLoading]);
 
   return {
     importLoading,
