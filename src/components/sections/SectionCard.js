@@ -2,6 +2,7 @@
 import React, { useState, useCallback } from 'react';
 import useAppStore from '../../store/appStore'; // Import the Zustand store
 import SectionHeader from './SectionHeader';
+import ToggleHeader from './ToggleHeader'; // Import the new ToggleHeader component
 import SectionPreview from './SectionPreview';
 import SectionEditor from './SectionEditor';
 import FeedbackButton from './FeedbackButton';
@@ -11,15 +12,16 @@ const SectionCard = ({
   isCurrentSection, // Is this the currently *focused* section?
   onRequestFeedback, // Callback to trigger feedback request for this section
   handleSectionFocus, // Callback to set this section as focused in parent
+  options = null, // Toggle options (if this is a toggle section)
+  activeOption = null, // Current active option (if this is a toggle section)
+  onToggle = null, // Toggle callback (if this is a toggle section)
+  isToggleSection = false, // Flag to identify if this is a toggle section
 }) => {
   // --- Select State from Zustand Store ---
   const section = useAppStore(useCallback((state) => state.sections[sectionId], [sectionId]));
   const updateSectionContent = useAppStore((state) => state.updateSectionContent);
   const toggleMinimize = useAppStore((state) => state.toggleMinimize);
-  // Get specific loading flag for *this* section's potential improvement request
-  // Note: We still use the GLOBAL isAnyAiBusy in FeedbackButton for disabling
-  const isImprovementLoading = useAppStore((state) => state.loading.improvement);
-
+  
   // Local state for hover/focus within the card itself
   const [isHovered, setIsHovered] = useState(false);
   // Local state for tracking if the *textarea itself* has focus
@@ -33,9 +35,6 @@ const SectionCard = ({
   } = section || {};
   const hasFeedback = !!feedbackRating;
   const hasOnlyPlaceholder = content === (placeholder || '') || content.trim() === '';
-  // isLoadingFeedback is derived from the store now
-  // const isLoadingFeedback = isImprovementLoading; // This reflects the improvement loading state
-
 
   // --- Callbacks ---
   const handleTextChange = useCallback((e) => {
@@ -75,7 +74,6 @@ const SectionCard = ({
        setIsTextareaFocused(false);
    }, []);
 
-
   // --- Styling ---
   const getBorderClasses = () => isCurrentSection ? 'border-4 border-blue-500 shadow-md' : 'border-2 border-gray-300';
   const getBackgroundColor = () => isCurrentSection ? 'bg-blue-50' : 'bg-white';
@@ -87,6 +85,7 @@ const SectionCard = ({
     ${getMaxHeight()} overflow-hidden relative
     ${isCurrentSection ? 'current-active' : ''}
     cursor-pointer ${isMinimized ? 'hover:bg-gray-100' : ''}
+    ${isToggleSection ? 'toggle-section' : ''}
   `;
 
   return (
@@ -96,47 +95,53 @@ const SectionCard = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-       <SectionHeader
-         title={title}
-         isMinimized={isMinimized}
-         hasFeedback={hasFeedback}
-         feedbackRating={feedbackRating}
-         editedSinceFeedback={editedSinceFeedback}
-         isHovered={isHovered || isTextareaFocused}
-         isFocused={isCurrentSection}
-         toggleMinimized={handleToggleMinimize}
-       />
+       {isToggleSection ? (
+         // Use the ToggleHeader for toggle sections
+         <ToggleHeader
+           options={options || []}
+           activeOption={activeOption}
+           onToggle={onToggle}
+           isMinimized={isMinimized}
+           isHovered={isHovered || isTextareaFocused}
+           isFocused={isCurrentSection}
+           toggleMinimized={handleToggleMinimize}
+         />
+       ) : (
+         // Use the regular SectionHeader for standard sections
+         <SectionHeader
+           title={title}
+           isMinimized={isMinimized}
+           hasFeedback={hasFeedback}
+           feedbackRating={feedbackRating}
+           editedSinceFeedback={editedSinceFeedback}
+           isHovered={isHovered || isTextareaFocused}
+           isFocused={isCurrentSection}
+           toggleMinimized={handleToggleMinimize}
+         />
+       )}
 
       {isMinimized && ( <SectionPreview textValue={content} /> )}
 
       {!isMinimized && (
         <>
-          {/* --- MODIFICATION: Pass onFocus/onBlur to SectionEditor --- */}
            <SectionEditor
               sectionId={sectionId}
               textValue={content}
               placeholder={placeholder || "Start writing..."}
               maxLength={maxLength}
-              onFocus={handleEditorFocus} // Pass handler
-              onBlur={handleEditorBlur}  // Pass handler
-              // isFocused/isHovered are managed internally by SectionEditor now based on its own state
-              // isFocused={isTextareaFocused}
-              // isHovered={isHovered}
+              onFocus={handleEditorFocus}
+              onBlur={handleEditorBlur}
               handleTextChange={handleTextChange}
            />
-           {/* --- END MODIFICATION --- */}
 
-           {/* --- MODIFICATION: Pass sectionId to FeedbackButton --- */}
            <FeedbackButton
-              // loading prop removed - uses store state internally
               hasEditedContent={!hasOnlyPlaceholder}
               hasFeedback={hasFeedback}
               editedSinceFeedback={editedSinceFeedback}
               feedbackRating={feedbackRating}
               handleFeedbackRequest={handleFeedbackRequest}
-              sectionId={sectionId} // Pass the section ID
+              sectionId={sectionId}
             />
-            {/* --- END MODIFICATION --- */}
         </>
       )}
 
