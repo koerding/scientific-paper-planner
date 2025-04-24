@@ -78,6 +78,7 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
 
         // Include detected toggles in the loaded data
         importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
+        // Ensure this log reflects the actual variables being passed
         console.log(`[handleDocumentImport] Detected approach (revised logic): ${detectedApproach}, data method: ${detectedDataMethod}`);
 
         // Load data into the store
