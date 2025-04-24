@@ -1,6 +1,7 @@
 // FILE: src/store/appStore.js
 // Modified to add a separate global loading indicator
 // Modified loadProjectData to handle new save format
+// ADDED: Custom merge function for persist middleware to handle state versioning
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -34,45 +35,35 @@ const getInitialSectionStates = () => {
     }, {});
 };
 
-// Initial State for UI elements
-const initialUiState = {
-  modals: {
-    confirmDialog: false, examplesDialog: false, reviewModal: false,
-    privacyPolicy: false, saveDialog: false
-  },
-  loading: {
-    project: false, import: false, export: false, review: false,
-    improvement: false, chat: false
-  },
-  // Add a new global loading flag that's not tied to browser dialog behavior
-  globalAiLoading: false,
-  reviewData: null,
-  onboarding: { step: 0, showHelpSplash: false },
-  _importConfirmOperation: { active: false, message: null } // For import confirmation
+// Define the complete initial state structure
+const initialState = {
+    sections: getInitialSectionStates(),
+    activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
+    scores: {},
+    proMode: false,
+    modals: {
+        confirmDialog: false, examplesDialog: false, reviewModal: false,
+        privacyPolicy: false, saveDialog: false
+    },
+    loading: {
+        project: false, import: false, export: false, review: false,
+        improvement: false, chat: false
+    },
+    globalAiLoading: false,
+    reviewData: null,
+    onboarding: { step: 0, showHelpSplash: false },
+    _importConfirmOperation: { active: false, message: null },
+    chatMessages: {},
+    currentChatMessage: '',
+    currentChatSectionId: 'question',
 };
 
-// Initial State for Chat
-const initialChatState = {
-    chatMessages: {}, // Structure: { sectionId: [messages] }
-    currentChatMessage: '',
-    currentChatSectionId: 'question', // Default chat section
-};
 
 // Central Zustand store
 const useAppStore = create(
   persist(
     (set, get) => ({
-      // --- Core State ---
-      sections: getInitialSectionStates(),
-      activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
-      scores: {},
-      proMode: false,
-
-      // --- UI State ---
-      ...initialUiState,
-
-      // --- Chat State ---
-      ...initialChatState,
+      ...initialState, // Spread the initial state
 
       // --- Enhanced Combined Loading Getter ---
       isAnyLoading: () => {
@@ -153,17 +144,12 @@ const useAppStore = create(
             return { sections: updatedSections, scores: newScores };
        }),
       resetState: () => set({
-        sections: getInitialSectionStates(),
-        activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
-        scores: {},
-        proMode: false,
-        ...initialUiState, // Reset UI state
-        ...initialChatState, // Reset chat state
+        ...initialState, // Reset to the full initial state
         // Reset onboarding state, but keep showHelpSplash potentially true if it was set by user action
-        onboarding: { ...initialUiState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
+        onboarding: { ...initialState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
       }),
 
-      // --- MODIFIED: Load Project Data ---
+      // Load Project Data (from file) - Handles merging new data format
       loadProjectData: (data) => set((state) => {
         console.log("Attempting to load project data:", data);
         // Validate the loaded data structure (basic check)
@@ -228,15 +214,14 @@ const useAppStore = create(
             proMode: loadedProMode,
             chatMessages: loadedChatMessages,
             // Reset UI elements on load
-            modals: initialUiState.modals,
-            loading: initialUiState.loading, // Reset loading flags
+            modals: initialState.modals,
+            loading: initialState.loading, // Reset loading flags
             globalAiLoading: false, // Ensure global loading is false
             reviewData: null,
             currentChatMessage: '',
             currentChatSectionId: 'question', // Reset chat focus
         };
       }),
-      // --- END MODIFICATION ---
 
        expandAllSections: () => set((state) => {
             const updatedSections = { ...state.sections };
@@ -347,11 +332,66 @@ const useAppStore = create(
             console.error("Error rehydrating Zustand state:", error);
           } else {
             console.log("Zustand state hydration finished successfully.");
-            // You could potentially dispatch initialization actions here if needed
-            // e.g., recalculate visibility based on hydrated state, but loadProjectData handles it now.
+            // Potentially recalculate visibility after hydration if needed,
+            // although the merge function should handle structure mismatches.
+            // Example: get().setProMode(get().proMode); // Re-trigger visibility calculation
           }
         }
-      }
+      },
+      // --- ADDED: Custom merge function ---
+      merge: (persistedState, currentState) => {
+        console.log("Merging persisted state with current state...");
+        if (!persistedState || typeof persistedState !== 'object') {
+          console.warn("No valid persisted state found, using current initial state.");
+          return currentState;
+        }
+
+        // Deep merge, ensuring all properties from initial state exist
+        const merged = { ...currentState }; // Start with current initial state
+
+        for (const key in persistedState) {
+          if (Object.hasOwnProperty.call(persistedState, key)) {
+            // Only merge keys that are expected in the initial state
+            if (key in currentState) {
+              if (key === 'sections' && typeof persistedState.sections === 'object' && typeof currentState.sections === 'object') {
+                // Special handling for 'sections': merge each section individually
+                merged.sections = { ...currentState.sections }; // Start with initial sections structure
+                for (const sectionId in persistedState.sections) {
+                  if (Object.hasOwnProperty.call(persistedState.sections, sectionId) && merged.sections[sectionId]) {
+                    // Merge the persisted section data onto the initial section structure
+                    merged.sections[sectionId] = {
+                      ...merged.sections[sectionId], // Ensure all initial fields exist
+                      ...persistedState.sections[sectionId] // Overwrite with persisted data
+                    };
+                  } else if (Object.hasOwnProperty.call(persistedState.sections, sectionId)) {
+                     // If a section exists in persisted state but not initial, log warning (shouldn't happen ideally)
+                     console.warn(`Persisted section "${sectionId}" not found in initial state. Ignoring.`);
+                  }
+                }
+                // Ensure all initial sections are present even if not in persisted state
+                for (const sectionId in currentState.sections) {
+                    if (!merged.sections[sectionId]) {
+                        merged.sections[sectionId] = currentState.sections[sectionId];
+                    }
+                }
+
+              } else if (typeof persistedState[key] === 'object' && persistedState[key] !== null && !Array.isArray(persistedState[key]) &&
+                         typeof currentState[key] === 'object' && currentState[key] !== null && !Array.isArray(currentState[key])) {
+                // Shallow merge for other top-level objects (like activeToggles, scores, chatMessages, onboarding)
+                merged[key] = { ...currentState[key], ...persistedState[key] };
+              } else {
+                // For primitive types or arrays, overwrite with persisted value
+                merged[key] = persistedState[key];
+              }
+            } else {
+                console.warn(`Persisted key "${key}" not found in initial state. Ignoring.`);
+            }
+          }
+        }
+        console.log("State merge complete.");
+        return merged;
+      },
+      // --- END ADDED ---
     }
   )
 );
