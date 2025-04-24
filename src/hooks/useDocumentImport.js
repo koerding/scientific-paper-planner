@@ -2,8 +2,7 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Simplified toggle detection logic based on key presence.
- * UPDATED: Correctly handles the loading process without expecting a boolean return from the loadProject prop.
+ * ADDED: Extra console logs for debugging toggle detection.
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
@@ -41,6 +40,20 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       if (importedData && importedData.userInputs) { // Check if we got valid data structure
 
         // ==========================================================
+        // == ADDED DEBUGGING LOGS ==
+        // ==========================================================
+        console.log("[handleDocumentImport] DEBUG: Inspecting importedData.userInputs before detection:");
+        console.log(importedData.userInputs); // Log the whole object
+        console.log("[handleDocumentImport] DEBUG: Keys present:", Object.keys(importedData.userInputs));
+        console.log("[handleDocumentImport] DEBUG: Has 'needsresearch'?", importedData.userInputs?.hasOwnProperty('needsresearch'));
+        console.log("[handleDocumentImport] DEBUG: Has 'exploratoryresearch'?", importedData.userInputs?.hasOwnProperty('exploratoryresearch'));
+        console.log("[handleDocumentImport] DEBUG: Has 'hypothesis'?", importedData.userInputs?.hasOwnProperty('hypothesis'));
+        console.log("[handleDocumentImport] DEBUG: Has 'existingdata'?", importedData.userInputs?.hasOwnProperty('existingdata'));
+        console.log("[handleDocumentImport] DEBUG: Has 'theorysimulation'?", importedData.userInputs?.hasOwnProperty('theorysimulation'));
+        console.log("[handleDocumentImport] DEBUG: Has 'experiment'?", importedData.userInputs?.hasOwnProperty('experiment'));
+        // ==========================================================
+
+        // ==========================================================
         // == REVISED Toggle Detection Logic (Checks Key Presence) ==
         // ==========================================================
         let detectedApproach = 'hypothesis'; // Default if no approach key is found
@@ -48,10 +61,13 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
 
         // Check which research approach key EXISTS in the response
         if (importedData.userInputs?.hasOwnProperty('needsresearch')) {
+            console.log("[handleDocumentImport] DEBUG: Detected 'needsresearch' via hasOwnProperty.");
             detectedApproach = 'needsresearch';
         } else if (importedData.userInputs?.hasOwnProperty('exploratoryresearch')) {
+            console.log("[handleDocumentImport] DEBUG: Detected 'exploratoryresearch' via hasOwnProperty.");
             detectedApproach = 'exploratoryresearch';
         } else if (importedData.userInputs?.hasOwnProperty('hypothesis')) {
+            console.log("[handleDocumentImport] DEBUG: Detected 'hypothesis' via hasOwnProperty.");
             // Explicitly set hypothesis if the key is present
             detectedApproach = 'hypothesis';
         } else {
@@ -61,10 +77,13 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
 
         // Check which data method key EXISTS in the response
         if (importedData.userInputs?.hasOwnProperty('existingdata')) {
+            console.log("[handleDocumentImport] DEBUG: Detected 'existingdata' via hasOwnProperty.");
             detectedDataMethod = 'existingdata';
         } else if (importedData.userInputs?.hasOwnProperty('theorysimulation')) {
+            console.log("[handleDocumentImport] DEBUG: Detected 'theorysimulation' via hasOwnProperty.");
             detectedDataMethod = 'theorysimulation';
         } else if (importedData.userInputs?.hasOwnProperty('experiment')) {
+            console.log("[handleDocumentImport] DEBUG: Detected 'experiment' via hasOwnProperty.");
             // Explicitly set experiment if the key is present
             detectedDataMethod = 'experiment';
         } else {
