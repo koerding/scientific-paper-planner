@@ -15,6 +15,8 @@ const AppHeader = ({
 }) => {
   // --- Get global loading state directly from store ---
   const isAiBusy = useAppStore((state) => state.isAnyLoading());
+  // --- Get specific import loading state for visual feedback ---
+  const isImportLoading = useAppStore((state) => state.loading.import);
   // ---
 
   // Handle file import for PDF/Word docs
@@ -106,14 +108,13 @@ const AppHeader = ({
                   </svg>
               )} New
             </button>
-            {/* Import */}
+            {/* Import - Special case to show import-specific loading state */}
              <label className={getImportButtonClasses()} style={isAiBusy ? { pointerEvents: 'none' } : {}}>
-               {isAiBusy ? loadingSpinner : (
+               {isImportLoading ? loadingSpinner : (
                  <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                  </svg>
-                 // Corrected Comment Syntax Below (around line 105)
-               )} Pdf->Example {/*<-- Error was likely here or near here */}
+               )} {isImportLoading ? "Importing..." : "Pdf->Example"}
               <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={handleFileImport} disabled={isAiBusy} />
             </label>
             {/* Save */}
