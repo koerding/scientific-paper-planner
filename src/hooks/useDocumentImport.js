@@ -2,32 +2,48 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Fixed loading state persistence during confirmation dialog
+ * UPDATED: Replaced window.confirm with a custom non-blocking approach
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
 import useAppStore from '../store/appStore'; // Import store to access setLoading
+
+// We'll need to create a custom confirmation dialog component
+// This will be controlled directly by the store
+const showCustomConfirmation = async (message) => {
+  return new Promise(resolve => {
+    // Use the Zustand store to show a modal
+    const openConfirmDialog = useAppStore.getState().openModal;
+    
+    // Store the resolution function so it can be called when confirmed or canceled
+    window._importConfirmResolve = resolve;
+    
+    // Show the confirm dialog
+    openConfirmDialog('confirmDialog');
+    
+    // We'll use a custom prop on the state to track what to do when confirmed
+    // See the ConfirmDialog component for how this is used
+    useAppStore.setState({
+      _importConfirmOperation: {
+        message: message,
+        active: true
+      }
+    });
+  });
+};
 
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
   // We maintain local loading state for internal use while also setting
   // the global loading state in the store for consistent UI blocking
   const [importLoading, setImportLoading] = useState(false);
   
-  // Get setLoading and global loading state from the store
+  // Get setLoading from the store
   const setLoading = useAppStore((state) => state.setLoading);
-  const globalImportLoading = useAppStore((state) => state.loading.import);
   
-  // Debug useEffect to monitor loading state changes
-  useEffect(() => {
-    console.log("useDocumentImport - Local loading state changed:", importLoading);
-  }, [importLoading]);
-  
-  useEffect(() => {
-    console.log("useDocumentImport - Global loading state changed:", globalImportLoading);
-  }, [globalImportLoading]);
-
   const handleDocumentImport = useCallback(async (file) => {
-    console.log(`Starting document import for ${file?.name || 'unknown file'}`);
+    if (!file) return false;
+    
+    console.log(`Starting document import for ${file.name}`);
     
     // Set both loading states at the start
     console.log("Setting loading states to TRUE");
@@ -36,18 +52,22 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
     
     // Force a small delay to ensure state updates propagate
     await new Promise(resolve => setTimeout(resolve, 50));
-
+    
     try {
-      // Ask for confirmation - IMPORTANT: DON'T clear loading state here
-      if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
+      // DON'T use window.confirm - instead use our custom approach
+      // that doesn't block JS execution
+      const confirmed = await showCustomConfirmation(
+        "Creating an example from this document will replace your current work. Continue?"
+      );
+      
+      if (!confirmed) {
         console.log("User cancelled import operation");
-        // NOW clear loading states since operation is cancelled
+        // Only clear loading states if actually cancelled
         setImportLoading(false);
         setLoading('import', false);
-        return false; // User cancelled
+        return false;
       }
-
-      // If we reach here, user confirmed - keep loading states active
+      
       console.log(`Processing import for ${file.name}`);
 
       // First, reset all state to ensure clean slate
@@ -60,7 +80,7 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       // Pass sectionContent to the import service
       const importedData = await importDocumentContent(file, sectionContent);
 
-      // Load the imported data using the loadProject function (which triggers the store action)
+      // Load the imported data using the loadProject function
       if (importedData && importedData.userInputs) {
         // Toggle Detection Logic (Checks Key Presence)
         let detectedApproach = 'hypothesis';
@@ -91,7 +111,7 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
             loadProject(importedData);
             console.log(`Document ${file.name} successfully processed and loaded.`);
 
-            // Dispatch event (unchanged)
+            // Dispatch event
             window.dispatchEvent(new CustomEvent('documentImported', { 
                 detail: { 
                     fileName: file.name,
@@ -100,43 +120,35 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
                 } 
             }));
 
-            // Important: Clear loading states AFTER everything else is done
+            // Clear loading states AFTER everything is done
             console.log("Setting loading states to FALSE after successful import");
             setImportLoading(false);
             setLoading('import', false);
 
-            return true; // Indicate success
-
+            return true; // Success
         } catch (loadError) {
-             console.error("Error during the loadProject (store update) step:", loadError);
-             // Ensure loading states are cleared on error
-             console.log("Setting loading states to FALSE after load error");
+             console.error("Error during the loadProject step:", loadError);
+             // Clear loading states on error
              setImportLoading(false);
              setLoading('import', false);
-             throw new Error(`Failed to load processed data into application state: ${loadError.message}`);
+             throw new Error(`Failed to load processed data: ${loadError.message}`);
         }
-
       } else {
-          // Ensure loading states are cleared if import service returns invalid data
-          console.log("Setting loading states to FALSE after invalid data");
+          // Clear loading states if import service returns invalid data
           setImportLoading(false);
           setLoading('import', false);
           throw new Error("Failed to retrieve valid data from document processing service.");
       }
-
     } catch (error) {
       console.error("Error importing document:", error);
       alert("Error importing document: " + (error.message || "Unknown error"));
-      // Ensure loading states are cleared on general error
-      console.log("Setting loading states to FALSE after general error");
+      // Clear loading states on general error
       setImportLoading(false);
       setLoading('import', false);
-      return false; // Indicate failure
+      return false; // Failure
     }
-    // No need for finally block since we're clearing loading states in all paths
   }, [loadProject, sectionContent, resetAllProjectState, setLoading]);
 
-  // Return both the local loading state and the handler
   return {
     importLoading,
     handleDocumentImport
