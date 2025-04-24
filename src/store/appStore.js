@@ -1,5 +1,5 @@
 // FILE: src/store/appStore.js
-// Modified to fix loading state persistence in loadProjectData
+// Modified to add a separate global loading indicator
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -151,57 +151,36 @@ const useAppStore = create(
         // Reset onboarding state, but keep showHelpSplash potentially true if it was set by user action
         onboarding: { ...initialUiState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
       }),
-      
-      // FIXED: loadProjectData function to preserve loading state but reset globalAiLoading
       loadProjectData: (data) => set((state) => {
-          const initialSections = getInitialSectionStates();
-          const loadedUserInputs = data.userInputs || {};
-          const mergedSections = { ...initialSections };
-          const approach = data.detectedToggles?.approach || 'hypothesis';
-          const dataMethod = data.detectedToggles?.dataMethod || 'experiment';
-          const newActiveToggles = { approach, dataMethod };
-          const newScores = {};
-          
-          Object.keys(mergedSections).forEach(id => {
-              mergedSections[id] = { 
-                  ...initialSections[id], 
-                  content: loadedUserInputs[id] !== undefined ? loadedUserInputs[id] : initialSections[id].content, 
-                  aiInstructions: null, 
-                  feedbackRating: null, 
-                  editedSinceFeedback: false, 
-                  isMinimized: false, 
-                  isVisible: true, 
-              };
-          });
-          
-          const { unlockedSections } = calculateUnlockedSections(newScores, newActiveToggles);
-          
-          Object.keys(mergedSections).forEach(sId => {
-              const sectionDef = sectionContent.sections.find(s => s.id === sId);
-              let isVisible = true;
-              if (sectionDef?.category === 'approach' && sId !== approach) isVisible = false;
-              else if (sectionDef?.category === 'dataMethod' && sId !== dataMethod) isVisible = false;
-              if (sId === 'question') isVisible = true;
-              mergedSections[sId].isVisible = isVisible;
-          });
-          
-          const loadedChatMessages = data.chatMessages || {};
-          
-          return {
-              sections: mergedSections, 
-              activeToggles: newActiveToggles, 
-              scores: newScores, 
-              proMode: true,
-              modals: initialUiState.modals, 
-              loading: state.loading, // Preserve the current loading state instead of using initialUiState
-              globalAiLoading: false, // Reset this to false to ensure we don't get stuck in loading
-              reviewData: null,
-              chatMessages: loadedChatMessages,
-              currentChatMessage: '',
-              currentChatSectionId: 'question',
-          };
-      }),
-      expandAllSections: () => set((state) => {
+            const initialSections = getInitialSectionStates();
+            const loadedUserInputs = data.userInputs || {};
+            const mergedSections = { ...initialSections };
+            const approach = data.detectedToggles?.approach || 'hypothesis';
+            const dataMethod = data.detectedToggles?.dataMethod || 'experiment';
+            const newActiveToggles = { approach, dataMethod };
+            const newScores = {};
+            Object.keys(mergedSections).forEach(id => {
+                mergedSections[id] = { ...initialSections[id], content: loadedUserInputs[id] !== undefined ? loadedUserInputs[id] : initialSections[id].content, aiInstructions: null, feedbackRating: null, editedSinceFeedback: false, isMinimized: false, isVisible: true, };
+            });
+             const { unlockedSections } = calculateUnlockedSections(newScores, newActiveToggles);
+             Object.keys(mergedSections).forEach(sId => {
+                  const sectionDef = sectionContent.sections.find(s => s.id === sId);
+                  let isVisible = true;
+                  if (sectionDef?.category === 'approach' && sId !== approach) isVisible = false;
+                  else if (sectionDef?.category === 'dataMethod' && sId !== dataMethod) isVisible = false;
+                   if(sId === 'question') isVisible = true;
+                   mergedSections[sId].isVisible = isVisible;
+             });
+            const loadedChatMessages = data.chatMessages || {};
+            return {
+                sections: mergedSections, activeToggles: newActiveToggles, scores: newScores, proMode: true,
+                modals: initialUiState.modals, loading: initialUiState.loading, reviewData: null,
+                chatMessages: loadedChatMessages,
+                currentChatMessage: '',
+                currentChatSectionId: 'question',
+            };
+       }),
+       expandAllSections: () => set((state) => {
             const updatedSections = { ...state.sections };
             Object.keys(updatedSections).forEach(sId => { if (updatedSections[sId]) updatedSections[sId].isMinimized = false; });
             return { sections: updatedSections };
@@ -357,4 +336,3 @@ export default useAppStore;
 export const initializeOnboardingFromLocalStorage = () => {
     useAppStore.getState()._initializeOnboarding();
 };
-// --- End Add ---
