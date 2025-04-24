@@ -141,25 +141,15 @@ const useAppStore = create(
             });
             return { sections: updatedSections, scores: newScores };
        }),
-      resetState: () => set((state) => {
-        // Store the current loading state to preserve it during reset
-        const currentGlobalAiLoading = state.globalAiLoading;
-        const currentLoadingState = state.loading;
-        
-        return {
-          sections: getInitialSectionStates(),
-          activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
-          scores: {},
-          proMode: false,
-          modals: initialUiState.modals,
-          // Preserve loading states during reset
-          loading: currentLoadingState, 
-          globalAiLoading: currentGlobalAiLoading,
-          reviewData: null,
-          ...initialChatState,
-          // Reset onboarding state, but keep showHelpSplash potentially true if it was set by user action
-          onboarding: { ...initialUiState.onboarding, showHelpSplash: state.onboarding.showHelpSplash }
-        };
+      resetState: () => set({
+        sections: getInitialSectionStates(),
+        activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
+        scores: {},
+        proMode: false,
+        ...initialUiState,
+        ...initialChatState,
+        // Reset onboarding state, but keep showHelpSplash potentially true if it was set by user action
+        onboarding: { ...initialUiState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
       }),
       
       // FIXED: loadProjectData function to preserve globalAiLoading state
