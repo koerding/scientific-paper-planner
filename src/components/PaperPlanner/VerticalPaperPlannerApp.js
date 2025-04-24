@@ -3,8 +3,9 @@
 // 1. Remove duplicate loading state tracking
 // 2. Let child components access loading states directly from the store
 // REVERTED: handleSaveWithFilename passes only section content
+// MODIFIED: Toggle handlers now set active section focus
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Ensure useState is imported
 import ReactGA from 'react-ga4';
 import useAppStore from '../../store/appStore'; // Import the Zustand store
 import { useDocumentImport } from '../../hooks/useDocumentImport';
@@ -44,11 +45,12 @@ const VerticalPaperPlannerApp = () => {
   const currentChatMessage = useAppStore((state) => state.currentChatMessage);
   const currentChatSectionId = useAppStore((state) => state.currentChatSectionId);
   const setCurrentChatMessage = useAppStore((state) => state.setCurrentChatMessage);
-  const setCurrentChatSectionId = useAppStore((state) => state.setCurrentChatSectionId);
+  const setCurrentChatSectionId = useAppStore((state) => state.setCurrentChatSectionId); // Get this action
   const zustandSendMessage = useAppStore((state) => state.sendMessage);
 
 
   // --- Local State & Refs ---
+  // Active section ID state - this controls the focus
   const [activeSectionId, setActiveSectionId] = useState('question');
   const sectionRefs = useRef({});
   const splashManagerRef = useRef(null);
@@ -72,12 +74,13 @@ const VerticalPaperPlannerApp = () => {
 
   useEffect(() => {
      // Update chat context when active section changes
+     // (This is now also updated directly in toggle handlers)
      setCurrentChatSectionId(activeSectionId);
      // Track page view only if GA is initialized
      if (ReactGA.isInitialized) {
          ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` });
      }
-  }, [activeSectionId, setCurrentChatSectionId]);
+  }, [activeSectionId, setCurrentChatSectionId]); // Keep existing effect for general focus changes
 
   useEffect(() => {
     // Initialize refs for sections
@@ -95,8 +98,23 @@ const VerticalPaperPlannerApp = () => {
   // --- Core Functions ---
   const handleSectionFocus = (sectionId) => setActiveSectionId(sectionId);
   const handleContentChange = (sectionId, value) => updateSectionContent(sectionId, value);
-  const handleApproachToggle = (approachId) => { trackApproachToggle(approachId); setActiveToggle('approach', approachId); };
-  const handleDataMethodToggle = (methodId) => { trackDataMethodToggle(methodId); setActiveToggle('dataMethod', methodId); };
+
+  // --- MODIFIED TOGGLE HANDLERS ---
+  const handleApproachToggle = (approachId) => {
+    trackApproachToggle(approachId);
+    setActiveToggle('approach', approachId); // Update the active toggle in the store
+    setActiveSectionId(approachId); // <<< Set focus to the clicked section
+    setCurrentChatSectionId(approachId); // <<< Also update chat context immediately
+  };
+
+  const handleDataMethodToggle = (methodId) => {
+    trackDataMethodToggle(methodId);
+    setActiveToggle('dataMethod', methodId); // Update the active toggle in the store
+    setActiveSectionId(methodId); // <<< Set focus to the clicked section
+    setCurrentChatSectionId(methodId); // <<< Also update chat context immediately
+  };
+  // --- END MODIFIED TOGGLE HANDLERS ---
+
   const handleResetRequest = () => openModal('confirmDialog');
   const handleConfirmReset = () => { resetState(); setActiveSectionId('question'); closeModal('confirmDialog'); };
 
@@ -111,7 +129,7 @@ const VerticalPaperPlannerApp = () => {
 
   const handleSaveRequest = () => openModal('saveDialog');
 
-  // --- REVERTED: Pass only section content to saveProjectAsJson ---
+  // REVERTED: Pass only section content to saveProjectAsJson
   const handleSaveWithFilename = (fileName) => {
     trackSave();
     // Extract only the content from the sections state
@@ -123,7 +141,6 @@ const VerticalPaperPlannerApp = () => {
     saveProjectAsJson(sectionsToSave, chatMessages, fileName);
     closeModal('saveDialog');
   };
-  // --- END REVERT ---
 
   // Export uses only content for PDF/DOCX/MD
   const handleExportRequest = () => {
@@ -212,12 +229,12 @@ const VerticalPaperPlannerApp = () => {
   const safeSections = sections || {};
 
   const contentAreaProps = {
-        activeSection: activeSectionId,
+        activeSection: activeSectionId, // Pass the state variable
         activeApproach: activeToggles.approach,
         activeDataMethod: activeToggles.dataMethod,
         handleSectionFocus,
-        handleApproachToggle,
-        handleDataMethodToggle,
+        handleApproachToggle, // Pass the modified handler
+        handleDataMethodToggle, // Pass the modified handler
         proMode,
         handleMagic: handleImprovementRequest,
         // Loading state is accessed by components directly from store when needed
