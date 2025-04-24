@@ -2,23 +2,17 @@
 
 /**
  * Hook for managing document import functionality
- * FIXED: Maintains loading spinner state after confirmation throughout import process
+ * FIXED: Simplified version that maintains loading state correctly
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
-import useAppStore from '../store/appStore'; // Import store to access setLoading
+import useAppStore from '../store/appStore';
 
-// This function uses the store to show a confirmation dialog instead of blocking window.confirm
+// We'll keep using the custom confirmation dialog
 const showCustomConfirmation = async (message) => {
   return new Promise(resolve => {
-    // Use the Zustand store to show a modal
     const openConfirmDialog = useAppStore.getState().openModal;
-    
-    // Store the resolution function so it can be called when confirmed or canceled
     window._importConfirmResolve = resolve;
-    
-    // We'll use a custom prop on the state to track what to do when confirmed
-    // See the ConfirmDialog component for how this is used
     useAppStore.setState({
       _importConfirmOperation: {
         message: message,
@@ -29,11 +23,7 @@ const showCustomConfirmation = async (message) => {
 };
 
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
-  // We maintain local loading state for internal use while also setting
-  // the global loading state in the store for consistent UI blocking
   const [importLoading, setImportLoading] = useState(false);
-  
-  // Get setLoading from the store
   const setLoading = useAppStore((state) => state.setLoading);
   
   const handleDocumentImport = useCallback(async (file) => {
@@ -41,17 +31,9 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
     
     console.log(`Starting document import for ${file.name}`);
     
-    // Set all loading states at the start
-    console.log("Setting loading states to TRUE");
+    // Set loading states at the start
     setImportLoading(true);
     setLoading('import', true);
-    
-    // Force global loading state to TRUE for all components
-    // This is critical because some components check isAnyLoading() directly
-    useAppStore.setState({ globalAiLoading: true });
-    
-    // Force a small delay to ensure state updates propagate
-    await new Promise(resolve => setTimeout(resolve, 50));
     
     try {
       // Show confirmation dialog using our custom approach
@@ -61,31 +43,19 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       
       if (!confirmed) {
         console.log("User cancelled import operation");
-        // Clear loading states if cancelled
         setImportLoading(false);
         setLoading('import', false);
-        // Use the store's setState method directly to update globalAiLoading
-        useAppStore.setState({ globalAiLoading: false });
         return false;
       }
       
       console.log(`Processing import for ${file.name}`);
-
-      // First, reset all state to ensure clean slate
-      // WARNING: We do NOT reset the state here as it interrupts the import process
-      // The loadProject function will handle resetting the project content later
-      // resetAllProjectState() would cause the entire application state to reset,
-      // which can interrupt the API call flow
-      
-      // Instead, we'll just log that we're continuing with the import
-      console.log("[handleDocumentImport] Continuing with import without resetting state");
 
       // Pass sectionContent to the import service
       const importedData = await importDocumentContent(file, sectionContent);
 
       // Load the imported data using the loadProject function
       if (importedData && importedData.userInputs) {
-        // Toggle Detection Logic (Checks Key Presence)
+        // Toggle Detection Logic
         let detectedApproach = 'hypothesis';
         let detectedDataMethod = 'experiment';
 
@@ -109,11 +79,9 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
         importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
         console.log(`[handleDocumentImport] Detected toggles: Approach=${detectedApproach}, Method=${detectedDataMethod}`);
 
-        // Make sure global loading is still true before loading the project
-        useAppStore.setState({ globalAiLoading: true });
-        
         // Load data into the store
         try {
+            // This will handle resetting the project state
             loadProject(importedData);
             console.log(`Document ${file.name} successfully processed and loaded.`);
 
@@ -126,43 +94,30 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
                 } 
             }));
 
-            // Clear loading states immediately after successful import
-            // We don't need a delay since we want to proceed with the OpenAI call
-            console.log("Setting loading states to FALSE after successful import");
+            // Clear loading states
             setImportLoading(false);
             setLoading('import', false);
-            // Update global loading state directly through setState for immediate effect
-            useAppStore.setState({ globalAiLoading: false });
 
             return true; // Success
         } catch (loadError) {
              console.error("Error during the loadProject step:", loadError);
-             // Clear loading states on error
              setImportLoading(false);
              setLoading('import', false);
-             // Update global loading state directly through setState for immediate effect
-             useAppStore.setState({ globalAiLoading: false });
              throw new Error(`Failed to load processed data: ${loadError.message}`);
         }
       } else {
-          // Clear loading states if import service returns invalid data
           setImportLoading(false);
           setLoading('import', false);
-          // Update global loading state directly through setState for immediate effect
-          useAppStore.setState({ globalAiLoading: false });
           throw new Error("Failed to retrieve valid data from document processing service.");
       }
     } catch (error) {
       console.error("Error importing document:", error);
       alert("Error importing document: " + (error.message || "Unknown error"));
-      // Clear loading states on general error
       setImportLoading(false);
       setLoading('import', false);
-      // Update global loading state directly through setState for immediate effect
-      useAppStore.setState({ globalAiLoading: false });
       return false; // Failure
     }
-  }, [loadProject, sectionContent, resetAllProjectState, setLoading]);
+  }, [loadProject, sectionContent, setLoading]);
 
   return {
     importLoading,
