@@ -2,6 +2,7 @@
 // Modified to add a separate global loading indicator
 // REVERTED: loadProjectData handles original save format (content + chat)
 // REVERTED: Removed merge function and simplified initial state
+// MODIFIED: getInitialSectionStates sets sections to be initially invisible but expanded
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -19,14 +20,17 @@ const getInitialSectionStates = () => {
     }
     return sectionContent.sections.reduce((acc, section) => {
         if (!section || !section.id) return acc; // Skip invalid sections
+        const isQuestion = section.id === 'question';
         acc[section.id] = {
             id: section.id,
             title: section.title || 'Untitled Section',
             content: section.placeholder || '',
             originalInstructions: section.subsections || [], // Keep original instructions
             aiInstructions: null, // AI feedback starts as null
-            isMinimized: section.id !== 'question', // Start with only question expanded
-            isVisible: section.id === 'question', // Start with only question visible (progression logic handles others)
+            // --- MODIFIED INITIAL STATE ---
+            isMinimized: false, // Make ALL sections initially expanded (open)
+            isVisible: isQuestion, // Make ONLY question initially visible
+            // --- END MODIFICATION ---
             feedbackRating: null, // Feedback rating starts as null
             editedSinceFeedback: false, // Not edited initially
             lastEditTimestamp: 0, // Timestamp for edit tracking
@@ -40,7 +44,9 @@ const initialState = {
     sections: getInitialSectionStates(),
     activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
     scores: {},
-    proMode: false, // Start with proMode false
+    // --- MODIFIED INITIAL STATE ---
+    proMode: false, // Start with proMode false to respect initial visibility
+    // --- END MODIFICATION ---
     modals: {
         confirmDialog: false, examplesDialog: false, reviewModal: false,
         privacyPolicy: false, saveDialog: false
@@ -161,7 +167,7 @@ const useAppStore = create(
         onboarding: { ...initialState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
       }),
 
-      // --- REVERTED: Load Project Data (handles original format) ---
+      // REVERTED: Load Project Data (handles original format)
       loadProjectData: (data) => set((state) => {
         console.log("Attempting to load project data (original format):", data);
 
@@ -204,7 +210,7 @@ const useAppStore = create(
              return state; // Return current state if validation fails
         }
 
-        const initialSections = getInitialSectionStates();
+        const initialSections = getInitialSectionStates(); // Get fresh initial structure
         const mergedSections = {};
         const newActiveToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
         const newScores = {}; // Reset scores on load
@@ -212,14 +218,14 @@ const useAppStore = create(
         // Merge loaded content into the initial section structure
         Object.keys(initialSections).forEach(id => {
             mergedSections[id] = {
-                ...initialSections[id], // Start with default structure
+                ...initialSections[id], // Start with default structure (includes isMinimized: false, isVisible: false except for question)
                 content: loadedUserInputs[id] !== undefined ? loadedUserInputs[id] : initialSections[id].content,
                 // Reset feedback-related fields on load for the original format
                 aiInstructions: null,
                 feedbackRating: null,
                 editedSinceFeedback: false,
-                isMinimized: false, // Expand all on load
-                // isVisible will be recalculated below
+                isMinimized: false, // Ensure all are expanded on load
+                // isVisible will be recalculated below based on loaded state
             };
         });
 
@@ -233,7 +239,7 @@ const useAppStore = create(
                 if (sectionDef?.category === 'approach' && sId !== newActiveToggles.approach) isVisible = false;
                 else if (sectionDef?.category === 'dataMethod' && sId !== newActiveToggles.dataMethod) isVisible = false;
             }
-             // Ensure 'question' section is always visible initially
+             // Ensure 'question' section is always visible after load calculation
              if (sId === 'question') isVisible = true;
             mergedSections[sId].isVisible = isVisible;
         });
@@ -256,7 +262,6 @@ const useAppStore = create(
             currentChatSectionId: 'question', // Reset chat focus
         };
       }),
-      // --- END REVERT ---
 
        expandAllSections: () => set((state) => {
             const updatedSections = { ...state.sections };
@@ -355,12 +360,9 @@ const useAppStore = create(
              acc[id] = data.content; // Only persist content
              return acc;
          }, {}),
-         // activeToggles: state.activeToggles, // Don't persist toggles in old format
-         // scores: state.scores, // Don't persist scores
-         // proMode: state.proMode, // Don't persist proMode
          chatMessages: state.chatMessages, // Persist chat
          onboarding: state.onboarding // Persist onboarding state
-         // Don't persist UI state like modals, loading flags, reviewData
+         // Don't persist toggles, scores, proMode, UI state in old format
       }),
       version: 3, // Keep version or increment if schema changes significantly again
       onRehydrateStorage: (state) => {
@@ -370,7 +372,8 @@ const useAppStore = create(
             console.error("Error rehydrating Zustand state:", error);
           } else {
             console.log("Zustand state hydration finished successfully.");
-            // Trigger visibility update after hydration
+            // Trigger visibility update after hydration using the default proMode=false
+            // This ensures progression logic applies correctly on initial load
             useAppStore.getState().setProMode(useAppStore.getState().proMode);
           }
         }
