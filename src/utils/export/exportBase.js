@@ -2,7 +2,7 @@
 
 /**
  * Base export utilities shared across different export formats
- * UPDATED: Modified validateProjectData for new save format
+ * REVERTED: validateProjectData checks original save format
  */
 
 /**
@@ -176,42 +176,85 @@ ${userInputs.abstract || "Not completed yet"}
 
 /**
  * Validates loaded project data (JSON save files)
- * UPDATED: Checks for the new save format structure (version 2.0+)
+ * REVERTED: Checks for the original save format structure (userInputs or sections containing content)
  * @param {Object} data - The data to validate
  * @returns {boolean} - Whether the data is valid
  */
 export const validateProjectData = (data) => {
-  // Basic validation checks
-  if (!data || typeof data !== 'object') {
-    console.error("validateProjectData: Data is null or not an object.");
+  // Basic validation checks with detailed logging
+  if (!data) {
+    console.error("validateProjectData: data is null or undefined");
     return false;
   }
 
-  // Check for the presence of the main 'sections' object
-  if (!data.sections || typeof data.sections !== 'object' || Object.keys(data.sections).length === 0) {
-    console.error("validateProjectData: Missing or invalid 'sections' object in loaded data.");
+  // Check if it's an object
+  if (typeof data !== 'object') {
+    console.error("validateProjectData: data is not an object, it's a", typeof data);
     return false;
   }
 
-  // Check for other expected top-level keys (optional, but good practice)
-  const expectedKeys = ['sections', 'activeToggles', 'scores', 'proMode', 'chatMessages', 'timestamp', 'version'];
-  const missingKeys = expectedKeys.filter(key => !(key in data));
-  if (missingKeys.length > 0) {
-    console.warn(`validateProjectData: Loaded data is missing optional keys: ${missingKeys.join(', ')}`);
-    // Allow loading even if some optional keys are missing, but log a warning.
+  // Direct check for the actual structure we're getting
+  console.log("validateProjectData: received data structure:",
+              typeof data,
+              data ? Object.keys(data).join(', ') : "null/undefined");
+
+  // Consider different valid formats from previous versions or imports:
+  // 1. Object with userInputs property (standard old format)
+  // 2. Object that IS the userInputs (the API sometimes returns this directly)
+  // 3. Object with sections property where values are strings or section objects (newer import/save format)
+
+  let userInputs = null;
+
+  // Case 1: Standard format with userInputs property
+  if (data.userInputs && typeof data.userInputs === 'object') {
+    userInputs = data.userInputs;
+    console.log("validateProjectData: found standard format with userInputs property");
+  }
+  // Case 3: Newer format with sections object
+  else if (data.sections && typeof data.sections === 'object') {
+      // Extract content if sections contain objects
+      userInputs = Object.entries(data.sections).reduce((acc, [id, sectionData]) => {
+          acc[id] = typeof sectionData === 'string' ? sectionData : (sectionData?.content || '');
+          return acc;
+      }, {});
+      console.log("validateProjectData: found format with sections property, extracted content.");
+  }
+  // Case 2: The object itself contains input fields (check for common fields)
+  else if (data.question || data.abstract || data.audience) {
+    // The data object itself appears to be the userInputs
+    userInputs = data;
+    console.log("validateProjectData: object appears to be userInputs directly");
+  }
+  // Neither case matches
+  else {
+    console.error("validateProjectData: could not find userInputs or sections in data");
+    return false;
   }
 
-  // Check if at least one section has some content (very basic content check)
-  const hasAnyContent = Object.values(data.sections).some(section =>
-    section && typeof section.content === 'string' && section.content.trim() !== ''
-  );
+  // Get all keys from userInputs to check content
+  const existingFields = Object.keys(userInputs);
+  console.log("validateProjectData: found fields:", existingFields);
+
+  if (existingFields.length === 0) {
+    console.error("validateProjectData: userInputs is empty");
+    return false;
+  }
+
+  // IMPROVED: Extremely lenient validation for imported documents / old saves
+  // Accept if ANY field has non-empty string content
+  const hasAnyContent = existingFields.some(field => {
+    const value = userInputs[field];
+    const hasValue = typeof value === 'string' && value.trim() !== '';
+    return hasValue;
+  });
 
   if (!hasAnyContent) {
-    console.warn("validateProjectData: No sections appear to have content.");
-    // Allow loading empty projects, but log a warning.
+    console.warn("validateProjectData: no fields appear to have content");
+    // Allow loading empty projects, but warn
   }
 
-  // If we passed basic checks, assume it's valid enough to attempt loading
-  console.log("validateProjectData: Data structure appears valid for loading.");
+  // If we made it here, the data is valid enough to attempt loading
+  console.log("validateProjectData: data structure appears valid for loading.");
   return true;
 };
+
