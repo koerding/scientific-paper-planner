@@ -1,10 +1,12 @@
 // FILE: src/store/appStore.js
-// MODIFIED: Removed _initializeOnboarding call from onRehydrateStorage
+// Key changes:
+// 1. Enhanced setLoading method with console logging for debugging
+// 2. Enhanced isAnyLoading method with console logging
+
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import sectionContent from '../data/sectionContent.json'; // Adjust path as needed
-import { calculateUnlockedSections, isSectionVisible } from '../logic/progressionLogic'; // Adjust path as needed
-// --- Import services needed for chat action ---
+import sectionContent from '../data/sectionContent.json';
+import { calculateUnlockedSections, isSectionVisible } from '../logic/progressionLogic';
 import { callOpenAI } from '../services/openaiService';
 import { buildSystemPrompt } from '../utils/promptUtils';
 
@@ -18,7 +20,7 @@ const getInitialSectionStates = () => {
         if (!section || !section.id) return acc; // Skip invalid sections
         acc[section.id] = {
         id: section.id,
-        title: section.title || 'Untitled Section', // Default title
+        title: section.title || 'Untitled Section', 
         content: section.placeholder || '',
         originalInstructions: section.subsections || [],
         aiInstructions: null,
@@ -43,18 +45,15 @@ const initialUiState = {
     improvement: false, chat: false
   },
   reviewData: null,
-  // Keep onboarding state structure, but initialization happens elsewhere
   onboarding: { step: 0, showHelpSplash: false }
 };
 
-// --- Initial State for Chat ---
+// Initial State for Chat
 const initialChatState = {
     chatMessages: {}, // Structure: { sectionId: [messages] }
     currentChatMessage: '',
     currentChatSectionId: 'question', // Default chat section
 };
-// --- End Initial Chat State ---
-
 
 // Central Zustand store
 const useAppStore = create(
@@ -72,8 +71,14 @@ const useAppStore = create(
       // --- Chat State ---
       ...initialChatState,
 
-      // --- Combined Loading Getter ---
-      isAnyLoading: () => Object.values(get().loading).some(Boolean),
+      // --- Enhanced Combined Loading Getter ---
+      isAnyLoading: () => {
+        const loadingValues = Object.values(get().loading);
+        const isAnyLoadingActive = loadingValues.some(Boolean);
+        // Debug logging (uncomment for debugging)
+        // console.log("isAnyLoading check:", get().loading, "Result:", isAnyLoadingActive);
+        return isAnyLoadingActive;
+      },
 
       // --- Actions for Core State ---
       updateSectionContent: (sectionId, content) => set((state) => {
@@ -137,7 +142,7 @@ const useAppStore = create(
         // Reset onboarding state, but keep showHelpSplash potentially true if it was set by user action
         onboarding: { ...initialUiState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
       }),
-      loadProjectData: (data) => set((state) => { /* ... (implementation unchanged) ... */
+      loadProjectData: (data) => set((state) => {
             const initialSections = getInitialSectionStates();
             const loadedUserInputs = data.userInputs || {};
             const mergedSections = { ...initialSections };
@@ -175,7 +180,27 @@ const useAppStore = create(
        // --- Actions for UI State ---
        openModal: (modalName) => set((state) => ({ modals: { ...state.modals, [modalName]: true } })),
        closeModal: (modalName) => set((state) => ({ modals: { ...state.modals, [modalName]: false } })),
-       setLoading: (loadingType, status = true) => set((state) => ({ loading: { ...state.loading, [loadingType]: status } })),
+       
+       // --- Enhanced setLoading method with debug logging ---
+       setLoading: (loadingType, status = true) => {
+         // Debug logging
+         console.log(`Setting loading state: ${loadingType} = ${status}`);
+         
+         set((state) => {
+           const newLoadingState = { 
+             ...state.loading, 
+             [loadingType]: status 
+           };
+           
+           // Debug: log the new state
+           console.log(`New loading state:`, newLoadingState);
+           
+           return { 
+             loading: newLoadingState 
+           };
+         });
+       },
+       
        clearLoading: (loadingType) => set((state) => ({ loading: { ...state.loading, [loadingType]: false } })),
        setReviewData: (data) => set({ reviewData: data }),
        clearReviewData: () => set({ reviewData: null }),
@@ -205,7 +230,6 @@ const useAppStore = create(
        },
 
        // --- Actions for Chat State ---
-       // ... (chat actions unchanged) ...
        setCurrentChatMessage: (message) => set({ currentChatMessage: message }),
        setCurrentChatSectionId: (sectionId) => set({ currentChatSectionId: sectionId || 'question' }),
        addChatMessage: (sectionId, message) => set((state) => {
@@ -232,7 +256,7 @@ const useAppStore = create(
            currentChatSectionId: get().currentChatSectionId,
            loading: { ...get().loading, chat: false }
        }),
-       sendMessage: async (content = null) => { /* ... (implementation unchanged) ... */
+       sendMessage: async (content = null) => {
             const messageContent = content || get().currentChatMessage;
             const currentSectionId = get().currentChatSectionId;
             if (!messageContent.trim() || !currentSectionId) return;
