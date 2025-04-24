@@ -1,5 +1,6 @@
 // FILE: src/components/sections/SectionCard.js
-// MODIFIED: Directly select active toggle state from store when rendering ToggleHeader
+// REVERTED: Removed direct store selection, relying on activeOption prop again.
+// Kept direct render log for props.
 
 import React, { useState, useCallback, useEffect } from 'react';
 import useAppStore from '../../store/appStore'; // Import the Zustand store
@@ -8,7 +9,7 @@ import ToggleHeader from './ToggleHeader';
 import SectionPreview from './SectionPreview';
 import SectionEditor from './SectionEditor';
 import FeedbackButton from './FeedbackButton';
-import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils'; // Import utils
+// Removed import for getApproachSectionIds, getDataMethodSectionIds
 
 const SectionCard = ({
   sectionId,
@@ -21,41 +22,15 @@ const SectionCard = ({
   isToggleSection = false,
 }) => {
 
-  // Direct prop logging (can be removed later)
+  // Log props received during render
   if (isToggleSection) {
-    console.log(`DEBUG [SectionCard RENDER for ${sectionId}]: Received props -> sectionId='${sectionId}', activeOption='${activeOption}' (Prop from Parent)`);
+    console.log(`DEBUG [SectionCard RENDER for ${sectionId}]: Received props -> sectionId='${sectionId}', activeOption='${activeOption}'`);
   }
 
-  // Select section data based on the current sectionId prop
+  // Select section data based on the sectionId prop
   const section = useAppStore((state) => state.sections[sectionId]);
   const updateSectionContent = useAppStore((state) => state.updateSectionContent);
   const toggleMinimize = useAppStore((state) => state.toggleMinimize);
-
-  // --- Directly select the activeToggles state from the store ---
-  const currentActiveToggles = useAppStore((state) => state.activeToggles);
-
-  // --- Determine the CURRENT active option directly from the store ---
-  let currentActiveOptionFromStore = activeOption; // Default to prop
-  if (isToggleSection) {
-      const approachIds = getApproachSectionIds();
-      const dataMethodIds = getDataMethodSectionIds();
-      if (approachIds.includes(sectionId)) { // Check if this card represents an approach toggle
-          currentActiveOptionFromStore = currentActiveToggles.approach;
-          console.log(`DEBUG [SectionCard RENDER for ${sectionId}]: Determined group 'approach'. Active from store = '${currentActiveOptionFromStore}'`);
-      } else if (dataMethodIds.includes(sectionId)) { // Check if this card represents a data method toggle
-          currentActiveOptionFromStore = currentActiveToggles.dataMethod;
-           console.log(`DEBUG [SectionCard RENDER for ${sectionId}]: Determined group 'dataMethod'. Active from store = '${currentActiveOptionFromStore}'`);
-      }
-  }
-  // --- End Direct State Selection ---
-
-  // useEffect Log (can be removed later)
-  useEffect(() => {
-      if (isToggleSection) {
-          console.log(`DEBUG [SectionCard EFFECT for ${sectionId}]: Effect ran. Received activeOption prop = '${activeOption}', Active from store = '${currentActiveOptionFromStore}'`);
-      }
-  }, [isToggleSection, sectionId, activeOption, currentActiveOptionFromStore]);
-
 
   // Local state for hover/focus
   const [isHovered, setIsHovered] = useState(false);
@@ -66,23 +41,22 @@ const SectionCard = ({
     title = 'Untitled', content = '', placeholder = 'Start writing...',
     isMinimized = true, aiInstructions, feedbackRating, editedSinceFeedback,
     maxLength
-  } = section || {}; // Use section state selected based on sectionId prop
+  } = section || {};
   const hasFeedback = !!feedbackRating;
   const hasOnlyPlaceholder = content === (placeholder || '') || content.trim() === '';
 
-  // --- Callbacks ---
-   const handleTextChange = useCallback((e) => {
+  // Callbacks
+  const handleTextChange = useCallback((e) => {
        updateSectionContent(sectionId, e.target.value);
    }, [sectionId, updateSectionContent]);
 
    const handleToggleMinimize = useCallback((e) => {
        if(e) e.stopPropagation();
        toggleMinimize(sectionId);
-       // Focus the card if expanding
        if (isMinimized && typeof handleSectionFocus === 'function') {
             handleSectionFocus(sectionId);
        }
-   }, [sectionId, toggleMinimize, isMinimized, handleSectionFocus]); // Added missing deps
+   }, [sectionId, toggleMinimize, isMinimized, handleSectionFocus]);
 
    const handleFeedbackRequest = useCallback(() => {
        if (typeof onRequestFeedback === 'function') {
@@ -91,9 +65,8 @@ const SectionCard = ({
    }, [sectionId, onRequestFeedback]);
 
    const handleCardClick = () => {
-       // Expand if minimized, otherwise ensure it's focused
        if (isMinimized) {
-           handleToggleMinimize(); // This already calls handleSectionFocus if needed
+           handleToggleMinimize();
        } else if (typeof handleSectionFocus === 'function') {
          handleSectionFocus(sectionId);
        }
@@ -135,8 +108,7 @@ const SectionCard = ({
        {isToggleSection ? (
          <ToggleHeader
            options={options || []}
-           // *** MODIFIED: Use the value read directly from the store ***
-           activeOption={currentActiveOptionFromStore}
+           activeOption={activeOption} // Pass the potentially stale prop
            onToggle={onToggle}
            isMinimized={isMinimized}
            isHovered={isHovered || isTextareaFocused}
@@ -156,7 +128,6 @@ const SectionCard = ({
          />
        )}
 
-      {/* Render Preview or Editor based on isMinimized */}
       {isMinimized ?
           ( <SectionPreview textValue={content} /> )
         :
@@ -182,7 +153,6 @@ const SectionCard = ({
           )
       }
 
-      {/* Gradient overlay for minimized cards */}
       {isMinimized && ( <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-t from-gray-100 via-gray-50 to-transparent pointer-events-none"></div> )}
     </div>
   );
