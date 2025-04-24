@@ -105,10 +105,10 @@ const ModernChatInterface = ({
 
       {/* Expanded chat interface */}
       <div
-        className={`fixed shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`fixed shadow-lg bg-white rounded-t-lg overflow-hidden transition-all duration-300 ease-in-out bottom-4 right-4 w-[450px] h-[600px]  ${
           isMinimized ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'
         }`}
-        style={{ /* styles */ }}
+
       >
         {currentSection && currentSectionData ? (
             <>
