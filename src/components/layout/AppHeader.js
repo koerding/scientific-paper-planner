@@ -1,5 +1,5 @@
 // FILE: src/components/layout/AppHeader.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import ProModeToggle from '../toggles/ProModeToggle';
 import useAppStore from '../../store/appStore'; // Import store
 
@@ -17,13 +17,26 @@ const AppHeader = ({
   const isAiBusy = useAppStore((state) => state.isAnyLoading());
   // --- Get specific import loading state for visual feedback ---
   const isImportLoading = useAppStore((state) => state.loading.import);
-  // ---
+  
+  // Debug: log loading states on change
+  useEffect(() => {
+    console.log("AppHeader - isAiBusy:", isAiBusy);
+  }, [isAiBusy]);
+  
+  useEffect(() => {
+    console.log("AppHeader - isImportLoading:", isImportLoading);
+  }, [isImportLoading]);
 
   // Handle file import for PDF/Word docs
   const handleFileImport = async (event) => {
+    console.log("AppHeader - File import triggered");
     const file = event.target.files?.[0];
     if (file && importDocumentContent) {
+        console.log(`AppHeader - Importing file: ${file.name}`);
         await importDocumentContent(file);
+        console.log("AppHeader - Import operation completed");
+    } else {
+        console.log("AppHeader - No file selected or importDocumentContent not available");
     }
     event.target.value = ''; // Reset input
   };
@@ -71,13 +84,22 @@ const AppHeader = ({
                 : `${baseStyle} cursor-pointer`
               }`;
   };
+  
+  // --- Enhanced import button with more visible loading state ---
   const getImportButtonClasses = () => {
+      // When specifically importing, show a more prominent loading state
+      if (isImportLoading) {
+          return 'inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors border-indigo-300 bg-indigo-200 text-indigo-700 cursor-wait animate-pulse';
+      }
+      
+      // Otherwise use regular busy/normal state
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
               ${isAiBusy
                 ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                 : 'border-indigo-500 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
               }`;
   };
+  
   const getReviewButtonClasses = () => {
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
               ${isAiBusy
@@ -108,7 +130,7 @@ const AppHeader = ({
                   </svg>
               )} New
             </button>
-            {/* Import - Special case to show import-specific loading state */}
+            {/* Import - Enhanced to show import-specific loading state */}
              <label className={getImportButtonClasses()} style={isAiBusy ? { pointerEvents: 'none' } : {}}>
                {isImportLoading ? loadingSpinner : (
                  <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
