@@ -6,16 +6,23 @@ import React from 'react';
  * Replaces the traditional section header title with toggle options
  * UPDATED: Active option is now true black to match other section headers
  * UPDATED: Fixed persistent selected state
+ * ADDED: Debug log for activeOption prop
  */
-const ToggleHeader = ({ 
-  options, 
-  activeOption, 
-  onToggle, 
+const ToggleHeader = ({
+  options,
+  activeOption, // This is the prop we want to check
+  onToggle,
   isMinimized,
   isHovered,
   isFocused,
   toggleMinimized
 }) => {
+
+  // --- ADD THIS DEBUG LOG ---
+  console.log(`DEBUG [ToggleHeader]: Rendering with activeOption = '${activeOption}'`);
+  // --- END ADD ---
+
+
   return (
     <div className="flex justify-between items-center mb-1 section-header">
       <div className="flex items-center">
@@ -28,6 +35,7 @@ const ToggleHeader = ({
                 onToggle(option.id);
               }}
               className={`font-semibold py-1 px-2 rounded-md transition-colors ${
+                // Compare the received prop with the button's ID
                 activeOption === option.id
                   ? 'text-black bg-white active-toggle'
                   : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100 inactive-toggle'
@@ -39,7 +47,7 @@ const ToggleHeader = ({
           ))}
         </div>
       </div>
-      
+
       <div className="flex items-center">
         {/* Edit indicator icon - same as in SectionHeader */}
         <div className={`edit-icon transition-opacity duration-200 mr-2 ${isHovered || isFocused ? 'opacity-100' : 'opacity-0'}`}>
@@ -47,9 +55,9 @@ const ToggleHeader = ({
             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
           </svg>
         </div>
-        
+
         {/* Toggle button - same as in SectionHeader */}
-        <button 
+        <button
           onClick={toggleMinimized}
           className="minimize-toggle-btn text-gray-500 hover:text-gray-700 focus:outline-none"
           aria-label={isMinimized ? "Expand section" : "Minimize section"}
