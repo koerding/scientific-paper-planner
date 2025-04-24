@@ -8,8 +8,7 @@ import React from 'react';
  */
 const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }) => {
 
-  // Log the crucial prop value
-  console.log(`[ConfirmDialog] Rendering with showConfirmDialog: ${showConfirmDialog}`); // <-- ADD LOG
+  // REMOVED: console.log(`[ConfirmDialog] Rendering with showConfirmDialog: ${showConfirmDialog}`);
 
   if (!showConfirmDialog) {
       return null; // Don't render if false
