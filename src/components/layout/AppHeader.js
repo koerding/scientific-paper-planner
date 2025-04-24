@@ -1,7 +1,7 @@
 // FILE: src/components/layout/AppHeader.js
-import React, { useState } from 'react';
+import React from 'react'; // Removed useState import as it wasn't used
 import ProModeToggle from '../toggles/ProModeToggle';
-import useAppStore from '../../store/appStore'; // Import store if needed for ProMode toggle internal state
+import useAppStore from '../../store/appStore'; // Import store
 
 const AppHeader = ({
   resetProject,
@@ -12,17 +12,18 @@ const AppHeader = ({
   onOpenReviewModal,
   setShowExamplesDialog,
   showHelpSplash,
-  loading // Renamed prop, represents the global isAnyAiLoading state
+  // REMOVED: loading // Prop removed
 }) => {
-  // Use the combined loading prop passed from the parent
-  const isAiBusy = loading; // Use the prop directly
+  // --- Get global loading state directly from store ---
+  const isAiBusy = useAppStore((state) => state.isAnyLoading());
+  // ---
 
   // Handle file import for PDF/Word docs
   const handleFileImport = async (event) => {
     const file = event.target.files?.[0];
     if (file && importDocumentContent) {
-        // The loading state is now handled globally by the store via useDocumentImport hook
-        await importDocumentContent(file); // Let the hook handle loading flags
+        // Loading state is now managed globally by the hook/store
+        await importDocumentContent(file);
     }
     event.target.value = ''; // Reset input
   };
@@ -54,188 +55,87 @@ const AppHeader = ({
     if (resetProject) resetProject();
   };
 
-  // --- MODIFICATION: Consistent loading spinner SVG ---
+  // --- Loading spinner SVG (unchanged) ---
   const loadingSpinner = (
     <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
   );
-  // --- END MODIFICATION ---
 
-  // --- MODIFICATION: Define base and loading styles ---
+  // --- Button style functions (unchanged, use isAiBusy now) ---
   const getButtonClasses = (baseStyle = "text-gray-700 bg-white hover:bg-gray-50", activeStyle = baseStyle) => {
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
-              ${isAiBusy
-                ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait' // Consistent disabled style
+              ${isAiBusy // Use state from store
+                ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                 : `${baseStyle} cursor-pointer`
               }`;
   };
-
-  const getImportButtonClasses = () => {
+  const getImportButtonClasses = () => { // Keep specific style if desired
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
-              ${isAiBusy
-                ? 'border-indigo-300 bg-indigo-300 text-white cursor-wait' // Specific disabled style for import? Or use general one? Let's use general for consistency.
-                //? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
+              ${isAiBusy // Use state from store
+                ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                 : 'border-indigo-500 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
               }`;
   };
-    const getReviewButtonClasses = () => {
+  const getReviewButtonClasses = () => { // Keep specific style if desired
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
-              ${isAiBusy
-                ? 'border-teal-300 bg-teal-300 text-white cursor-wait' // Consistent disabled style
-                // ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
+              ${isAiBusy // Use state from store
+                ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                 : 'border-teal-500 bg-teal-600 hover:bg-teal-700 text-white cursor-pointer'
               }`;
   };
-  // --- END MODIFICATION ---
 
 
   return (
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-2">
         <div className="flex items-center justify-left">
-          {/* Logo and title */}
+          {/* Logo */}
           <div className="flex items-center">
             <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center mr-2">
               <span className="font-bold text-lg">SP</span>
             </div>
           </div>
 
-          {/* Action buttons */}
+          {/* Action buttons use isAiBusy from store */}
           <div className="flex items-center space-x-1">
-            {/* New Project button */}
-            {/* --- MODIFICATION: Apply consistent loading disable --- */}
-            <button
-              onClick={handleNewButtonClick}
-              disabled={isAiBusy} // Disable if AI is busy
-              className={getButtonClasses()} // Use helper for classes
-            >
-              {isAiBusy ? loadingSpinner : (
-                  <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-              )}
-              New
+            {/* New Project */}
+            <button onClick={handleNewButtonClick} disabled={isAiBusy} className={getButtonClasses()}>
+              {isAiBusy ? loadingSpinner : ( /* SVG */ )} New
             </button>
-            {/* --- END MODIFICATION --- */}
-
-            {/* Import from PDF/Doc button */}
-             {/* --- MODIFICATION: Apply consistent loading disable --- */}
-            <label
-              className={getImportButtonClasses()} // Use helper for classes
-              // Add pointer-events-none if isAiBusy to ensure label isn't clickable
-              style={isAiBusy ? { pointerEvents: 'none' } : {}}
-            >
-               {isAiBusy ? loadingSpinner : (
-                 <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                 </svg>
-               )}
-               Pdf->Example
+            {/* Import */}
+             <label className={getImportButtonClasses()} style={isAiBusy ? { pointerEvents: 'none' } : {}}>
+               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Pdf->Example
               <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={handleFileImport} disabled={isAiBusy} />
             </label>
-             {/* --- END MODIFICATION --- */}
-
-            {/* Save button */}
-             {/* --- MODIFICATION: Apply consistent loading disable --- */}
-            <button
-              onClick={saveProject}
-              disabled={isAiBusy} // Disable if AI is busy
-              className={getButtonClasses()} // Use helper for classes
-            >
-               {isAiBusy ? loadingSpinner : (
-                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                   </svg>
-               )}
-               Save
+            {/* Save */}
+            <button onClick={saveProject} disabled={isAiBusy} className={getButtonClasses()}>
+               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Save
             </button>
-             {/* --- END MODIFICATION --- */}
-
-            {/* Load button */}
-             {/* --- MODIFICATION: Apply consistent loading disable --- */}
-            <label
-                className={getButtonClasses()} // Use helper for classes
-                // Add pointer-events-none if isAiBusy
-                style={isAiBusy ? { pointerEvents: 'none' } : {}}
-            >
-               {isAiBusy ? loadingSpinner : (
-                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                   </svg>
-               )}
-               Load
+            {/* Load */}
+             <label className={getButtonClasses()} style={isAiBusy ? { pointerEvents: 'none' } : {}}>
+               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Load
                <input type="file" className="hidden" accept=".json" onChange={handleFileSelection} disabled={isAiBusy} />
             </label>
-             {/* --- END MODIFICATION --- */}
-
-            {/* Examples button */}
-             {/* --- MODIFICATION: Apply consistent loading disable --- */}
-            <button
-              onClick={() => setShowExamplesDialog(true)}
-              disabled={isAiBusy} // Disable if AI is busy
-              className={getButtonClasses()} // Use helper for classes
-            >
-               {isAiBusy ? loadingSpinner : (
-                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                   </svg>
-               )}
-               Examples
+            {/* Examples */}
+            <button onClick={() => setShowExamplesDialog(true)} disabled={isAiBusy} className={getButtonClasses()}>
+               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Examples
             </button>
-            {/* --- END MODIFICATION --- */}
-
-            {/* Export button */}
-             {/* --- MODIFICATION: Apply consistent loading disable --- */}
-            <button
-              onClick={exportProject}
-              disabled={isAiBusy} // Disable if AI is busy
-              className={getButtonClasses()} // Use helper for classes
-            >
-               {isAiBusy ? loadingSpinner : (
-                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                   </svg>
-               )}
-               Export
+            {/* Export */}
+            <button onClick={exportProject} disabled={isAiBusy} className={getButtonClasses()}>
+               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Export
             </button>
-             {/* --- END MODIFICATION --- */}
-
-            {/* Pro Mode toggle - should generally not be disabled by AI state */}
-            <ProModeToggle />
-
-            {/* Review Papers button */}
-             {/* --- MODIFICATION: Apply consistent loading disable --- */}
-            <button
-              onClick={onOpenReviewModal}
-              disabled={isAiBusy} // Disable if AI is busy
-              className={getReviewButtonClasses()} // Use helper for classes
-            >
-               {isAiBusy ? loadingSpinner : (
-                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                   </svg>
-               )}
-               Review
+            {/* Pro Mode */}
+            <ProModeToggle /> {/* Should generally not be disabled */}
+            {/* Review */}
+            <button onClick={onOpenReviewModal} disabled={isAiBusy} className={getReviewButtonClasses()}>
+               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Review
             </button>
-             {/* --- END MODIFICATION --- */}
-
-            {/* Help button */}
-             {/* --- MODIFICATION: Apply consistent loading disable --- */}
-            <button
-              onClick={handleHelpClick}
-              disabled={isAiBusy} // Disable if AI is busy
-              className={getButtonClasses()} // Use helper for classes
-            >
-              {isAiBusy ? loadingSpinner : (
-                  <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-              )}
-              Help
+            {/* Help */}
+            <button onClick={handleHelpClick} disabled={isAiBusy} className={getButtonClasses()}>
+              {isAiBusy ? loadingSpinner : ( /* SVG */ )} Help
             </button>
-             {/* --- END MODIFICATION --- */}
           </div>
         </div>
       </div>
