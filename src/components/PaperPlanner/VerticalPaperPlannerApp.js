@@ -88,8 +88,8 @@ const VerticalPaperPlannerApp = () => {
   const handleSaveWithFilename = (fileName) => {
     // Call the actual save function
     saveProjectAsJson(
-      // Select necessary data from Zustand store
-      Object.entries(useAppStore.getState().sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {}),
+      // Pass the entire sections object from the store
+      useAppStore.getState().sections,
       useAppStore.getState().chatMessages,
       fileName // Pass the specific filename
     );
