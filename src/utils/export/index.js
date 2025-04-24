@@ -2,6 +2,7 @@
 
 /**
  * Centralized export module that brings all export functionality together
+ * UPDATED: saveProjectAsJson now accepts the full state object
  */
 
 import { showExportDialog, validateProjectData, promptForFilename } from './exportBase';
@@ -11,7 +12,8 @@ import { exportAsDocx } from './docxExporter';
 
 /**
  * Creates a format selection dialog and handles the export based on user selection
- * @param {Object} userInputs - The user inputs
+ * (Export to PDF/DOCX/MD still uses only content for simplicity)
+ * @param {Object} userInputs - The user inputs (content only for these formats)
  * @param {Object} chatMessages - The chat messages
  * @param {Object} sectionContent - The section content
  */
@@ -24,25 +26,30 @@ export const exportProject = (userInputs, chatMessages, sectionContent) => {
 };
 
 /**
- * Creates a JSON project file for later loading
- * @param {Object} sectionsState - The full sections state object from Zustand.
- * @param {Object} chatMessages - The chat messages
+ * Creates a JSON project file for later loading, including full state.
+ * @param {Object} stateToSave - The relevant parts of the Zustand state object (sections, toggles, scores, proMode, chatMessages).
  * @param {string} [fileName] - Optional custom file name (without extension)
  * @returns {boolean} Success indicator
  */
-export const saveProjectAsJson = (sectionsState, chatMessages, fileName) => {
+export const saveProjectAsJson = (stateToSave, fileName) => {
   try {
-    // Get filename from base helper
+    // Get filename from parameter or prompt
     const safeFileName = fileName || promptForFilename('json');
     if (!safeFileName) return false;
 
+    // Prepare the data to be saved
+    // Ensure we only save the necessary parts of the state
     const jsonData = {
-      sections: sectionsState, // Save the full sections state object
-      chatMessages,
+      sections: stateToSave.sections || {}, // Full section state including feedback
+      activeToggles: stateToSave.activeToggles || { approach: 'hypothesis', dataMethod: 'experiment' },
+      scores: stateToSave.scores || {},
+      proMode: stateToSave.proMode || false,
+      chatMessages: stateToSave.chatMessages || {},
       timestamp: new Date().toISOString(),
-      version: "1.0" // Consider updating version if format changes significantly
+      version: "2.0" // Increment version number due to format change
     };
 
+    // Create JSON blob
     const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
     const jsonUrl = URL.createObjectURL(jsonBlob);
 
