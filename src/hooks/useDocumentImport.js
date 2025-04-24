@@ -2,7 +2,7 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Fixed syntax error in conditional checks for toggle detection.
+ * UPDATED: Simplified toggle detection logic based on key presence.
  * UPDATED: Correctly handles the loading process without expecting a boolean return from the loadProject prop.
  */
 import { useState, useCallback } from 'react';
@@ -39,36 +39,46 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
 
       // Load the imported data using the loadProject function (which triggers the store action)
       if (importedData && importedData.userInputs) { // Check if we got valid data structure
-        // DETECT WHICH TOGGLES SHOULD BE ACTIVE BASED ON IMPORTED DATA
-        let detectedApproach = 'hypothesis'; // Default
-        let detectedDataMethod = 'experiment'; // Default
 
-        // --- CORRECTED CONDITIONS START ---
-        // Check which research approach has content (using consistent optional chaining)
-        if (importedData.userInputs?.needsresearch?.trim() !== '') {
-          detectedApproach = 'needsresearch';
-        } else if (importedData.userInputs?.exploratoryresearch?.trim() !== '') {
-          detectedApproach = 'exploratoryresearch';
-        } else if (importedData.userInputs?.hypothesis?.trim() !== '') {
-          // Keep hypothesis as default unless others are present and non-empty
-          detectedApproach = 'hypothesis';
+        // ==========================================================
+        // == REVISED Toggle Detection Logic (Checks Key Presence) ==
+        // ==========================================================
+        let detectedApproach = 'hypothesis'; // Default if no approach key is found
+        let detectedDataMethod = 'experiment'; // Default if no data method key is found
+
+        // Check which research approach key EXISTS in the response
+        if (importedData.userInputs?.hasOwnProperty('needsresearch')) {
+            detectedApproach = 'needsresearch';
+        } else if (importedData.userInputs?.hasOwnProperty('exploratoryresearch')) {
+            detectedApproach = 'exploratoryresearch';
+        } else if (importedData.userInputs?.hasOwnProperty('hypothesis')) {
+            // Explicitly set hypothesis if the key is present
+            detectedApproach = 'hypothesis';
+        } else {
+            console.warn(`[handleDocumentImport] No research approach key (hypothesis, needsresearch, exploratoryresearch) found in imported userInputs. Defaulting to '${detectedApproach}'.`);
+            // Keep the default
         }
 
-        // Check which data method has content (using consistent optional chaining)
-        if (importedData.userInputs?.existingdata?.trim() !== '') {
-          detectedDataMethod = 'existingdata';
-        } else if (importedData.userInputs?.theorysimulation?.trim() !== '') {
-          detectedDataMethod = 'theorysimulation';
-        } else if (importedData.userInputs?.experiment?.trim() !== '') {
-           // Keep experiment as default unless others are present and non-empty
-          detectedDataMethod = 'experiment';
+        // Check which data method key EXISTS in the response
+        if (importedData.userInputs?.hasOwnProperty('existingdata')) {
+            detectedDataMethod = 'existingdata';
+        } else if (importedData.userInputs?.hasOwnProperty('theorysimulation')) {
+            detectedDataMethod = 'theorysimulation';
+        } else if (importedData.userInputs?.hasOwnProperty('experiment')) {
+            // Explicitly set experiment if the key is present
+            detectedDataMethod = 'experiment';
+        } else {
+            console.warn(`[handleDocumentImport] No data method key (experiment, existingdata, theorysimulation) found in imported userInputs. Defaulting to '${detectedDataMethod}'.`);
+            // Keep the default
         }
-        // --- CORRECTED CONDITIONS END ---
+       // ==========================================================
+       // == End Revised Logic ==
+       // ==========================================================
 
 
         // Include detected toggles in the loaded data
         importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
-        console.log(`[handleDocumentImport] Detected approach: ${detectedApproach}, data method: ${detectedDataMethod}`);
+        console.log(`[handleDocumentImport] Detected approach (revised logic): ${detectedApproach}, data method: ${detectedDataMethod}`);
 
         // Load data into the store
         try {
