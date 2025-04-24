@@ -1,4 +1,8 @@
 // FILE: src/components/chat/ModernChatInterface.js
+// Key changes:
+// 1. Use the global isAnyLoading() function directly instead of passing isAiBusy as a prop
+// 2. Apply consistent disabling logic to all interactive elements
+
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import ReactGA from 'react-ga4';
@@ -22,6 +26,7 @@ const ModernChatInterface = ({
   const previousSectionRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Get global loading state directly from store
   const isAnyStoreLoading = useAppStore((state) => state.isAnyLoading());
 
   // Scroll to bottom when messages change or chat is opened
