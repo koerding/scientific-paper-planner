@@ -1,13 +1,15 @@
 // FILE: src/components/layout/LeftPanel.js
 // MODIFIED: Removed renderToggleSection helper and render SectionCards directly
+// FIXED: Added missing import for sectionContent
+// MODIFIED: Use dynamic key for toggle SectionCards to force re-render
 
 import React, { useEffect } from 'react';
 import useAppStore from '../../store/appStore';
 import { isSectionVisible, isToggleVisible } from '../../logic/progressionLogic';
 import { getVisibleSectionsInDisplayOrder, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
 import HeaderCard from '../sections/HeaderCard';
-import SectionCard from '../sections/SectionCard'; // Keep this import
-import sectionContent from '../../data/sectionContent.json'; // <--- ADD THIS LINE
+import SectionCard from '../sections/SectionCard';
+import sectionContent from '../../data/sectionContent.json';
 
 // Helper function to render a standard SectionCard (still useful)
 const renderSectionCard = (section, activeSection, handleSectionFocus, handleMagic) => {
@@ -15,18 +17,16 @@ const renderSectionCard = (section, activeSection, handleSectionFocus, handleMag
   const isCurrentActive = activeSection === section.id;
   return (
     <SectionCard
-      key={section.id}
+      key={section.id} // Use section ID as key for standard cards
       sectionId={section.id}
       isCurrentSection={isCurrentActive}
       onRequestFeedback={handleMagic}
       handleSectionFocus={handleSectionFocus}
-      // Ensure standard cards don't get toggle props
       isToggleSection={false}
     />
   );
 };
 
-// REMOVED the renderToggleSection helper function
 
 const LeftPanel = ({
   activeSection,          // ID string of the currently focused section
@@ -49,21 +49,12 @@ const LeftPanel = ({
 
   // --- Derived State & Logic ---
   const allSectionsArray = sections && typeof sections === 'object' ? Object.values(sections) : [];
-
-  // --- Determine active sections based ONLY on toggles for rendering the toggle cards ---
   const activeApproachSectionId = activeToggles.approach;
   const activeDataMethodSectionId = activeToggles.dataMethod;
-
-  // --- Get section definitions ---
-  const sectionDefinitions = sectionContent.sections || []; // Use imported definitions
-  const getSectionDef = (id) => sectionDefinitions.find(s => s.id === id) || {};
-
-  // --- Check visibility based on progression/proMode ---
-  // Check if the *concept* of toggling is unlocked, not just the specific sections
+  const sectionDefinitions = sectionContent.sections || [];
   const showApproachToggle = isToggleVisible('approach', storeState);
   const showDataToggle = isToggleVisible('data', storeState);
 
-  // Filter sections for rendering standard cards (excluding toggle sections)
   const standardSectionsToRender = getVisibleSectionsInDisplayOrder(
       allSectionsArray,
       activeApproachSectionId,
@@ -72,23 +63,12 @@ const LeftPanel = ({
       section &&
       !getApproachSectionIds().includes(section.id) &&
       !getDataMethodSectionIds().includes(section.id) &&
-      isSectionVisible(section.id, storeState) // Ensure standard sections are also checked for visibility
+      isSectionVisible(section.id, storeState)
   );
 
-  // Define approach and data method toggle options
-  const approachOptions = [
-    { id: 'hypothesis', label: 'Hypothesis' },
-    { id: 'needsresearch', label: 'Needs-Based' },
-    { id: 'exploratoryresearch', label: 'Exploratory' }
-  ];
+  const approachOptions = [ { id: 'hypothesis', label: 'Hypothesis' }, { id: 'needsresearch', label: 'Needs-Based' }, { id: 'exploratoryresearch', label: 'Exploratory' } ];
+  const dataMethodOptions = [ { id: 'experiment', label: 'Experiment' }, { id: 'existingdata', label: 'Existing Data' }, { id: 'theorysimulation', label: 'Theory' } ];
 
-  const dataMethodOptions = [
-    { id: 'experiment', label: 'Experiment' },
-    { id: 'existingdata', label: 'Existing Data' },
-    { id: 'theorysimulation', label: 'Theory' }
-  ];
-
-  // Find specific standard sections for ordering
   const questionSection = standardSectionsToRender.find(s => s?.id === 'question');
   const audienceSection = standardSectionsToRender.find(s => s?.id === 'audience');
   const relatedPapersSection = standardSectionsToRender.find(s => s?.id === 'relatedpapers');
@@ -96,7 +76,6 @@ const LeftPanel = ({
   const processSection = standardSectionsToRender.find(s => s?.id === 'process');
   const abstractSection = standardSectionsToRender.find(s => s?.id === 'abstract');
 
-  // Pro Mode Info calculation
   const totalPossibleSections = sectionDefinitions.length;
   const currentlyVisibleCount = standardSectionsToRender.length + (showApproachToggle ? 1 : 0) + (showDataToggle ? 1 : 0);
   const sectionsStillLocked = !proMode && currentlyVisibleCount < totalPossibleSections;
@@ -112,13 +91,14 @@ const LeftPanel = ({
       {/* --- Render Approach Toggle Section Card Directly --- */}
       {showApproachToggle && (
         <SectionCard
-          key={'approach_toggle_card'} // Use a stable key
-          sectionId={activeApproachSectionId} // ID of the section to display content for
+          // *** MODIFIED KEY ***
+          key={activeApproachSectionId} // Use the active section ID as the key
+          sectionId={activeApproachSectionId}
           isCurrentSection={activeSection === activeApproachSectionId}
           onRequestFeedback={handleMagic}
           handleSectionFocus={handleSectionFocus}
           options={approachOptions}
-          activeOption={activeApproachSectionId} // Pass the active toggle ID
+          activeOption={activeApproachSectionId}
           onToggle={handleApproachToggle}
           isToggleSection={true}
         />
@@ -135,13 +115,14 @@ const LeftPanel = ({
       {/* --- Render Data Method Toggle Section Card Directly --- */}
       {showDataToggle && (
          <SectionCard
-           key={'data_toggle_card'} // Use a stable key
-           sectionId={activeDataMethodSectionId} // ID of the section to display content for
+           // *** MODIFIED KEY ***
+           key={activeDataMethodSectionId} // Use the active section ID as the key
+           sectionId={activeDataMethodSectionId}
            isCurrentSection={activeSection === activeDataMethodSectionId}
            onRequestFeedback={handleMagic}
            handleSectionFocus={handleSectionFocus}
            options={dataMethodOptions}
-           activeOption={activeDataMethodSectionId} // Pass the active toggle ID
+           activeOption={activeDataMethodSectionId}
            onToggle={handleDataMethodToggle}
            isToggleSection={true}
          />
