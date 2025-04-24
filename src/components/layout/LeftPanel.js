@@ -1,5 +1,6 @@
 // FILE: src/components/layout/LeftPanel.js
-// MODIFIED: Render ToggleHeader directly, separate from SectionCard content
+// REVERTED: Back to rendering SectionCard for toggles with dynamic keys
+// (This version is from before the ToggleHeader separation refactor)
 
 import React, { useEffect } from 'react';
 import useAppStore from '../../store/appStore';
@@ -7,15 +8,13 @@ import { isSectionVisible, isToggleVisible } from '../../logic/progressionLogic'
 import { getVisibleSectionsInDisplayOrder, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
 import HeaderCard from '../sections/HeaderCard';
 import SectionCard from '../sections/SectionCard';
-import ToggleHeader from '../sections/ToggleHeader'; // Import ToggleHeader
 import sectionContent from '../../data/sectionContent.json';
 
-// Helper function to render a standard SectionCard (still useful)
+// Helper function to render a standard SectionCard
 const renderStandardSectionCard = (section, activeSection, handleSectionFocus, handleMagic) => {
   if (!section || !section.id) return null;
-  // Only render if the section state exists (content loaded etc.)
   const sectionState = useAppStore.getState().sections[section.id];
-  if (!sectionState) return null;
+  if (!sectionState) return null; // Ensure state exists
 
   const isCurrentActive = activeSection === section.id;
   return (
@@ -25,7 +24,7 @@ const renderStandardSectionCard = (section, activeSection, handleSectionFocus, h
       isCurrentSection={isCurrentActive}
       onRequestFeedback={handleMagic}
       handleSectionFocus={handleSectionFocus}
-      isToggleSection={false} // Ensure this is false for standard cards
+      isToggleSection={false} // Explicitly false
     />
   );
 };
@@ -40,7 +39,7 @@ const LeftPanel = ({
   proMode,
 }) => {
   // --- Select State from Zustand Store ---
-  const sections = useAppStore((state) => state.sections); // Still needed for content lookup
+  const sections = useAppStore((state) => state.sections);
   const activeToggles = useAppStore((state) => state.activeToggles);
   const storeState = useAppStore((state) => state);
 
@@ -51,50 +50,43 @@ const LeftPanel = ({
   // ---
 
   // --- Derived State & Logic ---
+  const allSectionsArray = sections && typeof sections === 'object' ? Object.values(sections) : [];
   const activeApproachSectionId = activeToggles.approach;
   const activeDataMethodSectionId = activeToggles.dataMethod;
   const sectionDefinitions = sectionContent.sections || [];
   const showApproachToggle = isToggleVisible('approach', storeState);
   const showDataToggle = isToggleVisible('data', storeState);
 
-  // --- Get Section Data (using Zustand state directly) ---
-  const getSectionState = (id) => sections[id];
+  // Filter standard sections for rendering
+  const standardSectionsToRender = getVisibleSectionsInDisplayOrder(
+      allSectionsArray,
+      activeApproachSectionId,
+      activeDataMethodSectionId
+  ).filter(section =>
+      section &&
+      !getApproachSectionIds().includes(section.id) &&
+      !getDataMethodSectionIds().includes(section.id) &&
+      isSectionVisible(section.id, storeState)
+  );
 
-  // --- Options for Toggles ---
+  // Define options for toggles
   const approachOptions = [ { id: 'hypothesis', label: 'Hypothesis' }, { id: 'needsresearch', label: 'Needs-Based' }, { id: 'exploratoryresearch', label: 'Exploratory' } ];
   const dataMethodOptions = [ { id: 'experiment', label: 'Experiment' }, { id: 'existingdata', label: 'Existing Data' }, { id: 'theorysimulation', label: 'Theory' } ];
 
-  // Find specific standard sections using definitions and check visibility
-  const findVisibleStandardSection = (id) => {
-      const def = sectionDefinitions.find(s => s.id === id);
-      return def && isSectionVisible(id, storeState) ? def : null;
-  };
-  const questionSectionDef = findVisibleStandardSection('question');
-  const audienceSectionDef = findVisibleStandardSection('audience');
-  const relatedPapersSectionDef = findVisibleStandardSection('relatedpapers');
-  const analysisSectionDef = findVisibleStandardSection('analysis');
-  const processSectionDef = findVisibleStandardSection('process');
-  const abstractSectionDef = findVisibleStandardSection('abstract');
+  // Find specific standard sections for ordering
+  const questionSectionDef = standardSectionsToRender.find(s => s?.id === 'question');
+  const audienceSectionDef = standardSectionsToRender.find(s => s?.id === 'audience');
+  const relatedPapersSectionDef = standardSectionsToRender.find(s => s?.id === 'relatedpapers');
+  const analysisSectionDef = standardSectionsToRender.find(s => s?.id === 'analysis');
+  const processSectionDef = standardSectionsToRender.find(s => s?.id === 'process');
+  const abstractSectionDef = standardSectionsToRender.find(s => s?.id === 'abstract');
 
-  // --- Get the active toggle section definitions if they should be visible ---
-  const activeApproachSectionDef = sectionDefinitions.find(s => s.id === activeApproachSectionId);
-  const activeDataMethodSectionDef = sectionDefinitions.find(s => s.id === activeDataMethodSectionId);
-
-  // --- Pro Mode Info Calculation ---
-  // Count visible sections accurately
-  let visibleCount = 0;
-  if (questionSectionDef) visibleCount++;
-  if (showApproachToggle) visibleCount++; // Count the toggle group as one
-  if (audienceSectionDef) visibleCount++;
-  if (relatedPapersSectionDef) visibleCount++;
-  if (showDataToggle) visibleCount++; // Count the toggle group as one
-  if (analysisSectionDef) visibleCount++;
-  if (processSectionDef) visibleCount++;
-  if (abstractSectionDef) visibleCount++;
-
-  const totalPossibleSections = sectionDefinitions.length; // Total sections defined
+   // Pro Mode Info Calculation
+  const totalPossibleSections = sectionDefinitions.length;
+  let visibleCount = standardSectionsToRender.length;
+  if (showApproachToggle) visibleCount++;
+  if (showDataToggle) visibleCount++;
   const sectionsStillLocked = !proMode && visibleCount < totalPossibleSections;
-
 
   return (
     <div className="w-1/2 h-full overflow-y-auto px-4 pt-14 pb-12 box-border flex-shrink-0">
@@ -103,26 +95,20 @@ const LeftPanel = ({
       {/* Question Section */}
       {questionSectionDef && renderStandardSectionCard(questionSectionDef, activeSection, handleSectionFocus, handleMagic)}
 
-      {/* Approach Toggle Header (Rendered Directly) */}
+      {/* Approach Toggle Section Card */}
       {showApproachToggle && (
-        <div className="bg-white rounded-md border-2 border-gray-300 p-2 mb-2 shadow-sm toggle-header-container">
-           {/* Pass necessary props directly to ToggleHeader */}
-           <ToggleHeader
-             options={approachOptions}
-             activeOption={activeApproachSectionId} // Direct from state
-             onToggle={handleApproachToggle}
-             // Pass dummy/appropriate values for props ToggleHeader expects from SectionCard context if needed
-             // Or modify ToggleHeader to not require them if only used here
-             isMinimized={false} // Or manage state if needed
-             isHovered={false} // Or manage state if needed
-             isFocused={activeSection === activeApproachSectionId} // Base focus on main activeSection
-             toggleMinimized={() => { handleSectionFocus(activeApproachSectionId); /* Maybe toggle something else? */ }} // Clicking header focuses card
-           />
-        </div>
+        <SectionCard
+          key={activeApproachSectionId} // Dynamic key
+          sectionId={activeApproachSectionId}
+          isCurrentSection={activeSection === activeApproachSectionId}
+          onRequestFeedback={handleMagic}
+          handleSectionFocus={handleSectionFocus}
+          options={approachOptions}
+          activeOption={activeApproachSectionId}
+          onToggle={handleApproachToggle}
+          isToggleSection={true}
+        />
       )}
-      {/* Approach Content Section Card (Rendered Separately) */}
-      {showApproachToggle && activeApproachSectionDef && renderStandardSectionCard(activeApproachSectionDef, activeSection, handleSectionFocus, handleMagic)}
-
 
       {/* Audience Section */}
       {audienceSectionDef && renderStandardSectionCard(audienceSectionDef, activeSection, handleSectionFocus, handleMagic)}
@@ -130,24 +116,20 @@ const LeftPanel = ({
       {/* Related Papers Section */}
       {relatedPapersSectionDef && renderStandardSectionCard(relatedPapersSectionDef, activeSection, handleSectionFocus, handleMagic)}
 
-
-      {/* Data Method Toggle Header (Rendered Directly) */}
+      {/* Data Method Toggle Section Card */}
       {showDataToggle && (
-         <div className="bg-white rounded-md border-2 border-gray-300 p-2 mb-2 shadow-sm toggle-header-container">
-            <ToggleHeader
-               options={dataMethodOptions}
-               activeOption={activeDataMethodSectionId} // Direct from state
-               onToggle={handleDataMethodToggle}
-               isMinimized={false}
-               isHovered={false}
-               isFocused={activeSection === activeDataMethodSectionId}
-               toggleMinimized={() => { handleSectionFocus(activeDataMethodSectionId); }}
-             />
-         </div>
+         <SectionCard
+           key={activeDataMethodSectionId} // Dynamic key
+           sectionId={activeDataMethodSectionId}
+           isCurrentSection={activeSection === activeDataMethodSectionId}
+           onRequestFeedback={handleMagic}
+           handleSectionFocus={handleSectionFocus}
+           options={dataMethodOptions}
+           activeOption={activeDataMethodSectionId}
+           onToggle={handleDataMethodToggle}
+           isToggleSection={true}
+         />
       )}
-      {/* Data Method Content Section Card (Rendered Separately) */}
-      {showDataToggle && activeDataMethodSectionDef && renderStandardSectionCard(activeDataMethodSectionDef, activeSection, handleSectionFocus, handleMagic)}
-
 
       {/* Analysis Section */}
       {analysisSectionDef && renderStandardSectionCard(analysisSectionDef, activeSection, handleSectionFocus, handleMagic)}
@@ -158,11 +140,16 @@ const LeftPanel = ({
       {/* Abstract Section */}
       {abstractSectionDef && renderStandardSectionCard(abstractSectionDef, activeSection, handleSectionFocus, handleMagic)}
 
-
       {/* Pro Mode Info */}
       {sectionsStillLocked && (
         <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 mt-6">
-          {/* ... Pro mode text ... */}
+           {/* ... Pro mode text ... */}
+           <p className="text-sm text-gray-700">
+            <span className="font-medium">Progressive Mode:</span> New sections unlock as you complete previous ones with a score of 6 or higher.
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Enable "Pro Mode" in the header to see all sections immediately.
+          </p>
         </div>
       )}
     </div>
