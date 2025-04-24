@@ -34,7 +34,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             Design a scientific project, step-by-step. Structured for clarity, enhanced by AI.
           </p>
           
-            
+          <div className="space-y-4 mb-6">
             {/* AI Chat - solid blue to match chat button */}
             <div className="flex items-start">
               <div className="bg-indigo-600 p-2 rounded-full mr-3 mt-0.5">
@@ -58,7 +58,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               </div>
               <div>
                 <p className="font-medium text-gray-800">Get adaptive guidance as you work</p>
-                <p className="text-gray-600 text-sm">The "Improve Instructions" button analyzes your progress and tailors the guidance to where you are/p>
+                <p className="text-gray-600 text-sm">The "Improve Instructions" button analyzes your progress and tailors the guidance to where you are</p>
               </div>
             </div>
             
