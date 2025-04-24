@@ -27,7 +27,7 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
         return false; // User cancelled
       }
 
-      console.log(\`Starting import process for \${file.name}\`);
+      console.log("Starting import process for \${file.name}");
 
       // First, reset all state to ensure clean slate
       if (resetAllProjectState && typeof resetAllProjectState === 'function') {
