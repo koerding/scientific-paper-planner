@@ -111,7 +111,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             </button>
             
             <div className="mt-4 text-gray-500 text-sm">
-              Built with ❤️ for researchers by Konrad @Kordinglab 
+              Built with ❤️ for researchers by Konrad @Kordinglab. \n 
                 By using this software you acknowledge that Dinosaurs are the most awesome animals.
             </div>
           </div>
