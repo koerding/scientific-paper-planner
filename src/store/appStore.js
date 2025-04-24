@@ -1,5 +1,5 @@
 // FILE: src/store/appStore.js
-// Modified to add a separate global loading indicator
+// Modified to add a separate global loading indicator and fix loading state persistence
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -141,16 +141,28 @@ const useAppStore = create(
             });
             return { sections: updatedSections, scores: newScores };
        }),
-      resetState: () => set({
-        sections: getInitialSectionStates(),
-        activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
-        scores: {},
-        proMode: false,
-        ...initialUiState,
-        ...initialChatState,
-        // Reset onboarding state, but keep showHelpSplash potentially true if it was set by user action
-        onboarding: { ...initialUiState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
+      resetState: () => set((state) => {
+        // Store the current loading state to preserve it during reset
+        const currentGlobalAiLoading = state.globalAiLoading;
+        const currentLoadingState = state.loading;
+        
+        return {
+          sections: getInitialSectionStates(),
+          activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
+          scores: {},
+          proMode: false,
+          modals: initialUiState.modals,
+          // Preserve loading states during reset
+          loading: currentLoadingState, 
+          globalAiLoading: currentGlobalAiLoading,
+          reviewData: null,
+          ...initialChatState,
+          // Reset onboarding state, but keep showHelpSplash potentially true if it was set by user action
+          onboarding: { ...initialUiState.onboarding, showHelpSplash: state.onboarding.showHelpSplash }
+        };
       }),
+      
+      // FIXED: loadProjectData function to preserve globalAiLoading state
       loadProjectData: (data) => set((state) => {
             const initialSections = getInitialSectionStates();
             const loadedUserInputs = data.userInputs || {};
@@ -159,22 +171,44 @@ const useAppStore = create(
             const dataMethod = data.detectedToggles?.dataMethod || 'experiment';
             const newActiveToggles = { approach, dataMethod };
             const newScores = {};
+            
             Object.keys(mergedSections).forEach(id => {
-                mergedSections[id] = { ...initialSections[id], content: loadedUserInputs[id] !== undefined ? loadedUserInputs[id] : initialSections[id].content, aiInstructions: null, feedbackRating: null, editedSinceFeedback: false, isMinimized: false, isVisible: true, };
+                mergedSections[id] = { 
+                    ...initialSections[id], 
+                    content: loadedUserInputs[id] !== undefined ? loadedUserInputs[id] : initialSections[id].content, 
+                    aiInstructions: null, 
+                    feedbackRating: null, 
+                    editedSinceFeedback: false, 
+                    isMinimized: false, 
+                    isVisible: true, 
+                };
             });
-             const { unlockedSections } = calculateUnlockedSections(newScores, newActiveToggles);
-             Object.keys(mergedSections).forEach(sId => {
-                  const sectionDef = sectionContent.sections.find(s => s.id === sId);
-                  let isVisible = true;
-                  if (sectionDef?.category === 'approach' && sId !== approach) isVisible = false;
-                  else if (sectionDef?.category === 'dataMethod' && sId !== dataMethod) isVisible = false;
-                   if(sId === 'question') isVisible = true;
-                   mergedSections[sId].isVisible = isVisible;
-             });
+            
+            const { unlockedSections } = calculateUnlockedSections(newScores, newActiveToggles);
+            
+            Object.keys(mergedSections).forEach(sId => {
+                const sectionDef = sectionContent.sections.find(s => s.id === sId);
+                let isVisible = true;
+                if (sectionDef?.category === 'approach' && sId !== approach) isVisible = false;
+                else if (sectionDef?.category === 'dataMethod' && sId !== dataMethod) isVisible = false;
+                if (sId === 'question') isVisible = true;
+                mergedSections[sId].isVisible = isVisible;
+            });
+            
             const loadedChatMessages = data.chatMessages || {};
+            
+            // The critical fix: preserve the current globalAiLoading state
+            // This ensures loading spinners continue to show during import
             return {
-                sections: mergedSections, activeToggles: newActiveToggles, scores: newScores, proMode: true,
-                modals: initialUiState.modals, loading: initialUiState.loading, reviewData: null,
+                sections: mergedSections, 
+                activeToggles: newActiveToggles, 
+                scores: newScores, 
+                proMode: true,
+                modals: initialUiState.modals, 
+                loading: initialUiState.loading, 
+                // Keep the current globalAiLoading value instead of resetting it
+                globalAiLoading: state.globalAiLoading, 
+                reviewData: null,
                 chatMessages: loadedChatMessages,
                 currentChatMessage: '',
                 currentChatSectionId: 'question',
