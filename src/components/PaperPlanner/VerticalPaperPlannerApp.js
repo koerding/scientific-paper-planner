@@ -51,17 +51,14 @@ const VerticalPaperPlannerApp = () => {
   const currentSectionData = sections?.[activeSectionId] || null;
 
   // --- Document Import Hook ---
-  // Pass sectionContentData to the hook
   const { importLoading: docImportSpecificLoading, handleDocumentImport } = useDocumentImport(
       loadStoreProjectData,
-      sectionContentData, // Pass the imported section definitions
+      sectionContentData,
       resetState
   );
 
-  // --- MODIFICATION: Calculate combined loading state ---
-  // This calculation uses the 'loading' object from the store and the specific import hook loading state
+  // --- Combined loading state ---
   const isAnyAiLoading = Object.values(loadingFlags).some(Boolean) || docImportSpecificLoading;
-  // --- END MODIFICATION ---
 
 
   // --- Effects ---
@@ -70,9 +67,12 @@ const VerticalPaperPlannerApp = () => {
   }, []);
 
   useEffect(() => {
-     console.log(`[VPPApp] activeSectionId changed to: ${activeSectionId}, updating chat section`);
+     // REMOVED: console.log(`[VPPApp] activeSectionId changed to: ${activeSectionId}, updating chat section`);
      setCurrentChatSectionId(activeSectionId);
-     ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` });
+     // Track page view only if GA is initialized
+     if (ReactGA.isInitialized) {
+         ReactGA.send({ hitType: "pageview", page: `/section/${activeSectionId}` });
+     }
   }, [activeSectionId, setCurrentChatSectionId]);
 
   useEffect(() => {
@@ -86,7 +86,7 @@ const VerticalPaperPlannerApp = () => {
    }, [openModal]);
 
 
-  // --- Core Functions (using store actions where applicable) ---
+  // --- Core Functions ---
   const handleSectionFocus = (sectionId) => setActiveSectionId(sectionId);
   const handleContentChange = (sectionId, value) => updateSectionContent(sectionId, value);
   const handleApproachToggle = (approachId) => { trackApproachToggle(approachId); setActiveToggle('approach', approachId); };
@@ -98,8 +98,6 @@ const VerticalPaperPlannerApp = () => {
   const handleSaveWithFilename = (fileName) => { trackSave(); const sectionsToSave = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {}); saveProjectAsJson(sectionsToSave, chatMessages, fileName); closeModal('saveDialog'); };
   const handleExportRequest = () => { trackExport('any'); const sectionsToExport = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {}); exportProject(sectionsToExport, chatMessages); };
   const handleOpenExamples = () => openModal('examplesDialog');
-
-  // --- MODIFICATION: Updated handleShowHelpSplash to trigger ref ---
   const handleShowHelpSplash = () => {
     zustandShowHelpSplash();
     if (splashManagerRef.current && typeof splashManagerRef.current.showSplash === 'function') {
@@ -108,58 +106,39 @@ const VerticalPaperPlannerApp = () => {
       console.warn("Could not call showSplash on splashManagerRef");
     }
   };
-  // --- END MODIFICATION ---
-
   const handleOpenReviewModal = () => openModal('reviewModal');
-
   const handleReviewPaperRequest = async (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
-        setLoading('review', true); // Use store action
+        setLoading('review', true);
         try {
             const result = await reviewScientificPaper(file);
-            if (result.success) setReviewData(result); // Use store action
-            else { clearReviewData(); alert(`Error reviewing paper: ${result.error || 'Unknown error'}`); } // Use store action
-        } catch (error) { clearReviewData(); alert(`Error reviewing paper: ${error.message || 'Unknown error'}`); } // Use store action
-        finally { setLoading('review', false); } // Use store action
+            if (result.success) setReviewData(result);
+            else { clearReviewData(); alert(`Error reviewing paper: ${result.error || 'Unknown error'}`); }
+        } catch (error) { clearReviewData(); alert(`Error reviewing paper: ${error.message || 'Unknown error'}`); }
+        finally { setLoading('review', false); }
     };
-
-  // --- MODIFICATION: Update handleImprovementRequest to pass necessary state ---
   const handleImprovementRequest = async (sectionId = null) => {
         const targetSectionId = sectionId || activeSectionId;
         const sectionToImprove = sections?.[targetSectionId];
-
-        // Check if section exists and has content before setting loading state
         if (!sectionToImprove || sectionToImprove.content === (sectionToImprove.placeholder || '') || sectionToImprove.content.trim() === '') {
            alert("Please add content to the section before requesting feedback.");
            return;
         }
-
-        setLoading('improvement', true); // Set specific loading flag
+        setLoading('improvement', true);
         try {
-            // Call the service - it will get state internally now
-            const result = await improveBatchInstructions(
-                null, // Pass null or empty array, service gets state internally
-                null, // Pass null or empty object, service gets state internally
-                sectionContentData // Pass section definitions
-                // No need to pass forceImprovement=true, filtering logic handles it
-            );
-
-            // Process results if successful
+            const result = await improveBatchInstructions( null, null, sectionContentData );
             if (result.success && result.improvedData) {
-                // Update feedback for each section that received it
                 result.improvedData.forEach(feedbackItem => {
                     if (feedbackItem && feedbackItem.id) {
-                        updateSectionFeedback(feedbackItem.id, feedbackItem); // Use store action
+                        updateSectionFeedback(feedbackItem.id, feedbackItem);
                     }
                 });
-
-                // Auto-expand next section if current one improved successfully
-                const improvedSectionId = result.improvedData[0]?.id; // Assuming single section improvement for now
+                const improvedSectionId = result.improvedData[0]?.id;
                 if (improvedSectionId === targetSectionId) {
                     const nextSectionId = getNextVisibleSectionId(targetSectionId, activeToggles.approach, activeToggles.dataMethod);
                     if (nextSectionId && sections?.[nextSectionId]?.isMinimized) {
-                        useAppStore.getState().toggleMinimize(nextSectionId); // Can call store action directly here
+                        useAppStore.getState().toggleMinimize(nextSectionId);
                     }
                 }
             } else {
@@ -170,11 +149,9 @@ const VerticalPaperPlannerApp = () => {
             console.error("Error improving:", error);
             alert(`Error getting feedback: ${error.message}`);
         } finally {
-            setLoading('improvement', false); // Clear specific loading flag
+            setLoading('improvement', false);
         }
      };
-   // --- END MODIFICATION ---
-
   const handleCloseReviewModal = () => closeModal('reviewModal');
 
   // --- Props for Child Components ---
@@ -183,10 +160,8 @@ const VerticalPaperPlannerApp = () => {
         activeSection: activeSectionId, activeApproach: activeToggles.approach, activeDataMethod: activeToggles.dataMethod,
         handleSectionFocus, handleApproachToggle, handleDataMethodToggle,
         proMode, handleMagic: handleImprovementRequest,
-        isAnyAiLoading: isAnyAiLoading, // Pass the combined loading state
+        isAnyAiLoading: isAnyAiLoading,
     };
-
-  // --- MODIFICATION: Update interactionProps ---
   const interactionProps = {
       currentSection: currentChatSectionId,
       currentSectionTitle: sections?.[currentChatSectionId]?.title || '',
@@ -194,15 +169,14 @@ const VerticalPaperPlannerApp = () => {
       currentMessage: currentChatMessage,
       setCurrentMessage: setCurrentChatMessage,
       handleSendMessage: zustandSendMessage,
-      loading: loadingFlags.chat, // Pass specific chat loading flag
-      isAiBusy: isAnyAiLoading, // Pass the combined loading state as isAiBusy
+      loading: loadingFlags.chat,
+      isAiBusy: isAnyAiLoading,
       currentSectionData: sections?.[currentChatSectionId] || null,
   };
-  // --- END MODIFICATION ---
 
   // --- Render ---
   if (!sections || Object.keys(sections).length === 0) {
-      console.log("[VPPApp] Sections not initialized, rendering null");
+      // console.log("[VPPApp] Sections not initialized, rendering null"); // Removed
       return <div className="p-4 text-center text-gray-500">Loading application state...</div>;
   }
 
@@ -213,14 +187,14 @@ const VerticalPaperPlannerApp = () => {
       exportProject={handleExportRequest}
       saveProject={handleSaveRequest}
       loadProject={handleLoadProject}
-      importDocumentContent={handleDocumentImport} // Pass the hook's import handler
+      importDocumentContent={handleDocumentImport}
       onOpenReviewModal={handleOpenReviewModal}
       openExamplesDialog={handleOpenExamples}
       showHelpSplash={handleShowHelpSplash}
       contentAreaProps={contentAreaProps}
-      interactionProps={interactionProps} // Pass updated interactionProps
+      interactionProps={interactionProps}
       modalState={modals}
-      currentReviewData={reviewData} // Pass reviewData from store
+      currentReviewData={reviewData}
       modalActions={{
           closeConfirmDialog: () => closeModal('confirmDialog'),
           closeExamplesDialog: () => closeModal('examplesDialog'),
@@ -228,11 +202,10 @@ const VerticalPaperPlannerApp = () => {
           closePrivacyPolicy: () => closeModal('privacyPolicy'),
           closeSaveDialog: () => closeModal('saveDialog'),
           onConfirmReset: handleConfirmReset,
-          // setReviewData/clearReviewData actions are now handled internally by store
       }}
       handleReviewPaper={handleReviewPaperRequest}
       saveWithFilename={handleSaveWithFilename}
-      isAnyAiLoading={isAnyAiLoading} // Pass the combined loading state
+      isAnyAiLoading={isAnyAiLoading}
     />
   );
 };
