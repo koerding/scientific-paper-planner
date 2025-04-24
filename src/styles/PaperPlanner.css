@@ -321,12 +321,12 @@ body, html {
 
 .in-card-toggle button.active {
   background-color: #ffffff;
-  color: #1d4ed8; /* blue-700 */
+  color: #1f2937; /* gray-800 - matches standard section header color */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .in-card-toggle button:not(.active) {
-  color: #9ca3af; /* gray-400 */
+  color: #d1d5db; /* gray-300 - lighter gray as requested */
   background-color: transparent;
 }
 
