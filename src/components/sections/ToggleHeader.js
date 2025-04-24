@@ -5,6 +5,7 @@ import React from 'react';
  * A component that displays toggle options within a section header
  * Replaces the traditional section header title with toggle options
  * UPDATED: Font size now matches other section cards
+ * UPDATED: Active option is now black to match other section headers
  */
 const ToggleHeader = ({ 
   options, 
@@ -28,8 +29,8 @@ const ToggleHeader = ({
               }}
               className={`font-semibold text-lg py-1 px-2 rounded-md transition-colors ${
                 activeOption === option.id
-                  ? 'text-blue-700 bg-blue-50'
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                  ? 'text-gray-800 bg-white'
+                  : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100'
               }`}
               style={{ fontSize: 'calc(1.4 * 1rem)' }} // Match the font size of other card headers
             >
