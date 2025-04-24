@@ -1,5 +1,6 @@
 // FILE: src/components/sections/SectionCard.js
-import React, { useState, useCallback } from 'react';
+// ADDED: Debug log for activeOption prop when rendering toggle section
+import React, { useState, useCallback, useEffect } from 'react'; // Added useEffect for logging
 import useAppStore from '../../store/appStore'; // Import the Zustand store
 import SectionHeader from './SectionHeader';
 import ToggleHeader from './ToggleHeader'; // Import the new ToggleHeader component
@@ -18,10 +19,19 @@ const SectionCard = ({
   isToggleSection = false, // Flag to identify if this is a toggle section
 }) => {
   // --- Select State from Zustand Store ---
+  // Select section data based on the sectionId prop
   const section = useAppStore(useCallback((state) => state.sections[sectionId], [sectionId]));
   const updateSectionContent = useAppStore((state) => state.updateSectionContent);
   const toggleMinimize = useAppStore((state) => state.toggleMinimize);
-  
+
+  // --- ADD THIS LOG ---
+  useEffect(() => {
+      if (isToggleSection) {
+          console.log(`DEBUG [SectionCard for ${sectionId}]: Rendering toggle. Received activeOption = '${activeOption}'`);
+      }
+  }, [isToggleSection, sectionId, activeOption]);
+  // --- END ADD ---
+
   // Local state for hover/focus within the card itself
   const [isHovered, setIsHovered] = useState(false);
   // Local state for tracking if the *textarea itself* has focus
@@ -77,7 +87,7 @@ const SectionCard = ({
   // --- Styling ---
   const getBorderClasses = () => isCurrentSection ? 'border-4 border-blue-500 shadow-md' : 'border-2 border-gray-300';
   const getBackgroundColor = () => isCurrentSection ? 'bg-blue-50' : 'bg-white';
-  const getMaxHeight = () => !isMinimized ? 'max-h-[2000px]' : 'max-h-14';
+  const getMaxHeight = () => !isMinimized ? 'max-h-[2000px]' : 'max-h-14'; // Adjust max-height if needed
 
   const sectionClasses = `
     section-card rounded-md ${getBackgroundColor()} p-2 mb-2 transition-all
@@ -99,7 +109,7 @@ const SectionCard = ({
          // Use the ToggleHeader for toggle sections
          <ToggleHeader
            options={options || []}
-           activeOption={activeOption}
+           activeOption={activeOption} // Pass the prop down
            onToggle={onToggle}
            isMinimized={isMinimized}
            isHovered={isHovered || isTextareaFocused}
@@ -132,6 +142,9 @@ const SectionCard = ({
               onFocus={handleEditorFocus}
               onBlur={handleEditorBlur}
               handleTextChange={handleTextChange}
+              // Pass hover/focus state if needed by editor styling
+              // isHovered={isHovered}
+              // isFocused={isTextareaFocused}
            />
 
            <FeedbackButton
@@ -145,9 +158,12 @@ const SectionCard = ({
         </>
       )}
 
+      {/* Gradient overlay for minimized cards */}
       {isMinimized && ( <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-t from-gray-100 via-gray-50 to-transparent pointer-events-none"></div> )}
     </div>
   );
 };
 
-export default SectionCard;
+// Check if SectionCard is memoized unnecessarily - remove if present
+// export default React.memo(SectionCard); // If this line exists, remove React.memo
+export default SectionCard; // Export normally
