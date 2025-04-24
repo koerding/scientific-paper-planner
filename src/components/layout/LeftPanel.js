@@ -5,10 +5,8 @@ import { isSectionVisible, isToggleVisible } from '../../logic/progressionLogic'
 import { getVisibleSectionsInDisplayOrder, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
 import HeaderCard from '../sections/HeaderCard';
 import SectionCard from '../sections/SectionCard';
-import ResearchApproachToggle from '../toggles/ResearchApproachToggle';
-import DataAcquisitionToggle from '../toggles/DataAcquisitionToggle';
 
-// Helper function to render SectionCard
+// Helper function to render a standard SectionCard
 const renderSectionCard = (section, activeSection, handleSectionFocus, handleMagic) => {
   if (!section || !section.id) return null;
   const isCurrentActive = activeSection === section.id;
@@ -23,6 +21,33 @@ const renderSectionCard = (section, activeSection, handleSectionFocus, handleMag
   );
 };
 
+// Helper function to render a toggle section
+const renderToggleSection = (
+  sectionId, 
+  options, 
+  activeOptionId, 
+  handleToggle, 
+  activeSection, 
+  handleSectionFocus, 
+  handleMagic
+) => {
+  if (!options || options.length === 0) return null;
+  const isCurrentActive = activeSection === activeOptionId;
+  
+  return (
+    <SectionCard
+      key={sectionId}
+      sectionId={activeOptionId} // Show the active toggle section
+      isCurrentSection={isCurrentActive}
+      onRequestFeedback={handleMagic}
+      handleSectionFocus={handleSectionFocus}
+      options={options}
+      activeOption={activeOptionId}
+      onToggle={handleToggle}
+      isToggleSection={true}
+    />
+  );
+};
 
 const LeftPanel = ({
   activeSection,          // ID string of the currently focused section
@@ -37,7 +62,6 @@ const LeftPanel = ({
   const activeToggles = useAppStore((state) => state.activeToggles);
   const storeState = useAppStore((state) => state); // Get full state for visibility checks
 
-
   // --- Derived State & Logic ---
   const allSectionsArray = sections && typeof sections === 'object' ? Object.values(sections) : [];
   const visibleSections = getVisibleSectionsInDisplayOrder(
@@ -49,39 +73,49 @@ const LeftPanel = ({
   const showApproachToggle = isToggleVisible('approach', storeState);
   const showDataToggle = isToggleVisible('data', storeState);
 
+  // Define approach and data method toggle options
+  const approachOptions = [
+    { id: 'hypothesis', label: 'Hypothesis Testing' },
+    { id: 'needsresearch', label: 'Needs-Based' },
+    { id: 'exploratoryresearch', label: 'Exploratory' }
+  ];
+  
+  const dataMethodOptions = [
+    { id: 'experiment', label: 'New Experiment' },
+    { id: 'existingdata', label: 'Existing Data' },
+    { id: 'theorysimulation', label: 'Theory/Simulation' }
+  ];
+
   const approachSectionIds = getApproachSectionIds();
   const dataMethodSectionIds = getDataMethodSectionIds();
   const questionSection = visibleSections.find(section => section?.id === 'question');
-  const approachSection = visibleSections.find(section => section && approachSectionIds.includes(section.id) && section.id === activeToggles.approach);
   const audienceSection = visibleSections.find(section => section?.id === 'audience');
   const relatedPapersSection = visibleSections.find(section => section?.id === 'relatedpapers');
-  const dataMethodSection = visibleSections.find(section => section && dataMethodSectionIds.includes(section.id) && section.id === activeToggles.dataMethod);
-  const remainingSections = visibleSections.filter(section => section && ['analysis', 'process', 'abstract'].includes(section.id) );
+  const remainingSections = visibleSections.filter(section => 
+    section && 
+    ['analysis', 'process', 'abstract'].includes(section.id)
+  );
+  
   const totalPossibleSections = 11;
   const sectionsStillLocked = !proMode && visibleSections.length < totalPossibleSections;
 
-
   return (
-    // --- UPDATED PADDING ---
-    // Increased pt-5 to pt-20 (adjust if needed based on actual header height)
     <div className="w-1/2 h-full overflow-y-auto px-4 pt-14 pb-12 box-border flex-shrink-0">
       <HeaderCard />
 
       {/* Question Section */}
       {questionSection && renderSectionCard(questionSection, activeSection, handleSectionFocus, handleMagic)}
 
-      {/* Research Approach Toggle integrated more closely with the section card */}
-      {showApproachToggle && (
-        <div className="mt-3 mb-1">
-          <ResearchApproachToggle
-            activeApproach={activeToggles.approach}
-            setActiveApproach={handleApproachToggle}
-          />
-        </div>
+      {/* Research Approach Toggle Section */}
+      {showApproachToggle && renderToggleSection(
+        'approach_toggle',
+        approachOptions,
+        activeToggles.approach,
+        handleApproachToggle,
+        activeSection,
+        handleSectionFocus,
+        handleMagic
       )}
-
-      {/* Active Approach Section - closer to its toggle */}
-      {approachSection && renderSectionCard(approachSection, activeSection, handleSectionFocus, handleMagic)}
 
       {/* Audience Section */}
       {audienceSection && renderSectionCard(audienceSection, activeSection, handleSectionFocus, handleMagic)}
@@ -89,18 +123,16 @@ const LeftPanel = ({
       {/* Related Papers Section */}
       {relatedPapersSection && renderSectionCard(relatedPapersSection, activeSection, handleSectionFocus, handleMagic)}
 
-      {/* Data Acquisition Toggle integrated with its section */}
-      {showDataToggle && (
-        <div className="mt-3 mb-1">
-          <DataAcquisitionToggle
-            activeMethod={activeToggles.dataMethod}
-            setActiveMethod={handleDataMethodToggle}
-          />
-        </div>
+      {/* Data Acquisition Toggle Section */}
+      {showDataToggle && renderToggleSection(
+        'data_toggle',
+        dataMethodOptions,
+        activeToggles.dataMethod,
+        handleDataMethodToggle,
+        activeSection,
+        handleSectionFocus,
+        handleMagic
       )}
-
-      {/* Active Data Method Section - closer to its toggle */}
-      {dataMethodSection && renderSectionCard(dataMethodSection, activeSection, handleSectionFocus, handleMagic)}
 
       {/* Remaining Sections */}
       {remainingSections.map(section => renderSectionCard(section, activeSection, handleSectionFocus, handleMagic))}
