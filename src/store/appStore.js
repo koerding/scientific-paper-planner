@@ -2,7 +2,7 @@
 // Modified to add a separate global loading indicator
 // REVERTED: loadProjectData handles original save format (content + chat)
 // REVERTED: Removed merge function and simplified initial state
-// MODIFIED: getInitialSectionStates sets sections to be initially invisible but expanded
+// FIXED: Removed setProMode call from onRehydrateStorage to prevent initialization errors
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -27,10 +27,8 @@ const getInitialSectionStates = () => {
             content: section.placeholder || '',
             originalInstructions: section.subsections || [], // Keep original instructions
             aiInstructions: null, // AI feedback starts as null
-            // --- MODIFIED INITIAL STATE ---
-            isMinimized: false, // Make ALL sections initially expanded (open)
-            isVisible: isQuestion, // Make ONLY question initially visible
-            // --- END MODIFICATION ---
+            isMinimized: !isQuestion, // Start with only question expanded
+            isVisible: isQuestion, // Start with only question visible (progression logic handles others)
             feedbackRating: null, // Feedback rating starts as null
             editedSinceFeedback: false, // Not edited initially
             lastEditTimestamp: 0, // Timestamp for edit tracking
@@ -44,9 +42,7 @@ const initialState = {
     sections: getInitialSectionStates(),
     activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
     scores: {},
-    // --- MODIFIED INITIAL STATE ---
-    proMode: false, // Start with proMode false to respect initial visibility
-    // --- END MODIFICATION ---
+    proMode: false, // Start with proMode false
     modals: {
         confirmDialog: false, examplesDialog: false, reviewModal: false,
         privacyPolicy: false, saveDialog: false
@@ -369,12 +365,10 @@ const useAppStore = create(
         console.log("Zustand state hydration starting...");
         return (hydratedState, error) => {
           if (error) {
-            console.error("Error rehydrating Zustand state:", error);
+            console.error("Error rehydrating Zustand state:", error); // Log the actual error
           } else {
             console.log("Zustand state hydration finished successfully.");
-            // Trigger visibility update after hydration using the default proMode=false
-            // This ensures progression logic applies correctly on initial load
-            useAppStore.getState().setProMode(useAppStore.getState().proMode);
+            // --- REMOVED setProMode call ---
           }
         }
       },
