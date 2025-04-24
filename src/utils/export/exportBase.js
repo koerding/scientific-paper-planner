@@ -2,6 +2,7 @@
 
 /**
  * Base export utilities shared across different export formats
+ * UPDATED: Modified validateProjectData for new save format
  */
 
 /**
@@ -13,22 +14,22 @@ export const promptForFilename = (extension) => {
   // Generate a default filename with timestamp
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
   const defaultFileName = `scientific-paper-plan-${timestamp}`;
-  
+
   // Ask for a file name
   const customFileName = prompt(`Enter a name for your exported ${extension.toUpperCase()} file:`, defaultFileName);
-  
+
   // If user cancels prompt, return null
   if (!customFileName) return null;
-  
+
   // Ensure filename has correct extension
-  return customFileName.endsWith(`.${extension}`) 
-    ? customFileName 
+  return customFileName.endsWith(`.${extension}`)
+    ? customFileName
     : `${customFileName}.${extension}`;
 };
 
 /**
  * Creates a format selection dialog and handles the export based on user selection
- * @param {Object} userInputs - The user inputs
+ * @param {Object} userInputs - The user inputs (content only for PDF/DOCX/MD)
  * @param {Object} chatMessages - The chat messages
  * @param {Object} sectionContent - The section content
  * @param {Object} exporters - Object containing export functions by format
@@ -39,7 +40,7 @@ export const showExportDialog = (userInputs, chatMessages, sectionContent, expor
     const formatDialog = document.createElement('div');
     formatDialog.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
     formatDialog.id = 'format-selection-dialog';
-    
+
     formatDialog.innerHTML = `
       <div class="bg-white p-6 rounded-lg shadow-xl max-w-md mx-auto">
         <h3 class="text-xl font-bold mb-4 text-gray-800">Choose Export Format</h3>
@@ -79,34 +80,34 @@ export const showExportDialog = (userInputs, chatMessages, sectionContent, expor
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(formatDialog);
-    
+
     // Handle button clicks
     document.getElementById('btn-export-pdf').addEventListener('click', () => {
       document.body.removeChild(formatDialog);
       exporters.pdf(userInputs, chatMessages, sectionContent);
     });
-    
+
     document.getElementById('btn-export-docx').addEventListener('click', () => {
       document.body.removeChild(formatDialog);
       exporters.docx(userInputs, chatMessages, sectionContent);
     });
-    
+
     document.getElementById('btn-export-md').addEventListener('click', () => {
       document.body.removeChild(formatDialog);
       exporters.markdown(userInputs, chatMessages, sectionContent);
     });
-    
+
     document.getElementById('btn-cancel-export').addEventListener('click', () => {
       document.body.removeChild(formatDialog);
     });
-    
+
     return true;
   } catch (error) {
     console.error("Error showing export dialog:", error);
     alert("There was an error showing the export dialog. Using markdown export as fallback.");
-    
+
     // Fallback to markdown export if available
     if (exporters.markdown) {
       return exporters.markdown(userInputs, chatMessages, sectionContent);
@@ -116,14 +117,14 @@ export const showExportDialog = (userInputs, chatMessages, sectionContent, expor
 };
 
 /**
- * Common function to get project content as structured text
- * @param {Object} userInputs - The user inputs
+ * Common function to get project content as structured text (used for PDF/DOCX/MD export)
+ * @param {Object} userInputs - The user inputs (content only)
  * @returns {string} - Formatted content
  */
 export const getFormattedContent = (userInputs) => {
   // Determine research approach based on filled out sections
   let researchApproach = "";
-  
+
   if (userInputs.hypothesis && userInputs.hypothesis.trim() !== "") {
     researchApproach = "## 3. Hypothesis-Based Research\n" + userInputs.hypothesis;
   } else if (userInputs.needsresearch && userInputs.needsresearch.trim() !== "") {
@@ -133,10 +134,10 @@ export const getFormattedContent = (userInputs) => {
   } else {
     researchApproach = "## 3. Research Approach\nNot completed yet";
   }
-  
+
   // Determine data acquisition approach
   let dataAcquisition = "";
-  
+
   if (userInputs.experiment && userInputs.experiment.trim() !== "") {
     dataAcquisition = "## 5. Experimental Design\n" + userInputs.experiment;
   } else if (userInputs.existingdata && userInputs.existingdata.trim() !== "") {
@@ -174,74 +175,43 @@ ${userInputs.abstract || "Not completed yet"}
 };
 
 /**
- * Validates loaded project data 
+ * Validates loaded project data (JSON save files)
+ * UPDATED: Checks for the new save format structure (version 2.0+)
  * @param {Object} data - The data to validate
  * @returns {boolean} - Whether the data is valid
  */
 export const validateProjectData = (data) => {
-  // Basic validation checks with detailed logging
-  if (!data) {
-    console.error("validateProjectData: data is null or undefined");
+  // Basic validation checks
+  if (!data || typeof data !== 'object') {
+    console.error("validateProjectData: Data is null or not an object.");
     return false;
   }
-  
-  // Check if it's an object
-  if (typeof data !== 'object') {
-    console.error("validateProjectData: data is not an object, it's a", typeof data);
+
+  // Check for the presence of the main 'sections' object
+  if (!data.sections || typeof data.sections !== 'object' || Object.keys(data.sections).length === 0) {
+    console.error("validateProjectData: Missing or invalid 'sections' object in loaded data.");
     return false;
   }
-  
-  // Direct check for the actual structure we're getting
-  console.log("validateProjectData: received data structure:", 
-              typeof data, 
-              data ? Object.keys(data).join(', ') : "null/undefined");
-  
-  // Consider different valid formats:
-  // 1. Object with userInputs property (standard format)
-  // 2. Object that IS the userInputs (the API sometimes returns this directly)
-  
-  let userInputs = null;
-  
-  // Case 1: Standard format with userInputs property
-  if (data.userInputs && typeof data.userInputs === 'object') {
-    userInputs = data.userInputs;
-    console.log("validateProjectData: found standard format with userInputs property");
-  } 
-  // Case 2: The object itself contains input fields
-  else if (data.question || data.abstract || data.audience) {
-    // The data object itself appears to be the userInputs
-    userInputs = data;
-    console.log("validateProjectData: object appears to be userInputs directly");
+
+  // Check for other expected top-level keys (optional, but good practice)
+  const expectedKeys = ['sections', 'activeToggles', 'scores', 'proMode', 'chatMessages', 'timestamp', 'version'];
+  const missingKeys = expectedKeys.filter(key => !(key in data));
+  if (missingKeys.length > 0) {
+    console.warn(`validateProjectData: Loaded data is missing optional keys: ${missingKeys.join(', ')}`);
+    // Allow loading even if some optional keys are missing, but log a warning.
   }
-  // Neither case matches
-  else {
-    console.error("validateProjectData: could not find userInputs in data");
-    return false;
-  }
-  
-  // Get all keys from userInputs to check content
-  const existingFields = Object.keys(userInputs);
-  console.log("validateProjectData: found fields:", existingFields);
-  
-  if (existingFields.length === 0) {
-    console.error("validateProjectData: userInputs is empty");
-    return false;
-  }
-  
-  // IMPROVED: Extremely lenient validation for imported documents
-  // Accept if ANY field has non-empty content
-  const hasAnyContent = existingFields.some(field => {
-    const value = userInputs[field];
-    const hasValue = typeof value === 'string' && value.trim() !== '';
-    return hasValue;
-  });
-  
+
+  // Check if at least one section has some content (very basic content check)
+  const hasAnyContent = Object.values(data.sections).some(section =>
+    section && typeof section.content === 'string' && section.content.trim() !== ''
+  );
+
   if (!hasAnyContent) {
-    console.error("validateProjectData: no fields have content");
-    return false;
+    console.warn("validateProjectData: No sections appear to have content.");
+    // Allow loading empty projects, but log a warning.
   }
-  
-  // If we made it here, the data is valid enough to use
-  console.log("validateProjectData: data is valid");
+
+  // If we passed basic checks, assume it's valid enough to attempt loading
+  console.log("validateProjectData: Data structure appears valid for loading.");
   return true;
 };
