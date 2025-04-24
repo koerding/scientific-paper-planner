@@ -6,7 +6,7 @@
  * UPDATED: Fixed syntax error in conditional checks for toggle detection.
  * UPDATED: Correctly handles the loading process without expecting a boolean return from the loadProject prop.
  * INTEGRATED: Uses Zustand's setLoading for global loading state.
- */
+ */ 
 import { useCallback } from 'react'; // Removed useState import
 import { importDocumentContent } from '../services/documentImportService';
 import useAppStore from '../store/appStore'; // Import store to access setLoading
