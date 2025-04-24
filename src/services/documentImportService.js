@@ -1,5 +1,5 @@
 // FILE: src/services/documentImportService.js
-// Reverted to the version provided by the user (simpler error handling with fallback)
+// Fixed: Escaped backslashes in documentText before embedding in template literal.
 
 /**
  * Document import service for PDF and Word documents
@@ -101,8 +101,12 @@ Create comprehensive examples that address each criterion from the grading rubri
       }
     });
 
+    // --- FIX: Escape backslashes in documentText before embedding ---
+    const escapedDocumentText = (documentText || '').replace(/\\/g, '\\\\');
+    // --- END FIX ---
+
     // Build the enhanced task prompt with placeholder examples
-    const enhancedTaskPrompt = \`
+    const enhancedTaskPrompt = `
 # Scientific Paper Extraction with Essential Fields
 
 Extract key components from the provided scientific paper text and format them in a JSON structure.
@@ -111,24 +115,24 @@ Be VERY GENEROUS in your interpretation - read between the lines and create a hi
 ## Output Format
 Your output should follow this general structure for each field (shown here with examples from our template system):
 
-question: \${placeholderExamples.question || "Research Question: [question] and Significance: [why it matters]"}
-audience: \${placeholderExamples.audience || "Target Audience/Community: [fields] and Specific Researchers: [names]"}
-hypothesis: \${placeholderExamples.hypothesis || "Hypothesis 1: [hypothesis] and Hypothesis 2: [alternative]"}
-relatedpapers: \${placeholderExamples.relatedpapers || "List of 5+ related papers"}
-analysis: \${placeholderExamples.analysis || "Data cleaning, methods, and approach"}
-process: \${placeholderExamples.process || "Skills, collaborators, timeline, etc."}
-abstract: \${placeholderExamples.abstract || "Background, objective, methods, results, conclusion"}
+question: ${placeholderExamples.question || "Research Question: [question] and Significance: [why it matters]"}
+audience: ${placeholderExamples.audience || "Target Audience/Community: [fields] and Specific Researchers: [names]"}
+hypothesis: ${placeholderExamples.hypothesis || "Hypothesis 1: [hypothesis] and Hypothesis 2: [alternative]"}
+relatedpapers: ${placeholderExamples.relatedpapers || "List of 5+ related papers"}
+analysis: ${placeholderExamples.analysis || "Data cleaning, methods, and approach"}
+process: ${placeholderExamples.process || "Skills, collaborators, timeline, etc."}
+abstract: ${placeholderExamples.abstract || "Background, objective, methods, results, conclusion"}
 
 For data methods, choose ONE of:
-experiment: \${placeholderExamples.experiment || "Variables, sample, procedures, etc."}
-existingdata: \${placeholderExamples.existingdata || "Dataset source, variables, quality, etc."}
-theorysimulation: \${placeholderExamples.theorysimulation || "Assumptions, framework, validation, etc."}
+experiment: ${placeholderExamples.experiment || "Variables, sample, procedures, etc."}
+existingdata: ${placeholderExamples.existingdata || "Dataset source, variables, quality, etc."}
+theorysimulation: ${placeholderExamples.theorysimulation || "Assumptions, framework, validation, etc."}
 
 Your output must be valid JSON with "userInputs" as the top-level key.
 
 --- DOCUMENT TEXT START ---
-\${documentText.substring(0, 8000)}\${documentText.length > 10000 ? '... [truncated]' : ''}
---- DOCUMENT TEXT END ---\`;
+${escapedDocumentText.substring(0, 8000)}${escapedDocumentText.length > 10000 ? '... [truncated]' : ''}
+--- DOCUMENT TEXT END ---`;
 
     // Call OpenAI with improved prompts
     console.log("Sending request to OpenAI with improved prompts");
@@ -146,105 +150,105 @@ Your output must be valid JSON with "userInputs" as the top-level key.
       version: "1.0-document-import"
     };
 
-    // Check if we have a valid API response and extract userInputs
-    if (apiResponse && typeof apiResponse === 'object') {
-      if (apiResponse.userInputs && typeof apiResponse.userInputs === 'object') {
-        result.userInputs = apiResponse.userInputs;
-        console.log("Processed userInputs from API response structure");
-      }
-      else if (Object.keys(apiResponse).length > 0) {
-        if (apiResponse.question || apiResponse.abstract || apiResponse.audience) {
-          result.userInputs = apiResponse;
-          console.log("Using API response directly as userInputs");
-        } else {
-          result.userInputs = apiResponse;
-          console.log("Using entire API response as userInputs (fallback)");
-        }
-      }
-      else {
-        throw new Error("API returned invalid response format");
-      }
-    } else {
-      throw new Error("API returned invalid or empty response");
-    }
+     // Check if we have a valid API response and extract userInputs
+     if (apiResponse && typeof apiResponse === 'object') {
+       if (apiResponse.userInputs && typeof apiResponse.userInputs === 'object') {
+         result.userInputs = apiResponse.userInputs;
+         console.log("Processed userInputs from API response structure");
+       }
+       else if (Object.keys(apiResponse).length > 0) {
+         if (apiResponse.question || apiResponse.abstract || apiResponse.audience) {
+           result.userInputs = apiResponse;
+           console.log("Using API response directly as userInputs");
+         } else {
+           result.userInputs = apiResponse;
+           console.log("Using entire API response as userInputs (fallback)");
+         }
+       }
+       else {
+         throw new Error("API returned invalid response format");
+       }
+     } else {
+       throw new Error("API returned invalid or empty response");
+     }
 
-    // Validate required fields
-    const validateFields = ['question', 'audience', 'abstract'];
-    const missingRequiredFields = validateFields.filter(field =>
-      !result.userInputs[field] || typeof result.userInputs[field] !== 'string' ||
-      result.userInputs[field].trim() === ''
-    );
+     // Validate required fields
+     const validateFields = ['question', 'audience', 'abstract'];
+     const missingRequiredFields = validateFields.filter(field =>
+       !result.userInputs[field] || typeof result.userInputs[field] !== 'string' ||
+       result.userInputs[field].trim() === ''
+     );
 
-    if (missingRequiredFields.length > 0) {
-      console.error("Missing required fields in API response:", missingRequiredFields);
-      throw new Error(\`API response missing required fields: \${missingRequiredFields.join(', ')}\`);
-    }
+     if (missingRequiredFields.length > 0) {
+       console.error("Missing required fields in API response:", missingRequiredFields);
+       throw new Error(`API response missing required fields: ${missingRequiredFields.join(', ')}`);
+     }
 
-    // Add any missing fields from templates
-    if (sectionContent && Array.isArray(sectionContent.sections)) {
-      sectionContent.sections.forEach(section => {
-        if (section && section.id && section.placeholder &&
-            (!result.userInputs[section.id] || String(result.userInputs[section.id]).trim() === '')) {
-          result.userInputs[section.id] = section.placeholder;
-        }
-      });
-    }
+     // Add any missing fields from templates
+     if (sectionContent && Array.isArray(sectionContent.sections)) {
+       sectionContent.sections.forEach(section => {
+         if (section && section.id && section.placeholder &&
+             (!result.userInputs[section.id] || String(result.userInputs[section.id]).trim() === '')) {
+           result.userInputs[section.id] = section.placeholder;
+         }
+       });
+     }
 
-    console.log("Final import structure with userInputs:",
-                Object.keys(result.userInputs).length, "fields");
+     console.log("Final import structure with userInputs:",
+                 Object.keys(result.userInputs).length, "fields");
 
-    // Dispatch a custom event to notify components about the import
-    window.dispatchEvent(new CustomEvent('documentImported', {
-      detail: {
-        fileName: file.name,
-        timestamp: Date.now(),
-      }
-    }));
+     // Dispatch a custom event to notify components about the import
+     window.dispatchEvent(new CustomEvent('documentImported', {
+       detail: {
+         fileName: file.name,
+         timestamp: Date.now(),
+       }
+     }));
 
-    console.log('Successfully processed paper structure');
-    return result; // Return the structured data
+     console.log('Successfully processed paper structure');
+     return result; // Return the structured data
 
-  } catch (error) {
-    console.error('Error during document import process:', error);
+   } catch (error) {
+     console.error('Error during document import process:', error);
 
-    // Create a fallback result if there was an error
-    const fallbackResult = {
-      userInputs: {},
-      chatMessages: {},
-      timestamp: new Date().toISOString(),
-      version: "1.0-import-fallback"
-    };
+     // Create a fallback result if there was an error
+     const fallbackResult = {
+       userInputs: {},
+       chatMessages: {},
+       timestamp: new Date().toISOString(),
+       version: "1.0-import-fallback"
+     };
 
-    // Fill with template data from sectionContent
-    if (sectionContent && Array.isArray(sectionContent.sections)) {
-      sectionContent.sections.forEach(section => {
-        if (section && section.id && section.placeholder) {
-          fallbackResult.userInputs[section.id] = \`[Imported from \${file.name}]\n\n\${section.placeholder}\`;
-        }
-      });
-    }
+     // Fill with template data from sectionContent
+     if (sectionContent && Array.isArray(sectionContent.sections)) {
+       sectionContent.sections.forEach(section => {
+         if (section && section.id && section.placeholder) {
+           fallbackResult.userInputs[section.id] = `[Imported from ${file.name}]\n\n${section.placeholder}`;
+         }
+       });
+     }
 
-    // Add a basic project structure based on the filename
-    const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-    const formattedName = fileName
-      .replace(/[_-]/g, " ")
-      .replace(/\b\w/g, c => c.toUpperCase()); // Capitalize words
+     // Add a basic project structure based on the filename
+     const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+     const formattedName = fileName
+       .replace(/[_-]/g, " ")
+       .replace(/\b\w/g, c => c.toUpperCase()); // Capitalize words
 
-    fallbackResult.userInputs.question = \`Research Question: How does \${formattedName} affect research outcomes?\n\nSignificance/Impact: Understanding the impact of \${formattedName} could lead to improved methodologies.\`;
-    fallbackResult.userInputs.audience = \`Target Audience/Community:\n1. Researchers in the field of \${formattedName}\n2. Policy makers\n3. Practitioners\`;
+     fallbackResult.userInputs.question = `Research Question: How does ${formattedName} affect research outcomes?\n\nSignificance/Impact: Understanding the impact of ${formattedName} could lead to improved methodologies.`;
+     fallbackResult.userInputs.audience = `Target Audience/Community:\n1. Researchers in the field of ${formattedName}\n2. Policy makers\n3. Practitioners`;
 
-    // Dispatch an event for the fallback case too
-    window.dispatchEvent(new CustomEvent('documentImported', {
-      detail: {
-        fileName: file.name,
-        timestamp: Date.now(),
-        isFallback: true
-      }
-    }));
+     // Dispatch an event for the fallback case too
+     window.dispatchEvent(new CustomEvent('documentImported', {
+       detail: {
+         fileName: file.name,
+         timestamp: Date.now(),
+         isFallback: true
+       }
+     }));
 
-    // Return fallback data instead of throwing error immediately
-    return fallbackResult;
-  }
+     // Return fallback data instead of throwing error immediately
+     return fallbackResult;
+   }
 }
 
 // Export testing utilities
