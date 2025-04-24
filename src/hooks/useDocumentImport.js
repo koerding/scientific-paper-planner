@@ -17,9 +17,6 @@ const showCustomConfirmation = async (message) => {
     // Store the resolution function so it can be called when confirmed or canceled
     window._importConfirmResolve = resolve;
     
-    // Show the confirm dialog
-    openConfirmDialog('confirmDialog');
-    
     // We'll use a custom prop on the state to track what to do when confirmed
     // See the ConfirmDialog component for how this is used
     useAppStore.setState({
@@ -38,10 +35,6 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
   
   // Get setLoading from the store
   const setLoading = useAppStore((state) => state.setLoading);
-  
-  // Get ALL store functions needed for coordinated loading state
-  const setGlobalAiLoading = useAppStore((state) => state.setGlobalAiLoading);
-  const isAnyLoading = useAppStore((state) => state.isAnyLoading());
   
   const handleDocumentImport = useCallback(async (file) => {
     if (!file) return false;
@@ -81,6 +74,11 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       // First, reset all state to ensure clean slate
       if (resetAllProjectState && typeof resetAllProjectState === 'function') {
         resetAllProjectState();
+        
+        // IMPORTANT: Reset may have cleared our loading state, so set it again
+        // This is crucial to ensure loading spinners continue after reset
+        setLoading('import', true);
+        useAppStore.setState({ globalAiLoading: true });
       } else {
         console.warn("[handleDocumentImport] resetAllProjectState function not provided");
       }
@@ -114,6 +112,9 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
         importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
         console.log(`[handleDocumentImport] Detected toggles: Approach=${detectedApproach}, Method=${detectedDataMethod}`);
 
+        // Make sure global loading is still true before loading the project
+        useAppStore.setState({ globalAiLoading: true });
+        
         // Load data into the store
         try {
             loadProject(importedData);
@@ -128,12 +129,16 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
                 } 
             }));
 
-            // Clear loading states AFTER everything is done 
-            console.log("Setting loading states to FALSE after successful import");
-            setImportLoading(false);
-            setLoading('import', false);
-            // Update global loading state directly through setState for immediate effect
-            useAppStore.setState({ globalAiLoading: false });
+            // IMPORTANT: Small delay before clearing loading states
+            // This ensures UI has time to update after project load
+            setTimeout(() => {
+              // Clear loading states AFTER everything is done 
+              console.log("Setting loading states to FALSE after successful import");
+              setImportLoading(false);
+              setLoading('import', false);
+              // Update global loading state directly through setState for immediate effect
+              useAppStore.setState({ globalAiLoading: false });
+            }, 300);
 
             return true; // Success
         } catch (loadError) {
