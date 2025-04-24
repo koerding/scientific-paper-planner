@@ -4,6 +4,7 @@ import React from 'react';
 /**
  * A component that displays toggle options within a section header
  * Replaces the traditional section header title with toggle options
+ * UPDATED: Font size now matches other section cards
  */
 const ToggleHeader = ({ 
   options, 
@@ -25,11 +26,12 @@ const ToggleHeader = ({
                 e.stopPropagation(); // Prevent card expansion/collapse
                 onToggle(option.id);
               }}
-              className={`text-sm py-1 px-2 rounded-md transition-colors ${
+              className={`font-semibold text-lg py-1 px-2 rounded-md transition-colors ${
                 activeOption === option.id
-                  ? 'font-semibold text-blue-700 bg-blue-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  ? 'text-blue-700 bg-blue-50'
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
               }`}
+              style={{ fontSize: 'calc(1.4 * 1rem)' }} // Match the font size of other card headers
             >
               {option.label}
             </button>
