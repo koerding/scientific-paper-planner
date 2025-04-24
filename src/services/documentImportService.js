@@ -27,13 +27,13 @@ function extractGradingCriteria() {
 
     // Add intro text if available
     if (section.introText) {
-      criteria.push(`<span class="math-inline">\{section\.introText\.substring\(0, 250\)\}</span>{section.introText.length > 250 ? '...' : ''}`);
+      criteria.push(`${section.introText.substring(0, 250)}${section.introText.length > 250 ? '...' : ''}`);
     }
 
     // Add subsection criteria
     section.subsections.forEach(subsection => {
       if (!subsection || !subsection.id) return;
-      criteria.push(`- ${subsection.title}: <span class="math-inline">\{subsection\.instruction\.substring\(0, 100\)\}</span>{subsection.instruction.length > 100 ? '...' : ''}`);
+      criteria.push(`- ${subsection.title}: ${subsection.instruction.substring(0, 100)}${subsection.instruction.length > 100 ? '...' : ''}`);
     });
 
     criteria.push(''); // Add a blank line between sections
@@ -131,7 +131,7 @@ theorysimulation: ${placeholderExamples.theorysimulation || "Assumptions, framew
 Your output must be valid JSON with "userInputs" as the top-level key.
 
 --- DOCUMENT TEXT START ---
-<span class="math-inline">\{escapedDocumentText\.substring\(0, 8000\)\}</span>{escapedDocumentText.length > 10000 ? '... [truncated]' : ''}
+${escapedDocumentText.substring(0, 8000)}${escapedDocumentText.length > 10000 ? '... [truncated]' : ''}
 --- DOCUMENT TEXT END ---`;
 
     // Call OpenAI with improved prompts
@@ -192,3 +192,66 @@ Your output must be valid JSON with "userInputs" as the top-level key.
            result.userInputs[section.id] = section.placeholder;
          }
        });
+     }
+
+     console.log("Final import structure with userInputs:",
+                 Object.keys(result.userInputs).length, "fields");
+
+     // Dispatch a custom event to notify components about the import
+     window.dispatchEvent(new CustomEvent('documentImported', {
+       detail: {
+         fileName: file.name,
+         timestamp: Date.now(),
+       }
+     }));
+
+     console.log('Successfully processed paper structure');
+     return result; // Return the structured data
+
+   } catch (error) {
+     console.error('Error during document import process:', error);
+
+     // Create a fallback result if there was an error
+     const fallbackResult = {
+       userInputs: {},
+       chatMessages: {},
+       timestamp: new Date().toISOString(),
+       version: "1.0-import-fallback"
+     };
+
+     // Fill with template data from sectionContent
+     if (sectionContent && Array.isArray(sectionContent.sections)) {
+       sectionContent.sections.forEach(section => {
+         if (section && section.id && section.placeholder) {
+           fallbackResult.userInputs[section.id] = `[Imported from ${file.name}]\n\n${section.placeholder}`;
+         }
+       });
+     }
+
+     // Add a basic project structure based on the filename
+     const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+     const formattedName = fileName
+       .replace(/[_-]/g, " ")
+       .replace(/\b\w/g, c => c.toUpperCase()); // Capitalize words
+
+     fallbackResult.userInputs.question = `Research Question: How does ${formattedName} affect research outcomes?\n\nSignificance/Impact: Understanding the impact of ${formattedName} could lead to improved methodologies.`;
+     fallbackResult.userInputs.audience = `Target Audience/Community:\n1. Researchers in the field of ${formattedName}\n2. Policy makers\n3. Practitioners`;
+
+     // Dispatch an event for the fallback case too
+     window.dispatchEvent(new CustomEvent('documentImported', {
+       detail: {
+         fileName: file.name,
+         timestamp: Date.now(),
+         isFallback: true
+       }
+     }));
+
+     // Return fallback data instead of throwing error immediately
+     return fallbackResult;
+   }
+}
+
+// Export testing utilities
+export const testUtils = {
+  extractGradingCriteria
+};
