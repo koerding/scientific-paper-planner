@@ -2,14 +2,13 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Replaced window.confirm with a custom non-blocking approach
+ * FIXED: Maintains loading spinner state after confirmation throughout import process
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
 import useAppStore from '../store/appStore'; // Import store to access setLoading
 
-// We'll need to create a custom confirmation dialog component
-// This will be controlled directly by the store
+// This function uses the store to show a confirmation dialog instead of blocking window.confirm
 const showCustomConfirmation = async (message) => {
   return new Promise(resolve => {
     // Use the Zustand store to show a modal
@@ -40,31 +39,36 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
   // Get setLoading from the store
   const setLoading = useAppStore((state) => state.setLoading);
   
+  // Get the global loading indicator setter
+  const setGlobalAiLoading = useAppStore((state) => state.setGlobalAiLoading);
+  
   const handleDocumentImport = useCallback(async (file) => {
     if (!file) return false;
     
     console.log(`Starting document import for ${file.name}`);
     
-    // Set both loading states at the start
+    // Set all loading states at the start
     console.log("Setting loading states to TRUE");
     setImportLoading(true);
     setLoading('import', true);
+    // Also set the global AI loading indicator to ensure consistent UI
+    setGlobalAiLoading(true);
     
     // Force a small delay to ensure state updates propagate
     await new Promise(resolve => setTimeout(resolve, 50));
     
     try {
-      // DON'T use window.confirm - instead use our custom approach
-      // that doesn't block JS execution
+      // Show confirmation dialog using our custom approach
       const confirmed = await showCustomConfirmation(
         "Creating an example from this document will replace your current work. Continue?"
       );
       
       if (!confirmed) {
         console.log("User cancelled import operation");
-        // Only clear loading states if actually cancelled
+        // Clear loading states if cancelled
         setImportLoading(false);
         setLoading('import', false);
+        setGlobalAiLoading(false);
         return false;
       }
       
@@ -120,10 +124,12 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
                 } 
             }));
 
-            // Clear loading states AFTER everything is done
+            // Clear loading states AFTER everything is done 
             console.log("Setting loading states to FALSE after successful import");
             setImportLoading(false);
             setLoading('import', false);
+            // Also clear the global AI loading indicator
+            setGlobalAiLoading(false);
 
             return true; // Success
         } catch (loadError) {
@@ -131,12 +137,14 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
              // Clear loading states on error
              setImportLoading(false);
              setLoading('import', false);
+             setGlobalAiLoading(false);
              throw new Error(`Failed to load processed data: ${loadError.message}`);
         }
       } else {
           // Clear loading states if import service returns invalid data
           setImportLoading(false);
           setLoading('import', false);
+          setGlobalAiLoading(false);
           throw new Error("Failed to retrieve valid data from document processing service.");
       }
     } catch (error) {
@@ -145,9 +153,10 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       // Clear loading states on general error
       setImportLoading(false);
       setLoading('import', false);
+      setGlobalAiLoading(false);
       return false; // Failure
     }
-  }, [loadProject, sectionContent, resetAllProjectState, setLoading]);
+  }, [loadProject, sectionContent, resetAllProjectState, setLoading, setGlobalAiLoading]);
 
   return {
     importLoading,
