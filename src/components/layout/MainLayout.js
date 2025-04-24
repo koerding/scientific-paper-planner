@@ -14,38 +14,35 @@ const MainLayout = ({
   currentReviewData,
   modalActions,
   handleReviewPaper, saveWithFilename,
-  // REMOVED: isAnyAiLoading // Prop removed
+  // Loading state props have been removed as they're now directly accessed from the store
 }) => {
 
-  // Prepare props for AppHeader - remove loading prop
+  // Prepare props for AppHeader - no need to pass loading props
   const appHeaderProps = {
       resetProject, exportProject, saveProject, loadProject, importDocumentContent,
       onOpenReviewModal, setShowExamplesDialog: openExamplesDialog,
       showHelpSplash,
-      // REMOVED: loading: isAnyAiLoading // Prop removed
   };
 
-  // Prepare props for InteractionElements - remove isAiBusy prop
+  // Prepare props for InteractionElements - no need to pass loading props
   const finalInteractionProps = {
       ...interactionProps,
-      // REMOVED: isAiBusy: isAnyAiLoading // Prop removed
   };
 
-   // Prepare props for ContentArea - remove isAnyAiLoading prop
+   // Prepare props for ContentArea - no need to pass loading props
    const finalContentAreaProps = {
        ...contentAreaProps,
-       // REMOVED: isAnyAiLoading: isAnyAiLoading // Prop removed
    };
 
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 text-gray-900 overflow-hidden">
       <ForwardedSplashScreenManager ref={splashManagerRef} />
-      <AppHeader {...appHeaderProps} /> {/* Prop removed */}
+      <AppHeader {...appHeaderProps} />
       <div className="flex flex-col flex-grow overflow-hidden relative">
         {/* Pass updated props */}
         <ContentArea {...finalContentAreaProps} />
-        <InteractionElements {...finalInteractionProps} /> {/* Prop removed */}
+        <InteractionElements {...finalInteractionProps} />
         <ModalManager
           modals={modalState}
           reviewData={currentReviewData}
