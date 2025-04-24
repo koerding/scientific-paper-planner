@@ -85,13 +85,97 @@ const VerticalPaperPlannerApp = () => {
   const handleConfirmReset = () => { resetState(); setActiveSectionId('question'); closeModal('confirmDialog'); };
   const handleLoadProject = (data) => { loadStoreProjectData(data); setActiveSectionId(data?.detectedToggles?.approach || 'question'); expandAllSections(); };
   const handleSaveRequest = () => openModal('saveDialog');
-  const handleSaveWithFilename = (fileName) => { /* ... */ };
-  const handleExportRequest = () => { /* ... */ };
+  const handleSaveWithFilename = (fileName) => {
+    // Call the actual save function
+    saveProjectAsJson(
+      // Select necessary data from Zustand store
+      Object.entries(useAppStore.getState().sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {}),
+      useAppStore.getState().chatMessages,
+      fileName // Pass the specific filename
+    );
+    closeModal('saveDialog'); // Close the dialog after saving
+  };
+  const handleExportRequest = () => {
+    // Call the actual export function
+    exportProject(
+      // Select necessary data from Zustand store
+      Object.entries(useAppStore.getState().sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {}),
+      useAppStore.getState().chatMessages,
+      sectionContentData // Pass section definitions
+    );
+  };
   const handleOpenExamples = () => openModal('examplesDialog');
-  const handleShowHelpSplash = () => { /* ... */ };
+  const handleShowHelpSplash = () => {
+    if (splashManagerRef.current && typeof splashManagerRef.current.showSplash === 'function') {
+      splashManagerRef.current.showSplash();
+    } else {
+      console.error("Help Splash Manager ref not found or showSplash not available!");
+      // As a fallback, maybe try the Zustand action if the ref fails?
+      // zustandShowHelpSplash();
+    }
+  };
   const handleOpenReviewModal = () => openModal('reviewModal');
-  const handleReviewPaperRequest = async (event) => { /* ... */ };
-  const handleImprovementRequest = async (sectionId = null) => { /* ... */ };
+  const handleReviewPaperRequest = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setLoading('review', true);
+    clearReviewData(); // Clear previous review data
+
+    try {
+      const result = await reviewScientificPaper(file);
+      setReviewData(result); // Update store with new review data
+      if (!result.success) {
+        alert(`Failed to review paper: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Error handling paper review request:", error);
+      alert(`Error reviewing paper: ${error.message || 'Unknown error'}`);
+      setReviewData({ success: false, error: error.message, paperName: file.name });
+    } finally {
+      setLoading('review', false);
+    }
+  };
+  const handleImprovementRequest = async (sectionId = null) => {
+    // Note: This function might ideally live within the hook or be called differently,
+    // but for fixing the flow, we integrate it here.
+    setLoading('improvement', true);
+    try {
+        // Call the service function - it reads state from the store directly now
+        const result = await improveBatchInstructions(
+          null, // sections (deprecated)
+          null, // userInputs (deprecated)
+          sectionContentData, // Pass definitions
+          false // forceImprovement (deprecated)
+        );
+
+        if (result.success && Array.isArray(result.improvedData)) {
+            // Update feedback for each improved section
+            result.improvedData.forEach(feedbackItem => {
+                if (feedbackItem && feedbackItem.id) {
+                    updateSectionFeedback(feedbackItem.id, feedbackItem);
+                }
+            });
+             // Auto-advance logic (optional)
+             if (sectionId && result.improvedData.some(item => item.id === sectionId && item.rating >= 6)) {
+                 const nextSectionId = getNextVisibleSectionId(sectionId, useAppStore.getState().activeToggles.approach, useAppStore.getState().activeToggles.dataMethod);
+                 if (nextSectionId) {
+                     setActiveSectionId(nextSectionId);
+                     // Optional: scroll to the next section
+                     // sectionRefs.current[nextSectionId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                 }
+             }
+        } else {
+            console.error("Instruction improvement failed:", result.errorMessage || result.message || "Unknown error");
+            alert(`Instruction improvement failed: ${result.errorMessage || result.message || 'Please try again.'}`);
+        }
+    } catch (error) {
+      console.error("Error in handleImprovementRequest:", error);
+      alert(`Error getting feedback: ${error.message || 'Unknown error'}`);
+    } finally {
+      setLoading('improvement', false);
+    }
+  };
   const handleCloseReviewModal = () => closeModal('reviewModal');
 
   // --- Props for Child Components ---
@@ -134,7 +218,14 @@ const VerticalPaperPlannerApp = () => {
       interactionProps={interactionProps}
       modalState={modals}
       currentReviewData={reviewData}
-      modalActions={{ /* ...actions... */ }}
+      modalActions={{
+        closeConfirmDialog: () => closeModal('confirmDialog'),
+        closeExamplesDialog: () => closeModal('examplesDialog'),
+        closeReviewModal: handleCloseReviewModal, // Use the existing handler
+        closePrivacyPolicy: () => closeModal('privacyPolicy'),
+        closeSaveDialog: () => closeModal('saveDialog'),
+        onConfirmReset: handleConfirmReset // Pass reset confirmation handler
+      }}
       handleReviewPaper={handleReviewPaperRequest}
       saveWithFilename={handleSaveWithFilename}
       // REMOVED: isAnyAiLoading={isAnyAiLoading} // Prop removed
