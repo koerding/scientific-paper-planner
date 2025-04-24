@@ -37,12 +37,13 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       const importedData = await importDocumentContent(file, sectionContent);
 
       // Load data
-      if (importedData && importedData.userInputs) {
+      if (importedData && (importedData.userInputs || importedData.sections)) { // Allow either for robustness
 
         // Toggle Detection Logic
         let detectedApproach = 'hypothesis';
         let detectedDataMethod = 'experiment';
 
+        // Use optional chaining and check userInputs specifically for toggle detection logic
         if (importedData.userInputs?.hasOwnProperty('needsresearch')) {
             detectedApproach = 'needsresearch';
         } else if (importedData.userInputs?.hasOwnProperty('exploratoryresearch')) {
@@ -59,15 +60,28 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
             detectedDataMethod = 'experiment';
         }
 
-        importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
+        // Ensure detectedToggles is added to the data structure being passed to loadProject
+        const dataToLoad = { ...importedData }; // Clone imported data
+        dataToLoad.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
         console.log(`[handleDocumentImport] Detected toggles: Approach=${detectedApproach}, Method=${detectedDataMethod}`);
 
         // Load data into store
         try {
-            loadProject(importedData);
+
+            // --- FIX: Restructure data for updated loadProjectData action ---
+            // The import service returns { userInputs: {...} }
+            // The loadProjectData action now expects { sections: {...} }
+            const restructuredData = {
+              ...dataToLoad, // Use the cloned data which now includes detectedToggles
+              sections: dataToLoad.userInputs || {}, // Rename userInputs to sections
+            };
+            // Remove the old userInputs key if it exists after restructuring
+            delete restructuredData.userInputs;
+            // --- End FIX ---
+
+            loadProject(restructuredData); // Call loadProject with the restructured data
             console.log(`Document ${file.name} successfully processed and loaded.`);
-            window.dispatchEvent(new CustomEvent('documentImported', { /* ... */ }));
-            // REMOVED: setImportLoading(false); // Local state removed
+            window.dispatchEvent(new CustomEvent('documentImported', { detail: { fileName: file.name, timestamp: Date.now() } }));
             // Global loading cleared in finally
             return true;
 
