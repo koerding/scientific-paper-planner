@@ -1,7 +1,8 @@
 // FILE: src/components/layout/AppHeader.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ProModeToggle from '../toggles/ProModeToggle';
 import useAppStore from '../../store/appStore'; // Import store
+import { setGlobalLoading } from '../../utils/loadingManager'; // Import our simple loading manager
 
 const AppHeader = ({
   resetProject,
@@ -13,25 +14,46 @@ const AppHeader = ({
   setShowExamplesDialog,
   showHelpSplash,
 }) => {
-  // --- Get global loading states from store ---
+  // --- Get global loading state directly from store ---
   const isAiBusy = useAppStore((state) => state.isAnyLoading());
-  const isImportLoading = useAppStore((state) => state.loading.import);
-  const globalAiLoading = useAppStore((state) => state.globalAiLoading);
   
-  // Combined loading state for consistent UI across all buttons
-  const anyButtonDisabled = isAiBusy || globalAiLoading;
+  // --- Add local state for import loading ---
+  const [localImportLoading, setLocalImportLoading] = useState(false);
+  
+  // Update global loading state when localImportLoading changes
+  useEffect(() => {
+    // Only set global loading to true when importing
+    if (localImportLoading) {
+      setGlobalLoading(true);
+    } else {
+      // When we're done importing, only clear if we were the ones who set it
+      setGlobalLoading(false);
+    }
+  }, [localImportLoading]);
+  
+  // --- Loading spinner SVG (unchanged) ---
+  const loadingSpinner = (
+    <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+  );
 
-  // Handle file import for PDF/Word docs
+  // Handle file import for PDF/Word docs - Using local state
   const handleFileImport = async (event) => {
-    console.log("AppHeader - File import triggered");
     const file = event.target.files?.[0];
     if (file && importDocumentContent) {
-        console.log(`AppHeader - Importing file: ${file.name}`);
-        // The global loading state will be managed inside handleDocumentImport
-        await importDocumentContent(file);
-        console.log("AppHeader - Import operation completed");
-    } else {
-        console.log("AppHeader - No file selected or importDocumentContent not available");
+        // Set local loading state
+        setLocalImportLoading(true);
+        
+        try {
+            await importDocumentContent(file);
+        } finally {
+            // Clear loading after a slight delay to ensure UI updates
+            setTimeout(() => {
+                setLocalImportLoading(false);
+            }, 1000); // Longer delay to ensure all processing completes
+        }
     }
     event.target.value = ''; // Reset input
   };
@@ -63,46 +85,34 @@ const AppHeader = ({
     if (resetProject) resetProject();
   };
 
-  // --- Loading spinner SVG (unchanged) ---
-  const loadingSpinner = (
-    <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-  );
-
-  // --- Button style functions (use anyButtonDisabled for consistent UI) ---
+  // --- Button style functions (unchanged, use isAiBusy now) ---
   const getButtonClasses = (baseStyle = "text-gray-700 bg-white hover:bg-gray-50", activeStyle = baseStyle) => {
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
-              ${anyButtonDisabled
+              ${isAiBusy || localImportLoading
                 ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                 : `${baseStyle} cursor-pointer`
               }`;
   };
   
-  // --- Enhanced import button with more visible loading state ---
+  // --- Import button with direct local loading state ---
   const getImportButtonClasses = () => {
-      // When specifically importing, show a more prominent loading state
-      if (isImportLoading || globalAiLoading) {
+      if (localImportLoading) {
           return 'inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors border-indigo-400 bg-indigo-300 text-indigo-800 cursor-wait animate-pulse';
       }
       
-      // Otherwise use regular busy/normal state
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
-              ${anyButtonDisabled
+              ${isAiBusy || localImportLoading
                 ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                 : 'border-indigo-500 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
               }`;
   };
   
   const getReviewButtonClasses = () => {
-      // Review button shows loading when any AI is busy
-      if (anyButtonDisabled) {
-        return 'inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors border-teal-300 bg-teal-200 text-teal-800 cursor-wait animate-pulse';
-      }
-      
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
-              border-teal-500 bg-teal-600 hover:bg-teal-700 text-white cursor-pointer`;
+              ${isAiBusy || localImportLoading
+                ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
+                : 'border-teal-500 bg-teal-600 hover:bg-teal-700 text-white cursor-pointer'
+              }`;
   };
 
 
@@ -117,53 +127,53 @@ const AppHeader = ({
             </div>
           </div>
 
-          {/* Action buttons use anyButtonDisabled for consistent UI */}
+          {/* Action buttons use isAiBusy from store */}
           <div className="flex items-center space-x-1">
             {/* New Project */}
-            <button onClick={handleNewButtonClick} disabled={anyButtonDisabled} className={getButtonClasses()}>
-              {anyButtonDisabled ? loadingSpinner : (
+            <button onClick={handleNewButtonClick} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
+              {isAiBusy || localImportLoading ? loadingSpinner : (
                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
               )} New
             </button>
-            {/* Import - Enhanced to show import-specific loading state */}
-             <label className={getImportButtonClasses()} style={anyButtonDisabled ? { pointerEvents: 'none' } : {}}>
-               {(isImportLoading || globalAiLoading) ? loadingSpinner : (
+            {/* Import - Using local loading state */}
+             <label className={getImportButtonClasses()} style={(isAiBusy || localImportLoading) ? { pointerEvents: 'none' } : {}}>
+               {localImportLoading ? loadingSpinner : (
                  <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                  </svg>
-               )} {(isImportLoading || globalAiLoading) ? "Importing..." : "Pdf->Example"}
-              <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={handleFileImport} disabled={anyButtonDisabled} />
+               )} {localImportLoading ? "Importing..." : "Pdf->Example"}
+              <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={handleFileImport} disabled={isAiBusy || localImportLoading} />
             </label>
             {/* Save */}
-            <button onClick={saveProject} disabled={anyButtonDisabled} className={getButtonClasses()}>
-               {anyButtonDisabled ? loadingSpinner : (
+            <button onClick={saveProject} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
+               {isAiBusy || localImportLoading ? loadingSpinner : (
                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                    </svg>
                )} Save
             </button>
             {/* Load */}
-             <label className={getButtonClasses()} style={anyButtonDisabled ? { pointerEvents: 'none' } : {}}>
-               {anyButtonDisabled ? loadingSpinner : (
+             <label className={getButtonClasses()} style={(isAiBusy || localImportLoading) ? { pointerEvents: 'none' } : {}}>
+               {isAiBusy || localImportLoading ? loadingSpinner : (
                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                    </svg>
                )} Load
-               <input type="file" className="hidden" accept=".json" onChange={handleFileSelection} disabled={anyButtonDisabled} />
+               <input type="file" className="hidden" accept=".json" onChange={handleFileSelection} disabled={isAiBusy || localImportLoading} />
             </label>
             {/* Examples */}
-            <button onClick={() => setShowExamplesDialog(true)} disabled={anyButtonDisabled} className={getButtonClasses()}>
-               {anyButtonDisabled ? loadingSpinner : (
+            <button onClick={() => setShowExamplesDialog(true)} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
+               {isAiBusy || localImportLoading ? loadingSpinner : (
                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                    </svg>
                )} Examples
             </button>
             {/* Export */}
-            <button onClick={exportProject} disabled={anyButtonDisabled} className={getButtonClasses()}>
-               {anyButtonDisabled ? loadingSpinner : (
+            <button onClick={exportProject} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
+               {isAiBusy || localImportLoading ? loadingSpinner : (
                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                    </svg>
@@ -171,17 +181,17 @@ const AppHeader = ({
             </button>
             {/* Pro Mode */}
             <ProModeToggle /> {/* Should generally not be disabled */}
-            {/* Review - Enhanced to always show loading spinner during global AI loading */}
-            <button onClick={onOpenReviewModal} disabled={anyButtonDisabled} className={getReviewButtonClasses()}>
-               {anyButtonDisabled ? loadingSpinner : (
+            {/* Review */}
+            <button onClick={onOpenReviewModal} disabled={isAiBusy || localImportLoading} className={getReviewButtonClasses()}>
+               {isAiBusy || localImportLoading ? loadingSpinner : (
                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                    </svg>
                )} Review
             </button>
             {/* Help */}
-            <button onClick={handleHelpClick} disabled={anyButtonDisabled} className={getButtonClasses()}>
-              {anyButtonDisabled ? loadingSpinner : (
+            <button onClick={handleHelpClick} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
+              {isAiBusy || localImportLoading ? loadingSpinner : (
                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
