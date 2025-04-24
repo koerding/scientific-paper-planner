@@ -2,6 +2,7 @@
 // Key changes:
 // 1. Remove duplicate loading state tracking
 // 2. Let child components access loading states directly from the store
+// 3. Updated handleSaveWithFilename to pass full relevant state
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
@@ -23,6 +24,7 @@ const VerticalPaperPlannerApp = () => {
   const sections = useAppStore((state) => state.sections);
   const activeToggles = useAppStore((state) => state.activeToggles);
   const proMode = useAppStore((state) => state.proMode);
+  const scores = useAppStore((state) => state.scores); // Get scores
   const updateSectionContent = useAppStore((state) => state.updateSectionContent);
   const setActiveToggle = useAppStore((state) => state.setActiveToggle);
   const updateSectionFeedback = useAppStore((state) => state.updateSectionFeedback);
@@ -44,6 +46,14 @@ const VerticalPaperPlannerApp = () => {
   const setCurrentChatMessage = useAppStore((state) => state.setCurrentChatMessage);
   const setCurrentChatSectionId = useAppStore((state) => state.setCurrentChatSectionId);
   const zustandSendMessage = useAppStore((state) => state.sendMessage);
+  const getFullStateForSave = useAppStore((state) => ({ // Helper to get relevant state parts
+      sections: state.sections,
+      activeToggles: state.activeToggles,
+      scores: state.scores,
+      proMode: state.proMode,
+      chatMessages: state.chatMessages,
+      // Add other state parts if needed for save/load
+  }));
 
 
   // --- Local State & Refs ---
@@ -67,7 +77,6 @@ const VerticalPaperPlannerApp = () => {
   }, []);
 
   useEffect(() => {
-     // REMOVED: console.log(`[VPPApp] activeSectionId changed to: ${activeSectionId}, updating chat section`);
      setCurrentChatSectionId(activeSectionId);
      // Track page view only if GA is initialized
      if (ReactGA.isInitialized) {
@@ -93,10 +102,37 @@ const VerticalPaperPlannerApp = () => {
   const handleDataMethodToggle = (methodId) => { trackDataMethodToggle(methodId); setActiveToggle('dataMethod', methodId); };
   const handleResetRequest = () => openModal('confirmDialog');
   const handleConfirmReset = () => { resetState(); setActiveSectionId('question'); closeModal('confirmDialog'); };
-  const handleLoadProject = (data) => { loadStoreProjectData(data); setActiveSectionId(data?.detectedToggles?.approach || 'question'); expandAllSections(); };
+  const handleLoadProject = (data) => {
+    // loadStoreProjectData handles merging the loaded state now
+    loadStoreProjectData(data);
+    // Set active section based on loaded data, defaulting to 'question'
+    const loadedState = useAppStore.getState(); // Get state *after* loading
+    setActiveSectionId(loadedState.activeToggles?.approach || 'question');
+    expandAllSections(); // Optionally expand all sections after load
+  };
   const handleSaveRequest = () => openModal('saveDialog');
-  const handleSaveWithFilename = (fileName) => { trackSave(); const sectionsToSave = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {}); saveProjectAsJson(sectionsToSave, chatMessages, fileName); closeModal('saveDialog'); };
-  const handleExportRequest = () => { trackExport('any'); const sectionsToExport = Object.entries(sections || {}).reduce((acc, [id, data]) => { acc[id] = data?.content; return acc; }, {}); exportProject(sectionsToExport, chatMessages); };
+
+  // --- MODIFIED: Pass the full relevant state to saveProjectAsJson ---
+  const handleSaveWithFilename = (fileName) => {
+    trackSave();
+    // Get the relevant parts of the state needed for saving
+    const stateToSave = getFullStateForSave();
+    // Pass the state object to the save function
+    saveProjectAsJson(stateToSave, fileName);
+    closeModal('saveDialog');
+  };
+  // --- END MODIFICATION ---
+
+  const handleExportRequest = () => {
+    trackExport('any');
+    // Export still uses only user inputs for simplicity in exported formats (PDF, DOCX, MD)
+    const sectionsToExport = Object.entries(sections || {}).reduce((acc, [id, data]) => {
+      acc[id] = data?.content; // Export only the content for these formats
+      return acc;
+    }, {});
+    exportProject(sectionsToExport, chatMessages); // Pass chat messages if needed for export format
+  };
+
   const handleOpenExamples = () => openModal('examplesDialog');
   const handleShowHelpSplash = () => {
     zustandShowHelpSplash();
@@ -127,19 +163,26 @@ const VerticalPaperPlannerApp = () => {
         }
         setLoading('improvement', true);
         try {
+            // Pass null for currentSections and userInputs as the service now gets state from the store
             const result = await improveBatchInstructions( null, null, sectionContentData );
             if (result.success && result.improvedData) {
                 result.improvedData.forEach(feedbackItem => {
                     if (feedbackItem && feedbackItem.id) {
+                        // Update the store with the feedback data
                         updateSectionFeedback(feedbackItem.id, feedbackItem);
                     }
                 });
+                // Logic to potentially advance section after feedback
                 const improvedSectionId = result.improvedData[0]?.id;
                 if (improvedSectionId === targetSectionId) {
                     const nextSectionId = getNextVisibleSectionId(targetSectionId, activeToggles.approach, activeToggles.dataMethod);
                     if (nextSectionId && sections?.[nextSectionId]?.isMinimized) {
                         useAppStore.getState().toggleMinimize(nextSectionId);
                     }
+                    // Optionally, focus the next section
+                    // if (nextSectionId) {
+                    //   setActiveSectionId(nextSectionId);
+                    // }
                 }
             } else {
                 console.error("Improvement failed", result);
@@ -157,13 +200,13 @@ const VerticalPaperPlannerApp = () => {
   // --- Props for Child Components ---
   const safeSections = sections || {};
   const contentAreaProps = {
-        activeSection: activeSectionId, 
-        activeApproach: activeToggles.approach, 
+        activeSection: activeSectionId,
+        activeApproach: activeToggles.approach,
         activeDataMethod: activeToggles.dataMethod,
-        handleSectionFocus, 
-        handleApproachToggle, 
+        handleSectionFocus,
+        handleApproachToggle,
         handleDataMethodToggle,
-        proMode, 
+        proMode,
         handleMagic: handleImprovementRequest,
         // Loading state is accessed by components directly from store when needed
     };
@@ -181,7 +224,6 @@ const VerticalPaperPlannerApp = () => {
 
   // --- Render ---
   if (!sections || Object.keys(sections).length === 0) {
-      // console.log("[VPPApp] Sections not initialized, rendering null"); // Removed
       return <div className="p-4 text-center text-gray-500">Loading application state...</div>;
   }
 
@@ -190,8 +232,8 @@ const VerticalPaperPlannerApp = () => {
       splashManagerRef={splashManagerRef}
       resetProject={handleResetRequest}
       exportProject={handleExportRequest}
-      saveProject={handleSaveRequest}
-      loadProject={handleLoadProject}
+      saveProject={handleSaveRequest} // Pass the function that opens the save dialog
+      loadProject={handleLoadProject} // Pass the function that handles loading data into the store
       importDocumentContent={handleDocumentImport}
       onOpenReviewModal={handleOpenReviewModal}
       openExamplesDialog={handleOpenExamples}
@@ -209,7 +251,7 @@ const VerticalPaperPlannerApp = () => {
           onConfirmReset: handleConfirmReset,
       }}
       handleReviewPaper={handleReviewPaperRequest}
-      saveWithFilename={handleSaveWithFilename}
+      saveWithFilename={handleSaveWithFilename} // Pass the function that performs the actual save
       // No need to pass isAnyAiLoading as a prop anymore - components access store directly
     />
   );
