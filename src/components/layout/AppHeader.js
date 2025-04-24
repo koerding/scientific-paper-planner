@@ -1,4 +1,6 @@
 // FILE: src/components/layout/AppHeader.js
+// MODIFIED: Changed justify-left to justify-between for alignment
+
 import React, { useState } from 'react';
 import ProModeToggle from '../toggles/ProModeToggle';
 import useAppStore from '../../store/appStore'; // Import store
@@ -15,10 +17,10 @@ const AppHeader = ({
 }) => {
   // --- Get global loading state directly from store ---
   const isAiBusy = useAppStore((state) => state.isAnyLoading());
-  
+
   // --- Add local state for import loading ---
   const [localImportLoading, setLocalImportLoading] = useState(false);
-   
+
   // --- Loading spinner SVG (unchanged) ---
   const loadingSpinner = (
     <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -33,7 +35,7 @@ const AppHeader = ({
     if (file && importDocumentContent) {
         // Set local loading state
         setLocalImportLoading(true);
-        
+
         try {
             await importDocumentContent(file);
         } finally {
@@ -81,20 +83,20 @@ const AppHeader = ({
                 : `${baseStyle} cursor-pointer`
               }`;
   };
-  
+
   // --- Import button with direct local loading state ---
   const getImportButtonClasses = () => {
       if (localImportLoading) {
           return 'inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors border-indigo-400 bg-indigo-300 text-indigo-800 cursor-wait animate-pulse';
       }
-      
+
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
               ${isAiBusy
                 ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                 : 'border-indigo-500 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
               }`;
   };
-  
+
   const getReviewButtonClasses = () => {
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
               ${isAiBusy
@@ -107,15 +109,18 @@ const AppHeader = ({
   return (
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-2">
-        <div className="flex items-center justify-left">
-          {/* Logo */}
+        {/* --- MODIFICATION: Changed justify-left to justify-between --- */}
+        <div className="flex items-center justify-between">
+          {/* Logo (First direct child) */}
           <div className="flex items-center">
             <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center mr-2">
               <span className="font-bold text-lg">SP</span>
             </div>
+            {/* Optionally add app title here if desired */}
+            {/* <span className="font-semibold text-gray-700">Planner</span> */}
           </div>
 
-          {/* Action buttons use isAiBusy from store */}
+          {/* Action buttons group (Second direct child) */}
           <div className="flex items-center space-x-1">
             {/* New Project */}
             <button onClick={handleNewButtonClick} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
@@ -151,6 +156,14 @@ const AppHeader = ({
                )} Load
                <input type="file" className="hidden" accept=".json" onChange={handleFileSelection} disabled={isAiBusy || localImportLoading} />
             </label>
+            {/* Examples */}
+            <button onClick={() => setShowExamplesDialog(true)} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
+               {isAiBusy ? loadingSpinner : (
+                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                   </svg>
+               )} Examples
+            </button>
             {/* Export */}
             <button onClick={exportProject} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
                {isAiBusy ? loadingSpinner : (
@@ -178,7 +191,10 @@ const AppHeader = ({
               )} Help
             </button>
           </div>
+          {/* --- END Action buttons group --- */}
+
         </div>
+        {/* --- END MODIFICATION --- */}
       </div>
     </header>
   );
