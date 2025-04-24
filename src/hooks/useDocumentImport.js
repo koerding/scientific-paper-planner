@@ -2,28 +2,29 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Added calls to set global Zustand loading state for 'import'.
+ * UPDATED: Enhanced loading state management in the Zustand store
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
 import useAppStore from '../store/appStore'; // Import store to access setLoading
 
-// Removed import from sectionStateService
-
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
+  // We maintain local loading state for internal use while also setting
+  // the global loading state in the store for consistent UI blocking
   const [importLoading, setImportLoading] = useState(false);
   // Get setLoading from the store
   const setLoading = useAppStore((state) => state.setLoading);
 
   const handleDocumentImport = useCallback(async (file) => {
+    // Set both loading states at the start
     setImportLoading(true);
-    setLoading('import', true); // <--- Set global loading START
+    setLoading('import', true);
 
     try {
       // Ask for confirmation
       if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
         setImportLoading(false);
-        setLoading('import', false); // <--- Clear global loading on cancel
+        setLoading('import', false);
         return false; // User cancelled
       }
 
@@ -72,17 +73,23 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
             console.log(`Document ${file.name} successfully processed and loaded.`);
 
             // Dispatch event (unchanged)
-            window.dispatchEvent(new CustomEvent('documentImported', { /* ... details ... */ }));
+            window.dispatchEvent(new CustomEvent('documentImported', { 
+                detail: { 
+                    fileName: file.name,
+                    timestamp: Date.now(),
+                    success: true
+                } 
+            }));
 
-            // Set local loading false here after successful load
+            // Clear loading states
             setImportLoading(false);
-            // Global loading will be cleared in the finally block
+            setLoading('import', false);
 
             return true; // Indicate success
 
         } catch (loadError) {
              console.error("Error during the loadProject (store update) step:", loadError);
-             // Ensure loading states are cleared on error during load
+             // Ensure loading states are cleared on error
              setImportLoading(false);
              setLoading('import', false);
              throw new Error(`Failed to load processed data into application state: ${loadError.message}`);
@@ -102,14 +109,12 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       setImportLoading(false);
       setLoading('import', false);
       return false; // Indicate failure
-    } finally {
-        // Ensure global loading is always cleared when the process finishes (success or error)
-        setLoading('import', false); // <--- Set global loading END
-        // Note: local setImportLoading(false) is handled in try/catch blocks
     }
-  }, [loadProject, sectionContent, resetAllProjectState, setLoading]); // Add setLoading dependency
+    // No need for finally block since we're clearing loading states in all paths
+  }, [loadProject, sectionContent, resetAllProjectState, setLoading]);
 
-  // Return the local loading state (used by VerticalPaperPlannerApp for isAnyAiLoading)
+  // Return the local loading state (used by VerticalPaperPlannerApp for internal tracking)
+  // The global state in the store is used for UI blocking across components
   return {
     importLoading,
     handleDocumentImport
