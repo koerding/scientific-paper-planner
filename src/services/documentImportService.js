@@ -2,8 +2,7 @@
 
 /**
  * Document import service for PDF and Word documents
- * UPDATED: Now uses the refactored documentProcessor
- * UPDATED: Removed import from deleted sectionStateService
+ * UPDATED: Modified "Add any missing fields" logic to NOT re-add toggle keys omitted by AI.
  */
 import { callOpenAI } from './openaiService';
 import { loadPDFJS, extractTextFromDocument } from './documentProcessor';
@@ -39,11 +38,6 @@ function extractGradingCriteria() {
   });
 
   const criteriaStr = criteria.join('\n');
-
-  // Log the full criteria to the console for inspection
-  // console.log("GRADING CRITERIA FOR IMPORT:"); // Keep commented out unless debugging
-  // console.log(criteriaStr);
-
   return criteriaStr;
 }
 
@@ -54,17 +48,16 @@ function extractGradingCriteria() {
  * @returns {Promise<Object>} - The structured data for loading into the planner
  */
 export async function importDocumentContent(file, sections = null) {
-  // Ensure we have the section content data (either passed in or from import)
   const sectionContent = sections || sectionContentData;
   let documentText = '';
 
   try {
-    // Preload PDF.js if needed for PDF files
+    // Preload PDF.js if needed
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
       try { await loadPDFJS(); } catch (loadError) { console.warn("Failed to load PDF.js:", loadError); }
     }
 
-    // Extract text using the dedicated document processor
+    // Extract text
     console.log(`Starting text extraction for ${file.name}`);
     documentText = await extractTextFromDocument(file);
     console.log(`Extraction successful for ${file.name}. Text length: ${documentText.length}`);
@@ -72,18 +65,17 @@ export async function importDocumentContent(file, sections = null) {
     // Extract grading criteria
     const gradingCriteria = extractGradingCriteria();
     console.log("Extracted grading criteria for prompt context");
-    // console.log("GRADING CRITERIA LENGTH:", gradingCriteria.length, "characters"); // Keep commented out unless debugging
 
-    // Build improved system prompt with clear requirements
+    // Build system prompt (using the stricter version from previous step)
     const enhancedSystemPrompt = `You are analyzing a scientific paper to extract its structure based on specific grading criteria.
 Be methodical, accurate, and ensure your output aligns with the evaluation standards.
 
 IMPORTANT: Your output will be graded based on how well it meets the criteria for each section outlined below.
 
 **CRITICAL REQUIREMENTS:**
-1. Your response MUST include ALL of these REQUIRED fields: question, audience, hypothesis, relatedpapers, analysis, process, abstract
-2. You MUST choose EXACTLY ONE research approach: either hypothesis OR needsresearch OR exploratoryresearch
-3. You MUST choose EXACTLY ONE data collection method: either experiment OR existingdata OR theorysimulation
+1. Your response MUST include ALL of these REQUIRED fields: question, audience, relatedpapers, analysis, process, abstract
+2. You MUST choose EXACTLY ONE research approach key to include: either hypothesis OR needsresearch OR exploratoryresearch. DO NOT include the other two keys.
+3. You MUST choose EXACTLY ONE data collection method key to include: either experiment OR existingdata OR theorysimulation. DO NOT include the other two keys.
 4. DO NOT include placeholder comments in your response
 5. Each field must be populated with substantial content
 6. Fill out every component that the placeholders ask for
@@ -98,7 +90,7 @@ Document text (first part): ${documentText.substring(0, 500)}
 
 Create comprehensive examples that address each criterion from the grading rubric.`;
 
-    // Create examples of placeholder structure from sectionContent.json
+    // Create examples of placeholder structure
     const placeholderExamples = {};
     sectionContent.sections.forEach(section => {
       if (section && section.id && section.placeholder) {
@@ -106,7 +98,7 @@ Create comprehensive examples that address each criterion from the grading rubri
       }
     });
 
-    // Build the enhanced task prompt with placeholder examples
+     // Build the task prompt (using the stricter version from previous step)
     const enhancedTaskPrompt = `
 # Scientific Paper Extraction with Essential Fields
 
@@ -118,16 +110,14 @@ Your output should follow this general structure for each field (shown here with
 
 question: ${placeholderExamples.question || "Research Question: [question] and Significance: [why it matters]"}
 audience: ${placeholderExamples.audience || "Target Audience/Community: [fields] and Specific Researchers: [names]"}
-hypothesis: ${placeholderExamples.hypothesis || "Hypothesis 1: [hypothesis] and Hypothesis 2: [alternative]"}
 relatedpapers: ${placeholderExamples.relatedpapers || "List of 5+ related papers"}
 analysis: ${placeholderExamples.analysis || "Data cleaning, methods, and approach"}
 process: ${placeholderExamples.process || "Skills, collaborators, timeline, etc."}
 abstract: ${placeholderExamples.abstract || "Background, objective, methods, results, conclusion"}
 
-For data methods, choose ONE of:
-experiment: ${placeholderExamples.experiment || "Variables, sample, procedures, etc."}
-existingdata: ${placeholderExamples.existingdata || "Dataset source, variables, quality, etc."}
-theorysimulation: ${placeholderExamples.theorysimulation || "Assumptions, framework, validation, etc."}
+**CRITICAL INSTRUCTION:** Based on your selections above:
+- **Include EXACTLY ONE key** for the research approach (\`hypothesis\` OR \`needsresearch\` OR \`exploratoryresearch\`) in the \`userInputs\` object. **DO NOT include the keys for the other two approaches.**
+- **Include EXACTLY ONE key** for the data collection method (\`experiment\` OR \`existingdata\` OR \`theorysimulation\`) in the \`userInputs\` object. **DO NOT include the keys for the other two methods.**
 
 Your output must be valid JSON with "userInputs" as the top-level key.
 
@@ -135,7 +125,7 @@ Your output must be valid JSON with "userInputs" as the top-level key.
 ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncated]' : ''}
 --- DOCUMENT TEXT END ---`;
 
-    // Call OpenAI with improved prompts
+    // Call OpenAI
     console.log("Sending request to OpenAI with improved prompts");
     const apiResponse = await callOpenAI(
       enhancedTaskPrompt,
@@ -143,125 +133,121 @@ ${documentText.substring(0, 8000)}${documentText.length > 10000 ? '... [truncate
       {}, [], { temperature: 0.3, max_tokens: 3000 }, [], enhancedSystemPrompt, true // Use JSON mode
     );
 
-    // Format the result correctly
+    // Format the result
     let result = {
       userInputs: {},
-      chatMessages: {}, // Keep chatMessages empty for import result
+      chatMessages: {},
       timestamp: new Date().toISOString(),
       version: "1.0-document-import"
     };
 
-    // Check if we have a valid API response and extract userInputs
+    // Extract userInputs from API response
     if (apiResponse && typeof apiResponse === 'object') {
       if (apiResponse.userInputs && typeof apiResponse.userInputs === 'object') {
         result.userInputs = apiResponse.userInputs;
         console.log("Processed userInputs from API response structure");
       }
-      else if (Object.keys(apiResponse).length > 0) {
-        if (apiResponse.question || apiResponse.abstract || apiResponse.audience) {
-          result.userInputs = apiResponse;
-          console.log("Using API response directly as userInputs");
-        } else {
-          result.userInputs = apiResponse;
-          console.log("Using entire API response as userInputs (fallback)");
-        }
+      // Add other potential response structures if necessary, based on observation
+      else if (apiResponse.question || apiResponse.abstract || apiResponse.audience) {
+          result.userInputs = apiResponse; // Assume the response itself is userInputs
+          console.log("Using API response directly as userInputs (structure assumption)");
       }
-      else {
-        throw new Error("API returned invalid response format");
+       else {
+        // If it's an object but doesn't look like userInputs, log it but treat as potentially invalid
+        console.warn("API response received, but 'userInputs' key not found or object doesn't match expected fields. Using response directly.", apiResponse);
+        result.userInputs = apiResponse; // Assign anyway, validation might catch issues
       }
     } else {
       throw new Error("API returned invalid or empty response");
     }
 
-    // Validate required fields
-    const validateFields = ['question', 'audience', 'abstract'];
-    const missingRequiredFields = validateFields.filter(field =>
-      !result.userInputs[field] || typeof result.userInputs[field] !== 'string' ||
-      result.userInputs[field].trim() === ''
-    );
 
-    if (missingRequiredFields.length > 0) {
-      console.error("Missing required fields in API response:", missingRequiredFields);
-      throw new Error(`API response missing required fields: ${missingRequiredFields.join(', ')}`);
-    }
+    // ==========================================================
+    // == MODIFIED LOGIC: Add missing fields, BUT skip specific toggle keys ==
+    // ==========================================================
+    const researchApproachKeys = ['hypothesis', 'needsresearch', 'exploratoryresearch'];
+    const dataMethodKeys = ['experiment', 'existingdata', 'theorysimulation'];
+    const toggleKeysToSkip = new Set([...researchApproachKeys, ...dataMethodKeys]);
 
-    // Add any missing fields from templates
     if (sectionContent && Array.isArray(sectionContent.sections)) {
       sectionContent.sections.forEach(section => {
-        if (section && section.id && section.placeholder &&
-            (!result.userInputs[section.id] || result.userInputs[section.id].trim() === '')) {
-          result.userInputs[section.id] = section.placeholder;
+        if (section && section.id && section.placeholder) {
+          // Only add back if the key is missing OR empty AND it's NOT one of the toggle keys we asked the AI to omit
+          if (!toggleKeysToSkip.has(section.id) &&
+              (!result.userInputs.hasOwnProperty(section.id) ||
+               (typeof result.userInputs[section.id] === 'string' && result.userInputs[section.id].trim() === '') ||
+               result.userInputs[section.id] === null || result.userInputs[section.id] === undefined
+              ))
+          {
+              console.log(`[importDocumentContent] Adding missing/empty non-toggle field: ${section.id}`);
+              result.userInputs[section.id] = section.placeholder;
+          } else if (toggleKeysToSkip.has(section.id) && !result.userInputs.hasOwnProperty(section.id)) {
+              // Optional: Log that a toggle key was correctly omitted by AI and *not* added back
+              // console.log(`[importDocumentContent] Toggle key ${section.id} correctly omitted by AI and not re-added.`);
+          }
         }
       });
     }
+    // ==========================================================
+    // == End Modified Logic ==
+    // ==========================================================
+
+
+    // Basic validation for absolutely essential fields (optional but good practice)
+    const essentialFields = ['question', 'audience', 'abstract'];
+    const missingEssential = essentialFields.filter(field => !result.userInputs[field]);
+    if (missingEssential.length > 0) {
+         console.warn(`API response might be missing essential fields: ${missingEssential.join(', ')}`);
+         // Decide if this should be a hard error or just a warning
+         // throw new Error(`API response missing essential fields: ${missingEssential.join(', ')}`);
+    }
+
 
     console.log("Final import structure with userInputs:",
-                Object.keys(result.userInputs).length, "fields");
+                Object.keys(result.userInputs).length, "fields", Object.keys(result.userInputs)); // Log keys too
 
-    // NOTE: Expansion of sections is now handled by the loadProjectData action in the store.
-    // No need to call initializeSectionStates(false) here.
-
-    // Dispatch a custom event to notify components about the import
-    // The loadProjectData action in the store will handle the state update.
+    // Dispatch event
     window.dispatchEvent(new CustomEvent('documentImported', {
       detail: {
         fileName: file.name,
-        timestamp: Date.now(),
-        // expandAllSections: true // This flag is no longer strictly needed here
-                                 // as loadProjectData handles expansion.
+        timestamp: Date.now()
       }
     }));
 
     console.log('Successfully processed paper structure');
-    return result; // Return the structured data
+    return result;
 
   } catch (error) {
     console.error('Error during document import process:', error);
 
-    // Create a fallback result if there was an error
+    // Fallback logic (unchanged, but less likely to be needed if AI is reliable)
     const fallbackResult = {
       userInputs: {},
       chatMessages: {},
       timestamp: new Date().toISOString(),
       version: "1.0-import-fallback"
     };
-
-    // Fill with template data from sectionContent
     if (sectionContent && Array.isArray(sectionContent.sections)) {
       sectionContent.sections.forEach(section => {
         if (section && section.id && section.placeholder) {
-          fallbackResult.userInputs[section.id] = `[Imported from ${file.name}]\n\n${section.placeholder}`;
+          fallbackResult.userInputs[section.id] = `[Import Failed for ${file.name}]\n\n${section.placeholder}`;
         }
       });
     }
+     const fileName = file.name.replace(/\.[^/.]+$/, "");
+     const formattedName = fileName.replace(/[_-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+     fallbackResult.userInputs.question = `Research Question: [Import Failed] How does ${formattedName} affect research outcomes?\n\nSignificance/Impact: Understanding the impact of ${formattedName} could lead to improved methodologies.`;
+     fallbackResult.userInputs.audience = `Target Audience/Community:\n1. [Import Failed] Researchers in the field of ${formattedName}\n2. Policy makers\n3. Practitioners`;
 
-    // Add a basic project structure based on the filename
-    const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-    const formattedName = fileName
-      .replace(/[_-]/g, " ")
-      .replace(/\b\w/g, c => c.toUpperCase()); // Capitalize words
-
-    fallbackResult.userInputs.question = `Research Question: How does ${formattedName} affect research outcomes?\n\nSignificance/Impact: Understanding the impact of ${formattedName} could lead to improved methodologies.`;
-    fallbackResult.userInputs.audience = `Target Audience/Community:\n1. Researchers in the field of ${formattedName}\n2. Policy makers\n3. Practitioners`;
-
-    // NOTE: Section expansion is handled by loadProjectData in the store.
-
-    // Dispatch an event for the fallback case too
     window.dispatchEvent(new CustomEvent('documentImported', {
-      detail: {
-        fileName: file.name,
-        timestamp: Date.now(),
-        // expandAllSections: true, // No longer needed here
-        isFallback: true
-      }
+      detail: { fileName: file.name, timestamp: Date.now(), isFallback: true }
     }));
-
-    // Return fallback data instead of throwing error immediately
+    // Return fallback data
     return fallbackResult;
   }
 }
 
-// Export testing utilities
+// Export testing utilities (unchanged)
 export const testUtils = {
   extractGradingCriteria
 };
