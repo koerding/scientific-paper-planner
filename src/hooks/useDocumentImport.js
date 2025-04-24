@@ -2,47 +2,44 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Added calls to set global Zustand loading state for 'import'.
+ * REMOVED: Local importLoading state, relies solely on global Zustand state.
  */
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react'; // Removed useState import
 import { importDocumentContent } from '../services/documentImportService';
 import useAppStore from '../store/appStore'; // Import store to access setLoading
 
-// Removed import from sectionStateService
-
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
-  const [importLoading, setImportLoading] = useState(false);
-  // Get setLoading from the store
+  // REMOVED: const [importLoading, setImportLoading] = useState(false);
   const setLoading = useAppStore((state) => state.setLoading);
 
   const handleDocumentImport = useCallback(async (file) => {
-    setImportLoading(true);
-    setLoading('import', true); // <--- Set global loading START
+    // REMOVED: setImportLoading(true);
+    setLoading('import', true); // Set global loading START
 
     try {
       // Ask for confirmation
       if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
-        setImportLoading(false);
-        setLoading('import', false); // <--- Clear global loading on cancel
+        // REMOVED: setImportLoading(false);
+        setLoading('import', false); // Clear global loading on cancel
         return false; // User cancelled
       }
 
       console.log(`Starting import process for ${file.name}`);
 
-      // First, reset all state to ensure clean slate
+      // Reset state
       if (resetAllProjectState && typeof resetAllProjectState === 'function') {
         resetAllProjectState();
       } else {
         console.warn("[handleDocumentImport] resetAllProjectState function not provided");
       }
 
-      // Pass sectionContent to the import service
+      // Import content
       const importedData = await importDocumentContent(file, sectionContent);
 
-      // Load the imported data using the loadProject function (which triggers the store action)
+      // Load data
       if (importedData && importedData.userInputs) {
 
-        // Toggle Detection Logic (Checks Key Presence)
+        // Toggle Detection Logic
         let detectedApproach = 'hypothesis';
         let detectedDataMethod = 'experiment';
 
@@ -62,56 +59,45 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
             detectedDataMethod = 'experiment';
         }
 
-        // Include detected toggles in the loaded data
         importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
         console.log(`[handleDocumentImport] Detected toggles: Approach=${detectedApproach}, Method=${detectedDataMethod}`);
 
-        // Load data into the store
+        // Load data into store
         try {
             loadProject(importedData);
             console.log(`Document ${file.name} successfully processed and loaded.`);
-
-            // Dispatch event (unchanged)
-            window.dispatchEvent(new CustomEvent('documentImported', { /* ... details ... */ }));
-
-            // Set local loading false here after successful load
-            setImportLoading(false);
-            // Global loading will be cleared in the finally block
-
-            return true; // Indicate success
+            window.dispatchEvent(new CustomEvent('documentImported', { /* ... */ }));
+            // REMOVED: setImportLoading(false); // Local state removed
+            // Global loading cleared in finally
+            return true;
 
         } catch (loadError) {
              console.error("Error during the loadProject (store update) step:", loadError);
-             // Ensure loading states are cleared on error during load
-             setImportLoading(false);
-             setLoading('import', false);
-             throw new Error(`Failed to load processed data into application state: ${loadError.message}`);
+             // REMOVED: setImportLoading(false);
+             setLoading('import', false); // Clear global on error
+             throw new Error(`Failed to load processed data: ${loadError.message}`);
         }
 
       } else {
-          // Ensure loading states are cleared if import service returns invalid data
-          setImportLoading(false);
-          setLoading('import', false);
+          // REMOVED: setImportLoading(false);
+          setLoading('import', false); // Clear global on error
           throw new Error("Failed to retrieve valid data from document processing service.");
       }
 
     } catch (error) {
       console.error("Error importing document:", error);
       alert("Error importing document: " + (error.message || "Unknown error"));
-      // Ensure loading states are cleared on general error
-      setImportLoading(false);
-      setLoading('import', false);
-      return false; // Indicate failure
+      // REMOVED: setImportLoading(false);
+      setLoading('import', false); // Clear global on error
+      return false;
     } finally {
-        // Ensure global loading is always cleared when the process finishes (success or error)
-        setLoading('import', false); // <--- Set global loading END
-        // Note: local setImportLoading(false) is handled in try/catch blocks
+        setLoading('import', false); // Ensure global loading is always cleared
     }
-  }, [loadProject, sectionContent, resetAllProjectState, setLoading]); // Add setLoading dependency
+  }, [loadProject, sectionContent, resetAllProjectState, setLoading]);
 
-  // Return the local loading state (used by VerticalPaperPlannerApp for isAnyAiLoading)
+  // Return only the handler, no need to return the removed local state
   return {
-    importLoading,
+    // importLoading, // Removed
     handleDocumentImport
   };
 };
