@@ -4,8 +4,8 @@ import React from 'react';
 /**
  * A component that displays toggle options within a section header
  * Replaces the traditional section header title with toggle options
- * UPDATED: Font size now matches other section cards
- * UPDATED: Active option is now black to match other section headers
+ * UPDATED: Active option is now true black to match other section headers
+ * UPDATED: Fixed persistent selected state
  */
 const ToggleHeader = ({ 
   options, 
@@ -27,10 +27,10 @@ const ToggleHeader = ({
                 e.stopPropagation(); // Prevent card expansion/collapse
                 onToggle(option.id);
               }}
-              className={`font-semibold text-lg py-1 px-2 rounded-md transition-colors ${
+              className={`font-semibold py-1 px-2 rounded-md transition-colors ${
                 activeOption === option.id
-                  ? 'text-gray-800 bg-white'
-                  : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100'
+                  ? 'text-black bg-white active-toggle'
+                  : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100 inactive-toggle'
               }`}
               style={{ fontSize: 'calc(1.4 * 1rem)' }} // Match the font size of other card headers
             >
