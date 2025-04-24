@@ -292,7 +292,6 @@ body, html {
   }
 }
 /* Add these styles to src/styles/PaperPlanner.css */
-
 /* Add these styles to src/styles/PaperPlanner.css */
 
 /* In-card toggle styles */
@@ -319,20 +318,28 @@ body, html {
   font-weight: 600;
 }
 
-.in-card-toggle button.active {
+/* Ensure the active toggle is truly black and persists */
+.in-card-toggle button.active-toggle {
   background-color: #ffffff;
-  color: #1f2937; /* gray-800 - matches standard section header color */
+  color: #000000 !important; /* Pure black, with !important to ensure it overrides */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.in-card-toggle button:not(.active) {
-  color: #d1d5db; /* gray-300 - lighter gray as requested */
+/* Non-active toggles are very light gray */
+.in-card-toggle button.inactive-toggle {
+  color: #d1d5db; /* gray-300 - light gray */
   background-color: transparent;
 }
 
-.in-card-toggle button:not(.active):hover {
+/* Hover state for inactive toggles */
+.in-card-toggle button.inactive-toggle:hover {
   background-color: rgba(255, 255, 255, 0.5);
   color: #6b7280; /* gray-500 */
+}
+
+/* Specific selector to make active toggle match section headers */
+.toggle-section .active-toggle {
+  color: #000000 !important; /* Force black to match section headers */
 }
 
 /* Animations for toggle changes */
