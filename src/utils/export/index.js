@@ -18,45 +18,45 @@ import { exportAsDocx } from './docxExporter';
 export const exportProject = (userInputs, chatMessages, sectionContent) => {
   return showExportDialog(userInputs, chatMessages, sectionContent, {
     markdown: exportAsMarkdown,
-    pdf: exportAsPdf, 
+    pdf: exportAsPdf,
     docx: exportAsDocx
   });
 };
 
 /**
  * Creates a JSON project file for later loading
- * @param {Object} userInputs - The user inputs
+ * @param {Object} sectionsState - The full sections state object from Zustand.
  * @param {Object} chatMessages - The chat messages
  * @param {string} [fileName] - Optional custom file name (without extension)
  * @returns {boolean} Success indicator
  */
-export const saveProjectAsJson = (userInputs, chatMessages, fileName) => {
+export const saveProjectAsJson = (sectionsState, chatMessages, fileName) => {
   try {
     // Get filename from base helper
     const safeFileName = fileName || promptForFilename('json');
     if (!safeFileName) return false;
-    
+
     const jsonData = {
-      userInputs,
+      sections: sectionsState, // Save the full sections state object
       chatMessages,
       timestamp: new Date().toISOString(),
-      version: "1.0"
+      version: "1.0" // Consider updating version if format changes significantly
     };
 
     const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
     const jsonUrl = URL.createObjectURL(jsonBlob);
-    
+
     // Create a link and trigger download of JSON
     const jsonLink = document.createElement('a');
     jsonLink.href = jsonUrl;
     jsonLink.download = safeFileName;
     document.body.appendChild(jsonLink);
     jsonLink.click();
-    
+
     // Clean up JSON file link
     document.body.removeChild(jsonLink);
     URL.revokeObjectURL(jsonUrl);
-    
+
     console.log("Project saved successfully as:", safeFileName);
     return true;
   } catch (error) {
@@ -66,5 +66,5 @@ export const saveProjectAsJson = (userInputs, chatMessages, fileName) => {
   }
 };
 
-// Re-export needed functions 
+// Re-export needed functions
 export { validateProjectData };
