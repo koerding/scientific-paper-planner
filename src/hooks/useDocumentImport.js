@@ -39,8 +39,9 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
   // Get setLoading from the store
   const setLoading = useAppStore((state) => state.setLoading);
   
-  // Get the global loading indicator setter
+  // Get ALL store functions needed for coordinated loading state
   const setGlobalAiLoading = useAppStore((state) => state.setGlobalAiLoading);
+  const isAnyLoading = useAppStore((state) => state.isAnyLoading());
   
   const handleDocumentImport = useCallback(async (file) => {
     if (!file) return false;
@@ -51,8 +52,10 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
     console.log("Setting loading states to TRUE");
     setImportLoading(true);
     setLoading('import', true);
-    // Also set the global AI loading indicator to ensure consistent UI
-    setGlobalAiLoading(true);
+    
+    // Force global loading state to TRUE for all components
+    // This is critical because some components check isAnyLoading() directly
+    useAppStore.setState({ globalAiLoading: true });
     
     // Force a small delay to ensure state updates propagate
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -68,7 +71,8 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
         // Clear loading states if cancelled
         setImportLoading(false);
         setLoading('import', false);
-        setGlobalAiLoading(false);
+        // Use the store's setState method directly to update globalAiLoading
+        useAppStore.setState({ globalAiLoading: false });
         return false;
       }
       
@@ -128,8 +132,8 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
             console.log("Setting loading states to FALSE after successful import");
             setImportLoading(false);
             setLoading('import', false);
-            // Also clear the global AI loading indicator
-            setGlobalAiLoading(false);
+            // Update global loading state directly through setState for immediate effect
+            useAppStore.setState({ globalAiLoading: false });
 
             return true; // Success
         } catch (loadError) {
@@ -137,14 +141,16 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
              // Clear loading states on error
              setImportLoading(false);
              setLoading('import', false);
-             setGlobalAiLoading(false);
+             // Update global loading state directly through setState for immediate effect
+             useAppStore.setState({ globalAiLoading: false });
              throw new Error(`Failed to load processed data: ${loadError.message}`);
         }
       } else {
           // Clear loading states if import service returns invalid data
           setImportLoading(false);
           setLoading('import', false);
-          setGlobalAiLoading(false);
+          // Update global loading state directly through setState for immediate effect
+          useAppStore.setState({ globalAiLoading: false });
           throw new Error("Failed to retrieve valid data from document processing service.");
       }
     } catch (error) {
@@ -153,10 +159,11 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       // Clear loading states on general error
       setImportLoading(false);
       setLoading('import', false);
-      setGlobalAiLoading(false);
+      // Update global loading state directly through setState for immediate effect
+      useAppStore.setState({ globalAiLoading: false });
       return false; // Failure
     }
-  }, [loadProject, sectionContent, resetAllProjectState, setLoading, setGlobalAiLoading]);
+  }, [loadProject, sectionContent, resetAllProjectState, setLoading]);
 
   return {
     importLoading,
