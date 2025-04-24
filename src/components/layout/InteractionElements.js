@@ -4,7 +4,7 @@ import ModernChatInterface from '../chat/ModernChatInterface';
 
 /**
  * Component for interactive UI elements like chat
- * REMOVED: No longer receives or passes down isAiBusy prop.
+ * Updated to access loading state directly from the store instead of props
  */
 const InteractionElements = ({
   // Chat props (passed down from VerticalPaperPlannerApp)
@@ -15,8 +15,8 @@ const InteractionElements = ({
   setCurrentMessage,
   handleSendMessage,
   loading, // This is the specific chat loading state
-  // REMOVED: isAiBusy, // Prop removed
   currentSectionData,
+  onboardingStep,
 }) => {
   return (
     <>
@@ -29,8 +29,8 @@ const InteractionElements = ({
         setCurrentMessage={setCurrentMessage}
         handleSendMessage={handleSendMessage}
         loading={loading} // Pass chat-specific loading flag
-        // REMOVED: isAiBusy={isAiBusy} // Prop removed
         currentSectionData={currentSectionData}
+        onboardingStep={onboardingStep}
       />
     </>
   );
