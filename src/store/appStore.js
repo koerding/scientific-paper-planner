@@ -1,7 +1,7 @@
 // FILE: src/store/appStore.js
 // Key changes:
-// 1. Enhanced setLoading method with console logging for debugging
-// 2. Enhanced isAnyLoading method with console logging
+// 1. Added _importConfirmOperation state for custom import confirmation
+// 2. Enhanced setLoading method with better debugging
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -19,16 +19,16 @@ const getInitialSectionStates = () => {
     return sectionContent.sections.reduce((acc, section) => {
         if (!section || !section.id) return acc; // Skip invalid sections
         acc[section.id] = {
-        id: section.id,
-        title: section.title || 'Untitled Section', 
-        content: section.placeholder || '',
-        originalInstructions: section.subsections || [],
-        aiInstructions: null,
-        isMinimized: section.id !== 'question',
-        isVisible: section.id === 'question',
-        feedbackRating: null,
-        editedSinceFeedback: false,
-        lastEditTimestamp: 0,
+          id: section.id,
+          title: section.title || 'Untitled Section', 
+          content: section.placeholder || '',
+          originalInstructions: section.subsections || [],
+          aiInstructions: null,
+          isMinimized: section.id !== 'question',
+          isVisible: section.id === 'question',
+          feedbackRating: null,
+          editedSinceFeedback: false,
+          lastEditTimestamp: 0,
         };
         return acc;
     }, {});
@@ -45,7 +45,12 @@ const initialUiState = {
     improvement: false, chat: false
   },
   reviewData: null,
-  onboarding: { step: 0, showHelpSplash: false }
+  onboarding: { step: 0, showHelpSplash: false },
+  // Add a new state for import confirmation
+  _importConfirmOperation: {
+    active: false,
+    message: null
+  }
 };
 
 // Initial State for Chat
@@ -75,8 +80,8 @@ const useAppStore = create(
       isAnyLoading: () => {
         const loadingValues = Object.values(get().loading);
         const isAnyLoadingActive = loadingValues.some(Boolean);
-        // Debug logging (uncomment for debugging)
-        // console.log("isAnyLoading check:", get().loading, "Result:", isAnyLoadingActive);
+        // Debug logging
+        console.log("isAnyLoading check:", get().loading, "Result:", isAnyLoadingActive);
         return isAnyLoadingActive;
       },
 
@@ -206,9 +211,20 @@ const useAppStore = create(
        clearReviewData: () => set({ reviewData: null }),
        setOnboardingStep: (step) => set((state) => ({ onboarding: { ...state.onboarding, step: step } })),
 
-       // --- MODIFICATION: Keep _initializeOnboarding logic but don't call from onRehydrateStorage ---
+       // --- Import confirmation functions ---
+       setImportConfirmOperation: (operation) => set({
+         _importConfirmOperation: operation
+       }),
+       
+       clearImportConfirmOperation: () => set({
+         _importConfirmOperation: {
+           active: false,
+           message: null
+         }
+       }),
+
        _initializeOnboarding: () => {
-          console.log("Attempting to initialize onboarding state..."); // Add log
+          console.log("Attempting to initialize onboarding state...");
           try {
              const shouldHide = localStorage.getItem('hideWelcomeSplash') === 'true';
              set((state) => ({ onboarding: { ...state.onboarding, showHelpSplash: !shouldHide } }));
@@ -217,7 +233,6 @@ const useAppStore = create(
              console.error("Error during _initializeOnboarding:", error);
           }
        },
-       // --- END MODIFICATION ---
 
        showHelpSplash: () => {
            localStorage.removeItem('hideWelcomeSplash');
@@ -306,9 +321,8 @@ const useAppStore = create(
          scores: state.scores,
          proMode: state.proMode,
          chatMessages: state.chatMessages,
-         // Persist onboarding state without showHelpSplash maybe? Or persist it all.
-         // Let's persist it all for now.
          onboarding: state.onboarding
+         // Don't persist _importConfirmOperation
       }),
       version: 3, // Keep version
       // --- MODIFICATION: Simplified onRehydrateStorage ---
@@ -318,8 +332,6 @@ const useAppStore = create(
         return (hydratedState, error) => {
           if (error) {
             console.error("Error rehydrating Zustand state:", error);
-            // Potentially clear corrupted storage here?
-            // localStorage.removeItem('scientific-project-planner-state');
           } else {
             console.log("Zustand state hydration finished successfully.");
             // DO NOT call _initializeOnboarding here anymore.
