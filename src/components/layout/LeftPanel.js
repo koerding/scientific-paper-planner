@@ -7,6 +7,7 @@ import { isSectionVisible, isToggleVisible } from '../../logic/progressionLogic'
 import { getVisibleSectionsInDisplayOrder, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
 import HeaderCard from '../sections/HeaderCard';
 import SectionCard from '../sections/SectionCard'; // Keep this import
+import sectionContent from '../../data/sectionContent.json'; // <--- ADD THIS LINE
 
 // Helper function to render a standard SectionCard (still useful)
 const renderSectionCard = (section, activeSection, handleSectionFocus, handleMagic) => {
