@@ -2,18 +2,20 @@
 import React from 'react';
 import LeftPanel from './LeftPanel';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
+import useAppStore from '../../store/appStore'; // Import store to access loading state directly
 
 const ContentArea = ({
   // Props needed by children
   activeSection, activeApproach, activeDataMethod,
   handleSectionFocus, handleApproachToggle, handleDataMethodToggle,
-  proMode, handleMagic, isAnyAiLoading,
+  proMode, handleMagic,
+  // Loading prop is now accessed directly from the store
 }) => {
+  // Get global loading state directly from store for AI operations
+  const isAnyAiLoading = useAppStore((state) => state.isAnyLoading());
 
   return (
     // Position absolutely to fill parent, remain flex row
-    // REMOVED: flex-grow h-full overflow-hidden
-    // ADDED: absolute inset-0
     <div className="absolute inset-0 flex">
 
       {/* Left panel: Add necessary classes directly */}
@@ -30,7 +32,7 @@ const ContentArea = ({
       <FullHeightInstructionsPanel
         activeSectionId={activeSection}
         improveInstructions={handleMagic}
-        loading={isAnyAiLoading}
+        loading={isAnyAiLoading} // Pass the loading state from store
       />
     </div>
   );
