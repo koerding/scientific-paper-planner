@@ -1,7 +1,5 @@
 // FILE: src/store/appStore.js
-// Key changes:
-// 1. Added _importConfirmOperation state for custom import confirmation
-// 2. Enhanced setLoading method with better debugging
+// Modified to add a separate global loading indicator
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -19,16 +17,16 @@ const getInitialSectionStates = () => {
     return sectionContent.sections.reduce((acc, section) => {
         if (!section || !section.id) return acc; // Skip invalid sections
         acc[section.id] = {
-          id: section.id,
-          title: section.title || 'Untitled Section', 
-          content: section.placeholder || '',
-          originalInstructions: section.subsections || [],
-          aiInstructions: null,
-          isMinimized: section.id !== 'question',
-          isVisible: section.id === 'question',
-          feedbackRating: null,
-          editedSinceFeedback: false,
-          lastEditTimestamp: 0,
+        id: section.id,
+        title: section.title || 'Untitled Section',
+        content: section.placeholder || '',
+        originalInstructions: section.subsections || [],
+        aiInstructions: null,
+        isMinimized: section.id !== 'question',
+        isVisible: section.id === 'question',
+        feedbackRating: null,
+        editedSinceFeedback: false,
+        lastEditTimestamp: 0,
         };
         return acc;
     }, {});
@@ -44,13 +42,10 @@ const initialUiState = {
     project: false, import: false, export: false, review: false,
     improvement: false, chat: false
   },
+  // Add a new global loading flag that's not tied to browser dialog behavior
+  globalAiLoading: false,
   reviewData: null,
-  onboarding: { step: 0, showHelpSplash: false },
-  // Add a new state for import confirmation
-  _importConfirmOperation: {
-    active: false,
-    message: null
-  }
+  onboarding: { step: 0, showHelpSplash: false }
 };
 
 // Initial State for Chat
@@ -78,14 +73,21 @@ const useAppStore = create(
 
       // --- Enhanced Combined Loading Getter ---
       isAnyLoading: () => {
+        // Check both the regular loading flags and the new global loading flag
         const loadingValues = Object.values(get().loading);
-        const isAnyLoadingActive = loadingValues.some(Boolean);
-        // Debug logging
-        console.log("isAnyLoading check:", get().loading, "Result:", isAnyLoadingActive);
-        return isAnyLoadingActive;
+        const isRegularLoading = loadingValues.some(Boolean);
+        const isGlobalLoading = get().globalAiLoading;
+        
+        return isRegularLoading || isGlobalLoading;
       },
 
-      // --- Actions for Core State ---
+      // --- New Global AI Loading Setter ---
+      setGlobalAiLoading: (status) => {
+        console.log(`Setting globalAiLoading to ${status}`);
+        set({ globalAiLoading: status });
+      },
+
+      // --- Actions for Core State (unchanged) ---
       updateSectionContent: (sectionId, content) => set((state) => {
           if (!state.sections[sectionId]) return state;
             return { sections: { ...state.sections, [sectionId]: { ...state.sections[sectionId], content: content, lastEditTimestamp: Date.now(), editedSinceFeedback: state.sections[sectionId]?.feedbackRating !== null, }, }, };
@@ -110,6 +112,8 @@ const useAppStore = create(
             });
             return { activeToggles: newActiveToggles, sections: updatedSections };
        }),
+      
+      // Other actions remain unchanged...
       setProMode: (enabled) => set((state) => {
           const updatedSections = { ...state.sections };
             Object.keys(updatedSections).forEach(sId => {
@@ -211,18 +215,6 @@ const useAppStore = create(
        clearReviewData: () => set({ reviewData: null }),
        setOnboardingStep: (step) => set((state) => ({ onboarding: { ...state.onboarding, step: step } })),
 
-       // --- Import confirmation functions ---
-       setImportConfirmOperation: (operation) => set({
-         _importConfirmOperation: operation
-       }),
-       
-       clearImportConfirmOperation: () => set({
-         _importConfirmOperation: {
-           active: false,
-           message: null
-         }
-       }),
-
        _initializeOnboarding: () => {
           console.log("Attempting to initialize onboarding state...");
           try {
@@ -236,7 +228,6 @@ const useAppStore = create(
 
        showHelpSplash: () => {
            localStorage.removeItem('hideWelcomeSplash');
-           // Update state - the UI (SplashScreenManager) should react to this change
            set((state) => ({ onboarding: { ...state.onboarding, showHelpSplash: true } }));
        },
        hideHelpSplash: () => {
@@ -244,7 +235,7 @@ const useAppStore = create(
            set((state) => ({ onboarding: { ...state.onboarding, showHelpSplash: false } }));
        },
 
-       // --- Actions for Chat State ---
+       // --- Actions for Chat State (unchanged) ---
        setCurrentChatMessage: (message) => set({ currentChatMessage: message }),
        setCurrentChatSectionId: (sectionId) => set({ currentChatSectionId: sectionId || 'question' }),
        addChatMessage: (sectionId, message) => set((state) => {
@@ -322,23 +313,19 @@ const useAppStore = create(
          proMode: state.proMode,
          chatMessages: state.chatMessages,
          onboarding: state.onboarding
-         // Don't persist _importConfirmOperation
+         // Don't persist globalAiLoading
       }),
       version: 3, // Keep version
-      // --- MODIFICATION: Simplified onRehydrateStorage ---
       onRehydrateStorage: (state) => {
         console.log("Zustand state hydration starting...");
-        // Return only the error handler part
         return (hydratedState, error) => {
           if (error) {
             console.error("Error rehydrating Zustand state:", error);
           } else {
             console.log("Zustand state hydration finished successfully.");
-            // DO NOT call _initializeOnboarding here anymore.
           }
         }
       }
-      // --- END MODIFICATION ---
     }
   )
 );
