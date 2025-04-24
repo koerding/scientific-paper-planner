@@ -2,7 +2,7 @@
 
 /**
  * Hook for managing document import functionality
- * UPDATED: Enhanced loading state management with proper debugging
+ * UPDATED: Fixed loading state persistence during confirmation dialog
  */
 import { useState, useCallback, useEffect } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
@@ -38,14 +38,16 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
     await new Promise(resolve => setTimeout(resolve, 50));
 
     try {
-      // Ask for confirmation
+      // Ask for confirmation - IMPORTANT: DON'T clear loading state here
       if (!window.confirm("Creating an example from this document will replace your current work. Continue?")) {
         console.log("User cancelled import operation");
+        // NOW clear loading states since operation is cancelled
         setImportLoading(false);
         setLoading('import', false);
         return false; // User cancelled
       }
 
+      // If we reach here, user confirmed - keep loading states active
       console.log(`Processing import for ${file.name}`);
 
       // First, reset all state to ensure clean slate
