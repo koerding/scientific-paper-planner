@@ -1,4 +1,8 @@
 // FILE: src/components/PaperPlanner/VerticalPaperPlannerApp.js
+// Key changes:
+// 1. Remove duplicate loading state tracking
+// 2. Let child components access loading states directly from the store
+
 import React, { useState, useEffect, useRef } from 'react';
 import ReactGA from 'react-ga4';
 import useAppStore from '../../store/appStore'; // Import the Zustand store
@@ -56,10 +60,6 @@ const VerticalPaperPlannerApp = () => {
       sectionContentData,
       resetState
   );
-
-  // --- Combined loading state ---
-  const isAnyAiLoading = Object.values(loadingFlags).some(Boolean) || docImportSpecificLoading;
-
 
   // --- Effects ---
   useEffect(() => {
@@ -157,10 +157,15 @@ const VerticalPaperPlannerApp = () => {
   // --- Props for Child Components ---
   const safeSections = sections || {};
   const contentAreaProps = {
-        activeSection: activeSectionId, activeApproach: activeToggles.approach, activeDataMethod: activeToggles.dataMethod,
-        handleSectionFocus, handleApproachToggle, handleDataMethodToggle,
-        proMode, handleMagic: handleImprovementRequest,
-        isAnyAiLoading: isAnyAiLoading,
+        activeSection: activeSectionId, 
+        activeApproach: activeToggles.approach, 
+        activeDataMethod: activeToggles.dataMethod,
+        handleSectionFocus, 
+        handleApproachToggle, 
+        handleDataMethodToggle,
+        proMode, 
+        handleMagic: handleImprovementRequest,
+        // Loading state is accessed by components directly from store when needed
     };
   const interactionProps = {
       currentSection: currentChatSectionId,
@@ -170,7 +175,7 @@ const VerticalPaperPlannerApp = () => {
       setCurrentMessage: setCurrentChatMessage,
       handleSendMessage: zustandSendMessage,
       loading: loadingFlags.chat,
-      isAiBusy: isAnyAiLoading,
+      // isAiBusy is accessed by components directly from store when needed
       currentSectionData: sections?.[currentChatSectionId] || null,
   };
 
@@ -205,7 +210,7 @@ const VerticalPaperPlannerApp = () => {
       }}
       handleReviewPaper={handleReviewPaperRequest}
       saveWithFilename={handleSaveWithFilename}
-      isAnyAiLoading={isAnyAiLoading}
+      // No need to pass isAnyAiLoading as a prop anymore - components access store directly
     />
   );
 };
