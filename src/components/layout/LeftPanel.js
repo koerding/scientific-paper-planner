@@ -73,17 +73,17 @@ const LeftPanel = ({
   const showApproachToggle = isToggleVisible('approach', storeState);
   const showDataToggle = isToggleVisible('data', storeState);
 
-  // Define approach and data method toggle options
+  // Define approach and data method toggle options with shortened labels
   const approachOptions = [
-    { id: 'hypothesis', label: 'Hypothesis Testing' },
+    { id: 'hypothesis', label: 'Hypothesis' },
     { id: 'needsresearch', label: 'Needs-Based' },
     { id: 'exploratoryresearch', label: 'Exploratory' }
   ];
   
   const dataMethodOptions = [
-    { id: 'experiment', label: 'New Experiment' },
+    { id: 'experiment', label: 'Experiment' },
     { id: 'existingdata', label: 'Existing Data' },
-    { id: 'theorysimulation', label: 'Theory/Simulation' }
+    { id: 'theorysimulation', label: 'Theory' }
   ];
 
   const approachSectionIds = getApproachSectionIds();
