@@ -6,6 +6,7 @@
  * FIXED: Adjusted loading state management to prevent premature spinner stop
  * MODIFIED: Explicitly call expandAllSections after successful import
  * MODIFIED: Changed toggle detection order to prioritize expected keys
+ * MODIFIED: Added more detailed logging and simplified checks in detection logic
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
@@ -13,6 +14,7 @@ import useAppStore from '../store/appStore'; // Import store
 
 // Custom confirmation dialog setup (assuming it exists and works via store)
 const showCustomConfirmation = async (message) => {
+  // ... (confirmation logic remains the same) ...
   return new Promise(resolve => {
     const openConfirmDialog = useAppStore.getState().openModal;
     window._importConfirmResolve = resolve;
@@ -64,36 +66,47 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
 
       if (importedData && importedData.userInputs) {
 
-        // --- MODIFIED: Toggle Detection Logic (Changed Order) ---
-        console.log("DEBUG: Keys present in userInputs:", Object.keys(importedData.userInputs)); // Add logging
+        // --- REVISED: Toggle Detection Logic with Detailed Logging ---
+        console.log("DEBUG: Starting Toggle Detection. userInputs object:", importedData.userInputs);
+        const userInputs = importedData.userInputs; // Local variable for easier access
 
         let detectedApproach = 'hypothesis'; // Default
         let detectedDataMethod = 'experiment'; // Default
 
-        // Approach Detection (Hypothesis checked first)
-        if (importedData.userInputs?.hasOwnProperty('hypothesis')) {
+        // Approach Detection
+        console.log("DEBUG: Checking Approach...");
+        if (userInputs && typeof userInputs === 'object' && userInputs.hasOwnProperty('hypothesis')) {
+            console.log("DEBUG: Found 'hypothesis' key.");
             detectedApproach = 'hypothesis';
-        } else if (importedData.userInputs?.hasOwnProperty('needsresearch')) {
+        } else if (userInputs && typeof userInputs === 'object' && userInputs.hasOwnProperty('needsresearch')) {
+            console.log("DEBUG: Found 'needsresearch' key.");
             detectedApproach = 'needsresearch';
-        } else if (importedData.userInputs?.hasOwnProperty('exploratoryresearch')) {
+        } else if (userInputs && typeof userInputs === 'object' && userInputs.hasOwnProperty('exploratoryresearch')) {
+            console.log("DEBUG: Found 'exploratoryresearch' key.");
             detectedApproach = 'exploratoryresearch';
+        } else {
+             console.log("DEBUG: No specific approach key found, using default:", detectedApproach);
         }
-        // If none specifically found, keep default 'hypothesis'
 
-        // Data Method Detection (Experiment checked first, then Theory)
-        if (importedData.userInputs?.hasOwnProperty('experiment')) {
+        // Data Method Detection
+        console.log("DEBUG: Checking Data Method...");
+        if (userInputs && typeof userInputs === 'object' && userInputs.hasOwnProperty('experiment')) {
+             console.log("DEBUG: Found 'experiment' key.");
             detectedDataMethod = 'experiment';
-        } else if (importedData.userInputs?.hasOwnProperty('theorysimulation')) { // Check Theory second
+        } else if (userInputs && typeof userInputs === 'object' && userInputs.hasOwnProperty('theorysimulation')) {
+             console.log("DEBUG: Found 'theorysimulation' key.");
             detectedDataMethod = 'theorysimulation';
-        } else if (importedData.userInputs?.hasOwnProperty('existingdata')) { // Check Existing Data last
+        } else if (userInputs && typeof userInputs === 'object' && userInputs.hasOwnProperty('existingdata')) {
+             console.log("DEBUG: Found 'existingdata' key.");
             detectedDataMethod = 'existingdata';
+        } else {
+            console.log("DEBUG: No specific data method key found, using default:", detectedDataMethod);
         }
-        // If none specifically found, keep default 'experiment'
-        // --- END MODIFIED ---
+        // --- END REVISED ---
 
 
         importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
-        console.log(`[handleDocumentImport] Detected toggles: Approach=${detectedApproach}, Method=${detectedDataMethod}`); // Log the result again
+        console.log(`[handleDocumentImport] Detected toggles: Approach=${detectedApproach}, Method=${detectedDataMethod}`);
 
         try {
             loadProject(importedData);
