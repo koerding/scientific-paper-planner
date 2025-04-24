@@ -13,13 +13,13 @@ const FeedbackButton = ({
 }) => {
   // --- Get necessary state from store ---
   const isImprovementLoading = useAppStore((state) => state.loading.improvement);
+  const isImportLoading = useAppStore((state) => state.loading.import);
   const isAnyAiBusy = useAppStore((state) => state.isAnyLoading()); // Use the combined loading getter
 
   // Get proper button color based on feedback state
   const getButtonClass = () => {
-    // --- Use isAnyAiBusy for disabling style ---
-    if (isAnyAiBusy) return 'bg-gray-300 text-gray-400 cursor-wait'; // General disabled style
-    // --- END MODIFICATION ---
+    // --- Show loading style for ANY loading AI operation ---
+    if (isAnyAiBusy || isImportLoading) return 'bg-gray-300 text-gray-400 cursor-wait'; // General disabled style
 
     if (!hasEditedContent) return 'bg-gray-400 text-white cursor-not-allowed';
 
@@ -40,9 +40,8 @@ const FeedbackButton = ({
 
   // Get proper button label based on feedback state
   const getButtonLabel = () => {
-    // --- Show generic "Processing..." if any AI is busy ---
-    if (isAnyAiBusy) return "Processing..."; // Generic busy state
-    // --- END MODIFICATION ---
+    // --- Show "Processing..." for ANY loading AI operation ---
+    if (isAnyAiBusy || isImportLoading) return "Processing..."; // Generic busy state
 
     if (!hasEditedContent) return "Add content first";
 
@@ -58,7 +57,7 @@ const FeedbackButton = ({
   const buttonColorClass = getButtonClass();
   const buttonLabel = getButtonLabel();
 
-  const tooltipText = isAnyAiBusy ? "AI is busy processing another request..." :
+  const tooltipText = isAnyAiBusy || isImportLoading ? "AI is busy processing another request..." :
     (hasEditedContent ?
     (editedSinceFeedback ? "Content changed since last feedback" : "Get AI feedback on this section") :
     "Add content before requesting feedback");
@@ -67,9 +66,8 @@ const FeedbackButton = ({
     <div className="flex justify-end mt-2">
       <button
         onClick={handleFeedbackRequest}
-        // --- Disable if *any* AI is busy ---
-        disabled={isAnyAiBusy || !hasEditedContent}
-        // --- END MODIFICATION ---
+        // --- Disable if *any* AI is busy, including imports ---
+        disabled={isAnyAiBusy || isImportLoading || !hasEditedContent}
         className={`
           feedback-button text-sm font-medium
           px-3 py-1.5 rounded
@@ -80,7 +78,7 @@ const FeedbackButton = ({
         title={tooltipText}
       >
         {/* --- Show spinner if any AI process is running --- */}
-        {isAnyAiBusy ? (
+        {(isAnyAiBusy || isImportLoading) ? (
           <>
             <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -97,7 +95,6 @@ const FeedbackButton = ({
             {buttonLabel}
           </>
         )}
-         {/* --- END MODIFICATION --- */}
       </button>
     </div>
   );
