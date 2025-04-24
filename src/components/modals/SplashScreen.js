@@ -6,7 +6,7 @@ import React from 'react';
  * Splash screen component to welcome new users
  * Explains key features of the Scientific Project Planner
  * UPDATED: Changed "Paper" to "Project" throughout
- * UPDATED: Adjusted icon colors to match actual app interface elements
+ * UPDATED: Icon colors now exactly match the corresponding buttons
  * ADDED: "Feeling stuck" section about PDF import feature
  * UPDATED: Increased z-index to appear above chat button
  */
@@ -35,7 +35,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
           </p>
           
           <div className="space-y-4 mb-6">
-            {/* AI Chat - solid blue to match chat button */}
+            {/* AI Chat - exact indigo-600 color to match chat button */}
             <div className="flex items-start">
               <div className="bg-indigo-600 p-2 rounded-full mr-3 mt-0.5">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -49,7 +49,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               </div>
             </div>
             
-            {/* Magic Button - solid purple to match improve instructions button */}
+            {/* Magic Button - exact purple-600 to match improve instructions button */}
             <div className="flex items-start">
               <div className="bg-purple-600 p-2 rounded-full mr-3 mt-0.5">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -62,7 +62,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               </div>
             </div>
             
-            {/* PDF/Doc import - same blue as the import button */}
+            {/* PDF/Doc import - exact indigo-600 to match import button */}
             <div className="flex items-start">
               <div className="bg-indigo-600 p-2 rounded-full mr-3 mt-0.5">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -75,9 +75,9 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               </div>
             </div>
             
-            {/* Paper Review Button - add this back */}
+            {/* Paper Review Button - changing from green to teal-600 to match review button */}
             <div className="flex items-start">
-              <div className="bg-green-600 p-2 rounded-full mr-3 mt-0.5">
+              <div className="bg-teal-600 p-2 rounded-full mr-3 mt-0.5">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
