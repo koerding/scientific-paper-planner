@@ -3,6 +3,7 @@
 // REVERTED: loadProjectData handles original save format (content + chat)
 // REVERTED: Removed merge function and simplified initial state
 // FIXED: Removed setProMode call from onRehydrateStorage to prevent initialization errors
+// MODIFIED: Updated partializer to save full section state, toggles, proMode, and scores
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -163,7 +164,7 @@ const useAppStore = create(
         onboarding: { ...initialState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
       }),
 
-      // REVERTED: Load Project Data (handles original format)
+      // REVERTED: Load Project Data (handles original format for manual loads)
       loadProjectData: (data) => set((state) => {
         console.log("Attempting to load project data (original format):", data);
 
@@ -181,6 +182,8 @@ const useAppStore = create(
             } else if (data.sections && typeof data.sections === 'object') {
                 // Handle format where sections object contains the content directly (from older saves or imports)
                 loadedUserInputs = Object.entries(data.sections).reduce((acc, [id, sectionData]) => {
+                    // If sectionData is a string, it's the old format (only content)
+                    // If it's an object, assume it's the new format (extract content)
                     acc[id] = typeof sectionData === 'string' ? sectionData : (sectionData?.content || '');
                     return acc;
                 }, {});
@@ -190,6 +193,12 @@ const useAppStore = create(
                     detectedApproach = data.detectedToggles.approach || detectedApproach;
                     detectedDataMethod = data.detectedToggles.dataMethod || detectedDataMethod;
                  }
+                 // Load other state if available (from newer JSON saves)
+                 // Note: This might overwrite defaults set below if the loaded file
+                 // contains these keys directly at the root level.
+                 // This part is tricky due to potential conflicts between auto-hydration
+                 // and manual loading. Manual loading should ideally overwrite.
+                 // We prioritize the structure within `loadProjectData` for manual loads.
             } else if (data.question || data.abstract || data.audience) {
                 // Handle format where the data object itself IS the userInputs (e.g., from direct API response)
                 loadedUserInputs = data;
@@ -209,25 +218,37 @@ const useAppStore = create(
         const initialSections = getInitialSectionStates(); // Get fresh initial structure
         const mergedSections = {};
         const newActiveToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
-        const newScores = {}; // Reset scores on load
+        // Try loading scores and proMode from data if available, otherwise reset/default
+        const loadedScores = data.scores || {}; // Load if present, else empty
+        const loadedProMode = data.proMode !== undefined ? data.proMode : true; // Load if present, else default to true for manual load
 
         // Merge loaded content into the initial section structure
+        // If the loaded `data` has full section objects (from newer JSON saves), use them
+        const sourceSections = data.sections && typeof data.sections === 'object' && typeof Object.values(data.sections)[0] === 'object'
+            ? data.sections // Assume newer format with full section objects
+            : initialSections; // Fallback to initial structure if only content was loaded
+
+
         Object.keys(initialSections).forEach(id => {
+            const loadedContent = loadedUserInputs[id];
+            const sourceSectionData = sourceSections[id] || initialSections[id];
+
             mergedSections[id] = {
-                ...initialSections[id], // Start with default structure (includes isMinimized: false, isVisible: false except for question)
-                content: loadedUserInputs[id] !== undefined ? loadedUserInputs[id] : initialSections[id].content,
-                // Reset feedback-related fields on load for the original format
-                aiInstructions: null,
-                feedbackRating: null,
-                editedSinceFeedback: false,
-                isMinimized: false, // Ensure all are expanded on load
-                // isVisible will be recalculated below based on loaded state
+                ...initialSections[id], // Start with default structure
+                ...sourceSectionData, // Overwrite with loaded full section data if available
+                content: loadedContent !== undefined ? loadedContent : sourceSectionData.content, // Ensure loaded content takes precedence
+                // Reset feedback-related fields unless they were part of a full section load
+                aiInstructions: sourceSectionData.aiInstructions || null,
+                feedbackRating: sourceSectionData.feedbackRating || null,
+                editedSinceFeedback: sourceSectionData.editedSinceFeedback || false,
+                isMinimized: sourceSectionData.isMinimized !== undefined ? sourceSectionData.isMinimized : false, // Default to expanded on manual load
+                // isVisible will be recalculated below
             };
         });
 
-        // Recalculate visibility based on loaded toggles and reset scores (proMode defaults to true on load)
-        const loadedProMode = true; // Assume proMode on load for simplicity with old format
-        const { unlockedSections } = calculateUnlockedSections(newScores, newActiveToggles);
+
+        // Recalculate visibility based on loaded toggles and scores
+        const { unlockedSections } = calculateUnlockedSections(loadedScores, newActiveToggles);
         Object.keys(mergedSections).forEach(sId => {
             const sectionDef = sectionContent.sections.find(s => s.id === sId);
             let isVisible = loadedProMode || unlockedSections.includes(sId);
@@ -240,14 +261,14 @@ const useAppStore = create(
             mergedSections[sId].isVisible = isVisible;
         });
 
-        console.log("Project data loaded successfully (original format).");
+        console.log("Project data loaded successfully via loadProjectData.");
 
         // Return the fully loaded and merged state
         return {
             sections: mergedSections,
             activeToggles: newActiveToggles,
-            scores: newScores,
-            proMode: loadedProMode, // Set proMode on load
+            scores: loadedScores,
+            proMode: loadedProMode,
             chatMessages: loadedChatMessages,
             // Reset UI elements on load
             modals: initialState.modals,
@@ -256,6 +277,8 @@ const useAppStore = create(
             reviewData: null,
             currentChatMessage: '',
             currentChatSectionId: 'question', // Reset chat focus
+             // Reset onboarding step? Maybe keep it based on loaded data if present?
+             // onboarding: data.onboarding || initialState.onboarding,
         };
       }),
 
@@ -350,25 +373,35 @@ const useAppStore = create(
     {
       name: 'scientific-project-planner-state', // Keep the same name for persistence
       storage: createJSONStorage(() => localStorage),
+      // --- MODIFIED partialize FUNCTION ---
       partialize: (state) => ({
-         // Define which parts of the state to persist (original version)
-         sections: Object.entries(state.sections || {}).reduce((acc, [id, data]) => {
-             acc[id] = data.content; // Only persist content
-             return acc;
-         }, {}),
-         chatMessages: state.chatMessages, // Persist chat
-         onboarding: state.onboarding // Persist onboarding state
-         // Don't persist toggles, scores, proMode, UI state in old format
+        // --- MODIFIED: Save the entire sections object ---
+        sections: state.sections, // Save the full section objects
+
+        // --- Save other important states ---
+        activeToggles: state.activeToggles,
+        proMode: state.proMode,
+        scores: state.scores, // May want to save scores too
+        // ---
+
+        chatMessages: state.chatMessages, // Keep saving chat
+        onboarding: state.onboarding // Keep saving onboarding
+        // Don't persist UI state like modals or loading flags
       }),
-      version: 3, // Keep version or increment if schema changes significantly again
+      // --- END MODIFIED partialize FUNCTION ---
+      version: 4, // Incremented version number
       onRehydrateStorage: (state) => {
-        console.log("Zustand state hydration starting...");
+        console.log("Zustand state hydration starting (v4)...");
         return (hydratedState, error) => {
           if (error) {
-            console.error("Error rehydrating Zustand state:", error); // Log the actual error
+            console.error("Error rehydrating Zustand state (v4):", error);
+            // Consider resetting state or alerting user on critical hydration error
+            // useAppStore.getState().resetState(); // Example: Reset on error
           } else {
-            console.log("Zustand state hydration finished successfully.");
-            // --- REMOVED setProMode call ---
+            console.log("Zustand state hydration finished successfully (v4).");
+            // Perform consistency checks or migrations if needed based on version
+            // If hydratedState._version < 4, you might need to merge carefully
+            // For now, we assume the new partialize format will be loaded
           }
         }
       },
