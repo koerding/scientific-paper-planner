@@ -5,6 +5,7 @@
  * UPDATED: Replaced window.confirm with a custom non-blocking approach
  * FIXED: Adjusted loading state management to prevent premature spinner stop
  * MODIFIED: Explicitly call expandAllSections after successful import
+ * MODIFIED: Changed toggle detection order to prioritize expected keys
  */
 import { useState, useCallback } from 'react';
 import { importDocumentContent } from '../services/documentImportService';
@@ -28,9 +29,7 @@ const showCustomConfirmation = async (message) => {
 export const useDocumentImport = (loadProject, sectionContent, resetAllProjectState) => {
   const [importLoading, setImportLoading] = useState(false);
   const setLoading = useAppStore((state) => state.setLoading);
-  // --- ADD THIS: Get the expandAllSections action ---
   const expandAllSections = useAppStore((state) => state.expandAllSections);
-  // ---
 
   const handleDocumentImport = useCallback(async (file) => {
     if (!file) return false;
@@ -64,24 +63,43 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       const importedData = await importDocumentContent(file, sectionContent);
 
       if (importedData && importedData.userInputs) {
-        // Toggle Detection Logic (remains the same)
-        let detectedApproach = 'hypothesis';
-        let detectedDataMethod = 'experiment';
-        if (importedData.userInputs?.hasOwnProperty('needsresearch')) detectedApproach = 'needsresearch';
-        else if (importedData.userInputs?.hasOwnProperty('exploratoryresearch')) detectedApproach = 'exploratoryresearch';
-        if (importedData.userInputs?.hasOwnProperty('existingdata')) detectedDataMethod = 'existingdata';
-        else if (importedData.userInputs?.hasOwnProperty('theorysimulation')) detectedDataMethod = 'theorysimulation';
+
+        // --- MODIFIED: Toggle Detection Logic (Changed Order) ---
+        console.log("DEBUG: Keys present in userInputs:", Object.keys(importedData.userInputs)); // Add logging
+
+        let detectedApproach = 'hypothesis'; // Default
+        let detectedDataMethod = 'experiment'; // Default
+
+        // Approach Detection (Hypothesis checked first)
+        if (importedData.userInputs?.hasOwnProperty('hypothesis')) {
+            detectedApproach = 'hypothesis';
+        } else if (importedData.userInputs?.hasOwnProperty('needsresearch')) {
+            detectedApproach = 'needsresearch';
+        } else if (importedData.userInputs?.hasOwnProperty('exploratoryresearch')) {
+            detectedApproach = 'exploratoryresearch';
+        }
+        // If none specifically found, keep default 'hypothesis'
+
+        // Data Method Detection (Experiment checked first, then Theory)
+        if (importedData.userInputs?.hasOwnProperty('experiment')) {
+            detectedDataMethod = 'experiment';
+        } else if (importedData.userInputs?.hasOwnProperty('theorysimulation')) { // Check Theory second
+            detectedDataMethod = 'theorysimulation';
+        } else if (importedData.userInputs?.hasOwnProperty('existingdata')) { // Check Existing Data last
+            detectedDataMethod = 'existingdata';
+        }
+        // If none specifically found, keep default 'experiment'
+        // --- END MODIFIED ---
+
+
         importedData.detectedToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
-        console.log(`[handleDocumentImport] Detected toggles: Approach=${detectedApproach}, Method=${detectedDataMethod}`);
+        console.log(`[handleDocumentImport] Detected toggles: Approach=${detectedApproach}, Method=${detectedDataMethod}`); // Log the result again
 
         try {
-            loadProject(importedData); // Load data into the store
+            loadProject(importedData);
             console.log(`Document ${file.name} successfully processed and loaded.`);
-
-            // --- ADD THIS: Expand all sections after loading ---
             expandAllSections();
             console.log("All sections expanded after import.");
-            // ---
 
             window.dispatchEvent(new CustomEvent('documentImported', {
                 detail: { fileName: file.name, timestamp: Date.now(), success: true }
@@ -104,7 +122,7 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
         setImportLoading(false);
         setLoading('import', false);
     }
-  }, [loadProject, sectionContent, resetAllProjectState, setLoading, expandAllSections]); // Added expandAllSections to dependencies
+  }, [loadProject, sectionContent, resetAllProjectState, setLoading, expandAllSections]);
 
   return {
     importLoading,
