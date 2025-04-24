@@ -291,3 +291,75 @@ body, html {
     font-size: 0.7rem;
   }
 }
+/* Add these styles to src/styles/PaperPlanner.css */
+
+/* In-card toggle styles */
+.toggle-section .section-header {
+  margin-bottom: 0.5rem;
+}
+
+.in-card-toggle {
+  display: flex;
+  align-items: center;
+  border-radius: 0.375rem;
+  background-color: #f3f4f6; /* gray-100 */
+  padding: 0.25rem;
+}
+
+.in-card-toggle button {
+  font-size: 0.875rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.25rem;
+  transition: all 0.15s ease-in-out;
+  border: none;
+  outline: none;
+}
+
+.in-card-toggle button.active {
+  background-color: #ffffff;
+  color: #1d4ed8; /* blue-700 */
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.in-card-toggle button:not(.active) {
+  color: #6b7280; /* gray-500 */
+  background-color: transparent;
+}
+
+.in-card-toggle button:not(.active):hover {
+  background-color: rgba(255, 255, 255, 0.5);
+  color: #4b5563; /* gray-600 */
+}
+
+/* Animations for toggle changes */
+.in-card-toggle button {
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+
+.in-card-toggle button:active {
+  transform: scale(0.95);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .in-card-toggle {
+    flex-wrap: wrap;
+  }
+  
+  .in-card-toggle button {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+/* Make toggle section card more distinct */
+.toggle-section {
+  border-left-width: 4px !important;
+  border-left-color: #3b82f6 !important; /* blue-500 */
+}
+
+/* Card preview style adjustment for toggle sections */
+.toggle-section .text-sm.text-gray-500 {
+  margin-top: 0.25rem;
+}
