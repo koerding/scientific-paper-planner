@@ -1,5 +1,5 @@
 // FILE: src/components/layout/AppHeader.js
-import React from 'react'; // Removed useState import as it wasn't used
+import React from 'react';
 import ProModeToggle from '../toggles/ProModeToggle';
 import useAppStore from '../../store/appStore'; // Import store
 
@@ -12,7 +12,6 @@ const AppHeader = ({
   onOpenReviewModal,
   setShowExamplesDialog,
   showHelpSplash,
-  // REMOVED: loading // Prop removed
 }) => {
   // --- Get global loading state directly from store ---
   const isAiBusy = useAppStore((state) => state.isAnyLoading());
@@ -22,7 +21,6 @@ const AppHeader = ({
   const handleFileImport = async (event) => {
     const file = event.target.files?.[0];
     if (file && importDocumentContent) {
-        // Loading state is now managed globally by the hook/store
         await importDocumentContent(file);
     }
     event.target.value = ''; // Reset input
@@ -36,7 +34,7 @@ const AppHeader = ({
          reader.onload = (e) => {
            try {
              const data = JSON.parse(e.target.result);
-             loadProject(data); // This triggers store update
+             loadProject(data);
            } catch (error) {
              console.error('Error parsing project file:', error);
              alert('Invalid project file format. Please select a valid JSON file.');
@@ -66,21 +64,21 @@ const AppHeader = ({
   // --- Button style functions (unchanged, use isAiBusy now) ---
   const getButtonClasses = (baseStyle = "text-gray-700 bg-white hover:bg-gray-50", activeStyle = baseStyle) => {
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
-              ${isAiBusy // Use state from store
+              ${isAiBusy
                 ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                 : `${baseStyle} cursor-pointer`
               }`;
   };
-  const getImportButtonClasses = () => { // Keep specific style if desired
+  const getImportButtonClasses = () => {
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
-              ${isAiBusy // Use state from store
+              ${isAiBusy
                 ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                 : 'border-indigo-500 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
               }`;
   };
-  const getReviewButtonClasses = () => { // Keep specific style if desired
+  const getReviewButtonClasses = () => {
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
-              ${isAiBusy // Use state from store
+              ${isAiBusy
                 ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                 : 'border-teal-500 bg-teal-600 hover:bg-teal-700 text-white cursor-pointer'
               }`;
@@ -102,39 +100,72 @@ const AppHeader = ({
           <div className="flex items-center space-x-1">
             {/* New Project */}
             <button onClick={handleNewButtonClick} disabled={isAiBusy} className={getButtonClasses()}>
-              {isAiBusy ? loadingSpinner : ( /* SVG */ )} New
+              {isAiBusy ? loadingSpinner : (
+                  <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+              )} New
             </button>
             {/* Import */}
              <label className={getImportButtonClasses()} style={isAiBusy ? { pointerEvents: 'none' } : {}}>
-               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Pdf->Example
+               {isAiBusy ? loadingSpinner : (
+                 <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                 </svg>
+                 // Corrected Comment Syntax Below (around line 105)
+               )} Pdf->Example {/*<-- Error was likely here or near here */}
               <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={handleFileImport} disabled={isAiBusy} />
             </label>
             {/* Save */}
             <button onClick={saveProject} disabled={isAiBusy} className={getButtonClasses()}>
-               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Save
+               {isAiBusy ? loadingSpinner : (
+                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                   </svg>
+               )} Save
             </button>
             {/* Load */}
              <label className={getButtonClasses()} style={isAiBusy ? { pointerEvents: 'none' } : {}}>
-               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Load
+               {isAiBusy ? loadingSpinner : (
+                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                   </svg>
+               )} Load
                <input type="file" className="hidden" accept=".json" onChange={handleFileSelection} disabled={isAiBusy} />
             </label>
             {/* Examples */}
             <button onClick={() => setShowExamplesDialog(true)} disabled={isAiBusy} className={getButtonClasses()}>
-               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Examples
+               {isAiBusy ? loadingSpinner : (
+                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                   </svg>
+               )} Examples
             </button>
             {/* Export */}
             <button onClick={exportProject} disabled={isAiBusy} className={getButtonClasses()}>
-               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Export
+               {isAiBusy ? loadingSpinner : (
+                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                   </svg>
+               )} Export
             </button>
             {/* Pro Mode */}
             <ProModeToggle /> {/* Should generally not be disabled */}
             {/* Review */}
             <button onClick={onOpenReviewModal} disabled={isAiBusy} className={getReviewButtonClasses()}>
-               {isAiBusy ? loadingSpinner : ( /* SVG */ )} Review
+               {isAiBusy ? loadingSpinner : (
+                   <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                   </svg>
+               )} Review
             </button>
             {/* Help */}
             <button onClick={handleHelpClick} disabled={isAiBusy} className={getButtonClasses()}>
-              {isAiBusy ? loadingSpinner : ( /* SVG */ )} Help
+              {isAiBusy ? loadingSpinner : (
+                  <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+              )} Help
             </button>
           </div>
         </div>
