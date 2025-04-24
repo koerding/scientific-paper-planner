@@ -1,8 +1,7 @@
 // FILE: src/store/appStore.js
 // Modified to add a separate global loading indicator
-// Modified loadProjectData to handle new save format
-// ADDED: Custom merge function for persist middleware
-// MODIFIED: Simplified initial state for visibility/proMode
+// REVERTED: loadProjectData handles original save format (content + chat)
+// REVERTED: Removed merge function and simplified initial state
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -26,10 +25,8 @@ const getInitialSectionStates = () => {
             content: section.placeholder || '',
             originalInstructions: section.subsections || [], // Keep original instructions
             aiInstructions: null, // AI feedback starts as null
-            // --- SIMPLIFIED INITIAL STATE ---
             isMinimized: section.id !== 'question', // Start with only question expanded
-            isVisible: true, // Make ALL sections initially visible
-            // --- END SIMPLIFICATION ---
+            isVisible: section.id === 'question', // Start with only question visible (progression logic handles others)
             feedbackRating: null, // Feedback rating starts as null
             editedSinceFeedback: false, // Not edited initially
             lastEditTimestamp: 0, // Timestamp for edit tracking
@@ -38,14 +35,12 @@ const getInitialSectionStates = () => {
     }, {});
 };
 
-// Define the complete initial state structure
+// Define the complete initial state structure (original version)
 const initialState = {
     sections: getInitialSectionStates(),
     activeToggles: { approach: 'hypothesis', dataMethod: 'experiment' },
     scores: {},
-    // --- SIMPLIFIED INITIAL STATE ---
-    proMode: true, // Start with proMode true to match initial visibility
-    // --- END SIMPLIFICATION ---
+    proMode: false, // Start with proMode false
     modals: {
         confirmDialog: false, examplesDialog: false, reviewModal: false,
         privacyPolicy: false, saveDialog: false
@@ -113,7 +108,7 @@ const useAppStore = create(
             });
             return { activeToggles: newActiveToggles, sections: updatedSections };
        }),
-       // Modified setProMode to correctly calculate visibility when toggled
+       // setProMode correctly calculates visibility when toggled
        setProMode: (enabled) => set((state) => {
           const updatedSections = { ...state.sections };
           const currentScores = state.scores;
@@ -161,74 +156,96 @@ const useAppStore = create(
             return { sections: updatedSections, scores: newScores };
        }),
       resetState: () => set({
-        ...initialState, // Reset to the full initial state (which now has proMode: true)
+        ...initialState, // Reset to the original initial state
         // Reset onboarding state, but keep showHelpSplash potentially true if it was set by user action
         onboarding: { ...initialState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
       }),
 
-      // Load Project Data (from file) - Handles merging new data format
+      // --- REVERTED: Load Project Data (handles original format) ---
       loadProjectData: (data) => set((state) => {
-        console.log("Attempting to load project data:", data);
-        // Validate the loaded data structure (basic check)
-        if (!validateProjectData(data)) {
-            console.error("Invalid project data format. Aborting load.");
-            alert("Failed to load project: Invalid file format.");
-            return state; // Return current state if validation fails
+        console.log("Attempting to load project data (original format):", data);
+
+        // Basic validation for the old format (expects userInputs or sections directly)
+        let loadedUserInputs = {};
+        let loadedChatMessages = {};
+        let detectedApproach = 'hypothesis'; // Default approach
+        let detectedDataMethod = 'experiment'; // Default data method
+
+        if (data && typeof data === 'object') {
+            if (data.userInputs && typeof data.userInputs === 'object') {
+                // Standard format with userInputs property
+                loadedUserInputs = data.userInputs;
+                loadedChatMessages = data.chatMessages || {};
+            } else if (data.sections && typeof data.sections === 'object') {
+                // Handle format where sections object contains the content directly (from older saves or imports)
+                loadedUserInputs = Object.entries(data.sections).reduce((acc, [id, sectionData]) => {
+                    acc[id] = typeof sectionData === 'string' ? sectionData : (sectionData?.content || '');
+                    return acc;
+                }, {});
+                loadedChatMessages = data.chatMessages || {};
+                 // Try to detect toggles from imported data if available
+                 if(data.detectedToggles) {
+                    detectedApproach = data.detectedToggles.approach || detectedApproach;
+                    detectedDataMethod = data.detectedToggles.dataMethod || detectedDataMethod;
+                 }
+            } else if (data.question || data.abstract || data.audience) {
+                // Handle format where the data object itself IS the userInputs (e.g., from direct API response)
+                loadedUserInputs = data;
+                // Chat messages might not be present in this format
+                loadedChatMessages = {};
+            } else {
+                 console.error("Invalid project data format for loading (original). Aborting load.");
+                 alert("Failed to load project: Invalid file format.");
+                 return state; // Return current state if validation fails
+            }
+        } else {
+             console.error("Invalid project data format for loading (original). Aborting load.");
+             alert("Failed to load project: Invalid file format.");
+             return state; // Return current state if validation fails
         }
 
         const initialSections = getInitialSectionStates();
-        // Load data based on the new save format (version 2.0+)
-        const loadedSectionsData = data.sections || {};
-        const loadedActiveToggles = data.activeToggles || { approach: 'hypothesis', dataMethod: 'experiment' };
-        const loadedScores = data.scores || {};
-        const loadedProMode = data.proMode !== undefined ? data.proMode : true; // Default to proMode true on load for simplicity
-        const loadedChatMessages = data.chatMessages || {};
-
         const mergedSections = {};
+        const newActiveToggles = { approach: detectedApproach, dataMethod: detectedDataMethod };
+        const newScores = {}; // Reset scores on load
 
-        // Merge loaded section data with initial state structure
+        // Merge loaded content into the initial section structure
         Object.keys(initialSections).forEach(id => {
-            const initialSection = initialSections[id];
-            const loadedSection = loadedSectionsData[id];
-
-            if (loadedSection) {
-                // Merge properties, prioritizing loaded data but keeping originalInstructions
-                mergedSections[id] = {
-                    ...initialSection, // Start with default structure
-                    content: loadedSection.content !== undefined ? loadedSection.content : initialSection.content,
-                    aiInstructions: loadedSection.aiInstructions !== undefined ? loadedSection.aiInstructions : null,
-                    isMinimized: loadedSection.isMinimized !== undefined ? loadedSection.isMinimized : initialSection.isMinimized,
-                    feedbackRating: loadedSection.feedbackRating !== undefined ? loadedSection.feedbackRating : null,
-                    editedSinceFeedback: loadedSection.editedSinceFeedback !== undefined ? loadedSection.editedSinceFeedback : false,
-                    lastEditTimestamp: loadedSection.lastEditTimestamp || 0,
-                    // isVisible will be recalculated below
-                };
-            } else {
-                // If a section wasn't in the save file, use the initial state
-                mergedSections[id] = initialSection;
-            }
+            mergedSections[id] = {
+                ...initialSections[id], // Start with default structure
+                content: loadedUserInputs[id] !== undefined ? loadedUserInputs[id] : initialSections[id].content,
+                // Reset feedback-related fields on load for the original format
+                aiInstructions: null,
+                feedbackRating: null,
+                editedSinceFeedback: false,
+                isMinimized: false, // Expand all on load
+                // isVisible will be recalculated below
+            };
         });
 
-        // Recalculate visibility based on loaded scores, toggles, and proMode
-        const { unlockedSections } = calculateUnlockedSections(loadedScores, loadedActiveToggles);
+        // Recalculate visibility based on loaded toggles and reset scores (proMode defaults to true on load)
+        const loadedProMode = true; // Assume proMode on load for simplicity with old format
+        const { unlockedSections } = calculateUnlockedSections(newScores, newActiveToggles);
         Object.keys(mergedSections).forEach(sId => {
             const sectionDef = sectionContent.sections.find(s => s.id === sId);
             let isVisible = loadedProMode || unlockedSections.includes(sId);
             if (isVisible) {
-                if (sectionDef?.category === 'approach' && sId !== loadedActiveToggles.approach) isVisible = false;
-                else if (sectionDef?.category === 'dataMethod' && sId !== loadedActiveToggles.dataMethod) isVisible = false;
+                if (sectionDef?.category === 'approach' && sId !== newActiveToggles.approach) isVisible = false;
+                else if (sectionDef?.category === 'dataMethod' && sId !== newActiveToggles.dataMethod) isVisible = false;
             }
+             // Ensure 'question' section is always visible initially
+             if (sId === 'question') isVisible = true;
             mergedSections[sId].isVisible = isVisible;
         });
 
-        console.log("Project data loaded successfully.");
+        console.log("Project data loaded successfully (original format).");
 
         // Return the fully loaded and merged state
         return {
             sections: mergedSections,
-            activeToggles: loadedActiveToggles,
-            scores: loadedScores,
-            proMode: loadedProMode,
+            activeToggles: newActiveToggles,
+            scores: newScores,
+            proMode: loadedProMode, // Set proMode on load
             chatMessages: loadedChatMessages,
             // Reset UI elements on load
             modals: initialState.modals,
@@ -239,6 +256,7 @@ const useAppStore = create(
             currentChatSectionId: 'question', // Reset chat focus
         };
       }),
+      // --- END REVERT ---
 
        expandAllSections: () => set((state) => {
             const updatedSections = { ...state.sections };
@@ -332,12 +350,15 @@ const useAppStore = create(
       name: 'scientific-project-planner-state', // Keep the same name for persistence
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-         // Define which parts of the state to persist
-         sections: state.sections,
-         activeToggles: state.activeToggles,
-         scores: state.scores,
-         proMode: state.proMode,
-         chatMessages: state.chatMessages,
+         // Define which parts of the state to persist (original version)
+         sections: Object.entries(state.sections || {}).reduce((acc, [id, data]) => {
+             acc[id] = data.content; // Only persist content
+             return acc;
+         }, {}),
+         // activeToggles: state.activeToggles, // Don't persist toggles in old format
+         // scores: state.scores, // Don't persist scores
+         // proMode: state.proMode, // Don't persist proMode
+         chatMessages: state.chatMessages, // Persist chat
          onboarding: state.onboarding // Persist onboarding state
          // Don't persist UI state like modals, loading flags, reviewData
       }),
@@ -349,73 +370,12 @@ const useAppStore = create(
             console.error("Error rehydrating Zustand state:", error);
           } else {
             console.log("Zustand state hydration finished successfully.");
-            // After hydration, ensure visibility is correct based on the hydrated state
-            // We can trigger a re-calculation by calling setProMode with the current proMode value
+            // Trigger visibility update after hydration
             useAppStore.getState().setProMode(useAppStore.getState().proMode);
           }
         }
       },
-      // Custom merge function to handle state versioning safely
-      merge: (persistedState, currentState) => {
-        console.log("Merging persisted state with current state...");
-        if (!persistedState || typeof persistedState !== 'object') {
-          console.warn("No valid persisted state found, using current initial state.");
-          return currentState;
-        }
-
-        // Deep merge, ensuring all properties from initial state exist
-        const merged = { ...currentState }; // Start with current initial state
-
-        for (const key in persistedState) {
-          if (Object.hasOwnProperty.call(persistedState, key)) {
-            // Only merge keys that are expected in the initial state
-            if (key in currentState) {
-              if (key === 'sections' && typeof persistedState.sections === 'object' && typeof currentState.sections === 'object') {
-                // Special handling for 'sections': merge each section individually
-                merged.sections = { ...currentState.sections }; // Start with initial sections structure
-                for (const sectionId in persistedState.sections) {
-                  if (Object.hasOwnProperty.call(persistedState.sections, sectionId) && merged.sections[sectionId]) {
-                    // Merge the persisted section data onto the initial section structure
-                    merged.sections[sectionId] = {
-                      ...merged.sections[sectionId], // Ensure all initial fields exist
-                      ...persistedState.sections[sectionId] // Overwrite with persisted data
-                    };
-                    // Ensure originalInstructions always comes from the *current* definition
-                    const currentSectionDef = sectionContent.sections.find(s => s.id === sectionId);
-                    merged.sections[sectionId].originalInstructions = currentSectionDef?.subsections || [];
-
-                  } else if (Object.hasOwnProperty.call(persistedState.sections, sectionId)) {
-                     console.warn(`Persisted section "${sectionId}" not found in initial state. Ignoring.`);
-                  }
-                }
-                // Ensure all initial sections are present even if not in persisted state
-                for (const sectionId in currentState.sections) {
-                    if (!merged.sections[sectionId]) {
-                        merged.sections[sectionId] = currentState.sections[sectionId];
-                         // Ensure originalInstructions always comes from the *current* definition
-                        const currentSectionDef = sectionContent.sections.find(s => s.id === sectionId);
-                        merged.sections[sectionId].originalInstructions = currentSectionDef?.subsections || [];
-                    }
-                }
-
-              } else if (typeof persistedState[key] === 'object' && persistedState[key] !== null && !Array.isArray(persistedState[key]) &&
-                         typeof currentState[key] === 'object' && currentState[key] !== null && !Array.isArray(currentState[key])) {
-                // Shallow merge for other top-level objects (like activeToggles, scores, chatMessages, onboarding)
-                merged[key] = { ...currentState[key], ...persistedState[key] };
-              } else {
-                // For primitive types or arrays, overwrite with persisted value
-                merged[key] = persistedState[key];
-              }
-            } else {
-                console.warn(`Persisted key "${key}" not found in initial state. Ignoring.`);
-            }
-          }
-        }
-        console.log("State merge complete.");
-        // Ensure proMode is correctly set based on merged state or default
-        merged.proMode = merged.proMode !== undefined ? merged.proMode : initialState.proMode;
-        return merged;
-      },
+      // Removed the custom merge function to revert to default behavior
     }
   )
 );
