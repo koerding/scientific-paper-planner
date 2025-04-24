@@ -1,9 +1,8 @@
 // FILE: src/components/sections/FeedbackButton.js
 import React from 'react';
-import useAppStore from '../../store/appStore'; // Import store to get specific loading flag
+import useAppStore from '../../store/appStore'; // Import store to get loading flags
 
 const FeedbackButton = ({
-  // loading prop removed - now using store directly
   hasEditedContent,
   hasFeedback,
   editedSinceFeedback,
@@ -11,15 +10,20 @@ const FeedbackButton = ({
   handleFeedbackRequest,
   sectionId // Needed to identify which section this button belongs to
 }) => {
-  // --- Get necessary state from store ---
+  // Get necessary states from store
   const isImprovementLoading = useAppStore((state) => state.loading.improvement);
-  const isImportLoading = useAppStore((state) => state.loading.import);
-  const isAnyAiBusy = useAppStore((state) => state.isAnyLoading()); // Use the combined loading getter
+  const isAnyAiBusy = useAppStore((state) => state.isAnyLoading());
+  const globalAiLoading = useAppStore((state) => state.globalAiLoading);
+  
+  // Combined loading state for consistent UI
+  const isButtonDisabled = isAnyAiBusy || globalAiLoading;
 
   // Get proper button color based on feedback state
   const getButtonClass = () => {
-    // --- Show loading style for ANY loading AI operation ---
-    if (isAnyAiBusy || isImportLoading) return 'bg-gray-300 text-gray-400 cursor-wait'; // General disabled style
+    // Always show the loading/disabled style when any AI operation is in progress
+    if (isButtonDisabled) {
+      return 'bg-purple-300 text-purple-800 cursor-wait animate-pulse';
+    }
 
     if (!hasEditedContent) return 'bg-gray-400 text-white cursor-not-allowed';
 
@@ -28,7 +32,7 @@ const FeedbackButton = ({
       return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
     }
 
-    // Otherwise use standard rating-based colors
+    // Standard rating-based colors when not loading
     if (!feedbackRating) return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
 
     if (feedbackRating <= 3) return 'bg-red-500 text-white hover:bg-red-600';
@@ -40,8 +44,8 @@ const FeedbackButton = ({
 
   // Get proper button label based on feedback state
   const getButtonLabel = () => {
-    // --- Show "Processing..." for ANY loading AI operation ---
-    if (isAnyAiBusy || isImportLoading) return "Processing..."; // Generic busy state
+    // Always show "Processing..." if any AI operation is in progress
+    if (isButtonDisabled) return "Processing...";
 
     if (!hasEditedContent) return "Add content first";
 
@@ -57,7 +61,7 @@ const FeedbackButton = ({
   const buttonColorClass = getButtonClass();
   const buttonLabel = getButtonLabel();
 
-  const tooltipText = isAnyAiBusy || isImportLoading ? "AI is busy processing another request..." :
+  const tooltipText = isButtonDisabled ? "AI is busy processing a request..." :
     (hasEditedContent ?
     (editedSinceFeedback ? "Content changed since last feedback" : "Get AI feedback on this section") :
     "Add content before requesting feedback");
@@ -66,8 +70,7 @@ const FeedbackButton = ({
     <div className="flex justify-end mt-2">
       <button
         onClick={handleFeedbackRequest}
-        // --- Disable if *any* AI is busy, including imports ---
-        disabled={isAnyAiBusy || isImportLoading || !hasEditedContent}
+        disabled={isButtonDisabled || !hasEditedContent}
         className={`
           feedback-button text-sm font-medium
           px-3 py-1.5 rounded
@@ -77,8 +80,8 @@ const FeedbackButton = ({
         `}
         title={tooltipText}
       >
-        {/* --- Show spinner if any AI process is running --- */}
-        {(isAnyAiBusy || isImportLoading) ? (
+        {/* Always show spinner when any AI operation is in progress */}
+        {isButtonDisabled ? (
           <>
             <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
