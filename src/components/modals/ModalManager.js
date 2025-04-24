@@ -21,8 +21,8 @@ const ModalManager = ({
   const reviewData = useAppStore((state) => state.reviewData);
   // --- End Selection ---
 
-  console.log("[ModalManager] Rendering with Zustand modals state:", modals);
-  console.log("[ModalManager] Rendering with Zustand reviewData state:", reviewData);
+  // REMOVED: console.log("[ModalManager] Rendering with Zustand modals state:", modals);
+  // REMOVED: console.log("[ModalManager] Rendering with Zustand reviewData state:", reviewData);
 
   // Destructure modal visibility states from the modals object (fetched from store)
   const {
