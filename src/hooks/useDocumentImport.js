@@ -72,16 +72,13 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
       console.log(`Processing import for ${file.name}`);
 
       // First, reset all state to ensure clean slate
-      if (resetAllProjectState && typeof resetAllProjectState === 'function') {
-        resetAllProjectState();
-        
-        // IMPORTANT: Reset may have cleared our loading state, so set it again
-        // This is crucial to ensure loading spinners continue after reset
-        setLoading('import', true);
-        useAppStore.setState({ globalAiLoading: true });
-      } else {
-        console.warn("[handleDocumentImport] resetAllProjectState function not provided");
-      }
+      // WARNING: We do NOT reset the state here as it interrupts the import process
+      // The loadProject function will handle resetting the project content later
+      // resetAllProjectState() would cause the entire application state to reset,
+      // which can interrupt the API call flow
+      
+      // Instead, we'll just log that we're continuing with the import
+      console.log("[handleDocumentImport] Continuing with import without resetting state");
 
       // Pass sectionContent to the import service
       const importedData = await importDocumentContent(file, sectionContent);
@@ -129,16 +126,13 @@ export const useDocumentImport = (loadProject, sectionContent, resetAllProjectSt
                 } 
             }));
 
-            // IMPORTANT: Small delay before clearing loading states
-            // This ensures UI has time to update after project load
-            setTimeout(() => {
-              // Clear loading states AFTER everything is done 
-              console.log("Setting loading states to FALSE after successful import");
-              setImportLoading(false);
-              setLoading('import', false);
-              // Update global loading state directly through setState for immediate effect
-              useAppStore.setState({ globalAiLoading: false });
-            }, 300);
+            // Clear loading states immediately after successful import
+            // We don't need a delay since we want to proceed with the OpenAI call
+            console.log("Setting loading states to FALSE after successful import");
+            setImportLoading(false);
+            setLoading('import', false);
+            // Update global loading state directly through setState for immediate effect
+            useAppStore.setState({ globalAiLoading: false });
 
             return true; // Success
         } catch (loadError) {
