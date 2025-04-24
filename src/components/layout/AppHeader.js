@@ -33,6 +33,8 @@ const AppHeader = ({
     const file = event.target.files?.[0];
     if (file && importDocumentContent) {
         console.log(`AppHeader - Importing file: ${file.name}`);
+        // The loading state will be set inside handleDocumentImport
+        // and will persist through the confirmation dialog
         await importDocumentContent(file);
         console.log("AppHeader - Import operation completed");
     } else {
@@ -89,7 +91,7 @@ const AppHeader = ({
   const getImportButtonClasses = () => {
       // When specifically importing, show a more prominent loading state
       if (isImportLoading) {
-          return 'inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors border-indigo-300 bg-indigo-200 text-indigo-700 cursor-wait animate-pulse';
+          return 'inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors border-indigo-400 bg-indigo-300 text-indigo-800 cursor-wait animate-pulse';
       }
       
       // Otherwise use regular busy/normal state
