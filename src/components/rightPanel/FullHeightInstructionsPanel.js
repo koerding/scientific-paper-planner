@@ -1,5 +1,5 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
-// MODIFIED: Moved the panel title inside the bordered content box.
+// MODIFIED: Removed inline paddingTop style, added Tailwind padding classes to root div.
 
 import React, { useState, useEffect, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
@@ -130,19 +130,13 @@ const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loa
   }, []);
 
   return (
+    // *** Added Tailwind padding classes to this root div ***
     <div
-      style={{
-        width: '50%',
-        height: '100%',
-        overflowY: 'auto',
-        paddingTop: '20px', // Push content down slightly from main header
-        background: 'transparent',
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
-        paddingBottom: '2rem',
-      }}
+      className="w-1/2 h-full overflow-y-auto px-4 pt-4 pb-12 box-border flex-shrink-0" // Includes pt-4
+      // style prop removed
     >
-      <div className="relative">
+      {/* Inner div no longer needs relative positioning if padding is handled here */}
+      <div>
         {/* Check if a section is selected */}
         {!currentSection ? (
           // Placeholder when no section is selected
