@@ -4,7 +4,7 @@ import React from 'react';
 
 const HeaderCard = () => {
   return (
-    <div className="bg-white rounded-md border-2 border-gray-200 p-3 mb-4 shadow-sm">
+    <div className="bg-white p-3 mb-4 ">
       <h1 className="text-2xl font-bold text-gray-800 mb-1">Scientific Project Plan</h1>
       {/* Updated the text below */}
       <p className="text-sm text-gray-600">
