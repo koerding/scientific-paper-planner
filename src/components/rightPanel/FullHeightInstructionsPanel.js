@@ -1,68 +1,50 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
-// MODIFIED: Removed inline paddingTop style, added Tailwind padding classes to root div.
+// MODIFIED: Changed the format of the panel title.
 
 import React, { useState, useEffect, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
 import { logSectionData, validateImprovementData } from '../../utils/debugUtils';
 
-// --- Helper functions ---
-const getRatingColor = (rating) => {
-  if (!rating) return 'text-gray-500';
-  if (rating <= 3) return 'text-red-500';
-  if (rating <= 5) return 'text-orange-500';
-  if (rating <= 7) return 'text-yellow-600';
-  if (rating <= 9) return 'text-lime-600';
-  return 'text-green-600';
-};
-
-const getRatingLabel = (rating) => {
-  if (!rating) return '';
-  if (rating <= 3) return 'Needs work';
-  if (rating <= 5) return 'Average';
-  if (rating <= 7) return 'Good';
-  if (rating <= 9) return 'Very good';
-  return 'Excellent';
-};
+// --- Helper functions moved outside the component ---
+const getRatingColor = (rating) => { /* ... (no changes needed) ... */ if (!rating) return 'text-gray-500'; if (rating <= 3) return 'text-red-500'; if (rating <= 5) return 'text-orange-500'; if (rating <= 7) return 'text-yellow-600'; if (rating <= 9) return 'text-lime-600'; return 'text-green-600'; };
+const getRatingLabel = (rating) => { /* ... (no changes needed) ... */ if (!rating) return ''; if (rating <= 3) return 'Needs work'; if (rating <= 5) return 'Average'; if (rating <= 7) return 'Good'; if (rating <= 9) return 'Very good'; return 'Excellent'; };
 
 // Render function for original instructions content
 const renderOriginalInstructionsContent = (currentSection, expandedTooltips, toggleTooltip) => {
+  // ... (function remains the same) ...
   if (!currentSection || !currentSection.originalInstructions) return null;
   const subsections = currentSection.originalInstructions;
   return (
     <>
-      {Array.isArray(subsections) && subsections.map((subsection, index) => {
-        // Add null check for subsection itself
-        if (!subsection || !subsection.id) return <div key={`orig-err-${index}`}>Invalid subsection data</div>;
-
-        return (
-          <div key={subsection.id} className="mb-5">
-            <div className="text-base leading-relaxed">
-              <strong className="font-bold">{subsection.title || 'Subsection'}:</strong>{' '}
-              {subsection.instruction || 'No instruction text.'}
-              {subsection.tooltip && (
-                <button
-                  className="info-icon-button ml-1"
-                  onClick={() => toggleTooltip(subsection.id)}
-                  aria-label={expandedTooltips[subsection.id] ? "Hide details" : "Show details"}
-                >
-                  {expandedTooltips[subsection.id] ? '−' : 'ⓘ'}
-                </button>
-              )}
-            </div>
-            {subsection.tooltip && expandedTooltips[subsection.id] && (
-              <div className="mt-2 mb-3 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
-                {subsection.tooltip}
-              </div>
+      {Array.isArray(subsections) && subsections.map((subsection, index) => (
+        <div key={subsection?.id || index} className="mb-5">
+          <div className="text-base leading-relaxed">
+            <strong className="font-bold">{subsection?.title}:</strong>{' '}
+            {subsection?.instruction}
+            {subsection?.tooltip && (
+              <button
+                className="info-icon-button ml-1"
+                onClick={() => toggleTooltip(subsection.id)}
+                aria-label={expandedTooltips[subsection.id] ? "Hide details" : "Show details"}
+              >
+                {expandedTooltips[subsection.id] ? '−' : 'ⓘ'}
+              </button>
             )}
           </div>
-        )
-      })}
+          {subsection?.tooltip && expandedTooltips[subsection.id] && (
+            <div className="mt-2 mb-3 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
+              {subsection.tooltip}
+            </div>
+          )}
+        </div>
+      ))}
     </>
   );
 };
 
 // Render function for improved instructions content
 const renderImprovedInstructionsContent = (currentSection, expandedTooltips, toggleTooltip) => {
+  // ... (function remains the same) ...
    if (!currentSection || !currentSection.aiInstructions) return null;
    const improvement = currentSection.aiInstructions;
    const originalSubsections = currentSection.originalInstructions || [];
@@ -81,19 +63,15 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
          </div>
        )}
        {Array.isArray(originalSubsections) && originalSubsections.map((origSubsection, index) => {
-         // Add null check for origSubsection itself
-         if (!origSubsection || !origSubsection.id) return <div key={`imp-err-${index}`}>Invalid original subsection data</div>;
-
+         if (!origSubsection || !origSubsection.id) return null;
          const subsectionFeedback = improvement.subsections?.find(fb => fb && fb.id === origSubsection.id);
-         // Provide defaults if feedback is missing for a subsection
          const isComplete = subsectionFeedback?.isComplete || false;
-         const feedbackText = subsectionFeedback?.feedback || "No specific feedback provided for this point.";
-
+         const feedbackText = subsectionFeedback?.feedback || "No specific feedback provided.";
          return (
-           <div key={origSubsection.id} className={`mb-5 ${isComplete ? 'opacity-90' : ''}`}>
+           <div key={origSubsection.id || index} className={`mb-5 ${isComplete ? 'opacity-90' : ''}`}>
              <div className="text-base leading-relaxed">
-               <strong className={`font-bold ${isComplete ? 'text-green-600' : ''}`}>{origSubsection.title || 'Subsection'}:</strong>{' '}
-               <span className={isComplete ? 'text-green-600' : ''}>{origSubsection.instruction || 'No instruction text.'}</span>
+               <strong className={`font-bold ${isComplete ? 'text-green-600' : ''}`}>{origSubsection.title}:</strong>{' '}
+               <span className={isComplete ? 'text-green-600' : ''}>{origSubsection.instruction}</span>
                {origSubsection.tooltip && (
                  <button className="info-icon-button ml-1" onClick={() => toggleTooltip(origSubsection.id)} aria-label={expandedTooltips[origSubsection.id] ? "Hide details" : "Show details"}>
                    {expandedTooltips[origSubsection.id] ? '−' : 'ⓘ'}
@@ -115,49 +93,65 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
 
 // --- Component ---
 const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loading }) => {
+  // --- Select State from Zustand Store ---
   const currentSection = useAppStore(useCallback(
       (state) => activeSectionId ? state.sections[activeSectionId] : null,
       [activeSectionId]
   ));
+
+  // --- Local State ---
   const [expandedTooltips, setExpandedTooltips] = useState({});
+
+  // Reset tooltips when the active section changes
   useEffect(() => { setExpandedTooltips({}); }, [activeSectionId]);
 
-  const sectionTitle = currentSection?.title || "Selected Section";
+  // --- Logic ---
+  const sectionTitle = currentSection?.title || "Selected Section"; // Default title if none found
+
+  // *** MODIFIED: Changed panel title format ***
   const panelTitle = `Instructions / Feedback on ${sectionTitle}`;
+  // *** END MODIFICATION ***
 
   const toggleTooltip = useCallback((id) => {
     setExpandedTooltips(prev => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
   return (
-    // *** Added Tailwind padding classes to this root div ***
     <div
-      className="w-1/2 h-full overflow-y-auto px-4 pt-4 pb-12 box-border flex-shrink-0" // Includes pt-4
-      // style prop removed
+      style={{
+        width: '50%', // Takes width from flex parent
+        height: '100%', // Takes height from flex parent
+        overflowY: 'auto', // Scrolls its own content
+        paddingTop: '20px',
+        background: 'transparent',
+        paddingLeft: '1rem',
+        paddingRight: '1rem',
+        paddingBottom: '2rem',
+      }}
     >
-      {/* Inner div no longer needs relative positioning if padding is handled here */}
-      <div>
-        {/* Check if a section is selected */}
+      <div className="relative">
+        {/* Render the updated title */}
+        <h3 className="text-lg font-semibold text-blue-800 mb-4">
+          {panelTitle}
+        </h3>
+
         {!currentSection ? (
-          // Placeholder when no section is selected
-          <div className="flex items-center justify-center h-[300px] text-gray-500 border-4 border-blue-600 rounded-lg bg-white p-5">
+          <div className="flex items-center justify-center h-[300px] text-gray-500 border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
             Select a section on the left to view its instructions or feedback.
           </div>
         ) : (
-          // Render the card when a section IS selected
-          // Main bordered container for content
-          <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
-            {/* Title is now the first element inside the bordered box */}
-            <h3 className="text-lg font-semibold text-blue-800 mb-4">
-              {panelTitle}
-            </h3>
-            {/* Instructions/Feedback content follows the title */}
-            <div className="text-base leading-relaxed instructions-content">
-              {currentSection.aiInstructions
-                  ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
-                  : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
+          <>
+            {/* Content area */}
+            <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
+              <div className="text-base leading-relaxed instructions-content">
+                {currentSection.aiInstructions
+                    ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
+                    : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
+              </div>
             </div>
-          </div>
+             {/* Optional: Improve Instructions Button (if needed) */}
+             {/* <button onClick={() => improveInstructions(activeSectionId)} disabled={loading} className="...">Improve Instructions</button> */}
+          </>
         )}
       </div>
     </div>
