@@ -8,7 +8,7 @@ const HeaderCard = () => {
       <h1 className="text-2xl font-bold text-gray-800 mb-1">Scientific Project Plan</h1>
       {/* Updated the text below */}
       <p className="text-sm text-gray-600">
-        Science is Hard. Plan early, or work much harder later. <strong className="font-bold">Fill the sections one by one, Konrad promises you the project will be better and the paper published faster. It is normal for this to take hours to days.</strong>
+        Science is Hard. Plan early, or work much harder later. <strong className="font-bold">Fill the sections one by one, Konrad promises you: the project will be better and the paper published faster. It is normal for this to take hours to days.</strong>
       </p>
     </div>
   );
