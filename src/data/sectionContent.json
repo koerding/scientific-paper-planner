@@ -159,7 +159,7 @@
       "type": "text",
       "maxLength": 2000,
       "inputPlaceholder": "Define the needs your research addresses...",
-      "introText": "Needs-based research starts from a real-world problem that someone experiences and builds the project around addressing it. Many times the needs are those of the scientific community: building useful tools is almost always needs based. This ensures your work is relevant and impactful for specific stakeholders. It also clarifies the value of your contribution beyond academia.",
+      "introText": "Needs-based research starts from a real-world problem that someone experiences and builds the project around addressing it. Many times the needs are those of the scientific community: building useful tools is almost always needs based, as are medical developments. This ensures your work is relevant and impactful for specific stakeholders. It also clarifies the value of your contribution beyond academia.",
       "subsections": [
         {
           "id": "needsresearch_alignment_with_your_question",
@@ -206,7 +206,7 @@
       "type": "text",
       "maxLength": 2000,
       "inputPlaceholder": "Define your exploratory approach...",
-      "introText": "Exploratory research allows you to investigate new datasets, behaviors, or systems without needing strong prior expectations. It helps generate hypotheses, identify patterns, and map out underexplored areas of interest. Despite its open-ended nature, it still requires clear framing and methodological rigor.",
+      "introText": "Exploratory research allows you to investigate new datasets, behaviors, or systems without needing strong prior expectations. If a study is neither clearly testing hypotheses nor filling a need it is usually exploratory. It helps generate hypotheses, identify patterns, and map out underexplored areas of interest. Despite its open-ended nature, it still requires clear framing and methodological rigor.",
       "subsections": [
         {
           "id": "exploratoryresearch_alignment_with_your_question",
