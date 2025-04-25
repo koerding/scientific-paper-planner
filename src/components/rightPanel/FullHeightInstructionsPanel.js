@@ -131,9 +131,6 @@ const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loa
     >
       <div className="relative">
         {/* Render the updated title */}
-        <h3 className="text-lg font-semibold text-blue-800 mb-4">
-          {panelTitle}
-        </h3>
 
         {!currentSection ? (
           <div className="flex items-center justify-center h-[300px] text-gray-500 border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
@@ -144,6 +141,9 @@ const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loa
             {/* Content area */}
             <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
               <div className="text-base leading-relaxed instructions-content">
+                      <h3 className="text-lg font-semibold text-blue-800 mb-4">
+                        {panelTitle}
+                      </h3>
                 {currentSection.aiInstructions
                     ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
                     : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
