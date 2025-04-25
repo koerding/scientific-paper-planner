@@ -3,15 +3,16 @@
 /* Core layout and section styles */
 .section-card {
   margin-bottom: 0.5rem !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Improved smooth easing */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   border-color: #e5e7eb !important;
   position: relative;
-  overflow: hidden;
-  will-change: max-height, opacity; /* Optimize for animations */
+  /* overflow: hidden; */ /* <-- REMOVE this line */
+  will-change: max-height, opacity;
 }
 
 .section-card.minimized {
   max-height: 60px;
+  overflow: hidden; /* Keep overflow hidden ONLY for minimized */
   background-color: #f9fafb;
   cursor: pointer;
 }
@@ -28,7 +29,7 @@
 }
 
 .section-card.expanded {
-  max-height: 2000px; /* Large value to accommodate any content size */
+  overflow: visible; /* <-- ADD this to ensure content isn't hidden */
   background-color: #ffffff;
 }
 
