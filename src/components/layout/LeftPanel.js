@@ -145,7 +145,7 @@ const LeftPanel = ({
         <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 mt-6">
            {/* ... Pro mode text ... */}
            <p className="text-sm text-gray-700">
-            <span className="font-medium">Progressive Mode:</span> New sections unlock as you complete previous ones with a score of 6 or higher.
+            <span className="font-medium">Progressive Mode:</span> New sections (Hypotheses, Audience, etc) unlock as you complete previous ones with a score of 6 or higher.
           </p>
           <p className="text-xs text-gray-500 mt-1">
             Enable "Pro Mode" in the header to see all sections immediately.
