@@ -1,15 +1,13 @@
 // FILE: src/components/sections/SectionCard.js
-// REVERTED: Removed direct store selection, relying on activeOption prop again.
-// Kept direct render log for props.
+// MODIFIED: Removed max-height and overflow-hidden for expanded cards
 
 import React, { useState, useCallback, useEffect } from 'react';
-import useAppStore from '../../store/appStore'; // Import the Zustand store
+import useAppStore from '../../store/appStore';
 import SectionHeader from './SectionHeader';
 import ToggleHeader from './ToggleHeader';
 import SectionPreview from './SectionPreview';
 import SectionEditor from './SectionEditor';
 import FeedbackButton from './FeedbackButton';
-// Removed import for getApproachSectionIds, getDataMethodSectionIds
 
 const SectionCard = ({
   sectionId,
@@ -17,26 +15,26 @@ const SectionCard = ({
   onRequestFeedback,
   handleSectionFocus,
   options = null,
-  activeOption = null, // Prop received from parent (potentially stale)
+  activeOption = null,
   onToggle = null,
   isToggleSection = false,
 }) => {
 
-  // Log props received during render
+  // Direct prop logging (can be removed later)
   if (isToggleSection) {
     console.log(`DEBUG [SectionCard RENDER for ${sectionId}]: Received props -> sectionId='${sectionId}', activeOption='${activeOption}'`);
   }
 
-  // Select section data based on the sectionId prop
+  // Select State from Zustand Store
   const section = useAppStore((state) => state.sections[sectionId]);
   const updateSectionContent = useAppStore((state) => state.updateSectionContent);
   const toggleMinimize = useAppStore((state) => state.toggleMinimize);
 
-  // Local state for hover/focus
+  // Local state
   const [isHovered, setIsHovered] = useState(false);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
 
-  // Derived State from the selected section data
+  // Derived State
   const {
     title = 'Untitled', content = '', placeholder = 'Start writing...',
     isMinimized = true, aiInstructions, feedbackRating, editedSinceFeedback,
@@ -84,19 +82,22 @@ const SectionCard = ({
    }, []);
 
 
-  // Styling
+  // --- Styling ---
   const getBorderClasses = () => isCurrentSection ? 'border-4 border-blue-500 shadow-md' : 'border-2 border-gray-300';
   const getBackgroundColor = () => isCurrentSection ? 'bg-blue-50' : 'bg-white';
-  const getMaxHeight = () => !isMinimized ? 'max-h-[2000px]' : 'max-h-14';
+  // *** MODIFIED: Define classes based on minimized state ***
+  const minimizedClasses = 'max-h-14 overflow-hidden'; // Classes for minimized state
+  const expandedClasses = ''; // No height/overflow constraints for expanded state
 
   const sectionClasses = `
     section-card rounded-md ${getBackgroundColor()} p-2 mb-2 transition-all
     duration-300 ease-in-out ${getBorderClasses()} ${!isMinimized ? 'expanded' : 'minimized'}
-    ${getMaxHeight()} overflow-hidden relative
+    ${isMinimized ? minimizedClasses : expandedClasses} relative {/* Apply correct classes */}
     ${isCurrentSection ? 'current-active' : ''}
     cursor-pointer ${isMinimized ? 'hover:bg-gray-100' : ''}
     ${isToggleSection ? 'toggle-section' : ''}
   `;
+  // *** END MODIFICATION ***
 
   return (
     <div
@@ -108,7 +109,7 @@ const SectionCard = ({
        {isToggleSection ? (
          <ToggleHeader
            options={options || []}
-           activeOption={activeOption} // Pass the potentially stale prop
+           activeOption={activeOption} // Use prop from parent
            onToggle={onToggle}
            isMinimized={isMinimized}
            isHovered={isHovered || isTextareaFocused}
@@ -128,6 +129,7 @@ const SectionCard = ({
          />
        )}
 
+      {/* Render Preview or Editor based on isMinimized */}
       {isMinimized ?
           ( <SectionPreview textValue={content} /> )
         :
@@ -153,6 +155,7 @@ const SectionCard = ({
           )
       }
 
+      {/* Gradient overlay for minimized cards */}
       {isMinimized && ( <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-t from-gray-100 via-gray-50 to-transparent pointer-events-none"></div> )}
     </div>
   );
