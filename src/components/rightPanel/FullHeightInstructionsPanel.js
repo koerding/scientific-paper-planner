@@ -134,7 +134,7 @@ const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loa
   return (
     // Root div with padding
     <div
-      className="w-1/2 h-full overflow-y-auto px-4 pt-4 pb-12 box-border flex-shrink-0" // Ensure pt-4 (or larger if needed) is here
+      className="w-1/2 h-full overflow-y-auto px-4 pt-8 pb-12 box-border flex-shrink-0" // Ensure pt-4 (or larger if needed) is here
     >
         {/* Conditional rendering directly inside the padded root div */}
         {!currentSection ? (
