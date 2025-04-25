@@ -1,13 +1,13 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
-// MODIFIED: Changed the format of the panel title.
+// Should display the title: "Instructions / Feedback on <Section Title>"
 
 import React, { useState, useEffect, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
 import { logSectionData, validateImprovementData } from '../../utils/debugUtils';
 
-// --- Helper functions moved outside the component ---
-const getRatingColor = (rating) => { /* ... (no changes needed) ... */ if (!rating) return 'text-gray-500'; if (rating <= 3) return 'text-red-500'; if (rating <= 5) return 'text-orange-500'; if (rating <= 7) return 'text-yellow-600'; if (rating <= 9) return 'text-lime-600'; return 'text-green-600'; };
-const getRatingLabel = (rating) => { /* ... (no changes needed) ... */ if (!rating) return ''; if (rating <= 3) return 'Needs work'; if (rating <= 5) return 'Average'; if (rating <= 7) return 'Good'; if (rating <= 9) return 'Very good'; return 'Excellent'; };
+// Helper functions
+const getRatingColor = (rating) => { if (!rating) return 'text-gray-500'; if (rating <= 3) return 'text-red-500'; if (rating <= 5) return 'text-orange-500'; if (rating <= 7) return 'text-yellow-600'; if (rating <= 9) return 'text-lime-600'; return 'text-green-600'; };
+const getRatingLabel = (rating) => { if (!rating) return ''; if (rating <= 3) return 'Needs work'; if (rating <= 5) return 'Average'; if (rating <= 7) return 'Good'; if (rating <= 9) return 'Very good'; return 'Excellent'; };
 
 // Render function for original instructions content
 const renderOriginalInstructionsContent = (currentSection, expandedTooltips, toggleTooltip) => {
@@ -93,24 +93,15 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
 
 // --- Component ---
 const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loading }) => {
-  // --- Select State from Zustand Store ---
   const currentSection = useAppStore(useCallback(
       (state) => activeSectionId ? state.sections[activeSectionId] : null,
       [activeSectionId]
   ));
-
-  // --- Local State ---
   const [expandedTooltips, setExpandedTooltips] = useState({});
-
-  // Reset tooltips when the active section changes
   useEffect(() => { setExpandedTooltips({}); }, [activeSectionId]);
 
-  // --- Logic ---
-  const sectionTitle = currentSection?.title || "Selected Section"; // Default title if none found
-
-  // *** MODIFIED: Changed panel title format ***
-  const panelTitle = `Instructions / Feedback on ${sectionTitle}`;
-  // *** END MODIFICATION ***
+  const sectionTitle = currentSection?.title || "Selected Section";
+  const panelTitle = `Instructions / Feedback on ${sectionTitle}`; // Title defined here
 
   const toggleTooltip = useCallback((id) => {
     setExpandedTooltips(prev => ({ ...prev, [id]: !prev[id] }));
@@ -118,22 +109,17 @@ const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loa
 
   return (
     <div
-      style={{
-        width: '50%', // Takes width from flex parent
-        height: '100%', // Takes height from flex parent
-        overflowY: 'auto', // Scrolls its own content
-        paddingTop: '20px',
-        background: 'transparent',
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
-        paddingBottom: '2rem',
+      style={{ /* Styles remain the same */
+        width: '50%', height: '100%', overflowY: 'auto', paddingTop: '20px',
+        background: 'transparent', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '2rem',
       }}
     >
       <div className="relative">
-        {/* Render the updated title */}
+        {/* --- THIS IS THE TITLE ELEMENT --- */}
         <h3 className="text-lg font-semibold text-blue-800 mb-4">
           {panelTitle}
         </h3>
+        {/* --- END TITLE ELEMENT --- */}
 
         {!currentSection ? (
           <div className="flex items-center justify-center h-[300px] text-gray-500 border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
@@ -141,7 +127,6 @@ const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loa
           </div>
         ) : (
           <>
-            {/* Content area */}
             <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
               <div className="text-base leading-relaxed instructions-content">
                 {currentSection.aiInstructions
@@ -149,8 +134,6 @@ const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loa
                     : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
               </div>
             </div>
-             {/* Optional: Improve Instructions Button (if needed) */}
-             {/* <button onClick={() => improveInstructions(activeSectionId)} disabled={loading} className="...">Improve Instructions</button> */}
           </>
         )}
       </div>
