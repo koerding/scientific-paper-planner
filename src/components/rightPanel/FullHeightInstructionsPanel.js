@@ -141,7 +141,7 @@ const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loa
             {/* Content area */}
             <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
               <div className="text-base leading-relaxed instructions-content">
-                      <h3 className="text-lg font-semibold text-blue-800 mb-4">
+                      <h3>
                         {panelTitle}
                       </h3>
                 {currentSection.aiInstructions
