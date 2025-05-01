@@ -1,14 +1,12 @@
 // FILE: src/components/modals/SplashScreen.js
+// FIXED: Added mobile-friendly styling for splash screen
 
 import React from 'react';
 
 /**
  * Splash screen component to welcome new users
  * Explains key features of the Scientific Project Planner
- * UPDATED: Changed "Paper" to "Project" throughout
- * UPDATED: Icon colors now exactly match the corresponding buttons
- * ADDED: "Feeling stuck" section about PDF import feature
- * UPDATED: Increased z-index to appear above chat button
+ * FIXED: Mobile-friendly design with better button positioning
  */
 const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   const handleDontShowAgain = () => {
@@ -18,18 +16,18 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center z-50" style={{ zIndex: 1000 }}>
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 overflow-hidden">
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center z-[9999]">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-[95%] mx-auto my-4 overflow-y-auto max-h-[90vh]">
         {/* Header with title and logo - FIXED: Changed "Paper" to "Project" */}
-        <div className="bg-purple-600 px-6 py-4 flex items-center">
+        <div className="bg-purple-600 px-6 py-4 flex items-center sticky top-0">
           <div className="w-10 h-10 bg-white rounded-md flex items-center justify-center mr-3 flex-shrink-0">
             <span className="font-bold text-xl text-purple-600">SP</span>
           </div>
           <h1 className="text-white text-xl font-bold">Scientific Project Planner</h1>
         </div>
         
-        {/* Content area */}
-        <div className="px-6 py-5">
+        {/* Content area - Added padding for mobile */}
+        <div className="px-6 py-5 overflow-y-auto">
           <p className="text-gray-800 font-medium text-lg mb-4">
             Design a scientific project, step-by-step. Structured for clarity, enhanced by AI.
           </p>
@@ -45,7 +43,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               </div>
               <div>
                 <p className="font-medium text-gray-800">Get AI assistance anytime</p>
-                <p className="text-gray-600 text-sm">Click the indigo "Let's talk about this" button in the bottom right to discuss your current section</p>
+                <p className="text-gray-600 text-sm">Click the chat button in the bottom right to discuss your current section</p>
               </div>
             </div>
             
@@ -89,7 +87,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             </div>
           </div>
           
-          <div className="text-center">
+          <div className="text-center pb-20 md:pb-0"> {/* Added extra padding on mobile */}
             {showDontShowAgainOption && (
               <div className="mb-4 flex items-center justify-center">
                 <label className="flex items-center cursor-pointer">
@@ -111,9 +109,10 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             </button>
             
             <div className="mt-4 text-gray-500 text-sm">
-              Built with ❤️ Konrad @Kordinglab. 
+              <p>Built with ❤️ Konrad @Kordinglab. 
                 
                 By using this software you acknowledge that Dinosaurs are the most awesome animals.
+              </p>
             </div>
           </div>
         </div>
