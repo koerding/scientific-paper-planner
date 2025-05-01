@@ -1,5 +1,5 @@
 // FILE: src/components/layout/SinglePanelLayout.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import LeftPanel from './LeftPanel';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import SectionModePicker from './SectionModePicker';
@@ -8,8 +8,8 @@ import { showWelcomeSplash } from '../modals/SplashScreenManager';
 
 /**
  * A single panel layout that handles both write and guide modes
- * MODIFIED: Removed redundant section title/number header
- * FIXED: Properly updates guide content when section changes
+ * MODIFIED: Title only appears in guide mode
+ * MODIFIED: Embedded toggle in header, removed floating toggle
  */
 const SinglePanelLayout = ({
   activeSection,
@@ -28,8 +28,11 @@ const SinglePanelLayout = ({
   const currentChatSectionId = useAppStore((state) => state.currentChatSectionId);
   
   // Use currentChatSectionId as the source of truth for which section is active
-  // This ensures the guide panel shows content for the currently selected section
   const activeSectionId = currentChatSectionId || activeSection;
+  
+  // Get section info for the header (only shown in guide mode)
+  const currentSection = useAppStore((state) => activeSectionId ? state.sections[activeSectionId] : null);
+  const sectionTitle = currentSection?.title || "Select a section";
   
   // Ref for scrolling to sections
   const contentRef = useRef(null);
@@ -42,11 +45,6 @@ const SinglePanelLayout = ({
   const handleSwitchToWrite = () => {
     setUiMode('write');
   };
-
-  // Log section changes to help with debugging
-  useEffect(() => {
-    console.log(`Section changed to: ${activeSectionId}, UI Mode: ${uiMode}`);
-  }, [activeSectionId, uiMode]);
   
   return (
     <div 
@@ -58,8 +56,16 @@ const SinglePanelLayout = ({
         className="w-full max-w-[740px] px-4 flex-grow overflow-visible"
         aria-live="polite"
       >
-        {/* Card header with mode toggle only (removed section title) */}
-        <div className="bg-white rounded-t-lg border border-gray-200 shadow-sm px-5 py-3 mb-0 flex justify-end">
+        {/* Card header with mode toggle embedded */}
+        <div className="bg-white rounded-t-lg border border-gray-200 shadow-sm px-5 py-3 mb-0 flex items-center justify-between">
+          {/* Only show title in guide mode */}
+          {uiMode === 'guide' && (
+            <h2 className="text-xl font-semibold text-gray-800">{sectionTitle}</h2>
+          )}
+          {/* This is empty in write mode to maintain the space */}
+          {uiMode === 'write' && <div></div>}
+          
+          {/* Embedded mode toggle */}
           <SectionModePicker 
             currentMode={uiMode} 
             onModeChange={setUiMode}
@@ -80,14 +86,14 @@ const SinglePanelLayout = ({
                 handleMagic={handleMagic}
                 proMode={proMode}
                 onRequestFeedback={handleSwitchToGuide}
-                contentRef={contentRef} // Pass the ref for scrolling
+                contentRef={contentRef}
               />
             </div>
           ) : (
             /* GUIDE MODE: Show the instruction panel for the current section */
             <div className="w-full">
               <FullHeightInstructionsPanel
-                key={activeSectionId} // Force re-render when section changes
+                key={activeSectionId}
                 activeSectionId={activeSectionId}
                 improveInstructions={handleMagic}
                 loading={isAnyAiLoading}
