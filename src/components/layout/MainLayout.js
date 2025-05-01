@@ -55,8 +55,8 @@ const MainLayout = ({
         {/* Add the LeftRailNavigation component here */}
         <LeftRailNavigation visible={showMobileRail} />
         
-        {/* Main content area - now properly centered */}
-        <div className="main-content h-full">
+        {/* Main content area - fixed scrolling */}
+        <div className="main-content h-full overflow-y-auto"> {/* Added overflow-y-auto here */}
           {/* Main content area */}
           <ContentArea {...finalContentAreaProps} />
           <InteractionElements {...finalInteractionProps} />
