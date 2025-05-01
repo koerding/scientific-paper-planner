@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store/appStore';
 import { isToggleSection, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
 import EnhancedTooltip from '../common/EnhancedTooltip';
-import '../../styles/LeftRailNavigation.css';
+// Remove CSS import - we'll add styles directly to existing PaperPlanner.css
 
 // Map section IDs to display names for labels
 const sectionToDisplayName = {
