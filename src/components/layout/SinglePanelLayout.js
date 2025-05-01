@@ -2,7 +2,6 @@
 import React, { useEffect, useRef } from 'react';
 import LeftPanel from './LeftPanel';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
-import SectionModePicker from './SectionModePicker';
 import useAppStore from '../../store/appStore';
 import { showWelcomeSplash } from '../modals/SplashScreenManager';
 
@@ -57,26 +56,14 @@ const SinglePanelLayout = ({
         className="w-full max-w-[740px] px-4 flex-grow overflow-visible z-30 relative"
         aria-live="polite"
       >
-        {/* Card header with centered mode toggle */}
+        {/* Card header - Now just shows title in guide mode without toggle */}
         <div className="bg-white rounded-t-lg border border-gray-200 shadow-sm px-5 py-3 mb-0 flex items-center">
-          {/* Left section: title in guide mode */}
-          <div className="flex-1">
-            {uiMode === 'guide' && (
-              <h2 className="text-xl font-semibold text-gray-800">{sectionTitle}</h2>
-            )}
-          </div>
-          
-          {/* Center section: mode toggle */}
-          <div className="flex-grow-0 flex-shrink-0 flex justify-center">
-            <SectionModePicker 
-              currentMode={uiMode} 
-              onModeChange={setUiMode}
-              disabled={isAnyAiLoading}
-            />
-          </div>
-          
-          {/* Right section: empty space to balance layout */}
-          <div className="flex-1"></div>
+          {/* Only show title in guide mode */}
+          {uiMode === 'guide' && (
+            <h2 className="text-xl font-semibold text-gray-800">{sectionTitle}</h2>
+          )}
+          {/* This is empty in write mode */}
+          {uiMode === 'write' && <div></div>}
         </div>
         
         {/* Card body */}
