@@ -1642,3 +1642,235 @@ h1, h2, h3, .section-card .section-header h2 {
     --font-size-small: 0.8125rem;  /* 13px */
   }
 }
+/* Add these CSS styles to your PaperPlanner.css file */
+
+/* 
+ * STANDARDIZED TYPOGRAPHY 
+ * Reduces all font sizes to exactly three sizes: Big, Medium, and Small
+ */
+
+:root {
+  /* Define our three font sizes */
+  --font-size-big: 1.25rem;    /* 20px */
+  --font-size-medium: 1rem;    /* 16px */
+  --font-size-small: 0.875rem; /* 14px */
+  
+  /* Font weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  
+  /* Main font family - ensure consistency */
+  --font-family-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Reset all font sizes to our three standardized sizes */
+
+/* BIG - Main headers */
+h1,
+.text-xl, 
+.text-2xl,
+[class*="text-3xl"],
+.section-card .section-header h2,
+.modal-title,
+.content-header h2 {
+  font-size: var(--font-size-big) !important;
+  font-weight: var(--font-weight-bold) !important;
+  font-family: var(--font-family-main) !important;
+  line-height: 1.3 !important;
+}
+
+/* MEDIUM - Subheaders, UI elements */
+h2, 
+h3,
+.text-lg,
+.text-base,
+button:not(.text-xs):not(.text-sm),
+.rail-btn span,
+.section-instruction-panel h3,
+.in-card-toggle button,
+.message-bubble .prose,
+.feedback-button,
+.chat-header span,
+.mode-toggle button {
+  font-size: var(--font-size-medium) !important;
+  font-family: var(--font-family-main) !important;
+  line-height: 1.5 !important;
+}
+
+/* SMALL - Body text, descriptions */
+p,
+.text-sm,
+.text-xs,
+[class*="text-xs"],
+textarea,
+input,
+.ai-message .message-content,
+.user-message .message-content,
+.section-card .text-sm,
+.instructions-content,
+.text-gray-500,
+.text-gray-600,
+.tooltip-text,
+.rail-tooltip,
+footer,
+.content-body .text-base {
+  font-size: var(--font-size-small) !important;
+  font-family: var(--font-family-main) !important;
+  line-height: 1.5 !important;
+}
+
+/* Adjust font weights */
+.font-normal, .font-regular {
+  font-weight: var(--font-weight-normal) !important;
+}
+
+.font-medium {
+  font-weight: var(--font-weight-medium) !important;
+}
+
+.font-semibold, .font-bold {
+  font-weight: var(--font-weight-bold) !important;
+}
+
+/* Specific component adjustments */
+
+/* Section Cards */
+.section-card .section-header h2 {
+  font-size: var(--font-size-big) !important; 
+}
+
+/* Hamburger Menu */
+.drawer-panel h3 {
+  font-size: var(--font-size-medium) !important;
+}
+
+/* Chat Interface */
+.chat-header span {
+  font-size: var(--font-size-medium) !important;
+}
+
+.ai-avatar {
+  font-size: var(--font-size-small) !important;
+}
+
+/* Instructions Panel */
+.instructions-content strong {
+  font-weight: var(--font-weight-bold) !important;
+  font-size: var(--font-size-small) !important;
+}
+
+/* Left Rail */
+.rail-btn span {
+  font-size: var(--font-size-small) !important;
+}
+
+/* Toggles & Buttons */
+.in-card-toggle button {
+  font-size: var(--font-size-medium) !important;
+}
+
+.feedback-button {
+  font-size: var(--font-size-small) !important;
+}
+
+/* Tooltips */
+.rail-tooltip, 
+.onboarding-tooltip {
+  font-size: var(--font-size-small) !important;
+}
+
+/* Consistent line heights */
+* {
+  line-height: normal;
+}
+
+p, textarea, .prose p {
+  line-height: 1.5 !important;
+}
+
+h1, h2, h3, .section-card .section-header h2 {
+  line-height: 1.3 !important;
+}
+
+/* Reset any strange font styles that may be in components */
+[style*="font-size"] {
+  font-size: inherit !important;
+}
+
+/* Ensure proper scaling for mobile */
+@media (max-width: 640px) {
+  :root {
+    --font-size-big: 1.125rem;    /* 18px */
+    --font-size-medium: 0.9375rem; /* 15px */
+    --font-size-small: 0.8125rem;  /* 13px */
+  }
+}
+
+/* Fixed Mode Toggle CSS */
+.fixed-mode-toggle {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.15));
+}
+
+/* Make sure the toggle doesn't cover the chat button */
+@media (max-width: 768px) {
+  .fixed-mode-toggle {
+    bottom: 5rem; /* Place it above the chat button */
+  }
+}
+
+/* Ensure toggle is highly visible */
+.fixed-mode-toggle .bg-white {
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Animation for toggle appearance */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.fixed-mode-toggle {
+  animation: fade-in-up 0.3s ease-out;
+}
+
+/* Hover state for better interactivity */
+.fixed-mode-toggle:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+/* Active button styles */
+.fixed-mode-toggle button.bg-indigo-600 {
+  background-color: #4f46e5; /* indigo-600 */
+  color: white;
+}
+
+.fixed-mode-toggle button:not(.bg-indigo-600):hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
+
+/* Ensure the toggle is still visible on small screens */
+@media (max-height: 500px) {
+  .fixed-mode-toggle {
+    bottom: 1rem;
+  }
+}
+
+/* Fix for potential pointer-events issues */
+.fixed-mode-toggle, 
+.fixed-mode-toggle * {
+  pointer-events: auto;
+}
