@@ -54,7 +54,7 @@ const SinglePanelLayout = ({
       
       {/* Main content panel with card design */}
       <div 
-        className="w-full max-w-[740px] px-4 flex-grow overflow-visible"
+        className="w-full max-w-[740px] px-4 flex-grow overflow-visible z-30 relative"
         aria-live="polite"
       >
         {/* Card header with centered mode toggle */}
