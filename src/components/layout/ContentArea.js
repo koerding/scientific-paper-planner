@@ -1,6 +1,6 @@
 // FILE: src/components/layout/ContentArea.js
-// MODIFIED: Replace dual-panel layout with SinglePanelLayout
-// FIXED: Pass currentChatSectionId as active section for better section sync
+// MODIFIED: Ensure proper layout with rail without overlapping
+// FIXED: Added z-index and proper positioning
 
 import React from 'react';
 import SinglePanelLayout from './SinglePanelLayout';
@@ -22,8 +22,8 @@ const ContentArea = ({
   const effectiveActiveSection = currentChatSectionId || activeSection;
 
   return (
-    // Position absolutely to fill parent
-    <div className="absolute inset-0 flex">
+    // Position relatively to ensure proper stacking context
+    <div className="relative flex-grow flex justify-center z-20">
       {/* Single panel layout that handles both write and guide modes */}
       <SinglePanelLayout
         activeSection={effectiveActiveSection} // Use the effective active section
