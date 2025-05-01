@@ -1,14 +1,16 @@
 // FILE: src/components/navigation/LeftRailNavigation.js
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import useAppStore from '../../store/appStore';
 import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
 
 /**
- * Left rail navigation with mode-aware section switching
+ * Left rail navigation with mode-aware section switching and improved active state
  * FIXED: Made rail wider for longer text
  * FIXED: Improved circle indicators to use solid colors instead of numbers
  * FIXED: Simplified section titles (removed "Research" prefix)
  * FIXED: Ensured rails are clickable and properly navigate to sections
+ * ENHANCED: Better scroll spy with optimized rootMargin
+ * ENHANCED: Improved hover and focus states
  * @param {Object} props - Component props
  * @param {boolean} props.visible - Whether the rail is visible
  * @returns {React.ReactElement} The left rail navigation component
@@ -28,6 +30,50 @@ const LeftRailNavigation = ({ visible = true }) => {
   // Get approach and data method sections
   const approachSections = getApproachSectionIds();
   const dataMethodSections = getDataMethodSectionIds();
+  
+  // Refs for intersection observer
+  const observerRef = useRef(null);
+  
+  // Set up intersection observer for scroll spy
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    
+    // Clean up any existing observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+    
+    // Create new observer with optimized rootMargin for faster feedback
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        // Find the most visible section
+        const visibleEntry = entries.find(entry => entry.isIntersecting);
+        if (visibleEntry && visibleEntry.target) {
+          const sectionId = visibleEntry.target.id.replace('section-', '');
+          if (sectionId && sectionId !== currentSectionId) {
+            handleSectionFocus(sectionId);
+          }
+        }
+      },
+      {
+        root: null,
+        // Optimized rootMargin for snappier response
+        rootMargin: '-20% 0px -60% 0px',
+        threshold: 0.1
+      }
+    );
+    
+    // Observe all section elements
+    document.querySelectorAll('[id^="section-"]').forEach(section => {
+      observerRef.current.observe(section);
+    });
+    
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [sections, currentSectionId, handleSectionFocus]);
   
   /**
    * Handle navigation with mode awareness
@@ -53,6 +99,15 @@ const LeftRailNavigation = ({ visible = true }) => {
       // We're calling setUiMode with 'guide' again to trigger the logic
       // that focuses the correct section in guide mode
       setUiMode('guide');
+    }
+    
+    // Find the section element and scroll to it
+    const sectionElement = document.getElementById(`section-${sectionId}`);
+    if (sectionElement) {
+      sectionElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start'
+      });
     }
   };
   
@@ -100,7 +155,11 @@ const LeftRailNavigation = ({ visible = true }) => {
   };
   
   return (
-    <div className="rail">
+    <div 
+      className="rail"
+      role="navigation"
+      aria-label="Section navigation"
+    >
       {navItems.map(item => (
         <button
           key={item.id}
