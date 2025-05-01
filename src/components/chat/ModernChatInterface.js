@@ -1,8 +1,7 @@
 // FILE: src/components/chat/ModernChatInterface.js
-// Key changes:
-// 1. Use both isAnyStoreLoading and globalAiLoading for consistent UI
-// 2. Enhanced loading state styles to be more visible
-// MODIFIED: Increased chat window width from w-[450px] to w-[550px]
+// FIXED: Positioned chat button in lower right corner
+// FIXED: Ensured Z-index is high enough to appear over content
+// FIXED: Added proper styling for the chat button
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -90,10 +89,10 @@ const ModernChatInterface = ({
 
   return (
     <>
-      {/* Minimized Chat Icon Button */}
+      {/* Minimized Chat Icon Button - FIXED POSITION IN LOWER RIGHT */}
       {isMinimized && (
         <div
-          className={`fixed bottom-6 right-6 z-50 ${isButtonDisabled ? 'cursor-wait' : 'cursor-pointer'} ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`}
+          className={`fixed bottom-6 right-6 z-[1000] ${isButtonDisabled ? 'cursor-wait' : 'cursor-pointer'} ${showChatHighlight ? 'onboarding-highlight-chat' : ''}`}
           style={{ transform: 'translateZ(0)' }}
         >
           <button
@@ -119,10 +118,9 @@ const ModernChatInterface = ({
         </div>
       )}
 
-      {/* Expanded chat interface */}
+      {/* Expanded chat interface - increased z-index */}
       <div
-        // *** MODIFIED WIDTH HERE ***
-        className={`fixed shadow-lg rounded-lg overflow-hidden transition-all duration-300 ease-in-out bottom-4 right-4 w-[550px] max-w-[90vw] h-[600px] max-h-[80vh] ${
+        className={`fixed shadow-lg rounded-lg overflow-hidden transition-all duration-300 ease-in-out bottom-4 right-4 w-[550px] max-w-[90vw] h-[600px] max-h-[80vh] z-[1000] ${
           isMinimized ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'
         }`}
         style={{ backgroundColor: '#ffffff', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)' }}
@@ -152,7 +150,7 @@ const ModernChatInterface = ({
                   <div className="flex flex-col items-center justify-center h-full text-gray-500">
                     {/* Empty state */}
                     <div className="bg-gray-100 rounded-lg p-6 text-center max-w-xs">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
                         <p className="text-lg font-medium mb-1">No messages yet</p>
                         <p className="text-sm text-gray-600">Ask questions about your {currentSectionTitle.toLowerCase()} section or get help with your project.</p>
                     </div>
