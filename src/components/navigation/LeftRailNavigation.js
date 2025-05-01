@@ -3,36 +3,21 @@ import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store/appStore';
 import { isToggleSection, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
 import EnhancedTooltip from '../common/EnhancedTooltip';
+import '../../styles/LeftRailNavigation.css';
 
-// Map section IDs to simpler IDs for the rail
-const sectionToRailId = {
-  'question': 'rq',
-  'hypothesis': 'H',
-  'needsresearch': 'N',
-  'exploratoryresearch': 'E',
-  'audience': 'aud',
-  'relatedpapers': 'ref',
-  'experiment': 'exp',
-  'existingdata': 'data',
-  'theorysimulation': 'theory',
-  'analysis': 'analysis',
-  'process': 'proc',
-  'abstract': 'abs'
-};
-
-// Map section IDs to display names for tooltips
+// Map section IDs to display names for labels
 const sectionToDisplayName = {
-  'question': 'Research Question',
-  'hypothesis': 'Hypothesis-Driven',
+  'question': 'Question',
+  'hypothesis': 'Hypotheses',
   'needsresearch': 'Needs-Based',
   'exploratoryresearch': 'Exploratory',
-  'audience': 'Target Audience',
+  'audience': 'Audience',
   'relatedpapers': 'Related Papers',
   'experiment': 'Experiment',
   'existingdata': 'Existing Data',
   'theorysimulation': 'Theory/Simulation',
-  'analysis': 'Data Analysis',
-  'process': 'Process & Timeline',
+  'analysis': 'Analysis',
+  'process': 'Process',
   'abstract': 'Abstract'
 };
 
@@ -61,6 +46,7 @@ const SectionIcon = ({ sectionId, active, score, isCurrent, isApproach, isDataMe
   };
 
   const getFillColor = () => {
+    if (isCurrent) return '#EFF6FF'; // blue-50 for current section, matching card bg
     if (!score) return 'none'; // No fill if not scored
     if (score >= 6) return '#10B981'; // green-500 for good scores
     return '#F59E0B'; // amber-500 for scores that need work
@@ -68,6 +54,7 @@ const SectionIcon = ({ sectionId, active, score, isCurrent, isApproach, isDataMe
 
   const getTextColor = () => {
     if (score) return 'white'; // White text on colored background
+    if (isCurrent) return '#6B7280'; // gray-500 for current section
     return '#6B7280'; // gray-500 for default
   };
 
@@ -79,15 +66,9 @@ const SectionIcon = ({ sectionId, active, score, isCurrent, isApproach, isDataMe
     displayText = dataMethodLetters[sectionId] || '';
   }
 
-  // Add a slight pulse effect to the current section
-  const currentClass = isCurrent ? 'ring-2 ring-indigo-300 ring-opacity-50' : '';
-  
-  // Add "locked" styling
-  const lockedClass = locked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110';
-
   return (
-    <div className={`transition-all duration-200 ease-in-out ${lockedClass} ${currentClass}`}>
-      <svg width="32" height="32" role="img" className="transition-transform">
+    <div className="rail-icon">
+      <svg width="32" height="32" role="img">
         <circle 
           cx="16" 
           cy="16" 
@@ -128,6 +109,40 @@ const LeftRailNavigation = () => {
   
   // Local state for tooltips
   const [activeTooltip, setActiveTooltip] = useState(null);
+
+  // Intersection Observer for scroll spy
+  useEffect(() => {
+    // Set up intersection observer to detect which section is in view
+    const observerOptions = {
+      root: null, // viewport
+      rootMargin: '-80px 0px -20% 0px', // Adjust based on your layout
+      threshold: 0.1 // 10% visibility triggers callback
+    };
+
+    const observerCallback = (entries) => {
+      // Find the first visible section
+      const visibleEntry = entries.find(entry => entry.isIntersecting);
+      if (visibleEntry) {
+        const sectionId = visibleEntry.target.id.replace('section-', '');
+        // We don't change active section here, just add visual indicator
+        document.querySelectorAll('.rail-btn').forEach(btn => {
+          btn.classList.remove('rail-btn-in-view');
+        });
+        document.getElementById(`rail-btn-${sectionId}`)?.classList.add('rail-btn-in-view');
+      }
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    
+    // Observe all section elements
+    document.querySelectorAll('[id^="section-"]').forEach(section => {
+      observer.observe(section);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
   
   // Helper to determine if a section is locked
   const isSectionLocked = (sectionId) => {
@@ -235,6 +250,28 @@ const LeftRailNavigation = () => {
     
     return `${displayName} — Not started`;
   };
+
+  // Helper to get text color based on section state
+  const getTextColorClass = (sectionId) => {
+    if (isSectionLocked(sectionId)) return 'text-gray-400'; // Gray for locked
+    if (activeSection === sectionId) return 'text-indigo-600'; // Indigo for active
+    if (scores[sectionId]) {
+      if (scores[sectionId] >= 6) return 'text-green-600'; // Green for good score
+      return 'text-orange-600'; // Orange for needs work
+    }
+    return 'text-gray-500'; // Default gray
+  };
+
+  // Helper to get background color based on section state
+  const getBgColorClass = (sectionId) => {
+    if (isSectionLocked(sectionId)) return ''; // No bg for locked
+    if (activeSection === sectionId) return 'bg-indigo-50'; // Light indigo for active
+    if (scores[sectionId]) {
+      if (scores[sectionId] >= 6) return 'bg-green-50'; // Light green for good score
+      return 'bg-orange-50'; // Light orange for needs work
+    }
+    return ''; // Default no bg
+  };
   
   // Only show sections that should be visible based on active toggles
   const visibleSectionIds = Object.keys(sections).filter(sectionId => {
@@ -268,45 +305,67 @@ const LeftRailNavigation = () => {
   ].filter(id => visibleSectionIds.includes(id));
   
   return (
-    <nav className="fixed left-0 top-10 bottom-0 w-14 sm:w-14 flex flex-col items-center pt-8 gap-5 z-10 bg-fafafd">
+    <nav className="rail">
       {orderedSectionIds.map((sectionId) => {
         const isApproach = getApproachSectionIds().includes(sectionId);
         const isDataMethod = getDataMethodSectionIds().includes(sectionId);
         const locked = isSectionLocked(sectionId);
+        const textColorClass = getTextColorClass(sectionId);
+        const bgColorClass = getBgColorClass(sectionId);
         
         return (
-          <div key={sectionId} className="relative">
-            <button
-              className="focus:outline-none"
-              onClick={() => navigateToSection(sectionId)}
-              onMouseEnter={() => setActiveTooltip(sectionId)}
-              onMouseLeave={() => setActiveTooltip(null)}
-              onFocus={() => setActiveTooltip(sectionId)}
-              onBlur={() => setActiveTooltip(null)}
-              aria-label={getTooltipContent(sectionId)}
-              disabled={locked || isAnyAiLoading}
-              id={`nav-${sectionId}`}
-            >
-              <SectionIcon
-                sectionId={sectionId}
-                active={activeSection === sectionId}
-                score={scores[sectionId]}
-                isCurrent={activeSection === sectionId}
-                isApproach={isApproach}
-                isDataMethod={isDataMethod}
-                branchChoice={activeToggles.approach}
-                locked={locked}
-              />
-            </button>
+          <button
+            key={sectionId}
+            id={`rail-btn-${sectionId}`}
+            className={`rail-btn w-full flex items-center gap-2 px-4 py-1 ${bgColorClass} ${locked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            onClick={() => navigateToSection(sectionId)}
+            onMouseEnter={() => setActiveTooltip(sectionId)}
+            onMouseLeave={() => setActiveTooltip(null)}
+            onFocus={() => setActiveTooltip(sectionId)}
+            onBlur={() => setActiveTooltip(null)}
+            aria-label={getTooltipContent(sectionId)}
+            disabled={locked || isAnyAiLoading}
+            title={getTooltipContent(sectionId)}
+          >
+            <SectionIcon
+              sectionId={sectionId}
+              active={activeSection === sectionId}
+              score={scores[sectionId]}
+              isCurrent={activeSection === sectionId}
+              isApproach={isApproach}
+              isDataMethod={isDataMethod}
+              branchChoice={activeToggles.approach}
+              locked={locked}
+            />
+            <span className={`text-sm font-medium truncate ${textColorClass}`}>
+              {/* For approach toggle, always use "Hypotheses" label regardless of active toggle */}
+              {isApproach ? "Hypotheses" : sectionToDisplayName[sectionId]}
+            </span>
             
             {activeTooltip === sectionId && (
               <EnhancedTooltip position="right" className="whitespace-nowrap">
                 {getTooltipContent(sectionId)}
               </EnhancedTooltip>
             )}
-          </div>
+          </button>
         );
       })}
+      
+      {/* Help button at the bottom */}
+      <div className="mt-auto">
+        <button
+          className="rail-btn w-full flex items-center gap-2 px-4 py-1 text-gray-400 hover:text-gray-600"
+          aria-label="Navigation help"
+          onClick={() => {/* Optional help tooltip or modal */}}
+        >
+          <div className="rail-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <span className="text-sm font-medium truncate">Help</span>
+        </button>
+      </div>
     </nav>
   );
 };
