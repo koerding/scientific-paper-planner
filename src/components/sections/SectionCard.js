@@ -1,5 +1,5 @@
 // FILE: src/components/sections/SectionCard.js
-// Modified to use the EnhancedTooltip component with simplified ToggleHeader
+// UPDATED: Pass onSwitchToGuide to FeedbackButton
 
 import React, { useState, useCallback, useEffect } from 'react';
 import useAppStore from '../../store/appStore';
@@ -8,7 +8,6 @@ import ToggleHeader from './ToggleHeader';
 import SectionPreview from './SectionPreview';
 import SectionEditor from './SectionEditor';
 import FeedbackButton from './FeedbackButton';
-import EnhancedTooltip from '../common/EnhancedTooltip'; // Import the new tooltip component
 
 const SectionCard = ({
   sectionId,
@@ -19,6 +18,7 @@ const SectionCard = ({
   activeOption = null,
   onToggle = null,
   isToggleSection = false,
+  onSwitchToGuide = null, // NEW: Callback to switch to guide mode
 }) => {
 
   // Direct prop logging (can be removed later)
@@ -34,44 +34,6 @@ const SectionCard = ({
   // Local state
   const [isHovered, setIsHovered] = useState(false);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false); // For tooltip display
-  
-  // Track first render for toggle sections to show tooltip initially
-  const [isInitialRender, setIsInitialRender] = useState(isToggleSection);
-
-  // Check localStorage to see if we've shown the toggle tooltip before
-  const [hasSeenTooltip, setHasSeenTooltip] = useState(() => {
-    try {
-      return localStorage.getItem(`toggle-tooltip-seen-${sectionId}`) === 'true';
-    } catch (e) {
-      return false;
-    }
-  });
-
-  // Effect to show tooltip briefly after the component mounts
-  // but only for toggle sections when they first appear
-  useEffect(() => {
-    if (isToggleSection && isInitialRender && !hasSeenTooltip) {
-      // Show the tooltip for 6 seconds
-      setShowTooltip(true);
-      
-      // Mark as seen in localStorage
-      try {
-        localStorage.setItem(`toggle-tooltip-seen-${sectionId}`, 'true');
-        setHasSeenTooltip(true);
-      } catch (e) {
-        console.warn('Could not save tooltip preference to localStorage');
-      }
-      
-      // Set a timer to hide the tooltip
-      const timer = setTimeout(() => {
-        setShowTooltip(false);
-        setIsInitialRender(false);
-      }, 6000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isToggleSection, isInitialRender, hasSeenTooltip, sectionId]);
 
   // Derived State
   const {
@@ -120,10 +82,11 @@ const SectionCard = ({
        setIsTextareaFocused(false);
    }, []);
 
+
   // --- Styling ---
   const getBorderClasses = () => isCurrentSection ? 'border-4 border-blue-500 shadow-md' : 'border-2 border-gray-300';
   const getBackgroundColor = () => isCurrentSection ? 'bg-blue-50' : 'bg-white';
-  // Define classes based on minimized state
+  // *** MODIFIED: Define classes based on minimized state ***
   const minimizedClasses = 'max-h-14 overflow-hidden'; // Classes for minimized state
   const expandedClasses = ''; // No height/overflow constraints for expanded state
 
@@ -135,6 +98,7 @@ const SectionCard = ({
     cursor-pointer ${isMinimized ? 'hover:bg-gray-100' : ''}
     ${isToggleSection ? 'toggle-section' : ''}
   `;
+  // *** END MODIFICATION ***
 
   return (
     <div
@@ -144,26 +108,15 @@ const SectionCard = ({
         onMouseLeave={() => setIsHovered(false)}
       >
        {isToggleSection ? (
-         <div className="relative">
-           <ToggleHeader
-             options={options || []}
-             activeOption={activeOption}
-             onToggle={onToggle}
-             isMinimized={isMinimized}
-             isHovered={isHovered || isTextareaFocused}
-             isFocused={isCurrentSection}
-             toggleMinimized={handleToggleMinimize}
-           />
-           {/* Use the EnhancedTooltip component for toggle sections */}
-           <EnhancedTooltip 
-             show={showTooltip} 
-             autoDismissAfter={6000} 
-             position="bottom"
-             className="text-center font-medium"
-           >
-             Please select one option. This choice affects your research framework.
-           </EnhancedTooltip>
-         </div>
+         <ToggleHeader
+           options={options || []}
+           activeOption={activeOption} // Use prop from parent
+           onToggle={onToggle}
+           isMinimized={isMinimized}
+           isHovered={isHovered || isTextareaFocused}
+           isFocused={isCurrentSection}
+           toggleMinimized={handleToggleMinimize}
+         />
        ) : (
          <SectionHeader
            title={title}
@@ -198,6 +151,7 @@ const SectionCard = ({
                  feedbackRating={feedbackRating}
                  handleFeedbackRequest={handleFeedbackRequest}
                  sectionId={sectionId}
+                 onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
                />
             </>
           )
