@@ -1,11 +1,10 @@
 // FILE: src/components/layout/LeftPanel.js
-// UPDATED: Pass onSwitchToGuide to SectionCard
+// UPDATED: Removed HeaderCard and adjusted for new single panel layout
 
 import React, { useEffect } from 'react';
 import useAppStore from '../../store/appStore';
 import { isSectionVisible, isToggleVisible } from '../../logic/progressionLogic';
 import { getVisibleSectionsInDisplayOrder, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
-import HeaderCard from '../sections/HeaderCard';
 import SectionCard from '../sections/SectionCard';
 import sectionContent from '../../data/sectionContent.json';
 
@@ -37,7 +36,7 @@ const LeftPanel = ({
   handleDataMethodToggle,
   handleMagic,
   proMode,
-  onRequestFeedback, // NEW: Callback to switch to guide mode
+  onRequestFeedback, // Callback to switch to guide mode
 }) => {
 
   // Direct prop logging (can be removed later)
@@ -96,8 +95,8 @@ const LeftPanel = ({
   const sectionsStillLocked = !proMode && visibleCount < totalPossibleSections;
 
   return (
-    <div className="w-full h-full overflow-y-auto pb-12 box-border flex-shrink-0">
-      <HeaderCard />
+    <div className="w-full h-full overflow-y-auto pb-8 box-border flex-shrink-0">
+      {/* HeaderCard removed as it's now in the parent SinglePanelLayout */}
 
       {/* Question Section */}
       {questionSectionDef && renderStandardSectionCard(questionSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
