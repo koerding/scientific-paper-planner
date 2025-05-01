@@ -22,7 +22,7 @@ const MainLayout = ({
   const globalAiLoading = useAppStore((state) => state.globalAiLoading);
 
   // --- Add local state for mobile rail visibility ---
-  const [showMobileRail, setShowMobileRail] = useState(false);
+  const [showMobileRail, setShowMobileRail] = useState(true);
 
   // Prepare props for AppHeader
   const appHeaderProps = {
@@ -54,8 +54,8 @@ const MainLayout = ({
         {/* Add the LeftRailNavigation component here */}
         <LeftRailNavigation visible={showMobileRail} />
         
-        {/* Add padding to accommodate the rail */}
-        <div className="pl-14 sm:pl-14 w-full h-full flex flex-col">
+        {/* Main content with adjusted margin for the rail */}
+        <div className="main-content h-full flex flex-col">
           {/* Main content area */}
           <ContentArea {...finalContentAreaProps} />
           <InteractionElements {...finalInteractionProps} />
