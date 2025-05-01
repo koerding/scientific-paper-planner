@@ -1,5 +1,6 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
 // UPDATED: Removed header and borders, adapted to new card design
+// FIXED: Improved section content updates with better dependency tracking
 
 import React, { useState, useEffect, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
@@ -122,14 +123,30 @@ const FullHeightInstructionsPanel = ({
   loading,
   onRequestWrite // Callback to switch to write mode
 }) => {
-  const currentSection = useAppStore(useCallback(
-      (state) => activeSectionId ? state.sections[activeSectionId] : null,
-      [activeSectionId]
-  ));
+  // Get current section directly from store using activeSectionId
+  const currentSection = useAppStore(state => 
+    activeSectionId && state.sections ? state.sections[activeSectionId] : null
+  );
+  
   const [expandedTooltips, setExpandedTooltips] = useState({});
   const setUiMode = useAppStore((state) => state.setUiMode);
   
-  useEffect(() => { setExpandedTooltips({}); }, [activeSectionId]);
+  // Reset expanded tooltips when section changes
+  useEffect(() => {
+    console.log(`Guide panel: Section changed to ${activeSectionId}`);
+    setExpandedTooltips({});
+    
+    // Debug logging to help track the issue
+    if (currentSection) {
+      console.log(`Current section data:`, {
+        title: currentSection.title,
+        hasOriginalInstructions: !!currentSection.originalInstructions,
+        hasAiInstructions: !!currentSection.aiInstructions
+      });
+    } else {
+      console.log(`No current section data found for ID: ${activeSectionId}`);
+    }
+  }, [activeSectionId, currentSection]);
 
   const toggleTooltip = useCallback((id) => {
     setExpandedTooltips(prev => ({ ...prev, [id]: !prev[id] }));
@@ -138,6 +155,11 @@ const FullHeightInstructionsPanel = ({
   return (
     // Root div - removed padding as it's handled by the parent card
     <div className="w-full h-full overflow-y-auto pb-8 box-border flex-shrink-0">
+        {/* Display section ID for debugging */}
+        <div className="text-xs text-gray-400 mb-2">
+          Section ID: {activeSectionId || "none"}
+        </div>
+        
         {/* Conditional rendering directly inside the container */}
         {!currentSection ? (
           // Placeholder when no section is selected
