@@ -1,4 +1,5 @@
 // FILE: src/utils/promptUtils.js
+// MODIFICATION: Update buildSystemPrompt to include AI feedback for chat context
 
 import promptContent from '../data/promptContent.json';
 
@@ -48,6 +49,13 @@ For each section, provide a numerical rating on a scale of 1-10, where:
 Be honest but fair with your ratings. Use the full scale and don't inflate ratings.
 Include this rating as a "rating" field in your JSON response structure for each section.`;
   }
+  
+  // ENHANCEMENT: Add AI feedback to chat context
+  if (promptType === 'chat' && params.aiFeedback) {
+    // Format the AI feedback to be included in the prompt
+    const feedbackText = formatAiFeedback(params.aiFeedback);
+    params.feedbackText = (params.feedbackText || '') + feedbackText;
+  }
 
   // Add params for replacement with defaults for common parameters
   const allParams = {
@@ -62,6 +70,38 @@ Include this rating as a "rating" field in your JSON response structure for each
 
   // Replace placeholders in the base template
   return replacePlaceholders(basePromptTemplate, allParams);
+};
+
+/**
+ * Format AI feedback for inclusion in system prompt
+ * @param {Object} aiFeedback - The AI feedback object
+ * @returns {string} - Formatted feedback text
+ */
+const formatAiFeedback = (aiFeedback) => {
+  if (!aiFeedback) return '';
+  
+  let result = '\n\nPrevious AI Feedback:\n';
+  
+  // Add overall feedback
+  if (aiFeedback.overallFeedback) {
+    result += `Overall: ${aiFeedback.overallFeedback}\n`;
+  }
+  
+  // Add rating if available
+  if (aiFeedback.rating) {
+    result += `Rating: ${aiFeedback.rating}/10\n`;
+  }
+  
+  // Add subsection feedback if available
+  if (aiFeedback.subsections && Array.isArray(aiFeedback.subsections)) {
+    aiFeedback.subsections.forEach(sub => {
+      if (sub.id && sub.feedback) {
+        result += `- ${sub.feedback}\n`;
+      }
+    });
+  }
+  
+  return result;
 };
 
 /**
