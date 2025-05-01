@@ -1,5 +1,5 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
-// UPDATED: Added Ready to Write button and mode switching
+// UPDATED: Removed header and borders, adapted to new card design
 
 import React, { useState, useEffect, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
@@ -120,7 +120,7 @@ const FullHeightInstructionsPanel = ({
   activeSectionId, 
   improveInstructions, 
   loading,
-  onRequestWrite // NEW: Callback to switch to write mode
+  onRequestWrite // Callback to switch to write mode
 }) => {
   const currentSection = useAppStore(useCallback(
       (state) => activeSectionId ? state.sections[activeSectionId] : null,
@@ -131,64 +131,28 @@ const FullHeightInstructionsPanel = ({
   
   useEffect(() => { setExpandedTooltips({}); }, [activeSectionId]);
 
-  const sectionTitle = currentSection?.title || "Selected Section";
-  const panelTitle = `Instructions / Feedback on ${sectionTitle}`;
-
   const toggleTooltip = useCallback((id) => {
     setExpandedTooltips(prev => ({ ...prev, [id]: !prev[id] }));
   }, []);
-  
-  // Handle click on Ready to Write button
-  const handleWriteButtonClick = () => {
-    if (typeof onRequestWrite === 'function') {
-      onRequestWrite();
-    } else {
-      // Fallback to direct store access
-      setUiMode('write');
-    }
-  };
 
   return (
-    // Root div with padding
-    <div className="w-full h-full overflow-y-auto pb-12 box-border flex-shrink-0">
-        {/* Conditional rendering directly inside the padded root div */}
+    // Root div - removed padding as it's handled by the parent card
+    <div className="w-full h-full overflow-y-auto pb-8 box-border flex-shrink-0">
+        {/* Conditional rendering directly inside the container */}
         {!currentSection ? (
           // Placeholder when no section is selected
-          <div className="flex items-center justify-center h-[300px] text-gray-500 border-4 border-blue-600 rounded-lg bg-white p-5">
-            Select a section on the left to view its instructions or feedback.
+          <div className="flex items-center justify-center h-[200px] text-gray-500">
+            Select a section to view its instructions or feedback.
           </div>
         ) : (
-          // Render the card when a section IS selected
-          // Main bordered container is now a direct child of the padded div
-          <div className="border-4 border-blue-600 rounded-lg bg-white p-5 mb-6">
-            {/* Title is the first element inside the bordered box */}
-            <h3 className="text-lg font-semibold text-blue-800 mb-4">
-              {panelTitle}
-            </h3>
-            {/* Instructions/Feedback content follows the title */}
-            <div className="text-base leading-relaxed instructions-content">
-              {currentSection.aiInstructions
-                  ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
-                  : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
-            </div>
-            
-            {/* NEW: Ready to Write button */}
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={handleWriteButtonClick}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded flex items-center text-sm transition-colors"
-                title="Switch to writing mode"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-                  <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
-                </svg>
-                Ready to Write
-              </button>
-            </div>
+          // Main content area - removed border/padding as it's handled by the parent card
+          <div className="text-base leading-relaxed instructions-content">
+            {currentSection.aiInstructions
+                ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
+                : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
           </div>
         )}
-    </div> // End of root padded div
+    </div> // End of root div
   );
 };
 
