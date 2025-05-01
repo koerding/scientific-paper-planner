@@ -5,8 +5,9 @@ import ContentArea from './ContentArea';
 import InteractionElements from './InteractionElements';
 import ModalManager from '../modals/ModalManager';
 import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
-import LeftRailNavigation from '../navigation/LeftRailNavigation'; // Import the new component
-import useAppStore from '../../store/appStore'; // Import store to access loading state directly
+import LeftRailNavigation from '../navigation/LeftRailNavigation';
+import FixedModeToggle from './FixedModeToggle'; // Import the new component
+import useAppStore from '../../store/appStore';
 
 const MainLayout = ({
   // Props...
@@ -68,6 +69,9 @@ const MainLayout = ({
             saveWithFilename={saveWithFilename}
           />
         </div>
+        
+        {/* Add the fixed mode toggle component */}
+        <FixedModeToggle />
         
         {/* Mobile rail toggle button (only on very small screens) */}
         {window.innerWidth <= 480 && !showMobileRail && (
