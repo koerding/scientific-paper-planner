@@ -1,12 +1,14 @@
 // FILE: src/components/layout/SinglePanelLayout.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import LeftPanel from './LeftPanel';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import SectionModePicker from './SectionModePicker';
-import useAppStore from '../../store/appStore';
+import useAppStore from '../../store/appStore'; // Import store to access loading state directly
+import { showWelcomeSplash } from '../modals/SplashScreenManager';
 
 /**
- * Single panel layout that switches between write and guide modes
+ * A single panel layout that handles both write and guide modes
+ * MODIFIED: Adjusted for left rail navigation spacing
  */
 const SinglePanelLayout = ({
   activeSection,
@@ -16,32 +18,47 @@ const SinglePanelLayout = ({
   handleApproachToggle,
   handleDataMethodToggle,
   proMode,
-  handleMagic
+  handleMagic,
 }) => {
-  // Get UI mode, loading state, and section information from store
+  // Get UI mode from the store
   const uiMode = useAppStore((state) => state.uiMode);
   const setUiMode = useAppStore((state) => state.setUiMode);
   const isAnyAiLoading = useAppStore((state) => state.isAnyLoading());
-  const sections = useAppStore((state) => state.sections);
   
-  // Get active section info
-  const activeInfo = sections?.[activeSection] || {};
-  const sectionTitle = activeInfo.title || 'Section';
+  // Get section info for the header
+  const currentSection = useAppStore((state) => activeSection ? state.sections[activeSection] : null);
   
-  // Calculate section number (simplified)
-  const sectionNumber = activeSection === 'question' ? '1' : 
-    activeSection === activeApproach ? '2' :
-    activeSection === 'audience' ? '3' :
-    activeSection === 'relatedpapers' ? '4' :
-    activeSection === activeDataMethod ? '5' :
-    activeSection === 'analysis' ? '6' :
-    activeSection === 'process' ? '7' :
-    activeSection === 'abstract' ? '8' : '';
+  // Calculate section number and title for the header
+  const sectionTitle = currentSection?.title || "Select a section";
+  
+  // Helper to determine section number (simplified)
+  const getSectionNumber = (sectionId) => {
+    const orderedSections = [
+      'question',
+      'hypothesis', 'needsresearch', 'exploratoryresearch', // Only one of these is shown
+      'audience',
+      'relatedpapers',
+      'experiment', 'existingdata', 'theorysimulation', // Only one of these is shown
+      'analysis',
+      'process',
+      'abstract'
+    ];
     
-  // Mode switching handlers
-  const handleSwitchToGuide = () => setUiMode('guide');
-  const handleSwitchToWrite = () => setUiMode('write');
-
+    const index = orderedSections.indexOf(sectionId);
+    return index >= 0 ? index + 1 : "?";
+  };
+  
+  const sectionNumber = activeSection ? getSectionNumber(activeSection) : "?";
+  
+  // Handlers for switching between write and guide modes
+  const handleSwitchToGuide = () => {
+    setUiMode('guide');
+  };
+  
+  const handleSwitchToWrite = () => {
+    setUiMode('write');
+  };
+  
   return (
     <div className="flex flex-col items-center pt-10 pb-12 w-full h-full overflow-auto bg-fafafd"> {/* Starting at 40px (pt-10) with bg color */}
       {/* Main content panel with card design */}
@@ -92,6 +109,8 @@ const SinglePanelLayout = ({
           )}
         </div>
       </div>
+      
+      {/* Floating Ready for Feedback button removed */}
     </div>
   );
 };
