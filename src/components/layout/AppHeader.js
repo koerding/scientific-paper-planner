@@ -1,5 +1,6 @@
 // FILE: src/components/layout/AppHeader.js
-// MODIFIED: Added hamburger menu and simplified header buttons to only Show "Save"
+// MODIFIED: Added hamburger menu and kept only Help and Save buttons in header
+// MODIFIED: Moved SP icon to the right side
 
 import React, { useState } from 'react';
 import useAppStore from '../../store/appStore'; // Import store
@@ -37,12 +38,16 @@ const AppHeader = ({
               }`;
   };
 
+  const handleHelpClick = () => {
+    if (showHelpSplash) showHelpSplash();
+  };
+
   return (
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-2">
         {/* --- justify-between ensures left/right alignment --- */}
         <div className="flex items-center justify-between">
-          {/* Left side: Hamburger menu and Logo */}
+          {/* Left side: Just hamburger menu */}
           <div className="flex items-center">
             {/* Hamburger Menu */}
             <HamburgerMenu
@@ -55,28 +60,32 @@ const AppHeader = ({
               isAiBusy={isAiBusy}
               localImportLoading={localImportLoading}
             />
-
-            {/* Logo */}
-            <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center ml-2">
-              <span className="font-bold text-lg">SP</span>
-            </div>
-            <span className="font-semibold text-gray-700 ml-2">Planner</span>
           </div>
 
-          {/* Right side: Just Save button */}
-          <div className="flex items-center">
+          {/* Right side: Logo, Help and Save buttons */}
+          <div className="flex items-center space-x-2">
+            {/* Help Button */}
+            <button onClick={handleHelpClick} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
+              {isAiBusy ? loadingSpinner : (
+                <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )} Help
+            </button>
+
             {/* Save Button */}
-            <button 
-              onClick={saveProject} 
-              disabled={isAiBusy || localImportLoading} 
-              className={getButtonClasses()}
-            >
+            <button onClick={saveProject} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
               {isAiBusy ? loadingSpinner : (
                 <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
               )} Save
             </button>
+
+            {/* Logo moved to right side */}
+            <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center ml-1">
+              <span className="font-bold text-lg">SP</span>
+            </div>
           </div>
         </div>
       </div>
