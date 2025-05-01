@@ -1,5 +1,4 @@
 // FILE: src/utils/promptUtils.js
-// MODIFICATION: Update buildSystemPrompt to include AI feedback for chat context
 
 import promptContent from '../data/promptContent.json';
 
