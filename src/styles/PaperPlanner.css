@@ -549,3 +549,123 @@ p, textarea, .prose p, .feedback-button { font-size: var(--font-size-small) !imp
     transform: translateX(0);
   }
 }
+/* Add these CSS updates to your PaperPlanner.css file */
+
+/* Increase rail width from 180px to 220px to accommodate longer text */
+.rail {
+  --rail-width: 220px !important;
+  position: fixed;
+  left: 0;
+  top: 60px; /* Adjust top position to account for header */
+  bottom: 0;
+  width: var(--rail-width);
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 2rem 0;
+  background-color: #FAFAFD;
+  border-right: 1px solid rgba(229, 231, 235, 0.5);
+  z-index: 30; /* Lower z-index to ensure it doesn't overlap content */
+  overflow-y: auto; /* Allow scrolling if many items */
+}
+
+/* Improve rail button styling for better clickability */
+.rail-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 8px 12px;
+  margin-bottom: 4px;
+  gap: 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+}
+
+/* Fix rail text truncation - increased max-width to account for wider rail */
+.rail-btn span {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Enhance hover state for better feedback */
+.rail-btn:not([disabled]):hover {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* Make selected rail button more prominent */
+.rail-btn.rail-btn-in-view {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid #3b82f6 !important;
+}
+
+/* Remove fixed mode toggle since we're using the embedded one */
+.fixed-mode-toggle {
+  display: none !important;
+}
+
+/* Adjust main content to have proper margin instead of padding */
+.main-content {
+  margin-left: var(--rail-width);
+  scroll-behavior: smooth;
+  width: calc(100% - var(--rail-width));
+  position: relative;
+}
+
+/* Make section cards have proper scroll margin to account for header */
+.section-card {
+  scroll-margin-top: 90px;
+}
+
+/* Enhanced styles for active section in rail */
+.rail-btn.rail-btn-in-view .rail-icon svg circle {
+  stroke-width: 2;
+}
+
+/* Enhanced styles for the centered section mode picker in the header */
+.mode-toggle button {
+  padding: 0.4rem 0.8rem !important;
+}
+
+/* Add some style to the section mode picker */
+.rounded-full.inline-flex {
+  border: 1px solid rgba(209, 213, 219, 0.5);
+}
+
+/* Ensure section title aligns nicely with the centered toggle */
+.rounded-t-lg h2 {
+  margin-bottom: 0 !important;
+}
+
+/* Ensure content cards have proper width and don't get overlapped */
+.max-w-\[740px\] {
+  max-width: 740px;
+  position: relative;
+  z-index: 20;
+}
+
+/* Adjust for mobile screens */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .rail {
+    width: 200px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .rail.visible {
+    transform: translateX(0);
+  }
+}
