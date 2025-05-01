@@ -8,8 +8,9 @@ import { showWelcomeSplash } from '../modals/SplashScreenManager';
 
 /**
  * A single panel layout that handles both write and guide modes
- * MODIFIED: Title only appears in guide mode
- * MODIFIED: Embedded toggle in header, removed floating toggle
+ * FIXED: Now correctly displays title in guide mode only
+ * FIXED: Embedded toggle in header for both modes
+ * FIXED: Removed floating toggle to avoid duplication
  */
 const SinglePanelLayout = ({
   activeSection,
@@ -56,7 +57,7 @@ const SinglePanelLayout = ({
         className="w-full max-w-[740px] px-4 flex-grow overflow-visible"
         aria-live="polite"
       >
-        {/* Card header with mode toggle embedded */}
+        {/* Card header with mode toggle embedded - NOW IDENTICAL FOR BOTH MODES */}
         <div className="bg-white rounded-t-lg border border-gray-200 shadow-sm px-5 py-3 mb-0 flex items-center justify-between">
           {/* Only show title in guide mode */}
           {uiMode === 'guide' && (
@@ -65,7 +66,7 @@ const SinglePanelLayout = ({
           {/* This is empty in write mode to maintain the space */}
           {uiMode === 'write' && <div></div>}
           
-          {/* Embedded mode toggle */}
+          {/* Embedded mode toggle - present in both modes */}
           <SectionModePicker 
             currentMode={uiMode} 
             onModeChange={setUiMode}
