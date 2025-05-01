@@ -791,3 +791,131 @@ header button.font-semibold {
     transform: translateX(0);
   }
 }
+/* Add these CSS updates to your PaperPlanner.css file */
+
+/* Increase rail width from 180px to 220px to accommodate longer text */
+.rail {
+  --rail-width: 220px !important;
+  position: fixed;
+  left: 0;
+  top: 60px; /* Adjust top position to account for header */
+  bottom: 0;
+  width: var(--rail-width);
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 2rem 0;
+  background-color: #FAFAFD;
+  border-right: 1px solid rgba(229, 231, 235, 0.5);
+  z-index: 30; /* Lower z-index to ensure it doesn't overlap content */
+  overflow-y: auto; /* Allow scrolling if many items */
+}
+
+/* Improve rail button styling for better clickability */
+.rail-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 8px 12px;
+  margin-bottom: 4px;
+  gap: 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+}
+
+/* Fix rail text truncation - increased max-width to account for wider rail */
+.rail-btn span {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Enhance hover state for better feedback */
+.rail-btn:not([disabled]):hover {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* Make selected rail button more prominent */
+.rail-btn.rail-btn-in-view {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid #3b82f6 !important;
+}
+
+/* Remove fixed mode toggle since we're using the embedded one */
+.fixed-mode-toggle {
+  display: none !important;
+}
+
+/* FIXED: Center the content while accounting for the rail */
+.main-content {
+  padding-left: var(--rail-width);
+  width: 100%;
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* FIXED: Ensure content is properly centered */
+.main-content > div {
+  max-width: 740px;
+  width: 100%;
+}
+
+/* Make section cards have proper scroll margin to account for header */
+.section-card {
+  scroll-margin-top: 90px;
+}
+
+/* Enhanced styles for active section in rail */
+.rail-btn.rail-btn-in-view .rail-icon svg circle {
+  stroke-width: 2;
+}
+
+/* Enhanced styles for the header mode toggle */
+header .inline-flex {
+  border: 1px solid rgba(209, 213, 219, 0.5);
+  min-width: 200px;
+}
+
+/* Make the toggle stand out a bit more in the header */
+header .rounded-full {
+  padding: 2px;
+  background-color: #f3f4f6;
+}
+
+/* Give some extra emphasis to the active toggle state */
+header button.font-semibold {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure section title aligns nicely in the content header */
+.rounded-t-lg h2 {
+  margin-bottom: 0 !important;
+}
+
+/* Adjust for mobile screens */
+@media (max-width: 768px) {
+  .main-content {
+    padding-left: 0;
+  }
+  
+  .rail {
+    width: 200px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .rail.visible {
+    transform: translateX(0);
+  }
+}
