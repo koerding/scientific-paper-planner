@@ -1,78 +1,94 @@
 // FILE: src/components/sections/ToggleHeader.js
+// UPDATED: Streamlined version with improved radio-button-like UI
+
 import React from 'react';
 
 /**
  * A component that displays toggle options within a section header
  * Replaces the traditional section header title with toggle options
- * UPDATED: Active option is now true black to match other section headers
- * UPDATED: Fixed persistent selected state
- * ADDED: Debug log for activeOption prop
+ * UPDATED: Improved visual indicators for active/inactive states
+ * UPDATED: Made selection mechanism more obvious with radio-like UI
+ * UPDATED: Kept only the most essential instructional text
  */
 const ToggleHeader = ({
   options,
-  activeOption, // This is the prop we want to check
+  activeOption,
   onToggle,
   isMinimized,
   isHovered,
   isFocused,
   toggleMinimized
 }) => {
-
-  // --- ADD THIS DEBUG LOG ---
+  // Debug log to help with development
   console.log(`DEBUG [ToggleHeader]: Rendering with activeOption = '${activeOption}'`);
-  // --- END ADD ---
 
+  // Determine what kind of toggle this is based on the options
+  const toggleType = options[0]?.label === 'Hypothesis' ? 'Research Approach' : 'Data Method';
 
   return (
-    <div className="flex justify-between items-center mb-1 section-header">
-      <div className="flex items-center">
-        <div className="flex space-x-1 in-card-toggle">
-          {options.map(option => (
-            <button
-              key={option.id}
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent card expansion/collapse
-                onToggle(option.id);
-              }}
-              className={`font-semibold py-1 px-2 rounded-md transition-colors ${
-                // Compare the received prop with the button's ID
-                activeOption === option.id
-                  ? 'text-black bg-white active-toggle'
-                  : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100 inactive-toggle'
-              }`}
-              style={{ fontSize: 'calc(1.4 * 1rem)' }} // Match the font size of other card headers
-            >
-              {option.label}
-            </button>
-          ))}
+    <div className="flex flex-col mb-1">      
+      {/* Toggle button header */}
+      <div className="flex justify-between items-center section-header">
+        <div className="flex items-center flex-grow">
+          <div className="flex space-x-1 in-card-toggle w-full">
+            {options.map(option => (
+              <button
+                key={option.id}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent card expansion/collapse
+                  onToggle(option.id);
+                }}
+                className={`font-semibold py-1 px-2 rounded-md transition-colors flex-1 ${
+                  // Enhanced visual distinction between active and inactive
+                  activeOption === option.id
+                    ? 'text-black bg-white border-2 border-blue-500 shadow-sm active-toggle'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 border border-gray-200 inactive-toggle'
+                }`}
+                style={{ fontSize: 'calc(1.2 * 1rem)' }} // Slightly smaller for better fit
+                aria-pressed={activeOption === option.id} // Accessibility: indicate if pressed
+                title={activeOption === option.id ? `${option.label} (Selected)` : option.label}
+              >
+                {/* Add visual indicator for selected state */}
+                {activeOption === option.id && (
+                  <span className="mr-1 text-blue-500">•</span>
+                )}
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center ml-2">
+          {/* Edit indicator icon */}
+          <div className={`edit-icon transition-opacity duration-200 mr-2 ${isHovered || isFocused ? 'opacity-100' : 'opacity-0'}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+            </svg>
+          </div>
+
+          {/* Toggle button */}
+          <button
+            onClick={toggleMinimized}
+            className="minimize-toggle-btn text-gray-500 hover:text-gray-700 focus:outline-none"
+            aria-label={isMinimized ? "Expand section" : "Minimize section"}
+            title={isMinimized ? "Expand section" : "Minimize section"}
+          >
+            {isMinimized ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
-
-      <div className="flex items-center">
-        {/* Edit indicator icon - same as in SectionHeader */}
-        <div className={`edit-icon transition-opacity duration-200 mr-2 ${isHovered || isFocused ? 'opacity-100' : 'opacity-0'}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-          </svg>
-        </div>
-
-        {/* Toggle button - same as in SectionHeader */}
-        <button
-          onClick={toggleMinimized}
-          className="minimize-toggle-btn text-gray-500 hover:text-gray-700 focus:outline-none"
-          aria-label={isMinimized ? "Expand section" : "Minimize section"}
-          title={isMinimized ? "Expand section" : "Minimize section"}
-        >
-          {isMinimized ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
-            </svg>
-          )}
-        </button>
+      
+      {/* Concise explanatory text */}
+      <div className="text-xs text-gray-500 mt-1 font-medium">
+        Choose your {toggleType.toLowerCase()} (select one)
       </div>
     </div>
   );
