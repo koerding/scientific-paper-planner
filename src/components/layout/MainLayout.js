@@ -6,7 +6,7 @@ import InteractionElements from './InteractionElements';
 import ModalManager from '../modals/ModalManager';
 import { ForwardedSplashScreenManager } from '../modals/SplashScreenManager';
 import LeftRailNavigation from '../navigation/LeftRailNavigation';
-import FixedModeToggle from './FixedModeToggle'; // Import the new component
+// REMOVED: import FixedModeToggle from './FixedModeToggle'; -- No longer needed
 import useAppStore from '../../store/appStore';
 
 const MainLayout = ({
@@ -70,8 +70,7 @@ const MainLayout = ({
           />
         </div>
         
-        {/* Add the fixed mode toggle component */}
-        <FixedModeToggle />
+        {/* REMOVED: FixedModeToggle component - now embedded in SinglePanelLayout */}
         
         {/* Mobile rail toggle button (only on very small screens) */}
         {window.innerWidth <= 480 && !showMobileRail && (
