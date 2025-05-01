@@ -1,4 +1,48 @@
-return (
+// FILE: src/components/layout/SinglePanelLayout.js
+import React from 'react';
+import LeftPanel from './LeftPanel';
+import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
+import SectionModePicker from './SectionModePicker';
+import useAppStore from '../../store/appStore';
+
+/**
+ * Single panel layout that switches between write and guide modes
+ */
+const SinglePanelLayout = ({
+  activeSection,
+  activeApproach,
+  activeDataMethod,
+  handleSectionFocus,
+  handleApproachToggle,
+  handleDataMethodToggle,
+  proMode,
+  handleMagic
+}) => {
+  // Get UI mode, loading state, and section information from store
+  const uiMode = useAppStore((state) => state.uiMode);
+  const setUiMode = useAppStore((state) => state.setUiMode);
+  const isAnyAiLoading = useAppStore((state) => state.isAnyLoading());
+  const sections = useAppStore((state) => state.sections);
+  
+  // Get active section info
+  const activeInfo = sections?.[activeSection] || {};
+  const sectionTitle = activeInfo.title || 'Section';
+  
+  // Calculate section number (simplified)
+  const sectionNumber = activeSection === 'question' ? '1' : 
+    activeSection === activeApproach ? '2' :
+    activeSection === 'audience' ? '3' :
+    activeSection === 'relatedpapers' ? '4' :
+    activeSection === activeDataMethod ? '5' :
+    activeSection === 'analysis' ? '6' :
+    activeSection === 'process' ? '7' :
+    activeSection === 'abstract' ? '8' : '';
+    
+  // Mode switching handlers
+  const handleSwitchToGuide = () => setUiMode('guide');
+  const handleSwitchToWrite = () => setUiMode('write');
+
+  return (
     <div className="flex flex-col items-center pt-10 pb-12 w-full h-full overflow-auto bg-fafafd"> {/* Starting at 40px (pt-10) with bg color */}
       {/* Main content panel with card design */}
       <div 
@@ -48,7 +92,8 @@ return (
           )}
         </div>
       </div>
-      
-      {/* Floating Ready for Feedback button removed */}
     </div>
   );
+};
+
+export default SinglePanelLayout;
