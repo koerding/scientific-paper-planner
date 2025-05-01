@@ -1,52 +1,12 @@
 // FILE: src/store/appStore.js
-// MODIFICATION: Update sendMessage function to include AI feedback
-
-// Find the sendMessage method in the appStore and update it like this:
-sendMessage: async (content = null) => {
-    const messageContent = content || get().currentChatMessage;
-    const currentSectionId = get().currentChatSectionId;
-    if (!messageContent.trim() || !currentSectionId) return;
-    get().addChatMessage(currentSectionId, { role: 'user', content: messageContent });
-    set({ currentChatMessage: '' });
-    get().setLoading('chat', true);
-    try {
-        const state = get();
-        const userInputs = Object.entries(state.sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {});
-        const sectionDef = sectionContent.sections.find(s => s.id === currentSectionId) || {};
-        const historyForApi = state.chatMessages[currentSectionId] || [];
-        
-        // Get AI feedback for the current section if available
-        const aiFeedback = state.sections[currentSectionId]?.aiInstructions || null;
-        
-        const systemPrompt = buildSystemPrompt('chat', {
-            sectionTitle: sectionDef.title || 'section',
-            instructionsText: sectionDef.originalInstructions?.map(s => `${s.title}: ${s.instruction}`).join('\n') || '',
-            userContent: userInputs[currentSectionId] || "They haven't written anything substantial yet.",
-            aiFeedback: aiFeedback // Pass the AI feedback to the prompt builder
-        });
-        
-        const response = await callOpenAI(
-            messageContent, currentSectionId, userInputs,
-            sectionContent.sections || [], { temperature: 0.9 },
-            historyForApi, systemPrompt, false
-        );
-        get().addChatMessage(currentSectionId, { role: 'assistant', content: response });
-    } catch (error) {
-        console.error('Error sending chat message via Zustand:', error);
-        get().addChatMessage(currentSectionId, {
-            role: 'assistant',
-            content: "I'm sorry, I encountered an error processing your message. Please try again."
-        });
-    } finally {
-        get().setLoading('chat', false);
-    }
-}// FILE: src/store/appStore.js
 // Modified to add a separate global loading indicator
 // REVERTED: loadProjectData handles original save format (content + chat)
 // REVERTED: Removed merge function and simplified initial state
 // FIXED: Removed setProMode call from onRehydrateStorage to prevent initialization errors
 // MODIFIED: Updated partializer to save full section state, toggles, proMode, and scores
 // ADDED: Timeout workaround in loadProjectData to attempt to fix stale prop issue
+// UPDATED: sendMessage to include AI feedback
+// UPDATED: loadProjectData to handle feedback data
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -205,6 +165,7 @@ const useAppStore = create(
         // Default values
         let loadedUserInputs = {};
         let loadedChatMessages = {};
+        let loadedAiFeedback = {}; // NEW: Object to store loaded AI feedback
         let detectedApproach = 'hypothesis';
         let detectedDataMethod = 'experiment';
 
@@ -219,11 +180,18 @@ const useAppStore = create(
                    detectedDataMethod = data.detectedToggles.dataMethod || detectedDataMethod;
                 }
             } else if (data.sections && typeof data.sections === 'object') {
-                // Assume keys are section IDs
-                loadedUserInputs = Object.entries(data.sections).reduce((acc, [id, sectionData]) => {
-                    acc[id] = typeof sectionData === 'string' ? sectionData : (sectionData?.content || '');
-                    return acc;
-                }, {});
+                // Extract content from sections and preserve aiInstructions if available
+                Object.entries(data.sections).forEach(([id, sectionData]) => {
+                    if (typeof sectionData === 'string') {
+                        loadedUserInputs[id] = sectionData;
+                    } else if (sectionData && typeof sectionData === 'object') {
+                        loadedUserInputs[id] = sectionData.content || '';
+                        // NEW: Save AI feedback if available
+                        if (sectionData.aiInstructions) {
+                            loadedAiFeedback[id] = sectionData.aiInstructions;
+                        }
+                    }
+                });
                 loadedChatMessages = data.chatMessages || {};
                 // Use passed detected toggles
                  if(data.detectedToggles) {
@@ -261,11 +229,18 @@ const useAppStore = create(
         Object.keys(initialSections).forEach(id => {
             const loadedContent = loadedUserInputs[id];
             const sourceSectionData = sourceSections[id] || initialSections[id];
+            
+            // NEW: Priority for AI feedback:
+            // 1. Use AI feedback from loadedAiFeedback if available
+            // 2. Otherwise, use sourceSectionData.aiInstructions if available 
+            // 3. Finally, fall back to null
+            const aiFeedback = loadedAiFeedback[id] || sourceSectionData.aiInstructions || null;
+            
             mergedSections[id] = {
                 ...initialSections[id], ...sourceSectionData,
                 content: loadedContent !== undefined ? loadedContent : sourceSectionData.content,
-                aiInstructions: sourceSectionData.aiInstructions || null,
-                feedbackRating: sourceSectionData.feedbackRating || null,
+                aiInstructions: aiFeedback, // Use the determined AI feedback
+                feedbackRating: sourceSectionData.feedbackRating || (aiFeedback ? aiFeedback.rating : null),
                 editedSinceFeedback: sourceSectionData.editedSinceFeedback || false,
                 isMinimized: sourceSectionData.isMinimized !== undefined ? sourceSectionData.isMinimized : false,
             };
@@ -378,11 +353,17 @@ const useAppStore = create(
                 const userInputs = Object.entries(state.sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {});
                 const sectionDef = sectionContent.sections.find(s => s.id === currentSectionId) || {};
                 const historyForApi = state.chatMessages[currentSectionId] || [];
+                
+                // Get AI feedback for the current section if available
+                const aiFeedback = state.sections[currentSectionId]?.aiInstructions || null;
+                
                 const systemPrompt = buildSystemPrompt('chat', {
                     sectionTitle: sectionDef.title || 'section',
                     instructionsText: sectionDef.originalInstructions?.map(s => `${s.title}: ${s.instruction}`).join('\n') || '',
-                    userContent: userInputs[currentSectionId] || "They haven't written anything substantial yet."
+                    userContent: userInputs[currentSectionId] || "They haven't written anything substantial yet.",
+                    aiFeedback: aiFeedback // Pass the AI feedback to the prompt builder
                 });
+                
                 const response = await callOpenAI(
                     messageContent, currentSectionId, userInputs,
                     sectionContent.sections || [], { temperature: 0.9 },
@@ -405,7 +386,7 @@ const useAppStore = create(
       name: 'scientific-project-planner-state',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-         sections: state.sections,
+         sections: state.sections, // This already includes aiInstructions in each section
          activeToggles: state.activeToggles,
          proMode: state.proMode,
          scores: state.scores,
