@@ -3,6 +3,12 @@ import React from 'react';
 import useAppStore from '../../store/appStore';
 import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
 
+/**
+ * Left rail navigation with mode-aware section switching
+ * @param {Object} props - Component props
+ * @param {boolean} props.visible - Whether the rail is visible
+ * @returns {React.ReactElement} The left rail navigation component
+ */
 const LeftRailNavigation = ({ visible = true }) => {
   // Get necessary state from store
   const sections = useAppStore((state) => state.sections);
@@ -13,21 +19,35 @@ const LeftRailNavigation = ({ visible = true }) => {
   // Get state updaters from store
   const handleSectionFocus = useAppStore((state) => state.setActiveSectionId);
   const setCurrentChatSectionId = useAppStore((state) => state.setCurrentChatSectionId);
+  const setUiMode = useAppStore((state) => state.setUiMode);
   
   // Get approach and data method sections
   const approachSections = getApproachSectionIds();
   const dataMethodSections = getDataMethodSectionIds();
   
-  // Handle navigation - preserve current UI mode when navigating
+  /**
+   * Handle navigation with mode awareness
+   * When in guide mode, clicking a section should switch to that section's guide
+   * @param {string} sectionId - The section ID to navigate to
+   */
   const handleNavigation = (sectionId) => {
-    // Update section focus without changing mode
+    // Always store the last section for reference
+    localStorage.setItem('lastActiveSectionId', sectionId);
+    
+    // Update section focus
     handleSectionFocus(sectionId);
     
     // Also update chat context
     setCurrentChatSectionId(sectionId);
     
-    // Store last section for guide mode
-    localStorage.setItem('lastActiveSectionId', sectionId);
+    // If we're in guide mode and switching sections, we want to
+    // maintain the guide mode but show the new section's guide
+    if (uiMode === 'guide') {
+      // This will maintain guide mode but switch to the new section's guide
+      // We're calling setUiMode with 'guide' again to trigger the logic
+      // that focuses the correct section in guide mode
+      setUiMode('guide');
+    }
   };
   
   // Filter and sort navigation items
@@ -80,6 +100,7 @@ const LeftRailNavigation = ({ visible = true }) => {
           onClick={() => handleNavigation(item.id)}
           className={`rail-btn ${item.isActive ? 'rail-btn-in-view' : ''}`}
           aria-current={item.isActive ? 'page' : undefined}
+          title={`${item.title} (${uiMode === 'guide' ? 'Guide' : 'Write'} Mode)`}
         >
           <div className="rail-icon">
             {/* Circle SVG with customized fill based on rating */}
