@@ -1,6 +1,6 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
-// UPDATED: Removed header and borders, adapted to new card design
-// FIXED: Force refresh when activeSectionId changes with React key
+// FIXED: Improved styling for Guide mode content
+// FIXED: Better visual hierarchy for subsections
 
 import React, { useState, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
@@ -35,13 +35,13 @@ const renderOriginalInstructionsContent = (currentSection, expandedTooltips, tog
         if (!subsection || !subsection.id) return <div key={`orig-err-${index}`}>Invalid subsection data</div>;
 
         return (
-          <div key={subsection.id} className="mb-5">
+          <div key={subsection.id} className="mb-6 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="text-base leading-relaxed">
-              <strong className="font-bold">{subsection.title || 'Subsection'}:</strong>{' '}
+              <strong className="font-bold text-gray-800">{subsection.title || 'Subsection'}:</strong>{' '}
               {subsection.instruction || 'No instruction text.'}
               {subsection.tooltip && (
                 <button
-                  className="info-icon-button ml-1"
+                  className="info-icon-button ml-1 text-blue-500 hover:text-blue-700"
                   onClick={() => toggleTooltip(subsection.id)}
                   aria-label={expandedTooltips[subsection.id] ? "Hide details" : "Show details"}
                 >
@@ -72,11 +72,11 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
 
    return (
      <>
-       <div className="text-base mb-2 leading-relaxed font-medium text-purple-700 p-2 bg-purple-50 rounded border border-purple-100">
+       <div className="text-base mb-4 leading-relaxed font-medium text-purple-700 p-4 bg-purple-50 rounded-lg border border-purple-100 shadow-sm">
          {improvement.overallFeedback || "Feedback:"}
        </div>
        {rating && (
-         <div className={`text-base mb-5 font-bold ${ratingColor} flex items-center`}>
+         <div className={`text-base mb-5 font-bold ${ratingColor} flex items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm`}>
            Rating: {rating}/10 <span className="ml-2 font-normal">({ratingLabel})</span>
          </div>
        )}
@@ -90,19 +90,19 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
          const feedbackText = subsectionFeedback?.feedback || "No specific feedback provided for this point.";
 
          return (
-           <div key={origSubsection.id} className={`mb-5 ${isComplete ? 'opacity-90' : ''}`}>
+           <div key={origSubsection.id} className={`mb-6 bg-white p-4 rounded-lg border ${isComplete ? 'border-green-200' : 'border-gray-200'} shadow-sm`}>
              <div className="text-base leading-relaxed">
-               <strong className={`font-bold ${isComplete ? 'text-green-600' : ''}`}>{origSubsection.title || 'Subsection'}:</strong>{' '}
+               <strong className={`font-bold ${isComplete ? 'text-green-600' : 'text-gray-800'}`}>{origSubsection.title || 'Subsection'}:</strong>{' '}
                <span className={isComplete ? 'text-green-600' : ''}>{origSubsection.instruction || 'No instruction text.'}</span>
                {origSubsection.tooltip && (
-                 <button className="info-icon-button ml-1" onClick={() => toggleTooltip(origSubsection.id)} aria-label={expandedTooltips[origSubsection.id] ? "Hide details" : "Show details"}>
+                 <button className="info-icon-button ml-1 text-blue-500 hover:text-blue-700" onClick={() => toggleTooltip(origSubsection.id)} aria-label={expandedTooltips[origSubsection.id] ? "Hide details" : "Show details"}>
                    {expandedTooltips[origSubsection.id] ? '−' : 'ⓘ'}
                  </button>
                )}
              </div>
-             <div className="mt-1 ml-4 text-purple-700 p-1 bg-purple-50 rounded">{feedbackText}</div>
+             <div className="mt-3 ml-0 text-purple-700 p-3 bg-purple-50 rounded-md">{feedbackText}</div>
              {origSubsection.tooltip && expandedTooltips[origSubsection.id] && (
-               <div className="mt-2 mb-3 ml-6 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
+               <div className="mt-3 mb-0 ml-0 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded-md">
                  {origSubsection.tooltip}
                </div>
              )}
@@ -158,10 +158,10 @@ const FullHeightInstructionsPanel = ({
   }
 
   return (
-    // Root div
-    <div className="w-full h-full overflow-y-auto pb-8 box-border flex-shrink-0">
+    // Root div with improved background color
+    <div className="w-full h-full overflow-y-auto pb-8 box-border flex-shrink-0 bg-gray-50">
       {/* Main content area */}
-      <div className="text-base leading-relaxed instructions-content">
+      <div className="text-base leading-relaxed instructions-content p-2">
         {currentSection.aiInstructions
             ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
             : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
