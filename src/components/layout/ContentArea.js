@@ -23,7 +23,7 @@ const ContentArea = ({
 
   return (
     // Position relatively to ensure proper stacking context
-    <div className="relative flex-grow flex justify-center z-20">
+    <div className="relative flex-grow flex flex-col items-center z-20 w-full">
       {/* Single panel layout that handles both write and guide modes */}
       <SinglePanelLayout
         activeSection={effectiveActiveSection} // Use the effective active section
