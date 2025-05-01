@@ -1,5 +1,5 @@
 // FILE: src/components/sections/SectionCard.js
-// UPDATED: Pass onSwitchToGuide to FeedbackButton
+// UPDATED: Added section ID attribute for navigation targeting
 
 import React, { useState, useCallback, useEffect } from 'react';
 import useAppStore from '../../store/appStore';
@@ -18,7 +18,7 @@ const SectionCard = ({
   activeOption = null,
   onToggle = null,
   isToggleSection = false,
-  onSwitchToGuide = null, // NEW: Callback to switch to guide mode
+  onSwitchToGuide = null, // Callback to switch to guide mode
 }) => {
 
   // Direct prop logging (can be removed later)
@@ -106,6 +106,7 @@ const SectionCard = ({
         onClick={handleCardClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        id={`section-${sectionId}`} // Add ID for navigation targeting
       >
        {isToggleSection ? (
          <ToggleHeader
