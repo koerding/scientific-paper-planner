@@ -4,6 +4,7 @@
 // 2. Let child components access loading states directly from the store
 // REVERTED: handleSaveWithFilename passes only section content
 // MODIFIED: Toggle handlers now set active section focus
+// UPDATED: handleSaveWithFilename to use the new approach for saving
 
 import React, { useState, useEffect, useRef } from 'react'; // Ensure useState is imported
 import ReactGA from 'react-ga4';
@@ -129,16 +130,12 @@ const VerticalPaperPlannerApp = () => {
 
   const handleSaveRequest = () => openModal('saveDialog');
 
-  // REVERTED: Pass only section content to saveProjectAsJson
+  // UPDATED: handleSaveWithFilename to use the new approach
   const handleSaveWithFilename = (fileName) => {
     trackSave();
-    // Extract only the content from the sections state
-    const sectionsToSave = Object.entries(sections || {}).reduce((acc, [id, data]) => {
-      acc[id] = data?.content; // Save only the content
-      return acc;
-    }, {});
-    // Pass the content object and chat messages to the save function
-    saveProjectAsJson(sectionsToSave, chatMessages, fileName);
+    // Just pass chat messages to saveProjectAsJson
+    // The function will get the full sections data from the store
+    saveProjectAsJson(null, chatMessages, fileName);
     closeModal('saveDialog');
   };
 
