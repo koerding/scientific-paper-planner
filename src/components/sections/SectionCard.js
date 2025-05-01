@@ -86,19 +86,19 @@ const SectionCard = ({
   // --- Styling ---
   const getBorderClasses = () => isCurrentSection ? 'border-4 border-blue-500 shadow-md' : 'border-2 border-gray-300';
   const getBackgroundColor = () => isCurrentSection ? 'bg-blue-50' : 'bg-white';
-  // *** MODIFIED: Define classes based on minimized state ***
+  // Define classes based on minimized state
   const minimizedClasses = 'max-h-14 overflow-hidden'; // Classes for minimized state
   const expandedClasses = ''; // No height/overflow constraints for expanded state
 
   const sectionClasses = `
-    section-card rounded-md ${getBackgroundColor()} p-2 mb-2 transition-all
+    section-card rounded-lg ${getBackgroundColor()} p-2 mb-2 transition-all
     duration-300 ease-in-out ${getBorderClasses()} ${!isMinimized ? 'expanded' : 'minimized'}
-    ${isMinimized ? minimizedClasses : expandedClasses} relative {/* Apply correct classes */}
+    ${isMinimized ? minimizedClasses : expandedClasses} relative
     ${isCurrentSection ? 'current-active' : ''}
-    cursor-pointer ${isMinimized ? 'hover:bg-gray-100' : ''}
+    cursor-pointer ${isMinimized ? 'hover:bg-gray-100 hover:shadow-sm' : ''}
     ${isToggleSection ? 'toggle-section' : ''}
+    hover:shadow
   `;
-  // *** END MODIFICATION ***
 
   return (
     <div
