@@ -1,7 +1,7 @@
 // FILE: src/components/layout/LeftPanel.js
-// UPDATED: Removed HeaderCard and adjusted for new single panel layout
+// UPDATED: Added scroll to section functionality for left rail navigation
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import useAppStore from '../../store/appStore';
 import { isSectionVisible, isToggleVisible } from '../../logic/progressionLogic';
 import { getVisibleSectionsInDisplayOrder, getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
@@ -37,12 +37,34 @@ const LeftPanel = ({
   handleMagic,
   proMode,
   onRequestFeedback, // Callback to switch to guide mode
+  contentRef, // Reference to container for scrolling
 }) => {
+
+  // Create refs for each section card
+  const sectionRefs = useRef({});
 
   // Direct prop logging (can be removed later)
   useEffect(() => {
     console.log("[LeftPanel] Mounted with onRequestFeedback:", !!onRequestFeedback);
   }, [onRequestFeedback]);
+
+  // Scroll to active section when it changes
+  useEffect(() => {
+    if (activeSection && sectionRefs.current[activeSection]) {
+      // Use the contentRef to find the section element with the proper ID
+      if (contentRef && contentRef.current) {
+        const sectionElement = contentRef.current.querySelector(`#section-${activeSection}`);
+        if (sectionElement) {
+          // Scroll the section into view with a smooth effect
+          sectionElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start'
+          });
+          console.log(`Scrolling to section: ${activeSection}`);
+        }
+      }
+    }
+  }, [activeSection, contentRef]);
 
   // --- Select State from Zustand Store ---
   const sections = useAppStore((state) => state.sections);
@@ -99,32 +121,47 @@ const LeftPanel = ({
       {/* HeaderCard removed as it's now in the parent SinglePanelLayout */}
 
       {/* Question Section */}
-      {questionSectionDef && renderStandardSectionCard(questionSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+      {questionSectionDef && (
+        <div ref={el => sectionRefs.current.question = el}>
+          {renderStandardSectionCard(questionSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+        </div>
+      )}
 
       {/* Approach Toggle Section Card */}
       {showApproachToggle && (
-        <SectionCard
-          key={activeApproachSectionId} // Dynamic key
-          sectionId={activeApproachSectionId}
-          isCurrentSection={activeSection === activeApproachSectionId}
-          onRequestFeedback={handleMagic}
-          handleSectionFocus={handleSectionFocus}
-          options={approachOptions}
-          activeOption={activeApproachSectionId}
-          onToggle={handleApproachToggle}
-          isToggleSection={true}
-          onSwitchToGuide={onRequestFeedback} // Pass the mode switch function
-        />
+        <div ref={el => sectionRefs.current[activeApproachSectionId] = el}>
+          <SectionCard
+            key={activeApproachSectionId} // Dynamic key
+            sectionId={activeApproachSectionId}
+            isCurrentSection={activeSection === activeApproachSectionId}
+            onRequestFeedback={handleMagic}
+            handleSectionFocus={handleSectionFocus}
+            options={approachOptions}
+            activeOption={activeApproachSectionId}
+            onToggle={handleApproachToggle}
+            isToggleSection={true}
+            onSwitchToGuide={onRequestFeedback} // Pass the mode switch function
+          />
+        </div>
       )}
 
       {/* Audience Section */}
-      {audienceSectionDef && renderStandardSectionCard(audienceSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+      {audienceSectionDef && (
+        <div ref={el => sectionRefs.current.audience = el}>
+          {renderStandardSectionCard(audienceSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+        </div>
+      )}
 
       {/* Related Papers Section */}
-      {relatedPapersSectionDef && renderStandardSectionCard(relatedPapersSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+      {relatedPapersSectionDef && (
+        <div ref={el => sectionRefs.current.relatedpapers = el}>
+          {renderStandardSectionCard(relatedPapersSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+        </div>
+      )}
 
       {/* Data Method Toggle Section Card */}
       {showDataToggle && (
+        <div ref={el => sectionRefs.current[activeDataMethodSectionId] = el}>
          <SectionCard
            key={activeDataMethodSectionId} // Dynamic key
            sectionId={activeDataMethodSectionId}
@@ -137,16 +174,29 @@ const LeftPanel = ({
            isToggleSection={true}
            onSwitchToGuide={onRequestFeedback} // Pass the mode switch function
          />
+        </div>
       )}
 
       {/* Analysis Section */}
-      {analysisSectionDef && renderStandardSectionCard(analysisSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+      {analysisSectionDef && (
+        <div ref={el => sectionRefs.current.analysis = el}>
+          {renderStandardSectionCard(analysisSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+        </div>
+      )}
 
       {/* Process Section */}
-      {processSectionDef && renderStandardSectionCard(processSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+      {processSectionDef && (
+        <div ref={el => sectionRefs.current.process = el}>
+          {renderStandardSectionCard(processSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+        </div>
+      )}
 
       {/* Abstract Section */}
-      {abstractSectionDef && renderStandardSectionCard(abstractSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+      {abstractSectionDef && (
+        <div ref={el => sectionRefs.current.abstract = el}>
+          {renderStandardSectionCard(abstractSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
+        </div>
+      )}
 
       {/* Pro Mode Info */}
       {sectionsStillLocked && (
