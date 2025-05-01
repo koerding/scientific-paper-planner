@@ -1,6 +1,5 @@
 // FILE: src/components/layout/LeftPanel.js
-// REVERTED: Back to rendering SectionCard for toggles with dynamic keys
-// (This version is from before the ToggleHeader separation refactor)
+// UPDATED: Pass onSwitchToGuide to SectionCard
 
 import React, { useEffect } from 'react';
 import useAppStore from '../../store/appStore';
@@ -11,7 +10,7 @@ import SectionCard from '../sections/SectionCard';
 import sectionContent from '../../data/sectionContent.json';
 
 // Helper function to render a standard SectionCard
-const renderStandardSectionCard = (section, activeSection, handleSectionFocus, handleMagic) => {
+const renderStandardSectionCard = (section, activeSection, handleSectionFocus, handleMagic, onRequestFeedback) => {
   if (!section || !section.id) return null;
   const sectionState = useAppStore.getState().sections[section.id];
   if (!sectionState) return null; // Ensure state exists
@@ -25,6 +24,7 @@ const renderStandardSectionCard = (section, activeSection, handleSectionFocus, h
       onRequestFeedback={handleMagic}
       handleSectionFocus={handleSectionFocus}
       isToggleSection={false} // Explicitly false
+      onSwitchToGuide={onRequestFeedback} // Pass the mode switch function
     />
   );
 };
@@ -37,7 +37,14 @@ const LeftPanel = ({
   handleDataMethodToggle,
   handleMagic,
   proMode,
+  onRequestFeedback, // NEW: Callback to switch to guide mode
 }) => {
+
+  // Direct prop logging (can be removed later)
+  useEffect(() => {
+    console.log("[LeftPanel] Mounted with onRequestFeedback:", !!onRequestFeedback);
+  }, [onRequestFeedback]);
+
   // --- Select State from Zustand Store ---
   const sections = useAppStore((state) => state.sections);
   const activeToggles = useAppStore((state) => state.activeToggles);
@@ -89,11 +96,11 @@ const LeftPanel = ({
   const sectionsStillLocked = !proMode && visibleCount < totalPossibleSections;
 
   return (
-    <div className="w-1/2 h-full overflow-y-auto px-4 pt-14 pb-12 box-border flex-shrink-0">
+    <div className="w-full h-full overflow-y-auto pb-12 box-border flex-shrink-0">
       <HeaderCard />
 
       {/* Question Section */}
-      {questionSectionDef && renderStandardSectionCard(questionSectionDef, activeSection, handleSectionFocus, handleMagic)}
+      {questionSectionDef && renderStandardSectionCard(questionSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
 
       {/* Approach Toggle Section Card */}
       {showApproachToggle && (
@@ -107,14 +114,15 @@ const LeftPanel = ({
           activeOption={activeApproachSectionId}
           onToggle={handleApproachToggle}
           isToggleSection={true}
+          onSwitchToGuide={onRequestFeedback} // Pass the mode switch function
         />
       )}
 
       {/* Audience Section */}
-      {audienceSectionDef && renderStandardSectionCard(audienceSectionDef, activeSection, handleSectionFocus, handleMagic)}
+      {audienceSectionDef && renderStandardSectionCard(audienceSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
 
       {/* Related Papers Section */}
-      {relatedPapersSectionDef && renderStandardSectionCard(relatedPapersSectionDef, activeSection, handleSectionFocus, handleMagic)}
+      {relatedPapersSectionDef && renderStandardSectionCard(relatedPapersSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
 
       {/* Data Method Toggle Section Card */}
       {showDataToggle && (
@@ -128,17 +136,18 @@ const LeftPanel = ({
            activeOption={activeDataMethodSectionId}
            onToggle={handleDataMethodToggle}
            isToggleSection={true}
+           onSwitchToGuide={onRequestFeedback} // Pass the mode switch function
          />
       )}
 
       {/* Analysis Section */}
-      {analysisSectionDef && renderStandardSectionCard(analysisSectionDef, activeSection, handleSectionFocus, handleMagic)}
+      {analysisSectionDef && renderStandardSectionCard(analysisSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
 
       {/* Process Section */}
-      {processSectionDef && renderStandardSectionCard(processSectionDef, activeSection, handleSectionFocus, handleMagic)}
+      {processSectionDef && renderStandardSectionCard(processSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
 
       {/* Abstract Section */}
-      {abstractSectionDef && renderStandardSectionCard(abstractSectionDef, activeSection, handleSectionFocus, handleMagic)}
+      {abstractSectionDef && renderStandardSectionCard(abstractSectionDef, activeSection, handleSectionFocus, handleMagic, onRequestFeedback)}
 
       {/* Pro Mode Info */}
       {sectionsStillLocked && (
