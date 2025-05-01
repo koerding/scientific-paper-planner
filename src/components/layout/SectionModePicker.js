@@ -3,7 +3,8 @@ import React from 'react';
 
 /**
  * Toggle component for switching between Write and Guide modes
- * Updated to be more compact for use in card header
+ * FIXED: Made more compact for use in card header
+ * FIXED: Improved visual distinction between modes
  */
 const SectionModePicker = ({ currentMode, onModeChange, disabled = false }) => {
   // Add a small debounce to prevent double-clicking
@@ -15,7 +16,7 @@ const SectionModePicker = ({ currentMode, onModeChange, disabled = false }) => {
   };
 
   return (
-    <div className="bg-gray-100 p-1 rounded-full inline-flex w-auto h-8"> {/* UPDATED: Reduced height to 32px (h-8) */}
+    <div className="bg-gray-100 p-1 rounded-full inline-flex items-center justify-center w-auto h-8">
       <button
         onClick={() => handleModeChange('write')}
         disabled={disabled || currentMode === 'write'}
