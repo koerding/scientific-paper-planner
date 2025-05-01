@@ -51,11 +51,11 @@ const MainLayout = ({
     <div className="h-screen flex flex-col bg-gray-50 text-gray-900 overflow-hidden">
       <ForwardedSplashScreenManager ref={splashManagerRef} />
       <AppHeader {...appHeaderProps} />
-      <div className="flex flex-col flex-grow overflow-hidden relative">
+      <div className="flex flex-grow overflow-hidden relative">
         {/* Add the LeftRailNavigation component here */}
         <LeftRailNavigation visible={showMobileRail} />
         
-        {/* Main content with adjusted margin for the rail */}
+        {/* Main content with margin for the rail - using a layout approach that prevents overlapping */}
         <div className="main-content h-full flex flex-col">
           {/* Main content area */}
           <ContentArea {...finalContentAreaProps} />
