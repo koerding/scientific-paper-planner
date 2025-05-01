@@ -1,5 +1,5 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
-// FIXED: Removed duplicate helper function definitions at the end of the file.
+// UPDATED: Added Ready to Write button and mode switching
 
 import React, { useState, useEffect, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
@@ -116,12 +116,19 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
 
 
 // --- Component ---
-const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loading }) => {
+const FullHeightInstructionsPanel = ({ 
+  activeSectionId, 
+  improveInstructions, 
+  loading,
+  onRequestWrite // NEW: Callback to switch to write mode
+}) => {
   const currentSection = useAppStore(useCallback(
       (state) => activeSectionId ? state.sections[activeSectionId] : null,
       [activeSectionId]
   ));
   const [expandedTooltips, setExpandedTooltips] = useState({});
+  const setUiMode = useAppStore((state) => state.setUiMode);
+  
   useEffect(() => { setExpandedTooltips({}); }, [activeSectionId]);
 
   const sectionTitle = currentSection?.title || "Selected Section";
@@ -130,12 +137,20 @@ const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loa
   const toggleTooltip = useCallback((id) => {
     setExpandedTooltips(prev => ({ ...prev, [id]: !prev[id] }));
   }, []);
+  
+  // Handle click on Ready to Write button
+  const handleWriteButtonClick = () => {
+    if (typeof onRequestWrite === 'function') {
+      onRequestWrite();
+    } else {
+      // Fallback to direct store access
+      setUiMode('write');
+    }
+  };
 
   return (
     // Root div with padding
-    <div
-      className="w-1/2 h-full overflow-y-auto px-4 pt-16 pb-12 box-border flex-shrink-0" // Ensure pt-4 (or larger if needed) is here
-    >
+    <div className="w-full h-full overflow-y-auto pb-12 box-border flex-shrink-0">
         {/* Conditional rendering directly inside the padded root div */}
         {!currentSection ? (
           // Placeholder when no section is selected
@@ -156,12 +171,25 @@ const FullHeightInstructionsPanel = ({ activeSectionId, improveInstructions, loa
                   ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
                   : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
             </div>
+            
+            {/* NEW: Ready to Write button */}
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={handleWriteButtonClick}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded flex items-center text-sm transition-colors"
+                title="Switch to writing mode"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                  <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
+                </svg>
+                Ready to Write
+              </button>
+            </div>
           </div>
         )}
     </div> // End of root padded div
   );
 };
-
-// --- REMOVED Duplicate function definitions from here ---
 
 export default FullHeightInstructionsPanel;
