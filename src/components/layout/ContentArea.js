@@ -10,7 +10,6 @@ const ContentArea = ({
   activeSection, activeApproach, activeDataMethod,
   handleSectionFocus, handleApproachToggle, handleDataMethodToggle,
   proMode, handleMagic,
-  // Loading prop is now accessed directly from the store
 }) => {
   // Get global loading state directly from store for AI operations
   const isAnyAiLoading = useAppStore((state) => state.isAnyLoading());
