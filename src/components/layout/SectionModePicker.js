@@ -16,13 +16,13 @@ const SectionModePicker = ({ currentMode, onModeChange, disabled = false }) => {
   };
 
   return (
-    <div className="bg-gray-100 p-1 rounded-full inline-flex items-center justify-center w-auto h-8">
+    <div className="bg-gray-100 p-1 rounded-full inline-flex items-center justify-center w-auto h-8 shadow-sm">
       <button
         onClick={() => handleModeChange('write')}
         disabled={disabled || currentMode === 'write'}
-        className={`flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+        className={`flex items-center justify-center px-4 py-1 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
           currentMode === 'write'
-            ? 'bg-white text-gray-800 shadow-sm'
+            ? 'bg-white text-gray-800 shadow-sm font-semibold'
             : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
@@ -37,9 +37,9 @@ const SectionModePicker = ({ currentMode, onModeChange, disabled = false }) => {
       <button
         onClick={() => handleModeChange('guide')}
         disabled={disabled || currentMode === 'guide'}
-        className={`flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+        className={`flex items-center justify-center px-4 py-1 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
           currentMode === 'guide'
-            ? 'bg-white text-gray-800 shadow-sm'
+            ? 'bg-white text-gray-800 shadow-sm font-semibold'
             : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
