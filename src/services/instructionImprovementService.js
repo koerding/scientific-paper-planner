@@ -5,6 +5,7 @@
  * UPDATED: Increased max_tokens for the OpenAI API call.
  * UPDATED: Filters sections to only send those edited since last feedback (or never reviewed).
  * UPDATED: Excludes 'tooltip' text from subsection data sent to OpenAI to reduce payload size.
+ * UPDATED: Includes previous feedback context for more consistent ratings
  */
 import { callOpenAI } from './openaiService';
 import { buildSystemPrompt } from '../utils/promptUtils';
@@ -51,13 +52,12 @@ export const improveBatchInstructions = async (
 
         // Include section only if definition exists, has content, AND needs feedback
         if (sectionDef && hasMeaningfulContent && needsFeedback) {
-          return {
+          const result = {
             id: sectionState.id,
             title: sectionDef.title,
             userContent: content,
             originalPlaceholder: placeholder,
             introText: sectionDef.introText || '',
-            // --- MODIFICATION START: Exclude tooltip ---
             // Pass only necessary subsection info (id, title, instruction)
             // Tooltip is excluded as it's context for the UI, not essential for AI evaluation
             subsections: (sectionDef.subsections || []).map(subsection => ({
@@ -66,8 +66,23 @@ export const improveBatchInstructions = async (
               instruction: subsection.instruction
               // tooltip: subsection.tooltip // <-- EXCLUDED PROPERTY
             }))
-            // --- MODIFICATION END ---
           };
+          
+          // ENHANCEMENT: Include previous feedback if available to maintain consistency
+          if (sectionState.aiInstructions) {
+            result.previousFeedback = {
+              overallFeedback: sectionState.aiInstructions.overallFeedback,
+              rating: sectionState.aiInstructions.rating,
+              // Include subsection feedback if available
+              subsections: sectionState.aiInstructions.subsections?.map(sub => ({
+                id: sub.id,
+                isComplete: sub.isComplete,
+                feedback: sub.feedback
+              }))
+            };
+          }
+          
+          return result;
         }
         return null; // Exclude sections that don't meet criteria
       })
@@ -84,14 +99,19 @@ export const improveBatchInstructions = async (
     const systemPrompt = buildSystemPrompt('instructionImprovement');
 
     // Create the user prompt (structure unchanged, but subsection context is smaller)
+    // ENHANCEMENT: Now includes notes about previous feedback for consistency
     const userPrompt = `
       I need you to evaluate the following research sections based on their content against the provided instructions for each subsection.
       Return your response as a JSON object with the following structure: { "results": [ ... ] } where each result object contains 'id', 'overallFeedback', 'completionStatus', 'rating', and a 'subsections' array.
       The 'subsections' array should contain objects with 'id', 'isComplete' (boolean), and 'feedback' (string).
-      RATING SCALE (very important): Provide a numerical rating from 1-10 for each section based on the quality and completeness of the user's content against the instructions. 1=very poor, 5=average student work, 10=publication quality.
+      
+      RATING SCALE: Provide a numerical rating from 1-10 for each section based on the quality and completeness of the user's content against the instructions. 1=very poor, 5=average student work, 10=publication quality.
+      
+      IMPORTANT FOR CONSISTENCY: Some sections include previous feedback. If a section shows only minor improvements from the previous feedback, maintain a similar rating. If significant improvements were made, the rating should increase accordingly.
+      
       Here are the sections and their subsection instructions to evaluate:
       ${JSON.stringify(sectionsForAnalysis, null, 2)}
-    `; // Removed explicit mention of RATING SCALE prompt example as it's in system prompt now.
+    `; 
 
     console.log(`[Instruction Improvement] Analyzing ${sectionsForAnalysis.length} edited/new sections with JSON structure (tooltips excluded).`);
     // console.log("Sections being sent:", sectionsForAnalysis.map(s => s.id));
