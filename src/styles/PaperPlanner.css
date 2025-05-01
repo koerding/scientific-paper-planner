@@ -497,3 +497,83 @@ header button.font-semibold {
     transform: translateX(0);
   }
 }
+/* Add these styles to your PaperPlanner.css file for better splash screen appearance */
+
+/* Make the splash screen match the design in the screenshot */
+.fixed.inset-0.bg-gray-800.bg-opacity-80 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* Style the splash screen container */
+.fixed.inset-0.bg-gray-800.bg-opacity-80 .bg-white {
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 600px;
+  width: 95%;
+  margin: 0 auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Style the splash screen header */
+.fixed.inset-0.bg-gray-800.bg-opacity-80 .bg-purple-600 {
+  padding: 16px 24px;
+}
+
+/* Style the content area */
+.fixed.inset-0.bg-gray-800.bg-opacity-80 .px-6.py-5 {
+  padding: 24px;
+}
+
+/* Make icons more prominent */
+.fixed.inset-0.bg-gray-800.bg-opacity-80 .rounded-full {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Improved "Get Started" button */
+.fixed.inset-0.bg-gray-800.bg-opacity-80 .px-10.py-3 {
+  font-size: 16px;
+  padding: 12px 32px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.fixed.inset-0.bg-gray-800.bg-opacity-80 .px-10.py-3:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
+}
+
+/* Style the checkbox area */
+.fixed.inset-0.bg-gray-800.bg-opacity-80 .form-checkbox {
+  border: 2px solid #d1d5db;
+}
+
+/* Footer styling */
+.fixed.inset-0.bg-gray-800.bg-opacity-80 .mt-6 {
+  margin-top: 24px;
+  padding-bottom: 16px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 .space-y-4 {
+    margin-bottom: 24px;
+  }
+  
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 .text-center {
+    margin-top: 24px;
+  }
+  
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 .px-10.py-3 {
+    width: 80%;
+    margin: 0 auto;
+  }
+}
