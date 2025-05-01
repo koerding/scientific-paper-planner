@@ -1,5 +1,6 @@
 // FILE: src/store/appStore.js
 // MODIFIED: Add uiMode to store for single-panel layout toggle
+// MODIFIED: Added setActiveSectionId and enhanced setUiMode functions
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -57,7 +58,7 @@ const initialState = {
     currentChatSectionId: 'question',
     _forceUpdate: 0, // Dummy state for workaround
     
-    // --- NEW UI MODE STATE ---
+    // --- UI MODE STATE ---
     uiMode: 'write', // 'write' or 'guide'
 };
 
@@ -88,7 +89,39 @@ const useAppStore = create(
           console.error(`Invalid UI mode: ${mode}. Must be 'write' or 'guide'`);
           return;
         }
-        console.log(`Setting UI mode to ${mode}`);
+        
+        // If switching to guide mode, ensure we use the last active section
+        if (mode === 'guide') {
+          // Get current or last active section ID
+          const currentSectionId = get().currentChatSectionId;
+          const lastSectionId = localStorage.getItem('lastActiveSectionId');
+          const targetSectionId = currentSectionId || lastSectionId || 'question';
+          
+          // If we have a valid section ID, ensure that section is in focus
+          if (targetSectionId && get().sections && get().sections[targetSectionId]) {
+            const updatedSections = { ...get().sections };
+            
+            // Update section focus flags
+            Object.keys(updatedSections).forEach(id => {
+              if (updatedSections[id]) {
+                updatedSections[id] = {
+                  ...updatedSections[id],
+                  isCurrentSection: id === targetSectionId
+                };
+              }
+            });
+            
+            // Return updated state with new mode and focused section
+            set({ 
+              uiMode: mode, 
+              sections: updatedSections, 
+              currentChatSectionId: targetSectionId 
+            });
+            return;
+          }
+        }
+        
+        // Simple mode change if not handling guide mode or no valid section
         set({ uiMode: mode });
       },
 
@@ -162,6 +195,31 @@ const useAppStore = create(
       resetState: () => set({
         ...initialState,
         onboarding: { ...initialState.onboarding, showHelpSplash: get().onboarding.showHelpSplash }
+      }),
+
+      // --- New function to set the active section ID ---
+      setActiveSectionId: (sectionId) => set((state) => {
+        // Make sure we're working with a valid section ID
+        if (!sectionId || !state.sections || !state.sections[sectionId]) {
+          console.warn(`Invalid section ID: ${sectionId}`);
+          return state;
+        }
+        
+        // Update the isCurrentSection flag for all sections
+        const updatedSections = { ...state.sections };
+        Object.keys(updatedSections).forEach(id => {
+          if (updatedSections[id]) {
+            updatedSections[id] = {
+              ...updatedSections[id],
+              isCurrentSection: id === sectionId
+            };
+          }
+        });
+        
+        return { 
+          sections: updatedSections, 
+          currentChatSectionId: sectionId  // Also update chat context
+        };
       }),
 
       // Load Project Data Action with WORKAROUND
@@ -377,9 +435,9 @@ const useAppStore = create(
          scores: state.scores,
          chatMessages: state.chatMessages,
          onboarding: state.onboarding,
-         uiMode: state.uiMode, // ADDED: Persist UI mode
+         uiMode: state.uiMode, // Persist UI mode
       }),
-      version: 5, // INCREMENTED version since we've added uiMode
+      version: 5, // Incremented version since we've added uiMode
       onRehydrateStorage: (state) => {
         console.log("Zustand state hydration starting (v5)...");
         return (hydratedState, error) => {
