@@ -526,7 +526,104 @@ header button.font-semibold {
 .fixed.inset-0.bg-gray-800.bg-opacity-80 .px-6.py-5 {
   padding: 24px;
 }
+/* Add these CSS updates to fix layout issues to your PaperPlanner.css file */
 
+/* 1. SPACE & ALIGNMENT FIXES */
+
+/* Fix the spacing between rail and content */
+.main-content {
+  padding-left: calc(var(--rail-width) + 24px) !important; /* Proper spacing instead of 32px */
+  width: 100%;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+
+/* Center the content card properly */
+.main-content > div {
+  max-width: 760px !important;
+  margin-inline: auto !important;
+}
+
+/* Add padding to rail items so text doesn't hug edge */
+.rail-btn {
+  padding-left: 0.5rem !important; /* pl-2 equivalent */
+}
+
+/* 2. VISUAL HIERARCHY IMPROVEMENTS */
+
+/* Lighter rail background */
+.rail {
+  background-color: #F8F9FC !important;
+}
+
+/* Enhance active item with proper text color */
+.rail-btn.rail-btn-in-view span {
+  color: #4F46E5 !important; /* text-indigo-600 */
+  font-weight: 600 !important; /* font-semibold */
+}
+
+/* Untouched sections get proper gray */
+.rail-btn:not(.rail-btn-in-view) span {
+  color: #6B7280 !important; /* text-gray-500 */
+}
+
+/* Make Pro Mode banner more subtle */
+.bg-gray-100.border.border-gray-300.rounded-lg.p-3.mt-6 {
+  background-color: #F2F4F7 !important;
+  border: none !important;
+  font-size: 0.875rem !important; /* text-sm */
+}
+
+/* 3. INTERACTION CUES */
+
+/* Hover state feedback on rail items */
+.rail-btn:not([disabled]):hover {
+  background-color: #EEF2FF !important; /* bg-indigo-50 */
+}
+
+.rail-btn:not([disabled]):hover span {
+  color: #6366F1 !important; /* text-indigo-500 */
+}
+
+/* Focus styles for keyboard navigation */
+.rail-btn:focus-visible {
+  outline: 2px solid #4F46E5 !important;
+  outline-offset: 2px;
+  background-color: #EEF2FF !important;
+}
+
+/* 4. TINY POLISH */
+
+/* Move Write/Guide toggle down to connect visually with card */
+header .inline-flex {
+  transform: translateY(16px);
+  z-index: 40;
+}
+
+/* Add padding to write mode cards */
+[data-mode="write"] .section-card {
+  padding-bottom: 3rem !important; /* pb-12 equivalent */
+}
+
+/* Consistent purple for all interactive elements */
+.rail-btn.rail-btn-in-view,
+.feedback-button {
+  --purple-accent: #8855FF;
+}
+
+.rail-btn.rail-btn-in-view {
+  border-left-color: var(--purple-accent) !important;
+}
+
+.bg-purple-600 {
+  background-color: var(--purple-accent) !important;
+}
+
+/* Ensure the rail has proper role for accessibility */
+.rail {
+  role: "navigation";
+  aria-label: "Section navigation";
+}
 /* Make icons more prominent */
 .fixed.inset-0.bg-gray-800.bg-opacity-80 .rounded-full {
   width: 40px;
