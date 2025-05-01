@@ -1,10 +1,10 @@
 // FILE: src/components/layout/AppHeader.js
-// MODIFIED: Added hamburger menu and kept only Help and Save buttons in header
-// MODIFIED: Moved SP icon to the right side
+// MODIFIED: Added centered Write/Guide toggle in the header
 
 import React, { useState } from 'react';
 import useAppStore from '../../store/appStore'; // Import store
-import HamburgerMenu from '../menu/HamburgerMenu'; // Import our new hamburger menu component
+import HamburgerMenu from '../menu/HamburgerMenu'; // Import our hamburger menu component
+import SectionModePicker from './SectionModePicker'; // Import the toggle component
 
 const AppHeader = ({
   resetProject,
@@ -17,6 +17,8 @@ const AppHeader = ({
 }) => {
   // --- Get global loading state directly from store ---
   const isAiBusy = useAppStore((state) => state.isAnyLoading());
+  const uiMode = useAppStore((state) => state.uiMode);
+  const setUiMode = useAppStore((state) => state.setUiMode);
 
   // --- Add local state for import loading ---
   const [localImportLoading, setLocalImportLoading] = useState(false);
@@ -45,10 +47,10 @@ const AppHeader = ({
   return (
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-2">
-        {/* --- justify-between ensures left/right alignment --- */}
+        {/* Three-column layout */}
         <div className="flex items-center justify-between">
-          {/* Left side: Just hamburger menu */}
-          <div className="flex items-center">
+          {/* Left section: Hamburger menu */}
+          <div className="flex items-center w-1/3 justify-start">
             {/* Hamburger Menu */}
             <HamburgerMenu
               resetProject={resetProject}
@@ -61,9 +63,18 @@ const AppHeader = ({
               localImportLoading={localImportLoading}
             />
           </div>
+          
+          {/* Middle section: Write/Guide toggle */}
+          <div className="flex items-center w-1/3 justify-center">
+            <SectionModePicker 
+              currentMode={uiMode} 
+              onModeChange={setUiMode}
+              disabled={isAiBusy}
+            />
+          </div>
 
-          {/* Right side: Logo, Help and Save buttons */}
-          <div className="flex items-center space-x-2">
+          {/* Right section: Help, Save buttons and logo */}
+          <div className="flex items-center w-1/3 justify-end space-x-2">
             {/* Help Button */}
             <button onClick={handleHelpClick} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
               {isAiBusy ? loadingSpinner : (
