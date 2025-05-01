@@ -1,4 +1,46 @@
 // FILE: src/store/appStore.js
+// MODIFICATION: Update sendMessage function to include AI feedback
+
+// Find the sendMessage method in the appStore and update it like this:
+sendMessage: async (content = null) => {
+    const messageContent = content || get().currentChatMessage;
+    const currentSectionId = get().currentChatSectionId;
+    if (!messageContent.trim() || !currentSectionId) return;
+    get().addChatMessage(currentSectionId, { role: 'user', content: messageContent });
+    set({ currentChatMessage: '' });
+    get().setLoading('chat', true);
+    try {
+        const state = get();
+        const userInputs = Object.entries(state.sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {});
+        const sectionDef = sectionContent.sections.find(s => s.id === currentSectionId) || {};
+        const historyForApi = state.chatMessages[currentSectionId] || [];
+        
+        // Get AI feedback for the current section if available
+        const aiFeedback = state.sections[currentSectionId]?.aiInstructions || null;
+        
+        const systemPrompt = buildSystemPrompt('chat', {
+            sectionTitle: sectionDef.title || 'section',
+            instructionsText: sectionDef.originalInstructions?.map(s => `${s.title}: ${s.instruction}`).join('\n') || '',
+            userContent: userInputs[currentSectionId] || "They haven't written anything substantial yet.",
+            aiFeedback: aiFeedback // Pass the AI feedback to the prompt builder
+        });
+        
+        const response = await callOpenAI(
+            messageContent, currentSectionId, userInputs,
+            sectionContent.sections || [], { temperature: 0.9 },
+            historyForApi, systemPrompt, false
+        );
+        get().addChatMessage(currentSectionId, { role: 'assistant', content: response });
+    } catch (error) {
+        console.error('Error sending chat message via Zustand:', error);
+        get().addChatMessage(currentSectionId, {
+            role: 'assistant',
+            content: "I'm sorry, I encountered an error processing your message. Please try again."
+        });
+    } finally {
+        get().setLoading('chat', false);
+    }
+}// FILE: src/store/appStore.js
 // Modified to add a separate global loading indicator
 // REVERTED: loadProjectData handles original save format (content + chat)
 // REVERTED: Removed merge function and simplified initial state
