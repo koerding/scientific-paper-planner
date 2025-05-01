@@ -57,21 +57,26 @@ const SinglePanelLayout = ({
         className="w-full max-w-[740px] px-4 flex-grow overflow-visible"
         aria-live="polite"
       >
-        {/* Card header with mode toggle embedded - NOW IDENTICAL FOR BOTH MODES */}
-        <div className="bg-white rounded-t-lg border border-gray-200 shadow-sm px-5 py-3 mb-0 flex items-center justify-between">
-          {/* Only show title in guide mode */}
-          {uiMode === 'guide' && (
-            <h2 className="text-xl font-semibold text-gray-800">{sectionTitle}</h2>
-          )}
-          {/* This is empty in write mode to maintain the space */}
-          {uiMode === 'write' && <div></div>}
+        {/* Card header with centered mode toggle */}
+        <div className="bg-white rounded-t-lg border border-gray-200 shadow-sm px-5 py-3 mb-0 flex items-center">
+          {/* Left section: title in guide mode */}
+          <div className="flex-1">
+            {uiMode === 'guide' && (
+              <h2 className="text-xl font-semibold text-gray-800">{sectionTitle}</h2>
+            )}
+          </div>
           
-          {/* Embedded mode toggle - present in both modes */}
-          <SectionModePicker 
-            currentMode={uiMode} 
-            onModeChange={setUiMode}
-            disabled={isAnyAiLoading}
-          />
+          {/* Center section: mode toggle */}
+          <div className="flex-grow-0 flex-shrink-0 flex justify-center">
+            <SectionModePicker 
+              currentMode={uiMode} 
+              onModeChange={setUiMode}
+              disabled={isAnyAiLoading}
+            />
+          </div>
+          
+          {/* Right section: empty space to balance layout */}
+          <div className="flex-1"></div>
         </div>
         
         {/* Card body */}
