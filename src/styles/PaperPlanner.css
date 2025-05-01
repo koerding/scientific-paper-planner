@@ -288,3 +288,54 @@ p, textarea, .prose p, .feedback-button { font-size: var(--font-size-small) !imp
 .font-medium { font-weight: var(--font-weight-medium) !important; }
 .font-bold { font-weight: var(--font-weight-bold) !important; }
 
+/* Add these CSS updates to your PaperPlanner.css file */
+
+/* Add smooth scrolling to the main content area */
+.main-content {
+  scroll-behavior: smooth;
+}
+
+/* Ensure section cards have proper scroll margin */
+.section-card {
+  scroll-margin-top: 70px; /* Provides space at the top when scrolling to a section */
+}
+
+/* Ensure consistent section card styling */
+.section-card.current-active {
+  border-color: #3b82f6 !important; /* blue-500 */
+  background-color: #eff6ff !important; /* blue-50 */
+}
+
+/* Add visual focus indicator for current sections in rail */
+.rail-btn.rail-btn-in-view {
+  background-color: rgba(59, 130, 246, 0.1) !important; /* blue-500 at 10% opacity */
+  font-weight: 600 !important;
+  border-left: 3px solid #3b82f6 !important; /* blue-500 */
+}
+
+/* Fixed mode toggle button positioning */
+.fixed-mode-toggle {
+  z-index: 50; /* Ensure it's above other elements */
+}
+
+/* Override max-width on main content for better scrolling */
+.main-content .max-w-\[740px\] {
+  overflow-x: hidden !important;
+  overflow-y: visible !important; /* Allow content to scroll properly */
+}
+
+/* Clean up spacing in section mode picker */
+.mode-toggle button {
+  padding: 0.4rem 0.8rem !important;
+}
+
+/* Enhance section card margins for better scrolling */
+.section-card {
+  margin-bottom: 1rem !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Ensure section cards have proper ID attributes for scrolling */
+[id^="section-"] {
+  scroll-margin-top: 70px; /* Extra space at top when scrolled into view */
+}
