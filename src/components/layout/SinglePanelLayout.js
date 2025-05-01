@@ -49,11 +49,11 @@ const SinglePanelLayout = ({
   return (
     <div 
       ref={contentRef}
-      className="flex flex-col items-center pt-10 pb-12 w-full h-full overflow-auto bg-fafafd">
+      className="flex flex-col items-center pt-10 pb-12 w-full h-full overflow-y-auto bg-fafafd">
       
       {/* Main content panel with card design */}
       <div 
-        className="w-full max-w-[740px] px-4 flex-grow overflow-visible z-30 relative mx-auto"
+        className="w-full max-w-[740px] px-4 flex-grow overflow-visible z-30 relative mx-auto mb-20" /* Added bottom margin for mobile */
         aria-live="polite"
       >
         {/* Card header - Now just shows title in guide mode without toggle */}
