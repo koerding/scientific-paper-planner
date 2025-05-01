@@ -53,7 +53,7 @@ const SinglePanelLayout = ({
       
       {/* Main content panel with card design */}
       <div 
-        className="w-full max-w-[740px] px-4 flex-grow overflow-visible z-30 relative"
+        className="w-full max-w-[740px] px-4 flex-grow overflow-visible z-30 relative mx-auto"
         aria-live="polite"
       >
         {/* Card header - Now just shows title in guide mode without toggle */}
