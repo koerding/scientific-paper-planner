@@ -120,7 +120,7 @@ const ModernChatInterface = ({
 
       {/* Expanded chat interface - increased z-index */}
       <div
-        className={`fixed shadow-lg rounded-lg overflow-hidden transition-all duration-300 ease-in-out bottom-4 right-4 w-[550px] max-w-[90vw] h-[600px] max-h-[80vh] z-[1000] ${
+        className={`fixed shadow-lg rounded-lg overflow-hidden transition-all duration-300 ease-in-out bottom-4 right-4 w-[550px] max-w-[90vw] h-[600px] max-h-[80vh] z-[9999] ${
           isMinimized ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'
         }`}
         style={{ backgroundColor: '#ffffff', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)' }}
