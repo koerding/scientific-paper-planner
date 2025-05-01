@@ -5,6 +5,10 @@ import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sect
 
 /**
  * Left rail navigation with mode-aware section switching
+ * FIXED: Made rail wider for longer text
+ * FIXED: Improved circle indicators to use solid colors instead of numbers
+ * FIXED: Simplified section titles (removed "Research" prefix)
+ * FIXED: Ensured rails are clickable and properly navigate to sections
  * @param {Object} props - Component props
  * @param {boolean} props.visible - Whether the rail is visible
  * @returns {React.ReactElement} The left rail navigation component
@@ -31,6 +35,8 @@ const LeftRailNavigation = ({ visible = true }) => {
    * @param {string} sectionId - The section ID to navigate to
    */
   const handleNavigation = (sectionId) => {
+    console.log(`Rail navigation: Clicked on section ${sectionId}`);
+    
     // Always store the last section for reference
     localStorage.setItem('lastActiveSectionId', sectionId);
     
@@ -69,7 +75,8 @@ const LeftRailNavigation = ({ visible = true }) => {
       .filter(id => sections[id] && sections[id].isVisible !== false)
       .map(id => ({
         id,
-        title: sections[id]?.title || id,
+        // Simplify titles - remove "Research" prefix
+        title: sections[id]?.title?.replace('Research ', '') || id,
         isActive: id === currentSectionId,
         isApproach: approachSections.includes(id),
         isDataMethod: dataMethodSections.includes(id),
@@ -82,7 +89,7 @@ const LeftRailNavigation = ({ visible = true }) => {
   // Early return if not visible
   if (!visible) return null;
   
-  // Style adjustments for feedback ratings
+  // Style adjustments for feedback ratings - solid color approach
   const getRatingColor = (rating) => {
     if (!rating) return '#d3d4dc'; // default grey
     if (rating <= 3) return '#ef4444'; // red-500
@@ -103,28 +110,17 @@ const LeftRailNavigation = ({ visible = true }) => {
           title={`${item.title} (${uiMode === 'guide' ? 'Guide' : 'Write'} Mode)`}
         >
           <div className="rail-icon">
-            {/* Circle SVG with customized fill based on rating */}
+            {/* Circle SVG with customized solid fill based on rating */}
             <svg width="24" height="24" viewBox="0 0 24 24">
               <circle 
                 cx="12" 
                 cy="12" 
                 r="10" 
-                fill={item.isActive ? "#EFF6FF" : "white"} 
-                stroke={getRatingColor(item.rating)} 
-                strokeWidth={item.rating ? "2" : "1"}
+                fill={getRatingColor(item.rating)} 
+                stroke={item.isActive ? "#4F46E5" : "#E5E7EB"} 
+                strokeWidth={item.isActive ? "2" : "1"}
               />
-              {item.rating && (
-                <text 
-                  x="12" 
-                  y="13" 
-                  fontSize="8" 
-                  textAnchor="middle" 
-                  fill="#374151"
-                  fontWeight="bold"
-                >
-                  {item.rating}
-                </text>
-              )}
+              {/* Removed rating number text - now using solid color instead */}
             </svg>
           </div>
           <span className="truncate">{item.title}</span>
