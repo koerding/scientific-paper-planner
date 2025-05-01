@@ -84,46 +84,42 @@ const useAppStore = create(
       },
 
       // --- NEW UI MODE ACTION ---
-      setUiMode: (mode) => {
-        if (mode !== 'write' && mode !== 'guide') {
-          console.error(`Invalid UI mode: ${mode}. Must be 'write' or 'guide'`);
-          return;
-        }
-        
-        // If switching to guide mode, ensure we use the last active section
-        if (mode === 'guide') {
-          // Get current or last active section ID
-          const currentSectionId = get().currentChatSectionId;
-          const lastSectionId = localStorage.getItem('lastActiveSectionId');
-          const targetSectionId = currentSectionId || lastSectionId || 'question';
-          
-          // If we have a valid section ID, ensure that section is in focus
-          if (targetSectionId && get().sections && get().sections[targetSectionId]) {
-            const updatedSections = { ...get().sections };
-            
-            // Update section focus flags
-            Object.keys(updatedSections).forEach(id => {
-              if (updatedSections[id]) {
-                updatedSections[id] = {
-                  ...updatedSections[id],
-                  isCurrentSection: id === targetSectionId
-                };
-              }
-            });
-            
-            // Return updated state with new mode and focused section
-            set({ 
-              uiMode: mode, 
-              sections: updatedSections, 
-              currentChatSectionId: targetSectionId 
-            });
-            return;
-          }
-        }
-        
-        // Simple mode change if not handling guide mode or no valid section
-        set({ uiMode: mode });
-      },
+   setUiMode: (mode) => set((state) => {
+  if (mode !== 'write' && mode !== 'guide') {
+    console.error(`Invalid UI mode: ${mode}. Must be 'write' or 'guide'`);
+    return state;
+  }
+  
+  // Get section info
+  const currentSectionId = state.currentChatSectionId;
+  const lastSectionId = localStorage.getItem('lastActiveSectionId');
+  const targetSectionId = currentSectionId || lastSectionId || 'question';
+  
+  // If we have a valid section ID, ensure that section is in focus
+  if (targetSectionId && state.sections && state.sections[targetSectionId]) {
+    const updatedSections = { ...state.sections };
+    
+    // Update section focus flags
+    Object.keys(updatedSections).forEach(id => {
+      if (updatedSections[id]) {
+        updatedSections[id] = {
+          ...updatedSections[id],
+          isCurrentSection: id === targetSectionId
+        };
+      }
+    });
+    
+    // Return updated state with new mode and focused section
+    return { 
+      uiMode: mode, 
+      sections: updatedSections, 
+      currentChatSectionId: targetSectionId 
+    };
+  }
+  
+  // Simple mode change if no valid section
+  return { uiMode: mode };
+}),
 
       // --- Actions for Core State ---
       updateSectionContent: (sectionId, content) => set((state) => {
