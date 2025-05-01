@@ -1,13 +1,12 @@
 /* --- Core section-card styles --- */
 .section-card {
-  margin-bottom: 1rem !important;
+  margin-bottom: 0.5rem !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  border: 1px solid #e5e7eb !important;
+  border-color: #e5e7eb !important;
   position: relative;
   will-change: max-height, opacity;
   border-radius: 0.5rem;
-  background-color: #ffffff;
-  scroll-margin-top: 90px;
+  background-color: white;
 }
 
 .section-card:hover {
@@ -18,6 +17,7 @@
   max-height: 60px;
   overflow: hidden;
   cursor: pointer;
+  margin-top: 0.25rem;
 }
 
 .section-card.minimized::after {
@@ -41,7 +41,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
-.section-card.current-active,
 .section-card.expanded.current-active,
 .section-card.minimized.current-active {
   border-color: #3b82f6 !important;
@@ -97,11 +96,12 @@
   transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.feedback-button-default { background-color: #7c3aed; color: #ffffff; }
+.feedback-button-default { background-color: #7c3aed; color: white; }
 .feedback-button-default:hover { background-color: #6d28d9; }
-.feedback-button-placeholder { background-color: #9ca3af; color: #ffffff; cursor: not-allowed; }
-.feedback-button-loading     { background-color: #a78bfa; color: #ffffff; cursor: wait; }
+.feedback-button-placeholder { background-color: #9ca3af; color: white; cursor: not-allowed; }
+.feedback-button-loading     { background-color: #a78bfa; color: white; cursor: wait; }
 
+/* Rating-based colors */
 .feedback-button-1, .feedback-button-2, .feedback-button-3 { background-color: #ef4444; }
 .feedback-button-1:hover, .feedback-button-2:hover, .feedback-button-3:hover { background-color: #dc2626; }
 .feedback-button-4, .feedback-button-5 { background-color: #f97316; }
@@ -115,13 +115,19 @@
 
 .section-card .feedback-button-8,
 .section-card .feedback-button-9,
-.section-card .feedback-button-10 { background-color: #059669 !important; }
+.section-card .feedback-button-10 {
+  background-color: #059669 !important;
+}
 .section-card .feedback-button-8:hover,
 .section-card .feedback-button-9:hover,
-.section-card .feedback-button-10:hover { background-color: #047857 !important; }
+.section-card .feedback-button-10:hover {
+  background-color: #047857 !important;
+}
 
 /* --- Toggle Sections --- */
-.in-card-toggle, .approach-toggle, .data-toggle {
+.in-card-toggle,
+.approach-toggle,
+.data-toggle {
   border-radius: 4px;
   padding-top: 0.25rem;
   margin-bottom: 0.75rem;
@@ -132,6 +138,7 @@
   align-items: center;
   background-color: #f3f4f6;
   padding: 0.25rem;
+  position: relative;
 }
 
 .in-card-toggle button {
@@ -183,34 +190,176 @@
 }
 .user-message {
   background-color: #4f46e5;
-  color: #ffffff;
+  color: white;
   align-self: flex-end;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 .ai-message {
-  background-color: #ffffff;
+  background-color: white;
   border: 1px solid #e5e7eb;
   align-self: flex-start;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
-.typing-indicator span { animation: typing 1s infinite; }
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem;
+}
+.typing-indicator span {
+  width: 8px;
+  height: 8px;
+  margin: 0 1px;
+  background-color: #6366F1;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: typing 1s infinite;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 
 /* --- Left Rail Navigation --- */
 .rail {
-  --rail-width: 220px;
+  --rail-width: 180px;
   position: fixed;
   left: 0;
-  top: 60px;
+  top: 40px;
   bottom: 0;
   width: var(--rail-width);
   display: flex;
   flex-direction: column;
+  align-items: start;
   padding: 2rem 0;
-  background-color: #fafafd;
+  background-color: #FAFAFD;
   border-right: 1px solid rgba(229, 231, 235, 0.5);
-  overflow-y: auto;
-  z-index: 30;
 }
+.rail-btn {
+  display: flex;
+  align-items: center;
+  padding: 4px 16px 4px 12px;
+  gap: 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+}
+.rail-btn span {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.rail-btn:not([disabled]):hover { background-color: rgba(79, 70, 229, 0.05); }
+.rail-tooltip {
+  position: absolute;
+  left: calc(var(--rail-width) + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #1F2937;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.rail-btn:hover .rail-tooltip { opacity: 1; }
+
+/* --- Layout Fixes --- */
+body, html { overflow-x: hidden; }
+
+/* --- Typography Standardization --- */
+:root {
+  --font-size-big: 1.25rem;
+  --font-size-medium: 1rem;
+  --font-size-small: 0.875rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  --font-family-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+h1, .text-xl, .section-card .section-header h2 { font-size: var(--font-size-big) !important; font-weight: var(--font-weight-bold) !important; font-family: var(--font-family-main) !important; line-height: 1.3 !important; }
+h2, h3, button, .rail-btn span { font-size: var(--font-size-medium) !important; font-family: var(--font-family-main) !important; line-height: 1.5 !important; }
+p, textarea, .prose p, .feedback-button { font-size: var(--font-size-small) !important; font-family: var(--font-family-main) !important; line-height: 1.5 !important; }
+.font-normal { font-weight: var(--font-weight-normal) !important; }
+.font-medium { font-weight: var(--font-weight-medium) !important; }
+.font-bold { font-weight: var(--font-weight-bold) !important; }
+
+/* Add these CSS updates to your PaperPlanner.css file */
+
+/* Add smooth scrolling to the main content area */
+.main-content {
+  scroll-behavior: smooth;
+}
+
+/* Ensure section cards have proper scroll margin */
+.section-card {
+  scroll-margin-top: 70px; /* Provides space at the top when scrolling to a section */
+}
+
+/* Ensure consistent section card styling */
+.section-card.current-active {
+  border-color: #3b82f6 !important; /* blue-500 */
+  background-color: #eff6ff !important; /* blue-50 */
+}
+
+/* Add visual focus indicator for current sections in rail */
+.rail-btn.rail-btn-in-view {
+  background-color: rgba(59, 130, 246, 0.1) !important; /* blue-500 at 10% opacity */
+  font-weight: 600 !important;
+  border-left: 3px solid #3b82f6 !important; /* blue-500 */
+}
+
+/* Fixed mode toggle button positioning */
+.fixed-mode-toggle {
+  z-index: 50; /* Ensure it's above other elements */
+}
+
+/* Override max-width on main content for better scrolling */
+.main-content .max-w-\[740px\] {
+  overflow-x: hidden !important;
+  overflow-y: visible !important; /* Allow content to scroll properly */
+}
+
+/* Clean up spacing in section mode picker */
+.mode-toggle button {
+  padding: 0.4rem 0.8rem !important;
+}
+
+/* Enhance section card margins for better scrolling */
+.section-card {
+  margin-bottom: 1rem !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Ensure section cards have proper ID attributes for scrolling */
+[id^="section-"] {
+  scroll-margin-top: 70px; /* Extra space at top when scrolled into view */
+}
+/* Add these CSS updates to your PaperPlanner.css file */
+
+/* Increase rail width from 180px to 220px to accommodate longer text */
+.rail {
+  --rail-width: 220px !important;
+  position: fixed;
+  left: 0;
+  top: 60px; /* Adjust top position to account for header */
+  bottom: 0;
+  width: var(--rail-width);
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 2rem 0;
+  background-color: #FAFAFD;
+  border-right: 1px solid rgba(229, 231, 235, 0.5);
+  z-index: 40; /* Ensure it's above other elements */
+  overflow-y: auto; /* Allow scrolling if many items */
+}
+
+/* Improve rail button styling for better clickability */
 .rail-btn {
   display: flex;
   align-items: center;
@@ -221,7 +370,11 @@
   transition: all 0.2s;
   width: 100%;
   cursor: pointer;
+  position: relative;
+  text-align: left;
 }
+
+/* Fix rail text truncation - increased max-width to account for wider rail */
 .rail-btn span {
   flex-grow: 1;
   overflow: hidden;
@@ -231,35 +384,413 @@
   font-size: 14px;
   font-weight: 500;
 }
-.rail-btn:not([disabled]):hover { background-color: rgba(79, 70, 229, 0.08) !important; }
+
+/* Enhance hover state for better feedback */
+.rail-btn:not([disabled]):hover {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* Make selected rail button more prominent */
 .rail-btn.rail-btn-in-view {
   background-color: rgba(59, 130, 246, 0.1) !important;
   font-weight: 600 !important;
   border-left: 3px solid #3b82f6 !important;
 }
-.rail-tooltip {
-  position: absolute;
-  left: calc(var(--rail-width) + 8px);
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: #1f2937;
-  color: #ffffff;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-.rail-btn:hover .rail-tooltip { opacity: 1; }
 
-/* --- Layout fixes & Typography Standardization --- */
-body, html { overflow-x: hidden; }
-header .inline-flex { border: 1px solid rgba(209, 213, 219, 0.5); min-width: 200px; }
-header .rounded-full { padding: 2px; background-color: #f3f4f6; }
-header button.font-semibold { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
-:root { --font-size-big: 1.25rem; --font-size-medium: 1rem; --font-size-small: 0.875rem; --font-weight-normal: 400; --font-weight-medium: 500; --font-weight-bold: 600; --font-family-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-h1, .text-xl, .section-card .section-header h2
+/* Remove fixed mode toggle since we're using the embedded one */
+.fixed-mode-toggle {
+  display: none !important;
+}
+
+/* Adjust main content padding to make room for the wider rail */
+.main-content {
+  padding-left: var(--rail-width);
+  scroll-behavior: smooth;
+}
+
+/* Make section cards have proper scroll margin to account for header */
+.section-card {
+  scroll-margin-top: 90px;
+}
+
+/* Enhanced styles for active section in rail */
+.rail-btn.rail-btn-in-view .rail-icon svg circle {
+  stroke-width: 2;
+}
+
+/* Ensure the section mode picker in the header is properly aligned */
+.mode-toggle button {
+  padding: 0.4rem 0.8rem !important;
+}
+
+/* Adjust main layout to account for the rail */
+@media (max-width: 768px) {
+  .main-content {
+    padding-left: 0;
+  }
+  
+  .rail {
+    width: 200px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .rail.visible {
+    transform: translateX(0);
+  }
+}
+/* Add these CSS updates to your PaperPlanner.css file */
+
+/* Increase rail width from 180px to 220px to accommodate longer text */
+.rail {
+  --rail-width: 220px !important;
+  position: fixed;
+  left: 0;
+  top: 60px; /* Adjust top position to account for header */
+  bottom: 0;
+  width: var(--rail-width);
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 2rem 0;
+  background-color: #FAFAFD;
+  border-right: 1px solid rgba(229, 231, 235, 0.5);
+  z-index: 40; /* Ensure it's above other elements */
+  overflow-y: auto; /* Allow scrolling if many items */
+}
+
+/* Improve rail button styling for better clickability */
+.rail-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 8px 12px;
+  margin-bottom: 4px;
+  gap: 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+}
+
+/* Fix rail text truncation - increased max-width to account for wider rail */
+.rail-btn span {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Enhance hover state for better feedback */
+.rail-btn:not([disabled]):hover {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* Make selected rail button more prominent */
+.rail-btn.rail-btn-in-view {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid #3b82f6 !important;
+}
+
+/* Remove fixed mode toggle since we're using the embedded one */
+.fixed-mode-toggle {
+  display: none !important;
+}
+
+/* Adjust main content padding to make room for the wider rail */
+.main-content {
+  padding-left: var(--rail-width);
+  scroll-behavior: smooth;
+}
+
+/* Make section cards have proper scroll margin to account for header */
+.section-card {
+  scroll-margin-top: 90px;
+}
+
+/* Enhanced styles for active section in rail */
+.rail-btn.rail-btn-in-view .rail-icon svg circle {
+  stroke-width: 2;
+}
+
+/* Enhanced styles for the centered section mode picker in the header */
+.mode-toggle button {
+  padding: 0.4rem 0.8rem !important;
+}
+
+/* Add some style to the section mode picker */
+.rounded-full.inline-flex {
+  border: 1px solid rgba(209, 213, 219, 0.5);
+}
+
+/* Ensure section title aligns nicely with the centered toggle */
+.rounded-t-lg h2 {
+  margin-bottom: 0 !important;
+}
+
+/* Adjust main layout to account for the rail */
+@media (max-width: 768px) {
+  .main-content {
+    padding-left: 0;
+  }
+  
+  .rail {
+    width: 200px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .rail.visible {
+    transform: translateX(0);
+  }
+}
+/* Add these CSS updates to your PaperPlanner.css file */
+
+/* Increase rail width from 180px to 220px to accommodate longer text */
+.rail {
+  --rail-width: 220px !important;
+  position: fixed;
+  left: 0;
+  top: 60px; /* Adjust top position to account for header */
+  bottom: 0;
+  width: var(--rail-width);
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 2rem 0;
+  background-color: #FAFAFD;
+  border-right: 1px solid rgba(229, 231, 235, 0.5);
+  z-index: 30; /* Lower z-index to ensure it doesn't overlap content */
+  overflow-y: auto; /* Allow scrolling if many items */
+}
+
+/* Improve rail button styling for better clickability */
+.rail-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 8px 12px;
+  margin-bottom: 4px;
+  gap: 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+}
+
+/* Fix rail text truncation - increased max-width to account for wider rail */
+.rail-btn span {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Enhance hover state for better feedback */
+.rail-btn:not([disabled]):hover {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* Make selected rail button more prominent */
+.rail-btn.rail-btn-in-view {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid #3b82f6 !important;
+}
+
+/* Remove fixed mode toggle since we're using the embedded one */
+.fixed-mode-toggle {
+  display: none !important;
+}
+
+/* Adjust main content to have proper margin instead of padding */
+.main-content {
+  margin-left: var(--rail-width);
+  scroll-behavior: smooth;
+  width: calc(100% - var(--rail-width));
+  position: relative;
+}
+
+/* Make section cards have proper scroll margin to account for header */
+.section-card {
+  scroll-margin-top: 90px;
+}
+
+/* Enhanced styles for active section in rail */
+.rail-btn.rail-btn-in-view .rail-icon svg circle {
+  stroke-width: 2;
+}
+
+/* Enhanced styles for the centered section mode picker in the header */
+.mode-toggle button {
+  padding: 0.4rem 0.8rem !important;
+}
+
+/* Add some style to the section mode picker */
+.rounded-full.inline-flex {
+  border: 1px solid rgba(209, 213, 219, 0.5);
+}
+
+/* Ensure section title aligns nicely with the centered toggle */
+.rounded-t-lg h2 {
+  margin-bottom: 0 !important;
+}
+
+/* Ensure content cards have proper width and don't get overlapped */
+.max-w-\[740px\] {
+  max-width: 740px;
+  position: relative;
+  z-index: 20;
+}
+
+/* Adjust for mobile screens */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .rail {
+    width: 200px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .rail.visible {
+    transform: translateX(0);
+  }
+}
+/* Add these CSS updates to your PaperPlanner.css file */
+
+/* Increase rail width from 180px to 220px to accommodate longer text */
+.rail {
+  --rail-width: 220px !important;
+  position: fixed;
+  left: 0;
+  top: 60px; /* Adjust top position to account for header */
+  bottom: 0;
+  width: var(--rail-width);
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 2rem 0;
+  background-color: #FAFAFD;
+  border-right: 1px solid rgba(229, 231, 235, 0.5);
+  z-index: 30; /* Lower z-index to ensure it doesn't overlap content */
+  overflow-y: auto; /* Allow scrolling if many items */
+}
+
+/* Improve rail button styling for better clickability */
+.rail-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 8px 12px;
+  margin-bottom: 4px;
+  gap: 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+}
+
+/* Fix rail text truncation - increased max-width to account for wider rail */
+.rail-btn span {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Enhance hover state for better feedback */
+.rail-btn:not([disabled]):hover {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* Make selected rail button more prominent */
+.rail-btn.rail-btn-in-view {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid #3b82f6 !important;
+}
+
+/* Remove fixed mode toggle since we're using the embedded one */
+.fixed-mode-toggle {
+  display: none !important;
+}
+
+/* Adjust main content to have proper margin instead of padding */
+.main-content {
+  margin-left: var(--rail-width);
+  scroll-behavior: smooth;
+  width: calc(100% - var(--rail-width));
+  position: relative;
+}
+
+/* Make section cards have proper scroll margin to account for header */
+.section-card {
+  scroll-margin-top: 90px;
+}
+
+/* Enhanced styles for active section in rail */
+.rail-btn.rail-btn-in-view .rail-icon svg circle {
+  stroke-width: 2;
+}
+
+/* Enhanced styles for the header mode toggle */
+header .inline-flex {
+  border: 1px solid rgba(209, 213, 219, 0.5);
+  min-width: 200px;
+}
+
+/* Make the toggle stand out a bit more in the header */
+header .rounded-full {
+  padding: 2px;
+  background-color: #f3f4f6;
+}
+
+/* Give some extra emphasis to the active toggle state */
+header button.font-semibold {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure content cards have proper width and don't get overlapped */
+.max-w-\[740px\] {
+  max-width: 740px;
+  position: relative;
+  z-index: 20;
+}
+
+/* Adjust for mobile screens */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .rail {
+    width: 200px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .rail.visible {
+    transform: translateX(0);
+  }
+}
 /* Add these CSS updates to your PaperPlanner.css file */
 
 /* Increase rail width from 180px to 220px to accommodate longer text */
@@ -327,13 +858,268 @@ h1, .text-xl, .section-card .section-header h2
 .main-content {
   padding-left: var(--rail-width);
   width: 100%;
-  height: calc(100vh - 60px); /* Adjusted to account for header */
   position: relative;
   z-index: 20;
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow-y: auto; /* CRITICAL FIX: Enable scrolling on main content */
+}
+
+/* FIXED: Ensure content is properly centered */
+.main-content > div {
+  max-width: 740px;
+  width: 100%;
+}
+
+/* Make section cards have proper scroll margin to account for header */
+.section-card {
+  scroll-margin-top: 90px;
+}
+
+/* Enhanced styles for active section in rail */
+.rail-btn.rail-btn-in-view .rail-icon svg circle {
+  stroke-width: 2;
+}
+
+/* Enhanced styles for the header mode toggle */
+header .inline-flex {
+  border: 1px solid rgba(209, 213, 219, 0.5);
+  min-width: 200px;
+}
+
+/* Make the toggle stand out a bit more in the header */
+header .rounded-full {
+  padding: 2px;
+  background-color: #f3f4f6;
+}
+
+/* Give some extra emphasis to the active toggle state */
+header button.font-semibold {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure section title aligns nicely in the content header */
+.rounded-t-lg h2 {
+  margin-bottom: 0 !important;
+}
+
+/* Adjust for mobile screens */
+@media (max-width: 768px) {
+  .main-content {
+    padding-left: 0;
+  }
+  
+  .rail {
+    width: 200px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .rail.visible {
+    transform: translateX(0);
+  }
+}
+
+/* Add these CSS updates to your PaperPlanner.css file */
+
+/* Increase rail width from 180px to 220px to accommodate longer text */
+.rail {
+  --rail-width: 220px !important;
+  position: fixed;
+  left: 0;
+  top: 60px; /* Adjust top position to account for header */
+  bottom: 0;
+  width: var(--rail-width);
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 2rem 0;
+  background-color: #FAFAFD;
+  border-right: 1px solid rgba(229, 231, 235, 0.5);
+  z-index: 30; /* Lower z-index to ensure it doesn't overlap content */
+  overflow-y: auto; /* Allow scrolling if many items */
+}
+
+/* Improve rail button styling for better clickability */
+.rail-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 8px 12px;
+  margin-bottom: 4px;
+  gap: 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+}
+
+/* Fix rail text truncation - increased max-width to account for wider rail */
+.rail-btn span {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Enhance hover state for better feedback */
+.rail-btn:not([disabled]):hover {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* Make selected rail button more prominent */
+.rail-btn.rail-btn-in-view {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid #3b82f6 !important;
+}
+
+/* Remove fixed mode toggle since we're using the embedded one */
+.fixed-mode-toggle {
+  display: none !important;
+}
+
+/* FIXED: Center the content while accounting for the rail */
+.main-content {
+  padding-left: var(--rail-width);
+  width: 100%;
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* FIXED: Ensure content is properly centered */
+.main-content > div {
+  max-width: 740px;
+  width: 100%;
+}
+
+/* Make section cards have proper scroll margin to account for header */
+.section-card {
+  scroll-margin-top: 90px;
+}
+
+/* Enhanced styles for active section in rail */
+.rail-btn.rail-btn-in-view .rail-icon svg circle {
+  stroke-width: 2;
+}
+
+/* FIXED: Ensure chat button appears in lower right with proper z-index */
+.fixed.bottom-6.right-6 {
+  z-index: 1000 !important;
+  pointer-events: auto;
+}
+
+/* FIXED: Make chat button more prominent with shadow */
+.fixed.bottom-6.right-6 button {
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  transition: all 0.2s ease;
+}
+
+.fixed.bottom-6.right-6 button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+}
+
+/* FIXED: Keep chat window above other elements */
+.fixed.shadow-lg.rounded-lg.overflow-hidden {
+  z-index: 1000 !important;
+}
+
+/* Adjust for mobile screens */
+@media (max-width: 768px) {
+  .main-content {
+    padding-left: 0;
+  }
+  
+  .rail {
+    width: 200px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .rail.visible {
+    transform: translateX(0);
+  }
+}
+/* Add these CSS updates to your PaperPlanner.css file */
+
+/* Increase rail width from 180px to 220px to accommodate longer text */
+.rail {
+  --rail-width: 220px !important;
+  position: fixed;
+  left: 0;
+  top: 60px; /* Adjust top position to account for header */
+  bottom: 0;
+  width: var(--rail-width);
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 2rem 0;
+  background-color: #FAFAFD;
+  border-right: 1px solid rgba(229, 231, 235, 0.5);
+  z-index: 30; /* Lower z-index to ensure it doesn't overlap content */
+  overflow-y: auto; /* Allow scrolling if many items */
+}
+
+/* Improve rail button styling for better clickability */
+.rail-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 8px 12px;
+  margin-bottom: 4px;
+  gap: 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+}
+
+/* Fix rail text truncation - increased max-width to account for wider rail */
+.rail-btn span {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Enhance hover state for better feedback */
+.rail-btn:not([disabled]):hover {
+  background-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* Make selected rail button more prominent */
+.rail-btn.rail-btn-in-view {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid #3b82f6 !important;
+}
+
+/* Remove fixed mode toggle since we're using the embedded one */
+.fixed-mode-toggle {
+  display: none !important;
+}
+
+/* FIXED: Center the content while accounting for the rail */
+.main-content {
+  padding-left: var(--rail-width);
+  width: 100%;
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* FIXED: Ensure content is properly centered */
@@ -376,10 +1162,8 @@ header button.font-semibold {
 
 /* FIXED: Ensure chat button appears in lower right with proper z-index */
 .fixed.bottom-6.right-6 {
-  z-index: 9999 !important; /* Extremely high z-index to ensure it's above everything */
+  z-index: 1000 !important;
   pointer-events: auto;
-  bottom: 24px !important;
-  right: 24px !important;
 }
 
 /* FIXED: Make chat button more prominent with shadow */
@@ -395,7 +1179,7 @@ header button.font-semibold {
 
 /* FIXED: Keep chat window above other elements */
 .fixed.shadow-lg.rounded-lg.overflow-hidden {
-  z-index: 9999 !important;
+  z-index: 1000 !important;
 }
 
 /* FIXED: Improve styling for the guide mode content cards */
@@ -420,64 +1204,20 @@ header button.font-semibold {
   line-height: 1.5;
 }
 
-/* FIXED: Ensure main content area scrolls properly */
-.bg-fafafd {
-  height: 100%;
-  overflow-y: auto;
-}
-
-/* FIXED: Ensure splash screen works on mobile */
-@media (max-width: 768px) {
-  .fixed.inset-0.bg-gray-600.bg-opacity-80 {
-    z-index: 9999 !important;
-  }
-  
-  .fixed.inset-0.bg-gray-600.bg-opacity-80 .bg-white {
-    max-height: 90vh;
-    overflow-y: auto;
-    margin: 5vh auto;
-  }
-  
-  .fixed.inset-0.bg-gray-600.bg-opacity-80 .px-6.py-2 {
-    padding-bottom: 80px !important; /* Ensure enough bottom padding for buttons */
-  }
-}
-
 /* Adjust for mobile screens */
 @media (max-width: 768px) {
   .main-content {
     padding-left: 0;
-    width: 100%;
   }
   
   .rail {
     width: 200px;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
-    z-index: 40; /* Higher z-index on mobile */
   }
   
   .rail.visible {
     transform: translateX(0);
-  }
-  
-  /* CRITICAL FIX: Ensure chat button is visible on mobile */
-  .fixed.bottom-6.right-6 {
-    bottom: 16px !important;
-    right: 16px !important;
-  }
-  
-  /* Make chat button smaller on mobile */
-  .fixed.bottom-6.right-6 button {
-    padding: 10px !important;
-  }
-  
-  .fixed.bottom-6.right-6 button span {
-    display: none; /* Hide text on mobile, show only icon */
-  }
-  
-  .fixed.bottom-6.right-6 button svg {
-    margin-right: 0 !important;
   }
 }
 
@@ -495,182 +1235,5 @@ header button.font-semibold {
   
   .rail.visible {
     transform: translateX(0);
-  }
-}
-/* Add these styles to your PaperPlanner.css file for better splash screen appearance */
-
-/* Make the splash screen match the design in the screenshot */
-.fixed.inset-0.bg-gray-800.bg-opacity-80 {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-/* Style the splash screen container */
-.fixed.inset-0.bg-gray-800.bg-opacity-80 .bg-white {
-  border-radius: 8px;
-  overflow: hidden;
-  max-width: 600px;
-  width: 95%;
-  margin: 0 auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
-/* Style the splash screen header */
-.fixed.inset-0.bg-gray-800.bg-opacity-80 .bg-purple-600 {
-  padding: 16px 24px;
-}
-
-/* Style the content area */
-.fixed.inset-0.bg-gray-800.bg-opacity-80 .px-6.py-5 {
-  padding: 24px;
-}
-/* Add these CSS updates to fix layout issues to your PaperPlanner.css file */
-
-/* 1. SPACE & ALIGNMENT FIXES */
-
-/* Fix the spacing between rail and content */
-.main-content {
-  padding-left: calc(var(--rail-width) + 24px) !important; /* Proper spacing instead of 32px */
-  width: 100%;
-  height: calc(100vh - 60px);
-  overflow-y: auto;
-}
-
-/* Center the content card properly */
-.main-content > div {
-  max-width: 760px !important;
-  margin-inline: auto !important;
-}
-
-/* Add padding to rail items so text doesn't hug edge */
-.rail-btn {
-  padding-left: 0.5rem !important; /* pl-2 equivalent */
-}
-
-/* 2. VISUAL HIERARCHY IMPROVEMENTS */
-
-/* Lighter rail background */
-.rail {
-  background-color: #F8F9FC !important;
-}
-
-/* Enhance active item with proper text color */
-.rail-btn.rail-btn-in-view span {
-  color: #4F46E5 !important; /* text-indigo-600 */
-  font-weight: 600 !important; /* font-semibold */
-}
-
-/* Untouched sections get proper gray */
-.rail-btn:not(.rail-btn-in-view) span {
-  color: #6B7280 !important; /* text-gray-500 */
-}
-
-/* Make Pro Mode banner more subtle */
-.bg-gray-100.border.border-gray-300.rounded-lg.p-3.mt-6 {
-  background-color: #F2F4F7 !important;
-  border: none !important;
-  font-size: 0.875rem !important; /* text-sm */
-}
-
-/* 3. INTERACTION CUES */
-
-/* Hover state feedback on rail items */
-.rail-btn:not([disabled]):hover {
-  background-color: #EEF2FF !important; /* bg-indigo-50 */
-}
-
-.rail-btn:not([disabled]):hover span {
-  color: #6366F1 !important; /* text-indigo-500 */
-}
-
-/* Focus styles for keyboard navigation */
-.rail-btn:focus-visible {
-  outline: 2px solid #4F46E5 !important;
-  outline-offset: 2px;
-  background-color: #EEF2FF !important;
-}
-
-/* 4. TINY POLISH */
-
-/* Move Write/Guide toggle down to connect visually with card */
-header .inline-flex {
-  transform: translateY(16px);
-  z-index: 40;
-}
-
-/* Add padding to write mode cards */
-[data-mode="write"] .section-card {
-  padding-bottom: 3rem !important; /* pb-12 equivalent */
-}
-
-/* Consistent purple for all interactive elements */
-.rail-btn.rail-btn-in-view,
-.feedback-button {
-  --purple-accent: #8855FF;
-}
-
-.rail-btn.rail-btn-in-view {
-  border-left-color: var(--purple-accent) !important;
-}
-
-.bg-purple-600 {
-  background-color: var(--purple-accent) !important;
-}
-
-/* Ensure the rail has proper role for accessibility */
-.rail {
-  role: "navigation";
-  aria-label: "Section navigation";
-}
-/* Make icons more prominent */
-.fixed.inset-0.bg-gray-800.bg-opacity-80 .rounded-full {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* Improved "Get Started" button */
-.fixed.inset-0.bg-gray-800.bg-opacity-80 .px-10.py-3 {
-  font-size: 16px;
-  padding: 12px 32px;
-  border-radius: 6px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.fixed.inset-0.bg-gray-800.bg-opacity-80 .px-10.py-3:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
-}
-
-/* Style the checkbox area */
-.fixed.inset-0.bg-gray-800.bg-opacity-80 .form-checkbox {
-  border: 2px solid #d1d5db;
-}
-
-/* Footer styling */
-.fixed.inset-0.bg-gray-800.bg-opacity-80 .mt-6 {
-  margin-top: 24px;
-  padding-bottom: 16px;
-}
-
-/* Mobile optimizations */
-@media (max-width: 640px) {
-  .fixed.inset-0.bg-gray-800.bg-opacity-80 .space-y-4 {
-    margin-bottom: 24px;
-  }
-  
-  .fixed.inset-0.bg-gray-800.bg-opacity-80 .text-center {
-    margin-top: 24px;
-  }
-  
-  .fixed.inset-0.bg-gray-800.bg-opacity-80 .px-10.py-3 {
-    width: 80%;
-    margin: 0 auto;
   }
 }
