@@ -9,6 +9,7 @@ import { showWelcomeSplash } from '../modals/SplashScreenManager';
 /**
  * A single panel layout that handles both write and guide modes
  * MODIFIED: Adjusted for left rail navigation spacing
+ * FIXED: Properly updates guide content when section changes
  */
 const SinglePanelLayout = ({
   activeSection,
@@ -20,13 +21,18 @@ const SinglePanelLayout = ({
   proMode,
   handleMagic,
 }) => {
-  // Get UI mode from the store
+  // Get UI mode and current section ID from the store
   const uiMode = useAppStore((state) => state.uiMode);
   const setUiMode = useAppStore((state) => state.setUiMode);
   const isAnyAiLoading = useAppStore((state) => state.isAnyLoading());
+  const currentChatSectionId = useAppStore((state) => state.currentChatSectionId);
+  
+  // Use currentChatSectionId as the source of truth for which section is active
+  // This ensures the guide panel shows content for the currently selected section
+  const activeSectionId = currentChatSectionId || activeSection;
   
   // Get section info for the header
-  const currentSection = useAppStore((state) => activeSection ? state.sections[activeSection] : null);
+  const currentSection = useAppStore((state) => activeSectionId ? state.sections[activeSectionId] : null);
   
   // Calculate section number and title for the header
   const sectionTitle = currentSection?.title || "Select a section";
@@ -48,7 +54,7 @@ const SinglePanelLayout = ({
     return index >= 0 ? index + 1 : "?";
   };
   
-  const sectionNumber = activeSection ? getSectionNumber(activeSection) : "?";
+  const sectionNumber = activeSectionId ? getSectionNumber(activeSectionId) : "?";
   
   // Handlers for switching between write and guide modes
   const handleSwitchToGuide = () => {
@@ -58,6 +64,11 @@ const SinglePanelLayout = ({
   const handleSwitchToWrite = () => {
     setUiMode('write');
   };
+
+  // Effect to log section changes and ensure guide content updates
+  useEffect(() => {
+    console.log(`Section changed to: ${activeSectionId}, UI Mode: ${uiMode}`);
+  }, [activeSectionId, uiMode]);
   
   return (
     <div className="flex flex-col items-center pt-10 pb-12 w-full h-full overflow-auto bg-fafafd"> {/* Starting at 40px (pt-10) with bg color */}
@@ -87,7 +98,7 @@ const SinglePanelLayout = ({
             /* WRITE MODE: Show the original left panel (content editor) */
             <div className="w-full">
               <LeftPanel
-                activeSection={activeSection}
+                activeSection={activeSectionId} // Use activeSectionId as source of truth
                 handleSectionFocus={handleSectionFocus}
                 handleApproachToggle={handleApproachToggle}
                 handleDataMethodToggle={handleDataMethodToggle}
@@ -100,7 +111,7 @@ const SinglePanelLayout = ({
             /* GUIDE MODE: Show the original right panel (instructions/feedback) */
             <div className="w-full">
               <FullHeightInstructionsPanel
-                activeSectionId={activeSection}
+                activeSectionId={activeSectionId} // Use activeSectionId as source of truth
                 improveInstructions={handleMagic}
                 loading={isAnyAiLoading}
                 onRequestWrite={handleSwitchToWrite} // Pass the mode switch function
