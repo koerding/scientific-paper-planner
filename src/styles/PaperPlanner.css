@@ -633,3 +633,91 @@ body, html {
     margin-right: 0;
   }
 }
+/* Add these styles to src/styles/PaperPlanner.css */
+
+/* Hamburger Menu Styles */
+.hamburger-menu-drawer {
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+}
+
+.hamburger-menu-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-overlay {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.drawer-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Menu item hover effects */
+.menu-item {
+  transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+  background-color: rgba(79, 70, 229, 0.1);
+}
+
+/* Add subtle bounce animation to hamburger icon */
+@keyframes subtle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+.hamburger-icon:hover {
+  animation: subtle-bounce 0.5s ease;
+}
+
+/* Group headers */
+.menu-group-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+/* Menu dividers */
+.menu-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 0.75rem 0;
+}
+
+/* Disable pointer events when busy */
+.menu-item-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Animate loading spinner with slight wobble for better visibility */
+@keyframes spin-wobble {
+  0% { transform: rotate(0deg); }
+  80% { transform: rotate(352deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.menu-spinner {
+  animation: spin-wobble 1.2s infinite linear;
+}
+
+/* Make drawer fixed positioned above other content */
+.drawer-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100; /* Higher than other UI elements */
+  width: 250px;
+  max-width: 80vw;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
