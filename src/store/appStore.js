@@ -1,12 +1,5 @@
 // FILE: src/store/appStore.js
-// Modified to add a separate global loading indicator
-// REVERTED: loadProjectData handles original save format (content + chat)
-// REVERTED: Removed merge function and simplified initial state
-// FIXED: Removed setProMode call from onRehydrateStorage to prevent initialization errors
-// MODIFIED: Updated partializer to save full section state, toggles, proMode, and scores
-// ADDED: Timeout workaround in loadProjectData to attempt to fix stale prop issue
-// UPDATED: sendMessage to include AI feedback
-// UPDATED: loadProjectData to handle feedback data
+// MODIFIED: Add uiMode to store for single-panel layout toggle
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -14,7 +7,7 @@ import sectionContent from '../data/sectionContent.json';
 import { calculateUnlockedSections, isSectionVisible } from '../logic/progressionLogic';
 import { callOpenAI } from '../services/openaiService';
 import { buildSystemPrompt } from '../utils/promptUtils';
-import { validateProjectData } from '../utils/export'; // Import validation function
+import { validateProjectData } from '../utils/export';
 
 // Helper to generate initial state for all sections
 const getInitialSectionStates = () => {
@@ -63,6 +56,9 @@ const initialState = {
     currentChatMessage: '',
     currentChatSectionId: 'question',
     _forceUpdate: 0, // Dummy state for workaround
+    
+    // --- NEW UI MODE STATE ---
+    uiMode: 'write', // 'write' or 'guide'
 };
 
 
@@ -84,6 +80,16 @@ const useAppStore = create(
       setGlobalAiLoading: (status) => {
         console.log(`Setting globalAiLoading to ${status}`);
         set({ globalAiLoading: status });
+      },
+
+      // --- NEW UI MODE ACTION ---
+      setUiMode: (mode) => {
+        if (mode !== 'write' && mode !== 'guide') {
+          console.error(`Invalid UI mode: ${mode}. Must be 'write' or 'guide'`);
+          return;
+        }
+        console.log(`Setting UI mode to ${mode}`);
+        set({ uiMode: mode });
       },
 
       // --- Actions for Core State ---
@@ -165,7 +171,6 @@ const useAppStore = create(
         // Default values
         let loadedUserInputs = {};
         let loadedChatMessages = {};
-        let loadedAiFeedback = {}; // NEW: Object to store loaded AI feedback
         let detectedApproach = 'hypothesis';
         let detectedDataMethod = 'experiment';
 
@@ -180,18 +185,11 @@ const useAppStore = create(
                    detectedDataMethod = data.detectedToggles.dataMethod || detectedDataMethod;
                 }
             } else if (data.sections && typeof data.sections === 'object') {
-                // Extract content from sections and preserve aiInstructions if available
-                Object.entries(data.sections).forEach(([id, sectionData]) => {
-                    if (typeof sectionData === 'string') {
-                        loadedUserInputs[id] = sectionData;
-                    } else if (sectionData && typeof sectionData === 'object') {
-                        loadedUserInputs[id] = sectionData.content || '';
-                        // NEW: Save AI feedback if available
-                        if (sectionData.aiInstructions) {
-                            loadedAiFeedback[id] = sectionData.aiInstructions;
-                        }
-                    }
-                });
+                // Assume keys are section IDs
+                loadedUserInputs = Object.entries(data.sections).reduce((acc, [id, sectionData]) => {
+                    acc[id] = typeof sectionData === 'string' ? sectionData : (sectionData?.content || '');
+                    return acc;
+                }, {});
                 loadedChatMessages = data.chatMessages || {};
                 // Use passed detected toggles
                  if(data.detectedToggles) {
@@ -229,18 +227,11 @@ const useAppStore = create(
         Object.keys(initialSections).forEach(id => {
             const loadedContent = loadedUserInputs[id];
             const sourceSectionData = sourceSections[id] || initialSections[id];
-            
-            // NEW: Priority for AI feedback:
-            // 1. Use AI feedback from loadedAiFeedback if available
-            // 2. Otherwise, use sourceSectionData.aiInstructions if available 
-            // 3. Finally, fall back to null
-            const aiFeedback = loadedAiFeedback[id] || sourceSectionData.aiInstructions || null;
-            
             mergedSections[id] = {
                 ...initialSections[id], ...sourceSectionData,
                 content: loadedContent !== undefined ? loadedContent : sourceSectionData.content,
-                aiInstructions: aiFeedback, // Use the determined AI feedback
-                feedbackRating: sourceSectionData.feedbackRating || (aiFeedback ? aiFeedback.rating : null),
+                aiInstructions: sourceSectionData.aiInstructions || null,
+                feedbackRating: sourceSectionData.feedbackRating || null,
                 editedSinceFeedback: sourceSectionData.editedSinceFeedback || false,
                 isMinimized: sourceSectionData.isMinimized !== undefined ? sourceSectionData.isMinimized : false,
             };
@@ -353,17 +344,11 @@ const useAppStore = create(
                 const userInputs = Object.entries(state.sections).reduce((acc, [id, data]) => { acc[id] = data.content; return acc; }, {});
                 const sectionDef = sectionContent.sections.find(s => s.id === currentSectionId) || {};
                 const historyForApi = state.chatMessages[currentSectionId] || [];
-                
-                // Get AI feedback for the current section if available
-                const aiFeedback = state.sections[currentSectionId]?.aiInstructions || null;
-                
                 const systemPrompt = buildSystemPrompt('chat', {
                     sectionTitle: sectionDef.title || 'section',
                     instructionsText: sectionDef.originalInstructions?.map(s => `${s.title}: ${s.instruction}`).join('\n') || '',
-                    userContent: userInputs[currentSectionId] || "They haven't written anything substantial yet.",
-                    aiFeedback: aiFeedback // Pass the AI feedback to the prompt builder
+                    userContent: userInputs[currentSectionId] || "They haven't written anything substantial yet."
                 });
-                
                 const response = await callOpenAI(
                     messageContent, currentSectionId, userInputs,
                     sectionContent.sections || [], { temperature: 0.9 },
@@ -386,24 +371,24 @@ const useAppStore = create(
       name: 'scientific-project-planner-state',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-         sections: state.sections, // This already includes aiInstructions in each section
+         sections: state.sections,
          activeToggles: state.activeToggles,
          proMode: state.proMode,
          scores: state.scores,
          chatMessages: state.chatMessages,
-         onboarding: state.onboarding
-         // Don't persist UI state: modals, loading, reviewData, currentChatMessage, _forceUpdate
+         onboarding: state.onboarding,
+         uiMode: state.uiMode, // ADDED: Persist UI mode
       }),
-      version: 4, // Keep version or increment if changing partialize significantly again
+      version: 5, // INCREMENTED version since we've added uiMode
       onRehydrateStorage: (state) => {
-        console.log("Zustand state hydration starting (v4)...");
+        console.log("Zustand state hydration starting (v5)...");
         return (hydratedState, error) => {
           if (error) {
-            console.error("Error rehydrating Zustand state (v4):", error);
+            console.error("Error rehydrating Zustand state (v5):", error);
             // Consider resetting state on critical hydration error
             // useAppStore.getState().resetState();
           } else {
-            console.log("Zustand state hydration finished successfully (v4).");
+            console.log("Zustand state hydration finished successfully (v5).");
             // Optionally add migration logic here if needed based on version
           }
         }
