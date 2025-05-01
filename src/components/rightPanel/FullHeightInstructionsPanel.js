@@ -1,10 +1,9 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
 // UPDATED: Removed header and borders, adapted to new card design
-// FIXED: Improved section content updates with better dependency tracking
+// FIXED: Force refresh when activeSectionId changes with React key
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
-import { logSectionData, validateImprovementData } from '../../utils/debugUtils';
 
 // --- Helper functions (Defined ONCE here) ---
 const getRatingColor = (rating) => {
@@ -123,58 +122,51 @@ const FullHeightInstructionsPanel = ({
   loading,
   onRequestWrite // Callback to switch to write mode
 }) => {
+  // Note: This component will completely remount whenever activeSectionId changes
+  // because the parent component adds a key={activeSectionId}
+  
   // Get current section directly from store using activeSectionId
   const currentSection = useAppStore(state => 
     activeSectionId && state.sections ? state.sections[activeSectionId] : null
   );
   
   const [expandedTooltips, setExpandedTooltips] = useState({});
-  const setUiMode = useAppStore((state) => state.setUiMode);
   
-  // Reset expanded tooltips when section changes
-  useEffect(() => {
-    console.log(`Guide panel: Section changed to ${activeSectionId}`);
-    setExpandedTooltips({});
-    
-    // Debug logging to help track the issue
-    if (currentSection) {
-      console.log(`Current section data:`, {
-        title: currentSection.title,
-        hasOriginalInstructions: !!currentSection.originalInstructions,
-        hasAiInstructions: !!currentSection.aiInstructions
-      });
-    } else {
-      console.log(`No current section data found for ID: ${activeSectionId}`);
-    }
-  }, [activeSectionId, currentSection]);
+  // Debug logging
+  console.log(`Rendering guide panel for section: ${activeSectionId}`, {
+    hasSection: !!currentSection,
+    title: currentSection?.title,
+    hasFeedback: !!currentSection?.aiInstructions
+  });
 
   const toggleTooltip = useCallback((id) => {
     setExpandedTooltips(prev => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
-  return (
-    // Root div - removed padding as it's handled by the parent card
-    <div className="w-full h-full overflow-y-auto pb-8 box-border flex-shrink-0">
-        {/* Display section ID for debugging */}
-        <div className="text-xs text-gray-400 mb-2">
-          Section ID: {activeSectionId || "none"}
+  // If no section data is found, show an error message
+  if (!currentSection) {
+    return (
+      <div className="flex items-center justify-center h-full p-4 text-red-500">
+        <div className="text-center">
+          <p className="mb-2 font-semibold">Error loading section content</p>
+          <p className="text-sm text-gray-600">
+            Section ID: {activeSectionId || "none"}
+          </p>
         </div>
-        
-        {/* Conditional rendering directly inside the container */}
-        {!currentSection ? (
-          // Placeholder when no section is selected
-          <div className="flex items-center justify-center h-[200px] text-gray-500">
-            Select a section to view its instructions or feedback.
-          </div>
-        ) : (
-          // Main content area - removed border/padding as it's handled by the parent card
-          <div className="text-base leading-relaxed instructions-content">
-            {currentSection.aiInstructions
-                ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
-                : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
-          </div>
-        )}
-    </div> // End of root div
+      </div>
+    );
+  }
+
+  return (
+    // Root div
+    <div className="w-full h-full overflow-y-auto pb-8 box-border flex-shrink-0">
+      {/* Main content area */}
+      <div className="text-base leading-relaxed instructions-content">
+        {currentSection.aiInstructions
+            ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
+            : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
+      </div>
+    </div>
   );
 };
 
