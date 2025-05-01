@@ -17,17 +17,17 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
 
   return (
     <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center z-[9999]">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-[95%] mx-auto my-4 overflow-y-auto max-h-[90vh]">
-        {/* Header with title and logo - FIXED: Changed "Paper" to "Project" */}
-        <div className="bg-purple-600 px-6 py-4 flex items-center sticky top-0">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-[95%] mx-auto overflow-hidden">
+        {/* Header with title and logo */}
+        <div className="bg-purple-600 px-6 py-4 flex items-center">
           <div className="w-10 h-10 bg-white rounded-md flex items-center justify-center mr-3 flex-shrink-0">
             <span className="font-bold text-xl text-purple-600">SP</span>
           </div>
           <h1 className="text-white text-xl font-bold">Scientific Project Planner</h1>
         </div>
         
-        {/* Content area - Added padding for mobile */}
-        <div className="px-6 py-5 overflow-y-auto">
+        {/* Content area */}
+        <div className="px-6 py-5">
           <p className="text-gray-800 font-medium text-lg mb-4">
             Design a scientific project, step-by-step. Structured for clarity, enhanced by AI.
           </p>
@@ -35,7 +35,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
           <div className="space-y-4 mb-6">
             {/* AI Chat - exact indigo-600 color to match chat button */}
             <div className="flex items-start">
-              <div className="bg-indigo-600 p-2 rounded-full mr-3 mt-0.5">
+              <div className="bg-indigo-600 p-2 rounded-full mr-3 mt-0.5 flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
                   <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
@@ -49,7 +49,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             
             {/* Magic Button - exact purple-600 to match improve instructions button */}
             <div className="flex items-start">
-              <div className="bg-purple-600 p-2 rounded-full mr-3 mt-0.5">
+              <div className="bg-purple-600 p-2 rounded-full mr-3 mt-0.5 flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                 </svg>
@@ -62,7 +62,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             
             {/* PDF/Doc import - exact indigo-600 to match import button */}
             <div className="flex items-start">
-              <div className="bg-indigo-600 p-2 rounded-full mr-3 mt-0.5">
+              <div className="bg-indigo-600 p-2 rounded-full mr-3 mt-0.5 flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" />
                 </svg>
@@ -75,7 +75,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             
             {/* Paper Review Button - changing from green to teal-600 to match review button */}
             <div className="flex items-start">
-              <div className="bg-teal-600 p-2 rounded-full mr-3 mt-0.5">
+              <div className="bg-teal-600 p-2 rounded-full mr-3 mt-0.5 flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
@@ -87,7 +87,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             </div>
           </div>
           
-          <div className="text-center pb-20 md:pb-0"> {/* Added extra padding on mobile */}
+          <div className="text-center mt-6">
             {showDontShowAgainOption && (
               <div className="mb-4 flex items-center justify-center">
                 <label className="flex items-center cursor-pointer">
@@ -103,16 +103,14 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             
             <button 
               onClick={onClose}
-              className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium"
+              className="px-10 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-base"
             >
               Get Started
             </button>
             
-            <div className="mt-4 text-gray-500 text-sm">
-              <p>Built with ❤️ Konrad @Kordinglab. 
-                
-                By using this software you acknowledge that Dinosaurs are the most awesome animals.
-              </p>
+            <div className="mt-6 text-gray-500 text-sm pb-4">
+              <p>Built with ❤️ Konrad @Kordinglab.</p>
+              <p className="mt-1">By using this software you acknowledge that Dinosaurs are the most awesome animals.</p>
             </div>
           </div>
         </div>
