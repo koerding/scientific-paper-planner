@@ -562,3 +562,74 @@ body, html {
     height: 400px !important;
   }
 }
+/* Add these styles to src/styles/PaperPlanner.css */
+
+/* Enhanced in-card toggle styles */
+.in-card-toggle {
+  display: flex;
+  align-items: center;
+  border-radius: 0.375rem;
+  background-color: #f3f4f6; /* gray-100 */
+  padding: 0.25rem;
+  margin-top: 0;
+  position: relative;
+}
+
+/* Add radio-button like appearance */
+.in-card-toggle button {
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: all 0.15s ease-in-out;
+  border: 1px solid transparent;
+  outline: none;
+  font-weight: 600;
+  position: relative;
+  text-align: center;
+}
+
+/* Active toggle has blue border and indicator */
+.in-card-toggle button.active-toggle {
+  background-color: #ffffff;
+  color: #000000 !important; /* Pure black, with !important to ensure it overrides */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 2px solid #3b82f6 !important; /* blue-500 */
+}
+
+/* Non-active toggles are lighter with border */
+.in-card-toggle button.inactive-toggle {
+  color: #9ca3af; /* gray-400 */
+  background-color: #f9fafb; /* gray-50 */
+  border: 1px solid #e5e7eb; /* gray-200 */
+}
+
+/* Hover state for inactive toggles */
+.in-card-toggle button.inactive-toggle:hover {
+  background-color: #f3f4f6; /* gray-100 */
+  color: #4b5563; /* gray-600 */
+  border-color: #d1d5db; /* gray-300 */
+}
+
+/* Make toggle section card more distinct */
+.toggle-section {
+  border-left-width: 4px !important;
+  border-left-color: #3b82f6 !important; /* blue-500 */
+}
+
+/* Tooltip enhancements */
+.tooltip-container {
+  position: relative;
+}
+
+/* Ensure mobile responsiveness */
+@media (max-width: 640px) {
+  .in-card-toggle {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .in-card-toggle button {
+    width: 100%;
+    margin-right: 0;
+  }
+}
