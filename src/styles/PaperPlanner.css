@@ -1237,3 +1237,59 @@ header button.font-semibold {
     transform: translateX(0);
   }
 }
+/* Add these fixes to your PaperPlanner.css file */
+
+/* FIXED: Position chat interface directly on body */
+.fixed.bottom-6.right-6 {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 9999 !important; /* Ensure it's above everything */
+  transform: none !important; /* Remove any transforms */
+  margin: 0 !important; /* Remove any margins */
+}
+
+.fixed.shadow-lg.rounded-lg.overflow-hidden {
+  z-index: 9998 !important; /* Keep expanded chat just below the button */
+}
+
+/* FIXED: Move rail behind modals and dialogs */
+.rail {
+  z-index: 20 !important; /* Lower z-index so modals appear above */
+}
+
+/* Fixed background overlay for modals */
+.fixed.inset-0.bg-gray-600.bg-opacity-50 {
+  z-index: 1000 !important; /* Keep modal background above everything else */
+}
+
+/* FIXED: Fix splash screen z-index to appear above rail */
+[style*="z-index: 1000"] {
+  z-index: 1001 !important; /* Ensure splash is above the rail */
+}
+
+/* FIXED: Standardize font sizes to just 3 sizes */
+:root {
+  --font-size-big: 1.25rem;
+  --font-size-medium: 1rem;
+  --font-size-small: 0.875rem;
+}
+
+/* Apply standardized font sizes */
+.instructions-content .font-bold,
+.instructions-content .text-purple-700,
+.instructions-content p,
+.instructions-content div {
+  font-size: var(--font-size-small) !important;
+}
+
+.instructions-content h2,
+.instructions-content h3,
+.instructions-content strong {
+  font-size: var(--font-size-medium) !important;
+}
+
+/* Remove toggle instructions text completely */
+.toggle-section .text-xs.text-gray-500.mt-1.font-medium {
+  display: none !important;
+}
