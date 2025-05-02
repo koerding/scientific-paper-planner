@@ -1,4 +1,6 @@
 // FILE: src/components/layout/MainLayout.js
+// FIXED: Added explicit z-index and positioning to rail and main content
+
 import React, { useState } from 'react';
 import AppHeader from './AppHeader';
 import ContentArea from './ContentArea';
@@ -52,11 +54,22 @@ const MainLayout = ({
       <ForwardedSplashScreenManager ref={splashManagerRef} />
       <AppHeader {...appHeaderProps} />
       <div className="flex flex-grow overflow-hidden relative">
-        {/* Add the LeftRailNavigation component here */}
-        <LeftRailNavigation visible={showMobileRail} />
+        {/* FIXED: Add explicit z-index to make rail clickable */}
+        <div style={{ position: 'relative', zIndex: 100 }}>
+          <LeftRailNavigation visible={showMobileRail} />
+        </div>
         
         {/* Main content area - fixed scrolling */}
-        <div className="main-content h-full overflow-y-auto"> {/* Added overflow-y-auto here */}
+        {/* FIXED: Added explicit margin-left and lower z-index */}
+        <div 
+          className="main-content h-full overflow-y-auto"
+          style={{ 
+            marginLeft: '220px', 
+            position: 'relative', 
+            zIndex: 50,
+            width: 'calc(100% - 220px)'
+          }}
+        >
           {/* Main content area */}
           <ContentArea {...finalContentAreaProps} />
           <InteractionElements {...finalInteractionProps} />
