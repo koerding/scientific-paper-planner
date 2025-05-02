@@ -1,6 +1,7 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
 // FIXED: Standardized font sizes to match the root variable definitions
 // FIXED: Made styling more consistent throughout the guide panel
+// FIXED: Corrected variable reference in tooltip rendering
 
 import React, { useState, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
@@ -111,7 +112,7 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
              
              {origSubsection.tooltip && expandedTooltips[origSubsection.id] && (
                <div className="mt-3 mb-0 ml-0 pl-3 border-l-2 border-blue-300 italic text-gray-700 bg-blue-50 p-3 rounded-md">
-                 {subsection.tooltip}
+                 {origSubsection.tooltip}
                </div>
              )}
            </div>
