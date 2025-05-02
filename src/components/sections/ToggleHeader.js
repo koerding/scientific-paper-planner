@@ -1,14 +1,11 @@
 // FILE: src/components/sections/ToggleHeader.js
-// UPDATED: Removed instructional text below the toggles
+// FIXED: Removed instructional text below the toggles
 
 import React from 'react';
 
 /**
  * A component that displays toggle options within a section header
- * Replaces the traditional section header title with toggle options
- * UPDATED: Improved visual indicators for active/inactive states
- * UPDATED: Made selection mechanism more obvious with radio-like UI
- * UPDATED: Removed the instructional text completely
+ * FIXED: Removed the instructional text
  */
 const ToggleHeader = ({
   options,
@@ -19,9 +16,6 @@ const ToggleHeader = ({
   isFocused,
   toggleMinimized
 }) => {
-  // Debug log to help with development
-  console.log(`DEBUG [ToggleHeader]: Rendering with activeOption = '${activeOption}'`);
-
   return (
     <div className="flex flex-col mb-1">      
       {/* Toggle button header */}
@@ -83,7 +77,7 @@ const ToggleHeader = ({
         </div>
       </div>
       
-      {/* Instructional text removed */}
+      {/* Removed instructional text */}
     </div>
   );
 };
