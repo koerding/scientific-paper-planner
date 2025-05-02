@@ -1,7 +1,5 @@
 // FILE: src/components/chat/ModernChatInterface.js
-// FIXED: Properly positioned chat button in bottom right of viewport
-// FIXED: Ensured proper z-indexing for all chat elements
-// FIXED: Added position: fixed directly to both chat elements
+// FIXED: Positioned chat button in global lower right corner
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -89,16 +87,17 @@ const ModernChatInterface = ({
 
   return (
     <>
-      {/* Minimized Chat Icon Button - FIXED POSITION DIRECTLY ON VIEWPORT */}
+      {/* Minimized Chat Icon Button - FIXED POSITION IN LOWER RIGHT */}
       {isMinimized && (
         <div
-          className="fixed bottom-6 right-6 z-50"
-          style={{ 
-            position: 'fixed', 
-            bottom: '24px', 
-            right: '24px', 
-            zIndex: 9999
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 900,
+            transform: 'none'
           }}
+          className="chat-button-container"
         >
           <button
             onClick={toggleChat}
@@ -123,21 +122,21 @@ const ModernChatInterface = ({
         </div>
       )}
 
-      {/* Expanded chat interface - FIXED POSITION DIRECTLY ON VIEWPORT */}
+      {/* Expanded chat interface */}
       <div
-        className={`fixed shadow-lg rounded-lg overflow-hidden transition-all duration-300 ease-in-out z-50 ${
+        className={`fixed shadow-lg rounded-lg overflow-hidden transition-all duration-300 ease-in-out ${
           isMinimized ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'
         }`}
-        style={{ 
+        style={{
           position: 'fixed',
-          bottom: '24px', 
-          right: '24px', 
+          bottom: '24px',
+          right: '24px',
           width: '550px',
           maxWidth: '90vw',
           height: '600px',
           maxHeight: '80vh',
-          zIndex: 9998,
-          backgroundColor: '#ffffff', 
+          zIndex: 899,
+          backgroundColor: '#ffffff',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
         }}
       >
@@ -189,7 +188,7 @@ const ModernChatInterface = ({
                     ))}
 
                     {/* Typing indicator */}
-                    {(loading || isButtonDisabled) && ( /* Use combined loading */
+                    {(loading || isButtonDisabled) && (
                       <div className="flex justify-start">
                          <div className="ai-avatar">AI</div>
                          <div className="bg-white border border-gray-200 rounded-lg p-3 inline-flex items-center shadow-sm">
@@ -214,14 +213,14 @@ const ModernChatInterface = ({
                     onKeyPress={handleKeyPress}
                     placeholder={`Ask about ${currentSectionTitle}...`}
                     className="flex-grow px-4 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    disabled={loading || isButtonDisabled} // Use combined loading
+                    disabled={loading || isButtonDisabled}
                   />
                   <button
                     onClick={handleSendMessageWithTracking}
-                    disabled={currentMessage.trim() === '' || loading || isButtonDisabled} // Use combined loading
+                    disabled={currentMessage.trim() === '' || loading || isButtonDisabled}
                     className={`px-4 flex items-center justify-center transition-colors ${ currentMessage.trim() === '' || loading || isButtonDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700' }`}
                   >
-                    {(loading || isButtonDisabled) ? ( /* Use combined loading */
+                    {(loading || isButtonDisabled) ? (
                         <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     ) : (
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
