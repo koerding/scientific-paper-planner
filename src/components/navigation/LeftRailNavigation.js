@@ -163,7 +163,7 @@ const LeftRailNavigation = ({ visible = true }) => {
       className="rail"
       role="navigation"
       aria-label="Section navigation"
-      style={{ zIndex: 20 }} // FIXED: Lowered z-index to stay behind modals
+      style={{ zIndex: 100 }} // FIXED: Lowered z-index to stay behind modals
     >
       {navItems.map(item => (
         <button
