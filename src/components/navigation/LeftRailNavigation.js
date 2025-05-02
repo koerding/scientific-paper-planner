@@ -1,4 +1,6 @@
 // FILE: src/components/navigation/LeftRailNavigation.js
+// FIXED: Lowered z-index to prevent overlapping modals and splash screens
+
 import React, { useEffect, useRef } from 'react';
 import useAppStore from '../../store/appStore';
 import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
@@ -11,6 +13,7 @@ import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sect
  * FIXED: Ensured rails are clickable and properly navigate to sections
  * ENHANCED: Better scroll spy with optimized rootMargin
  * ENHANCED: Improved hover and focus states
+ * FIXED: Lowered z-index to prevent overlapping modals and splash screens
  * @param {Object} props - Component props
  * @param {boolean} props.visible - Whether the rail is visible
  * @returns {React.ReactElement} The left rail navigation component
@@ -159,6 +162,7 @@ const LeftRailNavigation = ({ visible = true }) => {
       className="rail"
       role="navigation"
       aria-label="Section navigation"
+      style={{ zIndex: 20 }} // FIXED: Lowered z-index to stay behind modals
     >
       {navItems.map(item => (
         <button
