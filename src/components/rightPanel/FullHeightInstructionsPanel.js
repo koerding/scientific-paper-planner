@@ -1,6 +1,6 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
-// FIXED: Improved styling for Guide mode content
-// FIXED: Better visual hierarchy for subsections
+// FIXED: Standardized font sizes to match the root variable definitions
+// FIXED: Made styling more consistent throughout the guide panel
 
 import React, { useState, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
@@ -72,14 +72,19 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
 
    return (
      <>
-       <div className="text-base mb-4 leading-relaxed font-medium text-purple-700 p-4 bg-purple-50 rounded-lg border border-purple-100 shadow-sm">
+       {/* Overall feedback - using standardized font size */}
+       <div className="mb-4 font-medium text-purple-700 p-4 bg-purple-50 rounded-lg border border-purple-100 shadow-sm">
          {improvement.overallFeedback || "Feedback:"}
        </div>
+       
+       {/* Rating - using standardized font size */}
        {rating && (
-         <div className={`text-base mb-5 font-bold ${ratingColor} flex items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm`}>
+         <div className={`mb-5 font-bold ${ratingColor} flex items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm`}>
            Rating: {rating}/10 <span className="ml-2 font-normal">({ratingLabel})</span>
          </div>
        )}
+       
+       {/* Subsection feedback - using standardized font sizes */}
        {Array.isArray(originalSubsections) && originalSubsections.map((origSubsection, index) => {
          // Add null check for origSubsection itself
          if (!origSubsection || !origSubsection.id) return <div key={`imp-err-${index}`}>Invalid original subsection data</div>;
@@ -91,7 +96,7 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
 
          return (
            <div key={origSubsection.id} className={`mb-6 bg-white p-4 rounded-lg border ${isComplete ? 'border-green-200' : 'border-gray-200'} shadow-sm`}>
-             <div className="text-base leading-relaxed">
+             <div className="leading-relaxed">
                <strong className={`font-bold ${isComplete ? 'text-green-600' : 'text-gray-800'}`}>{origSubsection.title || 'Subsection'}:</strong>{' '}
                <span className={isComplete ? 'text-green-600' : ''}>{origSubsection.instruction || 'No instruction text.'}</span>
                {origSubsection.tooltip && (
@@ -100,10 +105,13 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
                  </button>
                )}
              </div>
+             
+             {/* Subsection feedback with standardized font size */}
              <div className="mt-3 ml-0 text-purple-700 p-3 bg-purple-50 rounded-md">{feedbackText}</div>
+             
              {origSubsection.tooltip && expandedTooltips[origSubsection.id] && (
-               <div className="mt-3 mb-0 ml-0 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded-md">
-                 {origSubsection.tooltip}
+               <div className="mt-3 mb-0 ml-0 pl-3 border-l-2 border-blue-300 italic text-gray-700 bg-blue-50 p-3 rounded-md">
+                 {subsection.tooltip}
                </div>
              )}
            </div>
@@ -160,8 +168,8 @@ const FullHeightInstructionsPanel = ({
   return (
     // Root div with improved background color
     <div className="w-full h-full overflow-y-auto pb-8 box-border flex-shrink-0 bg-gray-50">
-      {/* Main content area */}
-      <div className="text-base leading-relaxed instructions-content p-2">
+      {/* Main content area - using class to standardize font sizes */}
+      <div className="instructions-content p-2">
         {currentSection.aiInstructions
             ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
             : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
