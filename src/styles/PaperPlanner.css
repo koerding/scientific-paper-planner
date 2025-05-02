@@ -1288,3 +1288,16 @@ header button.font-semibold {
 .instructions-content strong {
   font-size: var(--font-size-medium) !important;
 }
+/* Add this to your CSS - just a few properties */
+.rail {
+  position: relative; 
+  z-index: 100;
+  pointer-events: auto !important;
+}
+
+.rail-btn {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 101;
+}
