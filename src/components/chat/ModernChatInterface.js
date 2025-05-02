@@ -1,7 +1,7 @@
 // FILE: src/components/chat/ModernChatInterface.js
-// FIXED: Positioned chat button in lower right corner
-// FIXED: Ensured Z-index is high enough to appear over content
-// FIXED: Added proper styling for the chat button
+// FIXED: Properly positioned chat button in bottom right of viewport
+// FIXED: Ensured proper z-indexing for all chat elements
+// FIXED: Added position: fixed directly to both chat elements
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -89,11 +89,16 @@ const ModernChatInterface = ({
 
   return (
     <>
-      {/* Minimized Chat Icon Button - FIXED POSITION IN LOWER RIGHT */}
+      {/* Minimized Chat Icon Button - FIXED POSITION DIRECTLY ON VIEWPORT */}
       {isMinimized && (
         <div
-          className="fixed bottom-6 right-6 z-[9999]"
-          style={{ transform: 'translateZ(0)' }}
+          className="fixed bottom-6 right-6 z-50"
+          style={{ 
+            position: 'fixed', 
+            bottom: '24px', 
+            right: '24px', 
+            zIndex: 9999
+          }}
         >
           <button
             onClick={toggleChat}
@@ -118,12 +123,23 @@ const ModernChatInterface = ({
         </div>
       )}
 
-      {/* Expanded chat interface - increased z-index */}
+      {/* Expanded chat interface - FIXED POSITION DIRECTLY ON VIEWPORT */}
       <div
-        className={`fixed shadow-lg rounded-lg overflow-hidden transition-all duration-300 ease-in-out bottom-4 right-4 w-[550px] max-w-[90vw] h-[600px] max-h-[80vh] z-[9999] ${
+        className={`fixed shadow-lg rounded-lg overflow-hidden transition-all duration-300 ease-in-out z-50 ${
           isMinimized ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'
         }`}
-        style={{ backgroundColor: '#ffffff', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)' }}
+        style={{ 
+          position: 'fixed',
+          bottom: '24px', 
+          right: '24px', 
+          width: '550px',
+          maxWidth: '90vw',
+          height: '600px',
+          maxHeight: '80vh',
+          zIndex: 9998,
+          backgroundColor: '#ffffff', 
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+        }}
       >
         {currentSection && currentSectionData ? (
           <>
