@@ -1328,3 +1328,39 @@ header button.font-semibold {
 .toggle-section .text-xs.text-gray-500.mt-1.font-medium {
   display: none !important;
 }
+
+/* Add these CSS rules to fix the menu z-index issues */
+
+/* Ensure modals are always above the rail */
+.fixed.inset-0.bg-gray-600.bg-opacity-50 {
+  z-index: 999 !important; /* Very high z-index for modal background */
+}
+
+/* Ensure modal content is even higher */
+.fixed.inset-0.bg-gray-600.bg-opacity-50 > div {
+  z-index: 1000 !important; /* Even higher for actual modal content */
+}
+
+/* Set proper rail z-index - lower than modals, higher than content */
+.rail {
+  z-index: 20 !important;
+  pointer-events: auto !important;
+}
+
+/* Set chat button z-index */
+.fixed.bottom-6.right-6 {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 900 !important; /* Below modals, above regular content */
+}
+
+/* Remove toggle instructions text */
+.toggle-section .text-xs.text-gray-500.mt-1.font-medium {
+  display: none !important;
+}
+
+/* Splash screen should have highest z-index */
+.h-screen .fixed.inset-0.bg-gray-800.bg-opacity-80 {
+  z-index: 1001 !important;
+}
