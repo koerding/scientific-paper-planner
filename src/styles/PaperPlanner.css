@@ -1293,3 +1293,13 @@ header button.font-semibold {
 .toggle-section .text-xs.text-gray-500.mt-1.font-medium {
   display: none !important;
 }
+css/* Just add these two rules */
+.rail {
+  z-index: 100 !important;
+  pointer-events: auto !important;
+}
+
+.rail-btn {
+  pointer-events: auto !important;
+  z-index: 101 !important; 
+}
