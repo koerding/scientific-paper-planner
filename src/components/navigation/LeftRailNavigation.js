@@ -1,5 +1,6 @@
 // FILE: src/components/navigation/LeftRailNavigation.js
-// FIXED: Lowered z-index to prevent overlapping modals and splash screens
+// FIXED: Ensured rail buttons are clickable by setting proper z-index and pointer-events
+// FIXED: Improved scroll observer to prevent unexpected triggering
 
 import React, { useEffect, useRef } from 'react';
 import useAppStore from '../../store/appStore';
@@ -11,9 +12,8 @@ import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sect
  * FIXED: Improved circle indicators to use solid colors instead of numbers
  * FIXED: Simplified section titles (removed "Research" prefix)
  * FIXED: Ensured rails are clickable and properly navigate to sections
- * ENHANCED: Better scroll spy with optimized rootMargin
- * ENHANCED: Improved hover and focus states
- * FIXED: Lowered z-index to prevent overlapping modals and splash screens
+ * FIXED: Improved scroll observer to prevent unexpected triggering
+ * FIXED: Set pointer-events explicitly to ensure clickability
  * @param {Object} props - Component props
  * @param {boolean} props.visible - Whether the rail is visible
  * @returns {React.ReactElement} The left rail navigation component
@@ -36,8 +36,35 @@ const LeftRailNavigation = ({ visible = true }) => {
   
   // Refs for intersection observer
   const observerRef = useRef(null);
+  const isUserScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef(null);
   
-  // Set up intersection observer for scroll spy
+  // Set up scroll detection
+  useEffect(() => {
+    const handleUserScroll = () => {
+      isUserScrollingRef.current = true;
+      
+      // Clear any existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Reset the flag after a delay
+      scrollTimeoutRef.current = setTimeout(() => {
+        isUserScrollingRef.current = false;
+      }, 150); // Small delay to prevent flickering during actual scrolling
+    };
+    
+    window.addEventListener('scroll', handleUserScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleUserScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+  
+  // Set up intersection observer for scroll spy with improvements
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return;
     
@@ -49,20 +76,31 @@ const LeftRailNavigation = ({ visible = true }) => {
     // Create new observer with optimized rootMargin for faster feedback
     observerRef.current = new IntersectionObserver(
       (entries) => {
+        // Only process if the user is actually scrolling
+        if (!isUserScrollingRef.current) return;
+        
         // Find the most visible section
-        const visibleEntry = entries.find(entry => entry.isIntersecting);
-        if (visibleEntry && visibleEntry.target) {
-          const sectionId = visibleEntry.target.id.replace('section-', '');
-          if (sectionId && sectionId !== currentSectionId) {
-            handleSectionFocus(sectionId);
+        const visibleEntries = entries.filter(entry => entry.isIntersecting);
+        
+        // Only process if we have visible entries
+        if (visibleEntries.length > 0) {
+          // Sort by visibility ratio (most visible first)
+          visibleEntries.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+          
+          const topEntry = visibleEntries[0];
+          if (topEntry && topEntry.target) {
+            const sectionId = topEntry.target.id.replace('section-', '');
+            if (sectionId && sectionId !== currentSectionId) {
+              handleSectionFocus(sectionId);
+            }
           }
         }
       },
       {
         root: null,
-        // Optimized rootMargin for snappier response
-        rootMargin: '-20% 0px -60% 0px',
-        threshold: 0.1
+        // Use more balanced rootMargin to prevent overly sensitive triggers
+        rootMargin: '-10% 0px -40% 0px',
+        threshold: [0.1, 0.2, 0.5]
       }
     );
     
@@ -107,10 +145,18 @@ const LeftRailNavigation = ({ visible = true }) => {
     // Find the section element and scroll to it
     const sectionElement = document.getElementById(`section-${sectionId}`);
     if (sectionElement) {
+      // Set flag before programmatically scrolling
+      isUserScrollingRef.current = true;
+      
       sectionElement.scrollIntoView({ 
         behavior: 'smooth', 
         block: 'start'
       });
+      
+      // Reset the flag after the expected scroll duration
+      setTimeout(() => {
+        isUserScrollingRef.current = false;
+      }, 1000);
     }
   };
   
@@ -162,7 +208,11 @@ const LeftRailNavigation = ({ visible = true }) => {
       className="rail"
       role="navigation"
       aria-label="Section navigation"
-      style={{ zIndex: 20 }} // FIXED: Lowered z-index to stay behind modals
+      style={{ 
+        zIndex: 30,
+        position: 'fixed',
+        pointerEvents: 'auto' // Ensure rail can receive clicks
+      }}
     >
       {navItems.map(item => (
         <button
@@ -171,6 +221,7 @@ const LeftRailNavigation = ({ visible = true }) => {
           className={`rail-btn ${item.isActive ? 'rail-btn-in-view' : ''}`}
           aria-current={item.isActive ? 'page' : undefined}
           title={`${item.title} (${uiMode === 'guide' ? 'Guide' : 'Write'} Mode)`}
+          style={{ pointerEvents: 'auto' }} // Ensure buttons can receive clicks
         >
           <div className="rail-icon">
             {/* Circle SVG with customized solid fill based on rating */}
