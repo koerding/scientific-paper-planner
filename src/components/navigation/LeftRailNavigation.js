@@ -1,20 +1,14 @@
-
 // FILE: src/components/navigation/LeftRailNavigation.js
-// FIXED: Lowered z-index to prevent overlapping modals and splash screens
+// FIXED: Removed intersection observer to stop unwanted auto-scrolling/focus
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import useAppStore from '../../store/appStore';
 import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
 
 /**
  * Left rail navigation with mode-aware section switching and improved active state
- * FIXED: Made rail wider for longer text
- * FIXED: Improved circle indicators to use solid colors instead of numbers
- * FIXED: Simplified section titles (removed "Research" prefix)
- * FIXED: Ensured rails are clickable and properly navigate to sections
- * ENHANCED: Better scroll spy with optimized rootMargin
- * ENHANCED: Improved hover and focus states
- * FIXED: Lowered z-index to prevent overlapping modals and splash screens
+ * FIXED: Removed intersection observer that was causing unwanted scrolling/focusing
+ * FIXED: Simplified to only respond to explicit user clicks
  * @param {Object} props - Component props
  * @param {boolean} props.visible - Whether the rail is visible
  * @returns {React.ReactElement} The left rail navigation component
@@ -35,56 +29,13 @@ const LeftRailNavigation = ({ visible = true }) => {
   const approachSections = getApproachSectionIds();
   const dataMethodSections = getDataMethodSectionIds();
   
-  // Refs for intersection observer
-  const observerRef = useRef(null);
-  
-  // Set up intersection observer for scroll spy
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') return;
-    
-    // Clean up any existing observer
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-    
-    // Create new observer with optimized rootMargin for faster feedback
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        // Find the most visible section
-        const visibleEntry = entries.find(entry => entry.isIntersecting);
-        if (visibleEntry && visibleEntry.target) {
-          const sectionId = visibleEntry.target.id.replace('section-', '');
-          if (sectionId && sectionId !== currentSectionId) {
-            handleSectionFocus(sectionId);
-          }
-        }
-      },
-      {
-        root: null,
-        // Optimized rootMargin for snappier response
-        rootMargin: '-20% 0px -60% 0px',
-        threshold: 0.1
-      }
-    );
-    
-    // Observe all section elements
-    document.querySelectorAll('[id^="section-"]').forEach(section => {
-      observerRef.current.observe(section);
-    });
-    
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [sections, currentSectionId, handleSectionFocus]);
-  
   /**
    * Handle navigation with mode awareness
    * When in guide mode, clicking a section should switch to that section's guide
    * @param {string} sectionId - The section ID to navigate to
    */
   const handleNavigation = (sectionId) => {
+    // Log for debugging
     console.log(`Rail navigation: Clicked on section ${sectionId}`);
     
     // Always store the last section for reference
@@ -100,8 +51,6 @@ const LeftRailNavigation = ({ visible = true }) => {
     // maintain the guide mode but show the new section's guide
     if (uiMode === 'guide') {
       // This will maintain guide mode but switch to the new section's guide
-      // We're calling setUiMode with 'guide' again to trigger the logic
-      // that focuses the correct section in guide mode
       setUiMode('guide');
     }
     
@@ -163,11 +112,6 @@ const LeftRailNavigation = ({ visible = true }) => {
       className="rail"
       role="navigation"
       aria-label="Section navigation"
-    style={{
-      zIndex: 100, // Higher than content but lower than modals
-      pointerEvents: 'auto', // Ensure clicks get through
-      position: 'fixed', // Ensure it stays in the right place
-    }}
     >
       {navItems.map(item => (
         <button
