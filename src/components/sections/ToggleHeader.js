@@ -1,5 +1,5 @@
 // FILE: src/components/sections/ToggleHeader.js
-// UPDATED: Streamlined version with improved radio-button-like UI
+// UPDATED: Removed instructional text below the toggles
 
 import React from 'react';
 
@@ -8,7 +8,7 @@ import React from 'react';
  * Replaces the traditional section header title with toggle options
  * UPDATED: Improved visual indicators for active/inactive states
  * UPDATED: Made selection mechanism more obvious with radio-like UI
- * UPDATED: Kept only the most essential instructional text
+ * UPDATED: Removed the instructional text completely
  */
 const ToggleHeader = ({
   options,
@@ -21,9 +21,6 @@ const ToggleHeader = ({
 }) => {
   // Debug log to help with development
   console.log(`DEBUG [ToggleHeader]: Rendering with activeOption = '${activeOption}'`);
-
-  // Determine what kind of toggle this is based on the options
-  const toggleType = options[0]?.label === 'Hypothesis' ? 'Research Approach' : 'Data Method';
 
   return (
     <div className="flex flex-col mb-1">      
@@ -86,10 +83,7 @@ const ToggleHeader = ({
         </div>
       </div>
       
-      {/* Concise explanatory text */}
-      <div className="text-xs text-gray-500 mt-1 font-medium">
-        Choose your {toggleType.toLowerCase()} (select one)
-      </div>
+      {/* Instructional text removed */}
     </div>
   );
 };
