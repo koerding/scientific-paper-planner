@@ -1,5 +1,5 @@
 // FILE: src/components/layout/MainLayout.js
-// FIXED: Adjusted z-index to keep rail below modals but above content
+// FIXED: Better centered content with proper margins
 
 import React, { useState } from 'react';
 import AppHeader from './AppHeader';
@@ -54,24 +54,27 @@ const MainLayout = ({
       <ForwardedSplashScreenManager ref={splashManagerRef} />
       <AppHeader {...appHeaderProps} />
       <div className="flex flex-grow overflow-hidden relative">
-        {/* FIXED: Lower z-index to make rail appear below modals */}
+        {/* Rail with proper z-index */}
         <div style={{ position: 'relative', zIndex: 20 }}>
           <LeftRailNavigation visible={showMobileRail} />
         </div>
         
-        {/* Main content area - fixed scrolling */}
-        {/* FIXED: Added explicit margin-left and lower z-index */}
+        {/* Main content area - better centered */}
         <div 
-          className="main-content h-full overflow-y-auto"
+          className="main-content h-full overflow-y-auto flex flex-col items-center"
           style={{ 
-            marginLeft: '220px', 
+            paddingLeft: '220px', 
             position: 'relative', 
             zIndex: 10,
-            width: 'calc(100% - 220px)'
+            width: '100%'
           }}
         >
-          {/* Main content area */}
-          <ContentArea {...finalContentAreaProps} />
+          {/* Main content area with max width for better centering */}
+          <div style={{ maxWidth: '740px', width: '100%', paddingLeft: '1rem', paddingRight: '1rem' }}>
+            <ContentArea {...finalContentAreaProps} />
+          </div>
+          
+          {/* These components remain at full width */}
           <InteractionElements {...finalInteractionProps} />
           <ModalManager
             modals={modalState}
@@ -82,8 +85,6 @@ const MainLayout = ({
             saveWithFilename={saveWithFilename}
           />
         </div>
-        
-        {/* REMOVED: FixedModeToggle component - now embedded in SinglePanelLayout */}
         
         {/* Mobile rail toggle button (only on very small screens) */}
         {window.innerWidth <= 480 && !showMobileRail && (
