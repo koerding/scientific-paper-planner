@@ -1,5 +1,5 @@
 // FILE: src/components/layout/MainLayout.js
-// FIXED: Added explicit z-index and positioning to rail and main content
+// FIXED: Adjusted z-index to keep rail below modals but above content
 
 import React, { useState } from 'react';
 import AppHeader from './AppHeader';
@@ -54,8 +54,8 @@ const MainLayout = ({
       <ForwardedSplashScreenManager ref={splashManagerRef} />
       <AppHeader {...appHeaderProps} />
       <div className="flex flex-grow overflow-hidden relative">
-        {/* FIXED: Add explicit z-index to make rail clickable */}
-        <div style={{ position: 'relative', zIndex: 100 }}>
+        {/* FIXED: Lower z-index to make rail appear below modals */}
+        <div style={{ position: 'relative', zIndex: 20 }}>
           <LeftRailNavigation visible={showMobileRail} />
         </div>
         
@@ -66,7 +66,7 @@ const MainLayout = ({
           style={{ 
             marginLeft: '220px', 
             position: 'relative', 
-            zIndex: 50,
+            zIndex: 10,
             width: 'calc(100% - 220px)'
           }}
         >
