@@ -5,6 +5,7 @@ import React from 'react';
 /**
  * Splash screen component to welcome new users
  * REDESIGNED: Significantly more compact with tighter spacing
+ * FIXED: Better mobile positioning and scrollable content
  */
 const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   const handleDontShowAgain = () => {
@@ -24,18 +25,21 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center z-50" style={{ zIndex: 1000 }}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-start md:items-center justify-center z-50 p-4 overflow-y-auto" style={{ zIndex: 1000 }}>
+      {/* Added p-4 padding and changed items-center to items-start on mobile */}
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-auto overflow-y-auto max-h-[90vh] my-8">
+        {/* Added max-h-[90vh] and my-8 margin to ensure visibility */}
+        
         {/* Header with title and logo */}
-        <div className="bg-purple-600 px-4 py-3 flex items-center">
+        <div className="bg-purple-600 px-4 py-3 flex items-center sticky top-0 z-10">
           <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center mr-2 flex-shrink-0">
             <span className="font-bold text-lg text-purple-600">SP</span>
           </div>
           <h1 className="text-white text-lg font-bold">Scientific Project Planner</h1>
         </div>
         
-        {/* Content area */}
-        <div className="px-4 py-3">
+        {/* Content area - now scrollable if needed */}
+        <div className="px-4 py-3 overflow-y-auto">
           <p className="text-gray-800 font-medium mb-3">
             Design a scientific project, step-by-step:
           </p>
@@ -113,7 +117,8 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             </div>
           </div>
           
-          <div className="text-center mt-4">
+          {/* Footer with action buttons - ensure this is always visible */}
+          <div className="text-center mt-4 sticky bottom-0 bg-white py-3 border-t border-gray-100">
             {showDontShowAgainOption && (
               <div className="mb-3 flex items-center justify-center">
                 <label className="flex items-center cursor-pointer">
