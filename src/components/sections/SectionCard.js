@@ -1,6 +1,7 @@
 // FILE: src/components/sections/SectionCard.js
 // UPDATED: Added section ID attribute for navigation targeting
 // UPDATED: Added isPlaceholderContent to FeedbackButton
+// FIXED: Improved detection for unchanged content to ensure button starts gray
 
 import React, { useState, useCallback, useEffect } from 'react';
 import useAppStore from '../../store/appStore';
@@ -43,10 +44,19 @@ const SectionCard = ({
     maxLength
   } = section || {};
   const hasFeedback = !!feedbackRating;
+  
+  // FIXED: More thorough check for placeholder or minimal content
   const hasOnlyPlaceholder = content === (placeholder || '') || content.trim() === '';
-
-  // NEW: Check if content is a placeholder or hasn't been edited meaningfully
-  const isPlaceholderContent = hasOnlyPlaceholder || content.trim().length < 10;
+  
+  // Check if content is the placeholder OR if it's too short to be meaningful
+  // This ensures the button starts gray in new sections and only turns purple
+  // once the user has written something substantial
+  const isPlaceholderContent = hasOnlyPlaceholder || 
+                              content.trim().length < 20 || // Requiring more substantial content
+                              content.trim().split(/\s+/).length < 3; // At least a few words
+  
+  // IMPROVED: Better detection for "has user really edited this?"
+  const hasEditedContent = !hasOnlyPlaceholder && content.trim().length >= 20;
 
   // Callbacks
   const handleTextChange = useCallback((e) => {
@@ -150,13 +160,13 @@ const SectionCard = ({
                  handleTextChange={handleTextChange}
               />
               <FeedbackButton
-                 hasEditedContent={!hasOnlyPlaceholder}
+                 hasEditedContent={hasEditedContent} // IMPROVED: Now uses the better check
                  hasFeedback={hasFeedback}
                  editedSinceFeedback={editedSinceFeedback}
                  feedbackRating={feedbackRating}
                  handleFeedbackRequest={handleFeedbackRequest}
                  sectionId={sectionId}
-                 isPlaceholderContent={isPlaceholderContent} // NEW: Pass the placeholder check
+                 isPlaceholderContent={isPlaceholderContent} // Pass the placeholder check
                  onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
                />
             </>
