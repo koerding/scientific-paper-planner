@@ -1,5 +1,6 @@
 // FILE: src/components/chat/ModernChatInterface.js
 // FIXED: Positioned chat button in global lower right corner
+// FIXED: Better mobile width and positioning support
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -122,7 +123,7 @@ const ModernChatInterface = ({
         </div>
       )}
 
-      {/* Expanded chat interface */}
+      {/* Expanded chat interface - IMPROVED MOBILE RESPONSIVENESS */}
       <div
         className={`fixed shadow-lg rounded-lg overflow-hidden transition-all duration-300 ease-in-out ${
           isMinimized ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'
@@ -131,9 +132,7 @@ const ModernChatInterface = ({
           position: 'fixed',
           bottom: '24px',
           right: '24px',
-          width: '550px',
-          maxWidth: '90vw',
-          height: '600px',
+          width: 'min(550px, 95vw)', // Use min() to ensure it doesn't exceed 95% of viewport width
           maxHeight: '80vh',
           zIndex: 899,
           backgroundColor: '#ffffff',
@@ -146,11 +145,11 @@ const ModernChatInterface = ({
             <div className="bg-indigo-600 px-4 py-3 flex justify-between items-center chat-header">
               <div className="flex items-center">
                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
-                 <span className="font-medium text-white">Let's talk about {currentSectionTitle}</span>
+                 <span className="font-medium text-white truncate">{`Let's talk about ${currentSectionTitle}`}</span>
               </div>
               <button
                 onClick={toggleChat}
-                className="text-white hover:text-gray-200 focus:outline-none"
+                className="text-white hover:text-gray-200 focus:outline-none ml-2 flex-shrink-0"
                 aria-label="Minimize chat"
               >
                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>
