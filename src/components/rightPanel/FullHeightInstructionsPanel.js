@@ -2,7 +2,7 @@
 // FIXED: Standardized font sizes to match the root variable definitions
 // FIXED: Made styling more consistent throughout the guide panel
 // FIXED: Corrected variable reference in tooltip rendering
-// ADDED: Back to Write mode button for easier navigation
+// FIXED: Moved Back to Write button to bottom to match feedback button in Write mode
 
 import React, { useState, useCallback } from 'react';
 import useAppStore from '../../store/appStore';
@@ -168,14 +168,21 @@ const FullHeightInstructionsPanel = ({
   }
 
   return (
-    // Root div with improved background color
-    <div className="w-full h-full overflow-y-auto pb-8 box-border flex-shrink-0 bg-gray-50">
-      {/* Add Back Button at the top */}
+    // Root div with improved background color and relative positioning
+    <div className="w-full h-full overflow-y-auto pb-20 box-border flex-shrink-0 bg-gray-50 relative">
+      {/* Main content area - using class to standardize font sizes */}
+      <div className="instructions-content p-2">
+        {currentSection.aiInstructions
+            ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
+            : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
+      </div>
+
+      {/* Back to Write Mode Button - Now at bottom to match feedback button */}
       {onRequestWrite && (
-        <div className="sticky top-0 z-10 px-2 py-2 bg-gray-50 border-b border-gray-200">
+        <div className="absolute bottom-0 right-0 left-0 p-3 bg-gray-50 border-t border-gray-200 flex justify-end">
           <button
             onClick={onRequestWrite}
-            className="flex items-center px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded bg-purple-600 text-white hover:bg-purple-700 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -184,13 +191,6 @@ const FullHeightInstructionsPanel = ({
           </button>
         </div>
       )}
-      
-      {/* Main content area - using class to standardize font sizes */}
-      <div className="instructions-content p-2">
-        {currentSection.aiInstructions
-            ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
-            : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
-      </div>
     </div>
   );
 };
