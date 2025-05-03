@@ -696,3 +696,87 @@ header.bg-white.shadow-sm .container button[aria-label="Save"] span {
   padding: 0 !important;
   margin: 0 !important;
 }
+/* Add these styles to your PaperPlanner.css file */
+
+/* Better Mobile Splash Screen Positioning */
+@media (max-width: 640px) {
+  /* Ensure the splash screen is scrollable on small devices */
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 {
+    align-items: flex-start !important; 
+    overflow-y: auto !important;
+    padding: 1rem !important;
+  }
+  
+  /* Add margin to the splash screen container */
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 > div.bg-white {
+    margin-top: 1rem !important;
+    margin-bottom: 2rem !important;
+    max-height: calc(100vh - 4rem) !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Ensure the get started button is always visible */
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 .py-3.border-t {
+    position: sticky !important;
+    bottom: 0 !important;
+    background-color: white !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    z-index: 10 !important;
+  }
+  
+  /* Make the "Don't show this again" checkbox easier to tap */
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 label.flex.items-center {
+    padding: 0.5rem 0 !important;
+  }
+  
+  /* Get started button - make it larger for easier tapping */
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 button.bg-purple-600 {
+    padding: 0.5rem 1.5rem !important;
+    font-size: 1rem !important;
+  }
+}
+
+/* Mobile Chat Interface Improvements */
+@media (max-width: 640px) {
+  /* Adjust chat container width */
+  .fixed.shadow-lg.rounded-lg.overflow-hidden:not(.opacity-0) {
+    width: 95vw !important;
+    right: 2.5vw !important; /* Center horizontally */
+    left: 2.5vw !important;
+    max-height: 75vh !important; /* Ensure it doesn't take too much space */
+  }
+  
+  /* Make the chat button smaller on mobile */
+  .chat-button-container button {
+    font-size: 0.875rem !important;
+    padding: 0.5rem 1rem !important;
+  }
+  
+  /* Hide long text in chat button on very small screens */
+  @media (max-width: 380px) {
+    .chat-button-container button span {
+      max-width: 180px !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+    }
+  }
+  
+  /* Make bubbles take more width on mobile */
+  .message-bubble {
+    max-width: 90% !important;
+  }
+}
+
+/* Ensure fixed elements don't overlap important content on small screens */
+@media (max-height: 700px) {
+  .chat-button-container {
+    bottom: 16px !important;
+  }
+  
+  .fixed.shadow-lg.rounded-lg.overflow-hidden:not(.opacity-0) {
+    bottom: 16px !important;
+    max-height: 70vh !important;
+  }
+}
