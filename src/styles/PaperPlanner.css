@@ -1364,3 +1364,106 @@ header button.font-semibold {
 .h-screen .fixed.inset-0.bg-gray-800.bg-opacity-80 {
   z-index: 1001 !important;
 }
+/* ADD THESE CSS FIXES TO YOUR PaperPlanner.css FILE */
+
+/* LAYOUT AND POSITIONING FIXES */
+
+/* Ensure chat button is always in the bottom right corner */
+.chat-button-container {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 900 !important;
+  transform: none !important;
+}
+
+/* Make sure the expanded chat interface stays above other elements */
+.fixed.shadow-lg.rounded-lg.overflow-hidden {
+  z-index: 899 !important;
+}
+
+/* Better centering of main content to account for the rail */
+.main-content {
+  width: 100% !important;
+  scroll-behavior: smooth;
+}
+
+/* Ensure content cards have proper width and margins */
+.main-content > div {
+  max-width: 740px !important;
+  margin: 0 auto !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/* Ensure the rail doesn't interfere with click events */
+.rail {
+  z-index: 40 !important; /* Above content but below modals and chat */
+  pointer-events: auto !important;
+}
+
+.rail-btn {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Make sure modals and dialogs render above everything else */
+.fixed.inset-0.bg-gray-600.bg-opacity-50 {
+  z-index: 999 !important;
+}
+
+/* PILL TOGGLE SELECTION VISIBILITY FIXES */
+
+/* Make selected mode toggle more visually distinct */
+.bg-gray-100.rounded-full button.bg-white {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  font-weight: 600 !important;
+  color: #374151 !important; /* gray-700 */
+}
+
+/* Make inactive toggle option lighter */
+.bg-gray-100.rounded-full button:not(.bg-white) {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* For in-card toggles: enhance active state */
+button.active-toggle {
+  background-color: white !important;
+  color: #111827 !important; /* gray-900 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  border: 2px solid #4f46e5 !important; /* indigo-600 */
+  font-weight: 600 !important;
+}
+
+/* For in-card toggles: better inactive state */
+button.inactive-toggle {
+  background-color: #f9fafb !important; /* gray-50 */
+  color: #9ca3af !important; /* gray-400 */
+  border: 1px solid #e5e7eb !important; /* gray-200 */
+}
+
+button.inactive-toggle:hover {
+  background-color: #f3f4f6 !important; /* gray-100 */
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* CLEAN UP FIX - Remove extra instructions below toggle options */
+.toggle-section .text-xs.text-gray-500.mt-1 {
+  display: none !important;
+}
+
+/* RESPONSIVE ADJUSTMENTS */
+@media (max-width: 768px) {
+  .main-content {
+    padding-left: 0 !important;
+  }
+  
+  .rail {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .rail.visible {
+    transform: translateX(0);
+  }
+}
