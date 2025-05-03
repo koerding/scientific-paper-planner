@@ -98,8 +98,16 @@ const LeftPanel = ({
   );
 
   // Define options for toggles
-  const approachOptions = [ { id: 'hypothesis', label: 'Hypotheses' }, { id: 'needsresearch', label: 'Needs' }, { id: 'exploratoryresearch', label: 'Exploratory' } ];
-  const dataMethodOptions = [ { id: 'experiment', label: 'Experiment' }, { id: 'existingdata', label: 'Dataset' }, { id: 'theorysimulation', label: 'Theory' } ];
+  const approachOptions = [ 
+    { id: 'hypothesis', label: 'Hypothesis-Driven' }, 
+    { id: 'needsresearch', label: 'Problem-Based' }, 
+    { id: 'exploratoryresearch', label: 'Exploratory' } 
+  ];
+  const dataMethodOptions = [ 
+    { id: 'experiment', label: 'Experiment' }, 
+    { id: 'existingdata', label: 'Existing Data' }, 
+    { id: 'theorysimulation', label: 'Theory' } 
+  ];
 
   // Find specific standard sections for ordering
   const questionSectionDef = standardSectionsToRender.find(s => s?.id === 'question');
