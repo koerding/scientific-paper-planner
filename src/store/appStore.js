@@ -1,6 +1,7 @@
 // FILE: src/store/appStore.js
 // MODIFIED: Add uiMode to store for single-panel layout toggle
 // MODIFIED: Added setActiveSectionId and enhanced setUiMode functions
+// MODIFIED: Enhanced setUiMode with scroll position management
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -83,43 +84,84 @@ const useAppStore = create(
         set({ globalAiLoading: status });
       },
 
-      // --- NEW UI MODE ACTION ---
-   setUiMode: (mode) => set((state) => {
-  if (mode !== 'write' && mode !== 'guide') {
-    console.error(`Invalid UI mode: ${mode}. Must be 'write' or 'guide'`);
-    return state;
-  }
-  
-  // Get section info
-  const currentSectionId = state.currentChatSectionId;
-  const lastSectionId = localStorage.getItem('lastActiveSectionId');
-  const targetSectionId = currentSectionId || lastSectionId || 'question';
-  
-  // If we have a valid section ID, ensure that section is in focus
-  if (targetSectionId && state.sections && state.sections[targetSectionId]) {
-    const updatedSections = { ...state.sections };
-    
-    // Update section focus flags
-    Object.keys(updatedSections).forEach(id => {
-      if (updatedSections[id]) {
-        updatedSections[id] = {
-          ...updatedSections[id],
-          isCurrentSection: id === targetSectionId
-        };
-      }
-    });
-    
-    // Return updated state with new mode and focused section
-    return { 
-      uiMode: mode, 
-      sections: updatedSections, 
-      currentChatSectionId: targetSectionId 
-    };
-  }
-  
-  // Simple mode change if no valid section
-  return { uiMode: mode };
-}),
+      // --- ENHANCED UI MODE ACTION ---
+      setUiMode: (mode) => set((state) => {
+        if (mode !== 'write' && mode !== 'guide') {
+          console.error(`Invalid UI mode: ${mode}. Must be 'write' or 'guide'`);
+          return state;
+        }
+        
+        // Get section info
+        const currentSectionId = state.currentChatSectionId;
+        const lastSectionId = localStorage.getItem('lastActiveSectionId');
+        const targetSectionId = currentSectionId || lastSectionId || 'question';
+        
+        // Check if we're switching from write to guide or vice versa
+        const prevMode = state.uiMode;
+        const isModeSwitching = prevMode !== mode;
+        
+        // SCROLL MANAGEMENT: Store current scroll position when leaving write mode
+        if (isModeSwitching && prevMode === 'write') {
+          // Store the current scroll position for write mode
+          const contentEl = document.querySelector('.main-content');
+          if (contentEl) {
+            localStorage.setItem('writeScrollPosition', contentEl.scrollTop);
+            console.log(`Stored write scroll position: ${contentEl.scrollTop}px`);
+          }
+        }
+        
+        // If we have a valid section ID, ensure that section is in focus
+        if (targetSectionId && state.sections && state.sections[targetSectionId]) {
+          const updatedSections = { ...state.sections };
+          
+          // Update section focus flags
+          Object.keys(updatedSections).forEach(id => {
+            if (updatedSections[id]) {
+              updatedSections[id] = {
+                ...updatedSections[id],
+                isCurrentSection: id === targetSectionId
+              };
+            }
+          });
+          
+          // Schedule scroll management after state update completes
+          setTimeout(() => {
+            if (isModeSwitching) {
+              if (mode === 'guide') {
+                // Entering guide mode: Scroll to top
+                const contentEl = document.querySelector('.main-content');
+                if (contentEl) {
+                  contentEl.scrollTo({ top: 0, behavior: 'smooth' });
+                  console.log('Scrolled to top for guide mode');
+                }
+              } else if (mode === 'write') {
+                // Returning to write mode: Restore previous scroll position
+                const storedScrollPos = localStorage.getItem('writeScrollPosition');
+                if (storedScrollPos) {
+                  const contentEl = document.querySelector('.main-content');
+                  if (contentEl) {
+                    contentEl.scrollTo({ 
+                      top: parseInt(storedScrollPos, 10), 
+                      behavior: 'smooth' 
+                    });
+                    console.log(`Restored write scroll position: ${storedScrollPos}px`);
+                  }
+                }
+              }
+            }
+          }, 50);
+          
+          // Return updated state with new mode and focused section
+          return { 
+            uiMode: mode, 
+            sections: updatedSections, 
+            currentChatSectionId: targetSectionId 
+          };
+        }
+        
+        // Simple mode change if no valid section
+        return { uiMode: mode };
+      }),
 
       // --- Actions for Core State ---
       updateSectionContent: (sectionId, content) => set((state) => {
