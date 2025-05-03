@@ -209,7 +209,7 @@ const LeftPanel = ({
       {/* Pro Mode Info - Simple version */}
       {sectionsStillLocked && (
         <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 mt-6">
-           <p className="text-sm text-black">
+           <p className="text-sm text-black bold">
           This app guides you through the steps of planning your research. This is key to successful science. The overall process should take a number of hours.
         </p>
          <p className="text-sm text-gray-700">
