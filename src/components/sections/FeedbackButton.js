@@ -1,6 +1,7 @@
 // FILE: src/components/sections/FeedbackButton.js
 // UPDATED: Added mode switching functionality
 // UPDATED: Gray button state for unchanged content
+// FIXED: Initial state now correctly starts as gray
 
 import React from 'react';
 import useAppStore from '../../store/appStore'; // Import store to get loading flags
@@ -12,7 +13,7 @@ const FeedbackButton = ({
   feedbackRating,
   handleFeedbackRequest,
   sectionId,
-  isPlaceholderContent, // New prop to check if content is just placeholder
+  isPlaceholderContent, // Prop to check if content is just placeholder or too short
   onSwitchToGuide = null // Prop to handle mode switching
 }) => {
   // --- Get loading states from store ---
@@ -33,17 +34,18 @@ const FeedbackButton = ({
   
   const isButtonDisabled = isLoading || isUnchangedContent;
 
-  // Get button styling class
+  // Get button styling class - FIXED: The button is now gray in the initial state
   const getButtonClass = () => {
     if (isLoading) {
       return 'bg-purple-300 text-purple-800 cursor-wait animate-pulse';
     }
+    
+    // Disabled/gray state - includes both empty content and unchanged after feedback
     if (isUnchangedContent) {
       return 'bg-gray-400 text-white cursor-not-allowed opacity-70';
     }
-    if (editedSinceFeedback) {
-      return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
-    }
+    
+    // Active/purple state - only when content has been meaningfully edited
     return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
   };
 
@@ -78,7 +80,7 @@ const FeedbackButton = ({
    if (isLoading) {
        tooltipText = "AI is busy processing a request...";
    } else if (isDisabledByContent) {
-       tooltipText = "Add content before requesting feedback";
+       tooltipText = "Add meaningful content before requesting feedback";
    } else if (isDisabledAfterFeedback) {
        tooltipText = "Edit the section content to request new feedback";
    } else if (editedSinceFeedback) {
