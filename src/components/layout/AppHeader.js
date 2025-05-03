@@ -1,5 +1,5 @@
 // FILE: src/components/layout/AppHeader.js
-// REDESIGNED: Better responsive layout with compact buttons
+// REDESIGNED: Better responsive layout with tight text+icon buttons
 
 import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store/appStore'; // Import store
@@ -41,7 +41,7 @@ const AppHeader = ({
 
   // --- Loading spinner SVG ---
   const loadingSpinner = (
-    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
@@ -51,9 +51,9 @@ const AppHeader = ({
     if (showHelpSplash) showHelpSplash();
   };
 
-  // Compact button styles with minimal padding
-  const getCompactButtonClasses = () => {
-    return `inline-flex items-center justify-center px-6 py-2 border rounded-md shadow-sm
+  // Tight button styles with minimal padding
+  const getTightButtonClasses = () => {
+    return `inline-flex items-center justify-center px-3 py-2 border rounded-md shadow-sm
            text-sm font-medium transition-colors text-gray-700 bg-white hover:bg-gray-50
            ${isAiBusy ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`;
   };
@@ -82,31 +82,37 @@ const AppHeader = ({
               
               {/* Right: Help, Save buttons and logo */}
               <div className="flex items-center space-x-2">
-                {/* Help Button - COMPACT VERSION */}
+                {/* Help Button - TIGHT VERSION */}
                 <button 
                   onClick={handleHelpClick} 
                   disabled={isAiBusy || localImportLoading} 
-                  className={getCompactButtonClasses()}
+                  className={getTightButtonClasses()}
                   aria-label="Help"
                 >
                   {isAiBusy ? loadingSpinner : (
-                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <>
+                      <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Help
+                    </>
                   )}
                 </button>
 
-                {/* Save Button - COMPACT VERSION */}
+                {/* Save Button - TIGHT VERSION */}
                 <button 
                   onClick={saveProject} 
                   disabled={isAiBusy || localImportLoading} 
-                  className={getCompactButtonClasses()}
+                  className={getTightButtonClasses()}
                   aria-label="Save"
                 >
                   {isAiBusy ? loadingSpinner : (
-                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                    </svg>
+                    <>
+                      <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                      </svg>
+                      Save
+                    </>
                   )}
                 </button>
 
@@ -152,35 +158,39 @@ const AppHeader = ({
               />
             </div>
 
-            {/* Right section: Help, Save buttons and logo - COMPACT VERSION */}
+            {/* Right section: Help, Save buttons and logo - TIGHT VERSION */}
             <div className="flex items-center w-1/4 justify-end space-x-2">
-              {/* Help Button - Icon Only */}
+              {/* Help Button - Text + Icon with tight spacing */}
               <button 
                 onClick={handleHelpClick} 
                 disabled={isAiBusy || localImportLoading} 
-                className={getCompactButtonClasses()}
+                className={getTightButtonClasses()}
                 aria-label="Help"
-                title="Help"
               >
                 {isAiBusy ? loadingSpinner : (
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <>
+                    <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Help
+                  </>
                 )}
               </button>
 
-              {/* Save Button - Icon Only */}
+              {/* Save Button - Text + Icon with tight spacing */}
               <button 
                 onClick={saveProject} 
                 disabled={isAiBusy || localImportLoading} 
-                className={getCompactButtonClasses()}
+                className={getTightButtonClasses()}
                 aria-label="Save"
-                title="Save"
               >
                 {isAiBusy ? loadingSpinner : (
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                  </svg>
+                  <>
+                    <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    Save
+                  </>
                 )}
               </button>
 
