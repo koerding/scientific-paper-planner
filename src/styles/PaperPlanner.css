@@ -620,3 +620,79 @@ header .space-x-2 button:nth-child(2) { /* Save button */
   max-width: 5.5rem !important;
   width: auto !important;
 }
+
+/* --- Force Tight Header Button Styles with High Specificity --- */
+
+/* Target header buttons with very high specificity */
+header.bg-white.shadow-sm .container button[aria-label="Help"],
+header.bg-white.shadow-sm .container button[aria-label="Save"] {
+  /* Extreme width constraints */
+  max-width: 5.5rem !important;
+  width: 5.5rem !important;
+  min-width: 0 !important;
+  
+  /* Tight internal spacing */
+  padding: 0.5rem 0.5rem !important;
+  margin: 0 !important;
+  
+  /* Text sizing */
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+
+  /* Force correct border styles */
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.375rem !important;
+  
+  /* Force flex layout */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Force button icons to be small */
+header.bg-white.shadow-sm .container button svg {
+  width: 1rem !important;
+  height: 1rem !important;
+  margin-right: 0.25rem !important;
+  flex-shrink: 0 !important;
+}
+
+/* Specific hover styling */
+header.bg-white.shadow-sm .container button:hover:not(:disabled) {
+  background-color: #f8fafc !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Override any default transition styles */
+header.bg-white.shadow-sm .container button {
+  transition: all 0.15s ease-in-out !important;
+}
+
+/* Force styles for loading icon */
+header.bg-white.shadow-sm .container button .animate-spin {
+  margin-right: 0.25rem !important;
+}
+
+/* Mobile-specific adjustments with high specificity */
+@media (max-width: 767px) {
+  header.bg-white.shadow-sm .container button[aria-label="Help"],
+  header.bg-white.shadow-sm .container button[aria-label="Save"] {
+    width: 4.5rem !important;
+    max-width: 4.5rem !important;
+    padding: 0.375rem 0.375rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  header.bg-white.shadow-sm .container button svg {
+    width: 0.875rem !important;
+    height: 0.875rem !important;
+  }
+}
+
+/* Force the container to have no extra padding/margin */
+header.bg-white.shadow-sm .container button[aria-label="Help"] span,
+header.bg-white.shadow-sm .container button[aria-label="Save"] span {
+  padding: 0 !important;
+  margin: 0 !important;
+}
