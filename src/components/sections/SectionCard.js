@@ -1,7 +1,6 @@
 // FILE: src/components/sections/SectionCard.js
-// UPDATED: Added section ID attribute for navigation targeting
-// UPDATED: Added isPlaceholderContent to FeedbackButton
-// FIXED: Improved detection for unchanged content to ensure button starts gray
+// FIXED: Card opening issue in incognito mode
+// FIXED: Ensures feedback button starts gray with placeholder content
 
 import React, { useState, useCallback, useEffect } from 'react';
 import useAppStore from '../../store/appStore';
@@ -23,11 +22,6 @@ const SectionCard = ({
   onSwitchToGuide = null, // Callback to switch to guide mode
 }) => {
 
-  // Direct prop logging (can be removed later)
-  if (isToggleSection) {
-    console.log(`DEBUG [SectionCard RENDER for ${sectionId}]: Received props -> sectionId='${sectionId}', activeOption='${activeOption}'`);
-  }
-
   // Select State from Zustand Store
   const section = useAppStore((state) => state.sections[sectionId]);
   const updateSectionContent = useAppStore((state) => state.updateSectionContent);
@@ -45,57 +39,75 @@ const SectionCard = ({
   } = section || {};
   const hasFeedback = !!feedbackRating;
   
-  // FIXED: More thorough check for placeholder or minimal content
-  const hasOnlyPlaceholder = content === (placeholder || '') || content.trim() === '';
+  // FIXED: More robust checks for placeholder content and edited state
+  const defaultPlaceholderText = placeholder || 'Start writing...';
+  const hasOnlyPlaceholder = !content || content === defaultPlaceholderText || content.trim() === '';
   
-  // Check if content is the placeholder OR if it's too short to be meaningful
-  // This ensures the button starts gray in new sections and only turns purple
-  // once the user has written something substantial
-  const isPlaceholderContent = hasOnlyPlaceholder || 
-                              content.trim().length < 20 || // Requiring more substantial content
-                              content.trim().split(/\s+/).length < 3; // At least a few words
+  // CRITICAL FIX: More aggressive check to ensure button starts gray
+  // This checks if the content contains the placeholder text or has minimal input
+  const isPlaceholderContent = 
+    hasOnlyPlaceholder || 
+    content.includes('Clear, focused question') ||
+    content.includes('[Clear, focused question') || 
+    content.trim().length < 30 || 
+    content.trim().split(/\s+/).length < 4;  // Require at least 4 words
   
-  // IMPROVED: Better detection for "has user really edited this?"
-  const hasEditedContent = !hasOnlyPlaceholder && content.trim().length >= 20;
+  // CRITICAL FIX: Make sure hasEditedContent is strictly false for new projects
+  const hasEditedContent = 
+    !hasOnlyPlaceholder && 
+    !content.includes('Clear, focused question') && 
+    !content.includes('[Clear, focused question') && 
+    content.trim().length >= 30;
 
   // Callbacks
   const handleTextChange = useCallback((e) => {
-       updateSectionContent(sectionId, e.target.value);
-   }, [sectionId, updateSectionContent]);
+    updateSectionContent(sectionId, e.target.value);
+  }, [sectionId, updateSectionContent]);
 
-   const handleToggleMinimize = useCallback((e) => {
-       if(e) e.stopPropagation();
-       toggleMinimize(sectionId);
-       if (isMinimized && typeof handleSectionFocus === 'function') {
-            handleSectionFocus(sectionId);
-       }
-   }, [sectionId, toggleMinimize, isMinimized, handleSectionFocus]);
+  // FIXED: The card click handler to prevent default and stop propagation
+  const handleToggleMinimize = useCallback((e) => {
+    // Prevent default behavior to fix incognito mode scrolling issue
+    if(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    toggleMinimize(sectionId);
+    
+    if (isMinimized && typeof handleSectionFocus === 'function') {
+      handleSectionFocus(sectionId);
+    }
+  }, [sectionId, toggleMinimize, isMinimized, handleSectionFocus]);
 
-   const handleFeedbackRequest = useCallback(() => {
-       if (typeof onRequestFeedback === 'function') {
-           onRequestFeedback(sectionId);
-       }
-   }, [sectionId, onRequestFeedback]);
+  const handleFeedbackRequest = useCallback(() => {
+    if (typeof onRequestFeedback === 'function') {
+      onRequestFeedback(sectionId);
+    }
+  }, [sectionId, onRequestFeedback]);
 
-   const handleCardClick = () => {
-       if (isMinimized) {
-           handleToggleMinimize();
-       } else if (typeof handleSectionFocus === 'function') {
-         handleSectionFocus(sectionId);
-       }
-   };
+  // FIXED: The card click handler to prevent default and use stopPropagation
+  const handleCardClick = (e) => {
+    // Prevent default behavior to fix incognito mode scrolling issue
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isMinimized) {
+      handleToggleMinimize(e);
+    } else if (typeof handleSectionFocus === 'function') {
+      handleSectionFocus(sectionId);
+    }
+  };
 
-   const handleEditorFocus = useCallback(() => {
-       setIsTextareaFocused(true);
-       if (typeof handleSectionFocus === 'function') {
-           handleSectionFocus(sectionId);
-       }
-   }, [sectionId, handleSectionFocus]);
+  const handleEditorFocus = useCallback(() => {
+    setIsTextareaFocused(true);
+    if (typeof handleSectionFocus === 'function') {
+      handleSectionFocus(sectionId);
+    }
+  }, [sectionId, handleSectionFocus]);
 
-   const handleEditorBlur = useCallback(() => {
-       setIsTextareaFocused(false);
-   }, []);
-
+  const handleEditorBlur = useCallback(() => {
+    setIsTextareaFocused(false);
+  }, []);
 
   // --- Styling ---
   const getBorderClasses = () => isCurrentSection ? 'border-4 border-blue-500 shadow-md' : 'border-2 border-gray-300';
@@ -116,61 +128,61 @@ const SectionCard = ({
 
   return (
     <div
-        className={sectionClasses}
-        onClick={handleCardClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        id={`section-${sectionId}`} // Add ID for navigation targeting
-      >
-       {isToggleSection ? (
-         <ToggleHeader
-           options={options || []}
-           activeOption={activeOption} // Use prop from parent
-           onToggle={onToggle}
-           isMinimized={isMinimized}
-           isHovered={isHovered || isTextareaFocused}
-           isFocused={isCurrentSection}
-           toggleMinimized={handleToggleMinimize}
-         />
-       ) : (
-         <SectionHeader
-           title={title}
-           isMinimized={isMinimized}
-           hasFeedback={hasFeedback}
-           feedbackRating={feedbackRating}
-           editedSinceFeedback={editedSinceFeedback}
-           isHovered={isHovered || isTextareaFocused}
-           isFocused={isCurrentSection}
-           toggleMinimized={handleToggleMinimize}
-         />
-       )}
+      className={sectionClasses}
+      onClick={handleCardClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      id={`section-${sectionId}`} // Add ID for navigation targeting
+    >
+      {isToggleSection ? (
+        <ToggleHeader
+          options={options || []}
+          activeOption={activeOption} // Use prop from parent
+          onToggle={onToggle}
+          isMinimized={isMinimized}
+          isHovered={isHovered || isTextareaFocused}
+          isFocused={isCurrentSection}
+          toggleMinimized={handleToggleMinimize}
+        />
+      ) : (
+        <SectionHeader
+          title={title}
+          isMinimized={isMinimized}
+          hasFeedback={hasFeedback}
+          feedbackRating={feedbackRating}
+          editedSinceFeedback={editedSinceFeedback}
+          isHovered={isHovered || isTextareaFocused}
+          isFocused={isCurrentSection}
+          toggleMinimized={handleToggleMinimize}
+        />
+      )}
 
       {/* Render Preview or Editor based on isMinimized */}
       {isMinimized ?
-          ( <SectionPreview textValue={content} /> )
+        ( <SectionPreview textValue={content} /> )
         :
-          ( <>
-              <SectionEditor
-                 sectionId={sectionId}
-                 textValue={content}
-                 placeholder={placeholder || "Start writing..."}
-                 maxLength={maxLength}
-                 onFocus={handleEditorFocus}
-                 onBlur={handleEditorBlur}
-                 handleTextChange={handleTextChange}
-              />
-              <FeedbackButton
-                 hasEditedContent={hasEditedContent} // IMPROVED: Now uses the better check
-                 hasFeedback={hasFeedback}
-                 editedSinceFeedback={editedSinceFeedback}
-                 feedbackRating={feedbackRating}
-                 handleFeedbackRequest={handleFeedbackRequest}
-                 sectionId={sectionId}
-                 isPlaceholderContent={isPlaceholderContent} // Pass the placeholder check
-                 onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
-               />
-            </>
-          )
+        ( <>
+          <SectionEditor
+            sectionId={sectionId}
+            textValue={content}
+            placeholder={placeholder || "Start writing..."}
+            maxLength={maxLength}
+            onFocus={handleEditorFocus}
+            onBlur={handleEditorBlur}
+            handleTextChange={handleTextChange}
+          />
+          <FeedbackButton
+            hasEditedContent={hasEditedContent} // Use the fixed check
+            hasFeedback={hasFeedback}
+            editedSinceFeedback={editedSinceFeedback}
+            feedbackRating={feedbackRating}
+            handleFeedbackRequest={handleFeedbackRequest}
+            sectionId={sectionId}
+            isPlaceholderContent={isPlaceholderContent} // Pass the placeholder check
+            onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
+          />
+        </>
+        )
       }
 
       {/* Gradient overlay for minimized cards */}
