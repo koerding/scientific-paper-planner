@@ -1,4 +1,4 @@
-// src/components/sections/HeaderCard.js
+// FILE: src/components/sections/HeaderCard.js
 // MODIFIED: Updated descriptive text as requested by user.
 import React from 'react';
 
