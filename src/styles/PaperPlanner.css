@@ -561,4 +561,62 @@ header .bg-gray-100.rounded-full button {
     padding-top: 100px !important; /* More space for two-row header */
   }
 }
+/* --- Tight Header Button Styles --- */
 
+/* Make header buttons compact but keep text */
+header button {
+  /* Tighter padding */
+  padding: 0.5rem 0.75rem !important;
+  
+  /* Better visual style */
+  border-radius: 0.375rem !important;
+  border-color: #e2e8f0 !important;
+  
+  /* More compact appearance */
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  
+  /* Improve hover states */
+  transition: all 0.15s ease-in-out !important;
+}
+
+header button:hover:not(:disabled) {
+  background-color: #f8fafc !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+header button:active:not(:disabled) {
+  transform: translateY(0) !important;
+}
+
+/* Make the icons smaller and ensure consistent spacing */
+header button svg {
+  width: 1rem !important;
+  height: 1rem !important;
+  margin-right: 0.25rem !important;
+}
+
+/* Fix for tight buttons at small screen sizes */
+@media (max-width: 767px) {
+  header button {
+    padding: 0.375rem 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  header button svg {
+    width: 0.875rem !important;
+    height: 0.875rem !important;
+  }
+}
+
+/* Set max widths on buttons to avoid excessive whitespace */
+header .space-x-2 button:nth-child(1) { /* Help button */
+  max-width: 5.5rem !important;
+  width: auto !important;
+}
+
+header .space-x-2 button:nth-child(2) { /* Save button */
+  max-width: 5.5rem !important;
+  width: auto !important;
+}
