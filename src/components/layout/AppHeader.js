@@ -1,5 +1,5 @@
 // FILE: src/components/layout/AppHeader.js
-// REDESIGNED: Better responsive layout with improved breakpoint handling
+// REDESIGNED: Better responsive layout that prevents overlapping elements
 
 import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store/appStore'; // Import store
@@ -36,10 +36,8 @@ const AppHeader = ({
     };
   }, []);
 
-  // --- Determine layout type based on width ---
-  // Now we have three layouts: desktop, intermediate, and mobile
-  const isMobileView = windowWidth < 640; // Full mobile view below 640px
-  const isIntermediateView = windowWidth >= 640 && windowWidth < 900; // Intermediate between 640px and 900px
+  // --- Determine if we're in mobile view ---
+  const isMobileView = windowWidth < 768;
 
   // --- Loading spinner SVG ---
   const loadingSpinner = (
@@ -49,7 +47,7 @@ const AppHeader = ({
     </svg>
   );
 
-  // --- Button style functions ---
+  // --- Button style functions (use isAiBusy now) ---
   const getButtonClasses = (baseStyle = "text-gray-700 bg-white hover:bg-gray-50", activeStyle = baseStyle) => {
       return `inline-flex items-center px-2 py-1 border rounded-md shadow-sm text-xs font-medium transition-colors
               ${isAiBusy
@@ -66,7 +64,7 @@ const AppHeader = ({
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-2">
         {isMobileView ? (
-          // Full Mobile Layout: Stack elements vertically with toggle at the bottom
+          // Mobile Layout: Stack elements vertically with toggle at the bottom
           <div className="flex flex-col">
             {/* Top row: Hamburger menu on left, logo and buttons on right */}
             <div className="flex items-center justify-between mb-2">
@@ -118,61 +116,6 @@ const AppHeader = ({
                 onModeChange={setUiMode}
                 disabled={isAiBusy}
               />
-            </div>
-          </div>
-        ) : isIntermediateView ? (
-          // Intermediate Layout: Expanded menu on left, stacked toggle and buttons on right
-          <div className="flex items-start justify-between">
-            {/* Left: Hamburger Menu */}
-            <div className="flex items-center pt-1">
-              <HamburgerMenu
-                resetProject={resetProject}
-                exportProject={exportProject}
-                loadProject={loadProject}
-                importDocumentContent={importDocumentContent}
-                onOpenReviewModal={onOpenReviewModal}
-                showHelpSplash={showHelpSplash}
-                isAiBusy={isAiBusy}
-                localImportLoading={localImportLoading}
-              />
-            </div>
-            
-            {/* Right: Stacked content - Mode toggle on top, buttons below */}
-            <div className="flex flex-col items-end">
-              {/* Top: Write/Guide toggle */}
-              <div className="mb-2 mt-1">
-                <SectionModePicker 
-                  currentMode={uiMode} 
-                  onModeChange={setUiMode}
-                  disabled={isAiBusy}
-                />
-              </div>
-              
-              {/* Bottom: Help, Save buttons and logo */}
-              <div className="flex items-center space-x-2">
-                {/* Help Button */}
-                <button onClick={handleHelpClick} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
-                  {isAiBusy ? loadingSpinner : (
-                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  )} Help
-                </button>
-
-                {/* Save Button */}
-                <button onClick={saveProject} disabled={isAiBusy || localImportLoading} className={getButtonClasses()}>
-                  {isAiBusy ? loadingSpinner : (
-                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                    </svg>
-                  )} Save
-                </button>
-
-                {/* Logo */}
-                <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center ml-1">
-                  <span className="font-bold text-lg">SP</span>
-                </div>
-              </div>
             </div>
           </div>
         ) : (
