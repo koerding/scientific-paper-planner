@@ -1,7 +1,7 @@
 // FILE: src/components/sections/SectionCard.js
-// Ultra-simple version with direct content passing
+// FIXED: Simplified placeholder detection to ensure button turns purple
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import useAppStore from '../../store/appStore';
 import SectionHeader from './SectionHeader';
 import ToggleHeader from './ToggleHeader';
@@ -37,6 +37,23 @@ const SectionCard = ({
     maxLength
   } = section || {};
   const hasFeedback = !!feedbackRating;
+  
+  // SIMPLIFIED checks for placeholder content
+  const isDefaultPlaceholderText = (text) => {
+    if (!text) return true;
+    text = text.trim();
+    if (text === '') return true;
+    
+    // Look for the default placeholder-like content
+    if (text.includes('Clear, focused question')) return true;
+    if (text.includes('[Clear, focused')) return true;
+    
+    // Check if it's too short to be meaningful
+    return text.length < 15;
+  };
+  
+  // This is what determines if the button should be gray
+  const isPlaceholderContent = isDefaultPlaceholderText(content);
 
   // Callbacks
   const handleTextChange = useCallback((e) => {
@@ -151,14 +168,14 @@ const SectionCard = ({
             handleTextChange={handleTextChange}
           />
           <FeedbackButton
-            hasEditedContent={true} // Set to always true for debugging - the component will do its own check
+            hasEditedContent={!isPlaceholderContent} // Simply the inverse of placeholder content
             hasFeedback={hasFeedback}
             editedSinceFeedback={editedSinceFeedback}
             feedbackRating={feedbackRating}
             handleFeedbackRequest={handleFeedbackRequest}
             sectionId={sectionId}
-            content={content} // *** CRITICAL CHANGE: Pass the actual content directly ***
-            onSwitchToGuide={onSwitchToGuide}
+            isPlaceholderContent={isPlaceholderContent} // Pass the simplified placeholder check
+            onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
           />
         </>
         )
