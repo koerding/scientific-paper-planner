@@ -18,7 +18,7 @@ const SectionModePicker = ({ currentMode, onModeChange, disabled = false }) => {
   };
 
   return (
-    <div className="bg-gray-100 p-1 rounded-full inline-flex items-center justify-center shadow-sm">
+    <div className="bg-gray-100 p-2 rounded-full inline-flex items-center justify-center shadow-sm">
       <button
         onClick={() => handleModeChange('write')}
         disabled={disabled || currentMode === 'write'}
