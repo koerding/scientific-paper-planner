@@ -99,13 +99,13 @@ const LeftPanel = ({
 
   // Define options for toggles
   const approachOptions = [ 
-    { id: 'hypothesis', label: 'Hypothesis-Driven' }, 
-    { id: 'needsresearch', label: 'Problem-Based' }, 
+    { id: 'hypothesis', label: 'Hypothesis' }, 
+    { id: 'needsresearch', label: 'Needs' }, 
     { id: 'exploratoryresearch', label: 'Exploratory' } 
   ];
   const dataMethodOptions = [ 
     { id: 'experiment', label: 'Experiment' }, 
-    { id: 'existingdata', label: 'Existing Data' }, 
+    { id: 'existingdata', label: 'Dataset' }, 
     { id: 'theorysimulation', label: 'Theory' } 
   ];
 
