@@ -780,3 +780,129 @@ header.bg-white.shadow-sm .container button[aria-label="Save"] span {
     max-height: 70vh !important;
   }
 }
+/* --- Add these mobile-specific styles to your PaperPlanner.css file --- */
+
+/* Better Mobile Chat Experience */
+@media (max-width: 768px) {
+  /* Improve chat message container scrolling */
+  .chat-container .messages-container {
+    -webkit-overflow-scrolling: touch !important; /* Smooth scrolling on iOS */
+    overflow-y: auto !important;
+    flex-grow: 1 !important;
+    height: auto !important;
+    min-height: 0 !important; /* Critical for flexbox scrolling on mobile */
+  }
+  
+  /* Ensure sticky positioning works for header and input */
+  .chat-container .chat-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+  }
+  
+  /* Make sure the input area stays at the bottom */
+  .chat-container .p-3.border-t.border-gray-200.bg-white {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 20 !important;
+  }
+  
+  /* Make chat bubbles larger on mobile for better readability */
+  .message-bubble {
+    max-width: 85% !important;
+    padding: 0.75rem !important;
+  }
+  
+  /* Prevent long words from breaking layout */
+  .message-content {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Truncate chat button text on very small screens */
+  @media (max-width: 380px) {
+    .chat-button-text {
+      max-width: 140px !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      display: inline-block !important;
+    }
+  }
+
+  /* Ensure the chat height doesn't exceed viewport on small devices */
+  .chat-container {
+    max-height: 80vh !important;
+  }
+}
+
+/* Better Mobile Splash Screen Positioning */
+@media (max-width: 640px) {
+  /* Ensure the splash screen is scrollable on small devices */
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 {
+    align-items: flex-start !important; 
+    overflow-y: auto !important;
+    padding: 1rem !important;
+  }
+  
+  /* Add margin to the splash screen container */
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 > div.bg-white {
+    margin-top: 1rem !important;
+    margin-bottom: 2rem !important;
+    max-height: calc(100vh - 4rem) !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Ensure the get started button is always visible */
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 .py-3.border-t {
+    position: sticky !important;
+    bottom: 0 !important;
+    background-color: white !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    z-index: 10 !important;
+  }
+  
+  /* Make the "Don't show this again" checkbox easier to tap */
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 label.flex.items-center {
+    padding: 0.5rem 0 !important;
+  }
+  
+  /* Get started button - make it larger for easier tapping */
+  .fixed.inset-0.bg-gray-800.bg-opacity-80 button.bg-purple-600 {
+    padding: 0.75rem 2rem !important;
+    font-size: 1rem !important;
+  }
+}
+
+/* Ensure fixed elements don't overlap important content on small screens */
+@media (max-height: 600px) {
+  .chat-button-container {
+    bottom: 16px !important;
+  }
+  
+  .chat-container {
+    bottom: 16px !important;
+    max-height: 70vh !important; /* Lower max height on very small screens */
+  }
+}
+
+/* Fix iOS Safari issues */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific fixes */
+  .chat-container {
+    position: fixed !important;
+    transform: translateZ(0) !important; /* Force hardware acceleration */
+  }
+  
+  .chat-container .messages-container {
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* Fix sticky positioning in Safari */
+  .chat-container .chat-header,
+  .chat-container .p-3.border-t.border-gray-200.bg-white {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+  }
+}
