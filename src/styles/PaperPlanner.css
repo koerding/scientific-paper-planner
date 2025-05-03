@@ -1021,3 +1021,37 @@ header.bg-white.shadow-sm .container button[aria-label="Save"] span {
 .feedback-button svg {
   flex-shrink: 0 !important;
 }
+/* Add these styles to your PaperPlanner.css file to fix the incognito scrolling issue */
+
+/* Fix for the card opening issue in incognito mode by preventing unwanted scroll behavior */
+.section-card {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  contain: content !important; /* Help contain events within the card */
+}
+
+/* When the card is expanded, allow text selection in the editor */
+.section-card.expanded .section-editor textarea {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* Ensure click events behave properly */
+.section-card:not(.expanded) {
+  cursor: pointer !important;
+}
+
+/* Force clickable buttons to have pointer cursor */
+.section-card .minimize-toggle-btn,
+.section-card button.in-card-toggle button {
+  cursor: pointer !important;
+}
+
+/* Override any browser-specific default behavior in private/incognito modes */
+.section-card.minimized .section-header {
+  pointer-events: auto !important;
+}
