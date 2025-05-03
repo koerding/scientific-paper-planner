@@ -1,5 +1,6 @@
 // FILE: src/components/sections/FeedbackButton.js
 // UPDATED: Added mode switching functionality
+// UPDATED: Gray button state for unchanged content
 
 import React from 'react';
 import useAppStore from '../../store/appStore'; // Import store to get loading flags
@@ -11,7 +12,8 @@ const FeedbackButton = ({
   feedbackRating,
   handleFeedbackRequest,
   sectionId,
-  onSwitchToGuide = null // New prop to handle mode switching
+  isPlaceholderContent, // New prop to check if content is just placeholder
+  onSwitchToGuide = null // Prop to handle mode switching
 }) => {
   // --- Get loading states from store ---
   const isAnyAiBusy = useAppStore((state) => state.isAnyLoading());
@@ -20,17 +22,23 @@ const FeedbackButton = ({
   // ---
 
   // Determine if the button should be visually/functionally disabled
-  const isLoading = isAnyAiBusy || globalAiLoading; // Now uses boolean results
-  const isDisabledByContent = !hasEditedContent;
+  const isLoading = isAnyAiBusy || globalAiLoading; // Uses boolean results
+  
+  // Disabled states
+  const isDisabledByContent = !hasEditedContent || isPlaceholderContent;
   const isDisabledAfterFeedback = hasFeedback && !editedSinceFeedback;
-  const isButtonDisabled = isLoading || isDisabledByContent || isDisabledAfterFeedback;
+  
+  // New: Disabled if content hasn't been changed (either from placeholder or since last feedback)
+  const isUnchangedContent = isDisabledByContent || isDisabledAfterFeedback;
+  
+  const isButtonDisabled = isLoading || isUnchangedContent;
 
   // Get button styling class
   const getButtonClass = () => {
     if (isLoading) {
       return 'bg-purple-300 text-purple-800 cursor-wait animate-pulse';
     }
-    if (isDisabledByContent || isDisabledAfterFeedback) {
+    if (isUnchangedContent) {
       return 'bg-gray-400 text-white cursor-not-allowed opacity-70';
     }
     if (editedSinceFeedback) {
@@ -42,7 +50,9 @@ const FeedbackButton = ({
   // Get button label
   const getButtonLabel = () => {
     if (isLoading) return "Processing...";
+    
     if (isDisabledByContent) return "Add content first";
+    
     if (isDisabledAfterFeedback) {
         if (feedbackRating) {
              if (feedbackRating <= 3) return `Needs work (${feedbackRating}/10)`;
@@ -54,7 +64,9 @@ const FeedbackButton = ({
             return "Feedback received";
         }
     }
+    
     if (editedSinceFeedback) return "Get new feedback";
+    
     return "Ready for feedback";
   };
 
