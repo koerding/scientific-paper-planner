@@ -34,7 +34,7 @@
           "tooltip": "Before diving into data or experiments, identify whether your question aims to characterize an unknown phenomenon, reveal the processes behind it, or determine cause-effect relationships. This distinction shapes everything: from the design of your study to the analytical tools you use. A descriptive question, for instance, might rely on observational data, while a mechanistic or causal question demands more controlled or comparative studies. By clarifying the nature of your question at the outset, you guide your own research decisions and help readers anticipate the kind of evidence or argument you'll provide. It also keeps you from conflating correlation with causation."
         }
       ],
-      "placeholder": "Research Question: [Clear, focused question that guides your research] \nSignificance/Impact: [Why this matters to your field and beyond]"
+      "placeholder": "YOU EDIT THIS: \nResearch Question: [Clear, focused question that guides your research] \nSignificance/Impact: [Why this matters to your field and beyond]"
     },
     {
       "id": "audience",
