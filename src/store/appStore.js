@@ -25,7 +25,7 @@ const getInitialSectionStates = () => {
             content: section.placeholder || '',
             originalInstructions: section.subsections || [], // Keep original instructions
             aiInstructions: null, // AI feedback starts as null
-            isMinimized: !isQuestion, // Start with only question expanded
+            isMinimized: false, // Start with only question expanded
             isVisible: isQuestion, // Start with only question visible (progression logic handles others)
             feedbackRating: null, // Feedback rating starts as null
             editedSinceFeedback: false, // Not edited initially
