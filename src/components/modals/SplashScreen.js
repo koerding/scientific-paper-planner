@@ -4,11 +4,7 @@ import React from 'react';
 
 /**
  * Splash screen component to welcome new users
- * Explains key features of the Scientific Project Planner
- * UPDATED: Changed "Paper" to "Project" throughout
- * UPDATED: Icon colors now exactly match the corresponding buttons
- * ADDED: "Feeling stuck" section about PDF import feature
- * UPDATED: Increased z-index to appear above chat button
+ * Restructured to show a sequential workflow with consistent icons
  */
 const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   const handleDontShowAgain = () => {
@@ -17,10 +13,20 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
     onClose();
   };
 
+  // Define icon colors to match app's color scheme
+  const iconColors = {
+    write: "#4F46E5", // indigo-600 for write/question
+    guide: "#7C3AED", // purple-600 for guide
+    feedback: "#059669", // green-600 for feedback
+    chat: "#4F46E5", // indigo-600 for chat
+    pdf: "#4F46E5", // indigo-600 for pdf import
+    review: "#0D9488", // teal-600 for review
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center z-50" style={{ zIndex: 1000 }}>
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 overflow-hidden">
-        {/* Header with title and logo - FIXED: Changed "Paper" to "Project" */}
+        {/* Header with title and logo */}
         <div className="bg-purple-600 px-6 py-4 flex items-center">
           <div className="w-10 h-10 bg-white rounded-md flex items-center justify-center mr-3 flex-shrink-0">
             <span className="font-bold text-xl text-purple-600">SP</span>
@@ -30,66 +36,96 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
         
         {/* Content area */}
         <div className="px-6 py-5">
-          <p className="text-gray-800 font-medium text-lg mb-4">
-            Design a scientific project, step-by-step. Structured for clarity, enhanced by AI.
+          <p className="text-gray-800 font-medium text-lg mb-5">
+            Design a scientific project, step-by-step:
           </p>
           
-          <div className="space-y-4 mb-6">
-            {/* AI Chat - exact indigo-600 color to match chat button */}
+          <div className="space-y-6 mb-6">
+            {/* Step 1: Write a good question */}
             <div className="flex items-start">
-              <div className="bg-indigo-600 p-2 rounded-full mr-3 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
-                  <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Get AI assistance anytime</p>
-                <p className="text-gray-600 text-sm">Click the indigo "Let's talk about this" button in the bottom right to discuss your current section</p>
+              <div className="rounded-full mr-3 mt-0.5 flex items-center justify-center text-white font-bold bg-indigo-600 h-7 w-7">1</div>
+              <div className="flex-1">
+                <div className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke={iconColors.write}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  <p className="font-medium text-gray-800">Write a good question</p>
+                </div>
+                <p className="text-gray-600 text-sm mt-1">Start by crafting a clear, focused research question that will guide your entire project</p>
               </div>
             </div>
             
-            {/* Magic Button - exact purple-600 to match improve instructions button */}
+            {/* Step 2: Use the guide */}
             <div className="flex items-start">
-              <div className="bg-purple-600 p-2 rounded-full mr-3 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Get adaptive guidance as you work</p>
-                <p className="text-gray-600 text-sm">The "Improve Instructions" button analyzes your progress and tailors the guidance to where you are</p>
+              <div className="rounded-full mr-3 mt-0.5 flex items-center justify-center text-white font-bold bg-indigo-600 h-7 w-7">2</div>
+              <div className="flex-1">
+                <div className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke={iconColors.guide}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  <p className="font-medium text-gray-800">Use the guide</p>
+                </div>
+                <p className="text-gray-600 text-sm mt-1">Toggle to Guide mode for detailed instructions and examples for each section</p>
               </div>
             </div>
             
-            {/* PDF/Doc import - exact indigo-600 to match import button */}
+            {/* Step 3: Get feedback */}
             <div className="flex items-start">
-              <div className="bg-indigo-600 p-2 rounded-full mr-3 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Feeling stuck? Try Pdf->Example to see how the authors might have filled this form</p>
-                <p className="text-gray-600 text-sm">Upload your favorite paper and let the AI create an example project structure based on it</p>
+              <div className="rounded-full mr-3 mt-0.5 flex items-center justify-center text-white font-bold bg-indigo-600 h-7 w-7">3</div>
+              <div className="flex-1">
+                <div className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke={iconColors.feedback}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="font-medium text-gray-800">Once ready, get feedback</p>
+                </div>
+                <p className="text-gray-600 text-sm mt-1">Use the feedback button to get AI evaluation and suggestions for each section</p>
               </div>
             </div>
             
-            {/* Paper Review Button - changing from green to teal-600 to match review button */}
+            {/* Step 4: Chat for help */}
             <div className="flex items-start">
-              <div className="bg-teal-600 p-2 rounded-full mr-3 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Review existing papers</p>
-                <p className="text-gray-600 text-sm">Checks for the issues you work on here in other papers</p>
+              <div className="rounded-full mr-3 mt-0.5 flex items-center justify-center text-white font-bold bg-indigo-600 h-7 w-7">4</div>
+              <div className="flex-1">
+                <div className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke={iconColors.chat}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  <p className="font-medium text-gray-800">Lost? Chat!</p>
+                </div>
+                <p className="text-gray-600 text-sm mt-1">Use the chat button in the bottom right to get help with your current section</p>
               </div>
             </div>
           </div>
           
-          <div className="text-center">
+          {/* Additional tips with horizontal rule separator */}
+          <div className="border-t border-gray-200 pt-5 mt-3">
+            <h3 className="text-gray-700 font-medium mb-3">More tips:</h3>
+            
+            <div className="space-y-4">
+              {/* PDF Import Tip */}
+              <div className="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke={iconColors.pdf}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-gray-600 text-sm">
+                  <span className="font-medium">Feeling lost?</span> Take a great paper that is similar to your project and use the "Pdf→Example" in the menu.
+                </p>
+              </div>
+              
+              {/* Review Paper Tip */}
+              <div className="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-teal-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke={iconColors.review}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-gray-600 text-sm">
+                  <span className="font-medium">Want to see the rules in action?</span> Have the AI review an existing paper based on the guide.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-center mt-6">
             {showDontShowAgainOption && (
               <div className="mb-4 flex items-center justify-center">
                 <label className="flex items-center cursor-pointer">
@@ -111,9 +147,11 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             </button>
             
             <div className="mt-4 text-gray-500 text-sm">
-              Built with ❤️ Konrad @Kordinglab. 
-                
+              Built with ❤️ by Konrad @Kordinglab. 
+              
+              <p className="mt-1">
                 By using this software you acknowledge that Dinosaurs are the most awesome animals.
+              </p>
             </div>
           </div>
         </div>
