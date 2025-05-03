@@ -1,9 +1,7 @@
 // FILE: src/components/sections/FeedbackButton.js
-// UPDATED: Added mode switching functionality
-// UPDATED: Gray button state for unchanged content
-// FIXED: Initial state now correctly starts as gray
+// FIXED: Forced initial state to be gray for new projects with placeholder content
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import useAppStore from '../../store/appStore'; // Import store to get loading flags
 
 const FeedbackButton = ({
@@ -16,6 +14,21 @@ const FeedbackButton = ({
   isPlaceholderContent, // Prop to check if content is just placeholder or too short
   onSwitchToGuide = null // Prop to handle mode switching
 }) => {
+  // Local state to force button to start gray
+  const [forceDisabled, setForceDisabled] = useState(true);
+  
+  // Effect to check for real changes (prevents the button from being active on first render)
+  useEffect(() => {
+    // When component first mounts, set force disabled
+    // This helps ensure the button starts gray
+    const timer = setTimeout(() => {
+      // Only enable if there's actually meaningful content
+      setForceDisabled(isPlaceholderContent === true);
+    }, 500); // Small delay to ensure state is properly evaluated
+    
+    return () => clearTimeout(timer);
+  }, [isPlaceholderContent]);
+  
   // --- Get loading states from store ---
   const isAnyAiBusy = useAppStore((state) => state.isAnyLoading());
   const globalAiLoading = useAppStore((state) => state.globalAiLoading);
@@ -25,13 +38,12 @@ const FeedbackButton = ({
   // Determine if the button should be visually/functionally disabled
   const isLoading = isAnyAiBusy || globalAiLoading; // Uses boolean results
   
-  // Disabled states
-  const isDisabledByContent = !hasEditedContent || isPlaceholderContent;
+  // Disabled states - now includes forceDisabled to guarantee gray on first load
+  const isDisabledByContent = !hasEditedContent || isPlaceholderContent || forceDisabled;
   const isDisabledAfterFeedback = hasFeedback && !editedSinceFeedback;
   
-  // New: Disabled if content hasn't been changed (either from placeholder or since last feedback)
+  // Ensure button is disabled when there's no meaningful content
   const isUnchangedContent = isDisabledByContent || isDisabledAfterFeedback;
-  
   const isButtonDisabled = isLoading || isUnchangedContent;
 
   // Get button styling class - FIXED: The button is now gray in the initial state
@@ -41,7 +53,7 @@ const FeedbackButton = ({
     }
     
     // Disabled/gray state - includes both empty content and unchanged after feedback
-    if (isUnchangedContent) {
+    if (isUnchangedContent || forceDisabled) {
       return 'bg-gray-400 text-white cursor-not-allowed opacity-70';
     }
     
@@ -53,7 +65,7 @@ const FeedbackButton = ({
   const getButtonLabel = () => {
     if (isLoading) return "Processing...";
     
-    if (isDisabledByContent) return "Add content first";
+    if (isDisabledByContent || forceDisabled) return "Add content first";
     
     if (isDisabledAfterFeedback) {
         if (feedbackRating) {
@@ -79,7 +91,7 @@ const FeedbackButton = ({
    let tooltipText = "Get AI feedback on this section";
    if (isLoading) {
        tooltipText = "AI is busy processing a request...";
-   } else if (isDisabledByContent) {
+   } else if (isDisabledByContent || forceDisabled) {
        tooltipText = "Add meaningful content before requesting feedback";
    } else if (isDisabledAfterFeedback) {
        tooltipText = "Edit the section content to request new feedback";
@@ -89,7 +101,7 @@ const FeedbackButton = ({
 
   // New handler to handle both feedback request and mode switching
   const handleButtonClick = () => {
-    if (isButtonDisabled) return;
+    if (isButtonDisabled || forceDisabled) return;
     
     // First, call the original feedback handler
     if (typeof handleFeedbackRequest === 'function') {
@@ -111,7 +123,7 @@ const FeedbackButton = ({
     <div className="flex justify-end mt-2">
       <button
         onClick={handleButtonClick}
-        disabled={isButtonDisabled}
+        disabled={isButtonDisabled || forceDisabled}
         className={`
           feedback-button text-sm font-medium
           px-3 py-1.5 rounded
