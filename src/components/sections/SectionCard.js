@@ -1,6 +1,5 @@
 // FILE: src/components/sections/SectionCard.js
-// FIXED: Card opening issue in incognito mode
-// FIXED: Ensures feedback button starts gray with placeholder content
+// FIXED: Simplified placeholder detection to ensure button turns purple
 
 import React, { useState, useCallback, useEffect } from 'react';
 import useAppStore from '../../store/appStore';
@@ -39,34 +38,30 @@ const SectionCard = ({
   } = section || {};
   const hasFeedback = !!feedbackRating;
   
-  // FIXED: More robust checks for placeholder content and edited state
-  const defaultPlaceholderText = placeholder || 'Start writing...';
-  const hasOnlyPlaceholder = !content || content === defaultPlaceholderText || content.trim() === '';
+  // SIMPLIFIED checks for placeholder content
+  const isDefaultPlaceholderText = (text) => {
+    if (!text) return true;
+    text = text.trim();
+    if (text === '') return true;
+    
+    // Look for the default placeholder-like content
+    if (text.includes('Clear, focused question')) return true;
+    if (text.includes('[Clear, focused')) return true;
+    
+    // Check if it's too short to be meaningful
+    return text.length < 15;
+  };
   
-  // CRITICAL FIX: More aggressive check to ensure button starts gray
-  // This checks if the content contains the placeholder text or has minimal input
-  const isPlaceholderContent = 
-    hasOnlyPlaceholder || 
-    content.includes('Clear, focused question') ||
-    content.includes('[Clear, focused question') || 
-    content.trim().length < 30 || 
-    content.trim().split(/\s+/).length < 4;  // Require at least 4 words
-  
-  // CRITICAL FIX: Make sure hasEditedContent is strictly false for new projects
-  const hasEditedContent = 
-    !hasOnlyPlaceholder && 
-    !content.includes('Clear, focused question') && 
-    !content.includes('[Clear, focused question') && 
-    content.trim().length >= 30;
+  // This is what determines if the button should be gray
+  const isPlaceholderContent = isDefaultPlaceholderText(content);
 
   // Callbacks
   const handleTextChange = useCallback((e) => {
     updateSectionContent(sectionId, e.target.value);
   }, [sectionId, updateSectionContent]);
 
-  // FIXED: The card click handler to prevent default and stop propagation
+  // FIXED: Better event handling for card clicks
   const handleToggleMinimize = useCallback((e) => {
-    // Prevent default behavior to fix incognito mode scrolling issue
     if(e) {
       e.preventDefault();
       e.stopPropagation();
@@ -85,11 +80,12 @@ const SectionCard = ({
     }
   }, [sectionId, onRequestFeedback]);
 
-  // FIXED: The card click handler to prevent default and use stopPropagation
+  // FIXED: Better event handling for card clicks
   const handleCardClick = (e) => {
-    // Prevent default behavior to fix incognito mode scrolling issue
-    e.preventDefault();
-    e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
     if (isMinimized) {
       handleToggleMinimize(e);
@@ -172,13 +168,13 @@ const SectionCard = ({
             handleTextChange={handleTextChange}
           />
           <FeedbackButton
-            hasEditedContent={hasEditedContent} // Use the fixed check
+            hasEditedContent={!isPlaceholderContent} // Simply the inverse of placeholder content
             hasFeedback={hasFeedback}
             editedSinceFeedback={editedSinceFeedback}
             feedbackRating={feedbackRating}
             handleFeedbackRequest={handleFeedbackRequest}
             sectionId={sectionId}
-            isPlaceholderContent={isPlaceholderContent} // Pass the placeholder check
+            isPlaceholderContent={isPlaceholderContent} // Pass the simplified placeholder check
             onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
           />
         </>
