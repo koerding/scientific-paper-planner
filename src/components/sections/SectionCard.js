@@ -1,5 +1,6 @@
 // FILE: src/components/sections/SectionCard.js
 // UPDATED: Added section ID attribute for navigation targeting
+// UPDATED: Added isPlaceholderContent to FeedbackButton
 
 import React, { useState, useCallback, useEffect } from 'react';
 import useAppStore from '../../store/appStore';
@@ -43,6 +44,9 @@ const SectionCard = ({
   } = section || {};
   const hasFeedback = !!feedbackRating;
   const hasOnlyPlaceholder = content === (placeholder || '') || content.trim() === '';
+
+  // NEW: Check if content is a placeholder or hasn't been edited meaningfully
+  const isPlaceholderContent = hasOnlyPlaceholder || content.trim().length < 10;
 
   // Callbacks
   const handleTextChange = useCallback((e) => {
@@ -152,6 +156,7 @@ const SectionCard = ({
                  feedbackRating={feedbackRating}
                  handleFeedbackRequest={handleFeedbackRequest}
                  sectionId={sectionId}
+                 isPlaceholderContent={isPlaceholderContent} // NEW: Pass the placeholder check
                  onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
                />
             </>
