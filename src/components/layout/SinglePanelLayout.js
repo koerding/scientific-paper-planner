@@ -7,7 +7,7 @@ import { showWelcomeSplash } from '../modals/SplashScreenManager';
 
 /**
  * A single panel layout that handles both write and guide modes
- * FIXED: Now correctly displays title in guide mode only
+ * FIXED: Now correctly manages scroll position when switching modes
  * FIXED: Embedded toggle in header for both modes
  * FIXED: Removed floating toggle to avoid duplication
  */
@@ -39,11 +39,39 @@ const SinglePanelLayout = ({
   
   // Handlers for switching between write and guide modes
   const handleSwitchToGuide = () => {
+    // Store current scroll position before switching to guide mode
+    if (contentRef && contentRef.current) {
+      localStorage.setItem('writeScrollPosition', contentRef.current.scrollTop);
+      console.log(`[SinglePanelLayout] Stored write scroll position: ${contentRef.current.scrollTop}px`);
+    }
+    
+    // Switch to guide mode
     setUiMode('guide');
+    
+    // Scroll to top after a short delay to ensure UI has updated
+    setTimeout(() => {
+      if (contentRef && contentRef.current) {
+        contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        console.log('[SinglePanelLayout] Scrolled to top for guide mode');
+      }
+    }, 50);
   };
   
   const handleSwitchToWrite = () => {
+    // Switch to write mode
     setUiMode('write');
+    
+    // Restore previous scroll position after a short delay
+    setTimeout(() => {
+      const storedScrollPos = localStorage.getItem('writeScrollPosition');
+      if (storedScrollPos && contentRef && contentRef.current) {
+        contentRef.current.scrollTo({ 
+          top: parseInt(storedScrollPos, 10), 
+          behavior: 'smooth' 
+        });
+        console.log(`[SinglePanelLayout] Restored write scroll position: ${storedScrollPos}px`);
+      }
+    }, 50);
   };
   
   return (
