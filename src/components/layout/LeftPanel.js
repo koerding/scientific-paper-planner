@@ -1,5 +1,5 @@
 // FILE: src/components/layout/LeftPanel.js
-// UPDATED: Added scroll to section functionality for left rail navigation
+// UPDATED: Improved pro mode messaging in the rail
 
 import React, { useEffect, useRef } from 'react';
 import useAppStore from '../../store/appStore';
