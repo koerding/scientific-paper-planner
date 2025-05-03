@@ -1,8 +1,8 @@
 // FILE: src/components/sections/FeedbackButton.js
-// FIXED: Forced initial state to be gray for new projects with placeholder content
+// FIXED: Simplified logic to ensure button turns purple when appropriate
 
-import React, { useEffect, useState } from 'react';
-import useAppStore from '../../store/appStore'; // Import store to get loading flags
+import React from 'react';
+import useAppStore from '../../store/appStore';
 
 const FeedbackButton = ({
   hasEditedContent,
@@ -11,53 +11,38 @@ const FeedbackButton = ({
   feedbackRating,
   handleFeedbackRequest,
   sectionId,
-  isPlaceholderContent, // Prop to check if content is just placeholder or too short
-  onSwitchToGuide = null // Prop to handle mode switching
+  isPlaceholderContent,
+  onSwitchToGuide = null
 }) => {
-  // Local state to force button to start gray
-  const [forceDisabled, setForceDisabled] = useState(true);
-  
-  // Effect to check for real changes (prevents the button from being active on first render)
-  useEffect(() => {
-    // When component first mounts, set force disabled
-    // This helps ensure the button starts gray
-    const timer = setTimeout(() => {
-      // Only enable if there's actually meaningful content
-      setForceDisabled(isPlaceholderContent === true);
-    }, 500); // Small delay to ensure state is properly evaluated
-    
-    return () => clearTimeout(timer);
-  }, [isPlaceholderContent]);
-  
   // --- Get loading states from store ---
   const isAnyAiBusy = useAppStore((state) => state.isAnyLoading());
   const globalAiLoading = useAppStore((state) => state.globalAiLoading);
   const setUiMode = useAppStore((state) => state.setUiMode);
   // ---
 
-  // Determine if the button should be visually/functionally disabled
-  const isLoading = isAnyAiBusy || globalAiLoading; // Uses boolean results
+  // Determine if the button should be disabled
+  const isLoading = isAnyAiBusy || globalAiLoading;
   
-  // Disabled states - now includes forceDisabled to guarantee gray on first load
-  const isDisabledByContent = !hasEditedContent || isPlaceholderContent || forceDisabled;
+  // SIMPLE CHECK: Only consider content-based disabling
+  const isDisabledByContent = isPlaceholderContent;
+  
+  // Check if it has feedback but hasn't been edited since
   const isDisabledAfterFeedback = hasFeedback && !editedSinceFeedback;
   
-  // Ensure button is disabled when there's no meaningful content
-  const isUnchangedContent = isDisabledByContent || isDisabledAfterFeedback;
-  const isButtonDisabled = isLoading || isUnchangedContent;
+  // Final disabled state
+  const isButtonDisabled = isLoading || isDisabledByContent || isDisabledAfterFeedback;
 
-  // Get button styling class - FIXED: The button is now gray in the initial state
+  // Get button styling class - Simplified logic
   const getButtonClass = () => {
     if (isLoading) {
       return 'bg-purple-300 text-purple-800 cursor-wait animate-pulse';
     }
     
-    // Disabled/gray state - includes both empty content and unchanged after feedback
-    if (isUnchangedContent || forceDisabled) {
+    if (isDisabledByContent || isDisabledAfterFeedback) {
       return 'bg-gray-400 text-white cursor-not-allowed opacity-70';
     }
     
-    // Active/purple state - only when content has been meaningfully edited
+    // If we get here, the button should be purple and active
     return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
   };
 
@@ -65,7 +50,7 @@ const FeedbackButton = ({
   const getButtonLabel = () => {
     if (isLoading) return "Processing...";
     
-    if (isDisabledByContent || forceDisabled) return "Add content first";
+    if (isDisabledByContent) return "Add content first";
     
     if (isDisabledAfterFeedback) {
         if (feedbackRating) {
@@ -91,7 +76,7 @@ const FeedbackButton = ({
    let tooltipText = "Get AI feedback on this section";
    if (isLoading) {
        tooltipText = "AI is busy processing a request...";
-   } else if (isDisabledByContent || forceDisabled) {
+   } else if (isDisabledByContent) {
        tooltipText = "Add meaningful content before requesting feedback";
    } else if (isDisabledAfterFeedback) {
        tooltipText = "Edit the section content to request new feedback";
@@ -99,21 +84,18 @@ const FeedbackButton = ({
        tooltipText = "Content changed since last feedback. Request updated feedback.";
    }
 
-  // New handler to handle both feedback request and mode switching
+  // Handle click
   const handleButtonClick = () => {
-    if (isButtonDisabled || forceDisabled) return;
+    if (isButtonDisabled) return;
     
-    // First, call the original feedback handler
     if (typeof handleFeedbackRequest === 'function') {
       handleFeedbackRequest();
     }
     
-    // Then switch to guide mode (after a small delay)
     setTimeout(() => {
       if (typeof onSwitchToGuide === 'function') {
         onSwitchToGuide();
       } else {
-        // Fallback to direct store access if no prop provided
         setUiMode('guide');
       }
     }, 100);
@@ -123,7 +105,7 @@ const FeedbackButton = ({
     <div className="flex justify-end mt-2">
       <button
         onClick={handleButtonClick}
-        disabled={isButtonDisabled || forceDisabled}
+        disabled={isButtonDisabled}
         className={`
           feedback-button text-sm font-medium
           px-3 py-1.5 rounded
@@ -132,6 +114,8 @@ const FeedbackButton = ({
           ${buttonColorClass}
         `}
         title={tooltipText}
+        data-placeholder={isPlaceholderContent ? 'true' : 'false'}
+        data-disabled={isButtonDisabled ? 'true' : 'false'}
       >
         {isLoading ? (
           <>
