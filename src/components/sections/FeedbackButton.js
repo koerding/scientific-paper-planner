@@ -1,5 +1,5 @@
 // FILE: src/components/sections/FeedbackButton.js
-// Back to basics - extremely simplified logic
+// FIXED: Simplified logic to ensure button turns purple when appropriate
 
 import React from 'react';
 import useAppStore from '../../store/appStore';
@@ -11,69 +11,87 @@ const FeedbackButton = ({
   feedbackRating,
   handleFeedbackRequest,
   sectionId,
-  content, // Just pass the raw content
+  isPlaceholderContent,
   onSwitchToGuide = null
 }) => {
   // --- Get loading states from store ---
   const isAnyAiBusy = useAppStore((state) => state.isAnyLoading());
   const globalAiLoading = useAppStore((state) => state.globalAiLoading);
   const setUiMode = useAppStore((state) => state.setUiMode);
-  
-  // Extremely simplified logic to determine button state
+  // ---
+
+  // Determine if the button should be disabled
   const isLoading = isAnyAiBusy || globalAiLoading;
   
-  // Check if content is placeholder or minimal
-  const hasMinimalContent = !content || 
-                         content.trim() === '' || 
-                         content.includes('[Clear, focused question') ||
-                         content.trim().length < 15;
+  // SIMPLE CHECK: Only consider content-based disabling
+  const isDisabledByContent = isPlaceholderContent;
   
-  // After feedback state
-  const hasReceivedFeedback = hasFeedback && !editedSinceFeedback;
+  // Check if it has feedback but hasn't been edited since
+  const isDisabledAfterFeedback = hasFeedback && !editedSinceFeedback;
   
-  // Button disabled if loading, no real content, or feedback not followed by edits
-  const isButtonDisabled = isLoading || hasMinimalContent || hasReceivedFeedback;
-  
-  // Button color class - direct logic
-  let buttonColor = 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
-  
-  if (isLoading) {
-    buttonColor = 'bg-purple-300 text-purple-800 cursor-wait animate-pulse';
-  } else if (hasMinimalContent || hasReceivedFeedback) {
-    buttonColor = 'bg-gray-400 text-white cursor-not-allowed opacity-70';
-  }
-  
-  // Button label
-  let buttonLabel = "Ready for feedback";
-  
-  if (isLoading) {
-    buttonLabel = "Processing...";
-  } else if (hasMinimalContent) {
-    buttonLabel = "Add content first";
-  } else if (hasReceivedFeedback) {
-    if (feedbackRating) {
-      if (feedbackRating <= 3) buttonLabel = `Needs work (${feedbackRating}/10)`;
-      else if (feedbackRating <= 5) buttonLabel = `Average (${feedbackRating}/10)`;
-      else if (feedbackRating <= 7) buttonLabel = `Good (${feedbackRating}/10)`;
-      else if (feedbackRating <= 9) buttonLabel = `Very good (${feedbackRating}/10)`;
-      else buttonLabel = `Excellent (${feedbackRating}/10)`;
-    } else {
-      buttonLabel = "Feedback received";
+  // Final disabled state
+  const isButtonDisabled = isLoading || isDisabledByContent || isDisabledAfterFeedback;
+
+  // Get button styling class - Simplified logic
+  const getButtonClass = () => {
+    if (isLoading) {
+      return 'bg-purple-300 text-purple-800 cursor-wait animate-pulse';
     }
-  } else if (editedSinceFeedback) {
-    buttonLabel = "Get new feedback";
-  }
-  
-  // Simple click handler
-  const handleClick = () => {
+    
+    if (isDisabledByContent || isDisabledAfterFeedback) {
+      return 'bg-gray-400 text-white cursor-not-allowed opacity-70';
+    }
+    
+    // If we get here, the button should be purple and active
+    return 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer';
+  };
+
+  // Get button label
+  const getButtonLabel = () => {
+    if (isLoading) return "Processing...";
+    
+    if (isDisabledByContent) return "Add content first";
+    
+    if (isDisabledAfterFeedback) {
+        if (feedbackRating) {
+             if (feedbackRating <= 3) return `Needs work (${feedbackRating}/10)`;
+             if (feedbackRating <= 5) return `Average (${feedbackRating}/10)`;
+             if (feedbackRating <= 7) return `Good (${feedbackRating}/10)`;
+             if (feedbackRating <= 9) return `Very good (${feedbackRating}/10)`;
+             return `Excellent (${feedbackRating}/10)`;
+        } else {
+            return "Feedback received";
+        }
+    }
+    
+    if (editedSinceFeedback) return "Get new feedback";
+    
+    return "Ready for feedback";
+  };
+
+  const buttonColorClass = getButtonClass();
+  const buttonLabel = getButtonLabel();
+
+  // Determine tooltip based on disabled reason
+   let tooltipText = "Get AI feedback on this section";
+   if (isLoading) {
+       tooltipText = "AI is busy processing a request...";
+   } else if (isDisabledByContent) {
+       tooltipText = "Add meaningful content before requesting feedback";
+   } else if (isDisabledAfterFeedback) {
+       tooltipText = "Edit the section content to request new feedback";
+   } else if (editedSinceFeedback) {
+       tooltipText = "Content changed since last feedback. Request updated feedback.";
+   }
+
+  // Handle click
+  const handleButtonClick = () => {
     if (isButtonDisabled) return;
     
-    // Call the feedback handler
     if (typeof handleFeedbackRequest === 'function') {
       handleFeedbackRequest();
     }
     
-    // Switch to guide mode
     setTimeout(() => {
       if (typeof onSwitchToGuide === 'function') {
         onSwitchToGuide();
@@ -82,29 +100,22 @@ const FeedbackButton = ({
       }
     }, 100);
   };
-  
-  // For debugging
-  console.log(`Button state for ${sectionId}:`, {
-    content: content?.substring(0, 30) + (content?.length > 30 ? '...' : ''),
-    hasMinimalContent,
-    hasReceivedFeedback,
-    isButtonDisabled,
-    buttonColor,
-    buttonLabel
-  });
 
   return (
     <div className="flex justify-end mt-2">
       <button
-        onClick={handleClick}
+        onClick={handleButtonClick}
         disabled={isButtonDisabled}
         className={`
           feedback-button text-sm font-medium
           px-3 py-1.5 rounded
           flex items-center
           transition-colors
-          ${buttonColor}
+          ${buttonColorClass}
         `}
+        title={tooltipText}
+        data-placeholder={isPlaceholderContent ? 'true' : 'false'}
+        data-disabled={isButtonDisabled ? 'true' : 'false'}
       >
         {isLoading ? (
           <>
