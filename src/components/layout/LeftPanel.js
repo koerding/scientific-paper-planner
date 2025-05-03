@@ -210,7 +210,7 @@ const LeftPanel = ({
       {sectionsStillLocked && (
         <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 mt-6">
            <p className="text-sm text-black font-bold">
-          This app guides you through the steps of planning your research. This is key to successful science. The overall process should take a number of hours.
+          This app guides you through the steps of planning your research. This is key to successful science. Spending 10 hours on this is not a waste. Start by editing above.
         </p>
          <p className="text-sm text-gray-700">
           New sections (Hypotheses, Audience, etc) unlock as you complete previous ones with a score of 6 or higher.
