@@ -17,7 +17,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   const iconColors = {
     write: "#4F46E5", // indigo-600 for write/question
     guide: "#7C3AED", // purple-600 for guide
-    feedback: "#059669", // green-600 for feedback
+    feedback: "#7C3AED", // purple-600 for feedback (changed from green)
     chat: "#4F46E5", // indigo-600 for chat
     pdf: "#4F46E5", // indigo-600 for pdf import
     review: "#0D9488", // teal-600 for review
@@ -54,7 +54,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             
             {/* Step 2: Use the guide */}
             <div className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="rounded-full mr-4 flex items-center justify-center text-white font-bold bg-purple-600 h-8 w-8 flex-shrink-0">2</div>
+              <div className="rounded-full mr-4 flex items-center justify-center text-white font-bold bg-gray-600 h-8 w-8 flex-shrink-0">2</div>
               <div className="flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke={iconColors.guide}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -65,7 +65,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             
             {/* Step 3: Get feedback */}
             <div className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="rounded-full mr-4 flex items-center justify-center text-white font-bold bg-green-600 h-8 w-8 flex-shrink-0">3</div>
+              <div className="rounded-full mr-4 flex items-center justify-center text-white font-bold bg-purple-600 h-8 w-8 flex-shrink-0">3</div>
               <div className="flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke={iconColors.feedback}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
