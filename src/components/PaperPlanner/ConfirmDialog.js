@@ -1,11 +1,12 @@
 // FILE: src/components/PaperPlanner/ConfirmDialog.js
 
 import React, { useEffect } from 'react';
+import ReactDOM from 'react-dom'; // Import ReactDOM for createPortal
 import useAppStore from '../../store/appStore';
 
 /**
  * Enhanced Confirmation dialog that handles both regular resets and import confirmations
- * FIXED: Using proper Tailwind classes to match the working SplashScreen implementation
+ * COMPLETELY FIXED: Using React Portal to render outside the main DOM hierarchy
  */
 const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }) => {
   // Get the import confirmation operation from the store
@@ -82,13 +83,13 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
   useEffect(() => {
     if (showConfirmDialog) {
       // Save the current overflow style
-      const originalStyle = document.body.style.overflow;
+      const originalStyle = document.body.style.cssText;
       // Disable scrolling on the body
       document.body.style.overflow = 'hidden';
       
       return () => {
         // Restore original overflow when component unmounts or dialog closes
-        document.body.style.overflow = originalStyle;
+        document.body.style.cssText = originalStyle;
       };
     }
   }, [showConfirmDialog]);
@@ -98,10 +99,31 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
     return null;
   }
 
-  return (
-    // Use the same structure as SplashScreen for consistency
-    <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center overflow-hidden" style={{ zIndex: 1090 }}>
-      <div className="bg-white rounded-lg shadow-xl max-w-md mx-auto w-full animate-fade-in p-6">
+  // The modal content
+  const modalContent = (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-75" 
+      style={{ 
+        zIndex: 9999,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-md w-11/12 p-6 animate-fade-in" 
+        style={{
+          position: 'relative',
+          zIndex: 10000
+        }}
+      >
         <h3 className="text-xl font-bold mb-4 text-gray-800">{title}</h3>
         <p className="mb-6 text-gray-600">
           {message}
@@ -122,6 +144,13 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
         </div>
       </div>
     </div>
+  );
+
+  // Use createPortal to render the modal outside the current component hierarchy
+  // This ensures it's not constrained by parent element styles
+  return ReactDOM.createPortal(
+    modalContent,
+    document.body // Render directly to the body element
   );
 };
 
