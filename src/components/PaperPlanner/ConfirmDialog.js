@@ -5,7 +5,7 @@ import useAppStore from '../../store/appStore';
 
 /**
  * Enhanced Confirmation dialog that handles both regular resets and import confirmations
- * FIXED: Proper full-screen overlay with maximum z-index to cover ALL UI elements
+ * COMPLETELY FIXED: Absolute positioning with ultra-high z-index to cover ALL UI elements
  */
 const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }) => {
   // Get the import confirmation operation from the store
@@ -82,13 +82,14 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
   useEffect(() => {
     if (showConfirmDialog) {
       // Save the current overflow style
-      const originalOverflow = document.body.style.overflow;
-      // Disable scrolling on the body
+      const originalStyle = document.body.style.cssText;
+      // Disable scrolling on the body AND prevent interactions
       document.body.style.overflow = 'hidden';
+      document.body.style.pointerEvents = 'none';
       
       return () => {
-        // Restore original overflow when component unmounts or dialog closes
-        document.body.style.overflow = originalOverflow;
+        // Restore original style when component unmounts or dialog closes
+        document.body.style.cssText = originalStyle;
       };
     }
   }, [showConfirmDialog]);
@@ -97,33 +98,62 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
     return null; // Don't render if not showing
   }
 
+  const overlayStyle = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 99999
+  };
+
+  // Create a portal element outside of normal DOM hierarchy
+  const portalEl = document.createElement('div');
+  portalEl.setAttribute('class', 'modal-portal');
+  portalEl.setAttribute('style', 'position:fixed; top:0; left:0; right:0; bottom:0; width:100vw; height:100vh; z-index:99999;');
+  document.body.appendChild(portalEl);
+
+  // Remove the portal element when dialog is closed
+  useEffect(() => {
+    return () => {
+      if (portalEl && portalEl.parentNode) {
+        portalEl.parentNode.removeChild(portalEl);
+      }
+    };
+  }, []);
+
+  // Render the dialog directly in the body
   return (
-    <div 
-      className="fixed inset-0 overflow-hidden" 
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: '100vw',
-        height: '100vh',
-        backgroundColor: 'rgba(0, 0, 0, 0.75)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999, // Super high z-index to ensure it's above everything
-      }}
-    >
-      <div 
-        className="bg-white rounded-lg shadow-xl max-w-md mx-auto animate-fade-in"
-        style={{
-          padding: '1.5rem',
-          width: '90%',
-          maxWidth: '28rem',
-          position: 'relative'
-        }}
-      >
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: '100vh',
+      background: 'rgba(0, 0, 0, 0.75)',
+      backdropFilter: 'blur(2px)',
+      zIndex: 999999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      pointerEvents: 'auto' // Enable pointer events on the dialog
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '0.5rem',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        padding: '1.5rem',
+        width: '90%',
+        maxWidth: '28rem',
+        position: 'relative',
+        pointerEvents: 'auto' // Ensure pointer events work on the modal
+      }}>
         <h3 className="text-xl font-bold mb-4 text-gray-800">{title}</h3>
         <p className="mb-6 text-gray-600">
           {message}
