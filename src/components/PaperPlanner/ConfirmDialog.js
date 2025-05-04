@@ -5,6 +5,7 @@ import useAppStore from '../../store/appStore';
 
 /**
  * Enhanced Confirmation dialog that handles both regular resets and import confirmations
+ * FIXED: Added proper full-screen overlay with semi-transparent background
  */
 const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }) => {
   // Get the import confirmation operation from the store
@@ -77,13 +78,29 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
     }
   };
 
+  // Prevent body scrolling when dialog is open
+  useEffect(() => {
+    if (showConfirmDialog) {
+      // Disable scrolling on the body
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Re-enable scrolling when dialog closes
+      document.body.style.overflow = '';
+    }
+    
+    // Cleanup function to ensure scrolling is re-enabled
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showConfirmDialog]);
+
   if (!showConfirmDialog) {
     return null; // Don't render if not showing
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl max-w-md mx-auto">
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-[1000] overflow-hidden">
+      <div className="bg-white p-6 rounded-lg shadow-xl max-w-md mx-auto animate-fade-in">
         <h3 className="text-xl font-bold mb-4 text-gray-800">{title}</h3>
         <p className="mb-6 text-gray-600">
           {message}
@@ -91,13 +108,13 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
         <div className="flex justify-end space-x-4">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
           >
             {confirmText}
           </button>
