@@ -45,7 +45,6 @@ const SectionCard = ({
     if (text === '') return true;
     
     // Look for the default placeholder-like content
-    if (text.includes('Clear, focused question')) return true;
     if (text.includes('[Clear, focused')) return true;
     
     // Check if it's too short to be meaningful
