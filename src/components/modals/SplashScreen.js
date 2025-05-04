@@ -98,7 +98,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               <li className="text-gray-700 text-sm">Turn on <strong>Pro Mode</strong> to reveal all sections at once.</li>
             </ul>
             <p className="text-sm text-gray-700 font-bold mt-2">
-              This app guides you through the steps of planning your research. This is key to successful science. Spending 10 hours on this is not a waste. Start by editing above.
+              This app guides you through the steps of planning your research. This is key to successful science. Spending 10 hours on this is not a waste. Start by editing the question. And then section by section.
             </p>
           </div>
           
