@@ -3,7 +3,7 @@
   "sections": [
     {
       "id": "question",
-      "title": "Research Question",
+      "title": "Question",
       "type": "text",
       "maxLength": 3000,
       "inputPlaceholder": "Start writing your research question here...",
@@ -38,7 +38,7 @@
     },
     {
       "id": "audience",
-      "title": "Target Audience",
+      "title": "Audience",
       "type": "text",
       "maxLength": 1500,
       "inputPlaceholder": "List the target audience for your research...",
@@ -108,7 +108,7 @@
     },
     {
       "id": "theorysimulation",
-      "title": "Theory/Simulation",
+      "title": "Theory",
       "type": "text",
       "maxLength": 2500,
       "inputPlaceholder": "Describe your theoretical approach or simulation...",
@@ -249,7 +249,7 @@
     },
     {
       "id": "relatedpapers",
-      "title": "Related Papers",
+      "title": "Related",
       "type": "text",
       "maxLength": 2000,
       "inputPlaceholder": "List the related papers here...",
@@ -349,7 +349,7 @@
     },
     {
       "id": "existingdata",
-      "title": "Acquiring Pre-existing Data",
+      "title": "Dataset",
       "type": "text",
       "maxLength": 2500,
       "inputPlaceholder": "Describe the pre-existing data you plan to use...",
@@ -390,7 +390,7 @@
     },
     {
       "id": "analysis",
-      "title": "Data Analysis",
+      "title": "Analysis",
       "type": "text",
       "maxLength": 3000,
       "inputPlaceholder": "Start planning your data analysis here...",
