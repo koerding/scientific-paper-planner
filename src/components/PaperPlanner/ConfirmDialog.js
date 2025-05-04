@@ -5,7 +5,7 @@ import useAppStore from '../../store/appStore';
 
 /**
  * Enhanced Confirmation dialog that handles both regular resets and import confirmations
- * COMPLETELY FIXED: Absolute positioning with ultra-high z-index to cover ALL UI elements
+ * COMPLETELY FIXED: Full screen overlay with proper hook placement
  */
 const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }) => {
   // Get the import confirmation operation from the store
@@ -93,40 +93,12 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
       };
     }
   }, [showConfirmDialog]);
-
+  
+  // Early return if dialog is not showing
   if (!showConfirmDialog) {
-    return null; // Don't render if not showing
+    return null;
   }
 
-  const overlayStyle = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 99999
-  };
-
-  // Create a portal element outside of normal DOM hierarchy
-  const portalEl = document.createElement('div');
-  portalEl.setAttribute('class', 'modal-portal');
-  portalEl.setAttribute('style', 'position:fixed; top:0; left:0; right:0; bottom:0; width:100vw; height:100vh; z-index:99999;');
-  document.body.appendChild(portalEl);
-
-  // Remove the portal element when dialog is closed
-  useEffect(() => {
-    return () => {
-      if (portalEl && portalEl.parentNode) {
-        portalEl.parentNode.removeChild(portalEl);
-      }
-    };
-  }, []);
-
-  // Render the dialog directly in the body
   return (
     <div style={{
       position: 'fixed',
