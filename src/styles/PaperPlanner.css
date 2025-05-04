@@ -1,6 +1,4 @@
-/* --- Clean, Consolidated PaperPlanner.css --- */
-
-/* --- Typography Standardization --- */
+/* --- Core Variables --- */
 :root {
   --font-size-big: 1.25rem;
   --font-size-medium: 1rem;
@@ -10,9 +8,16 @@
   --font-weight-bold: 600;
   --font-family-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --rail-width: 220px;
+  --z-index-base: 1;
+  --z-index-rail: 40;
+  --z-index-header: 50;
+  --z-index-chat-button: 100;
+  --z-index-chat-window: 99;
+  --z-index-modal: 1000;
+  --z-index-modal-content: 1001;
 }
 
-/* Apply standardized typography */
+/* --- Typography --- */
 h1, .text-xl, .section-card .section-header h2 { 
   font-size: var(--font-size-big) !important; 
   font-weight: var(--font-weight-bold) !important; 
@@ -36,12 +41,9 @@ p, textarea, .prose p, .feedback-button {
 .font-medium { font-weight: var(--font-weight-medium) !important; }
 .font-bold { font-weight: var(--font-weight-bold) !important; }
 
-/* --- Layout Fixes --- */
-body, html { 
-  overflow-x: hidden; 
-}
+body, html { overflow-x: hidden; }
 
-/* --- Core section-card styles --- */
+/* --- Section Card --- */
 .section-card {
   margin-bottom: 1rem !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -51,6 +53,11 @@ body, html {
   border-radius: 0.5rem;
   background-color: white;
   scroll-margin-top: 90px;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  contain: content !important;
 }
 
 .section-card:hover {
@@ -60,7 +67,7 @@ body, html {
 .section-card.minimized {
   max-height: 60px;
   overflow: hidden;
-  cursor: pointer;
+  cursor: pointer !important;
   margin-top: 0.25rem;
 }
 
@@ -95,7 +102,6 @@ body, html {
   background-color: #eff6ff !important;
 }
 
-/* --- Textarea styles --- */
 .section-card textarea {
   background-color: transparent !important;
   border: none !important;
@@ -111,6 +117,22 @@ body, html {
   border: none !important;
 }
 
+.section-card.expanded .section-editor textarea {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+.section-card .minimize-toggle-btn,
+.section-card button.in-card-toggle button {
+  cursor: pointer !important;
+}
+
+.section-card.minimized .section-header {
+  pointer-events: auto !important;
+}
+
 /* --- Left Rail Navigation --- */
 .rail {
   position: fixed;
@@ -124,7 +146,7 @@ body, html {
   padding: 2rem 0;
   background-color: #FAFAFD;
   border-right: 1px solid rgba(229, 231, 235, 0.5);
-  z-index: 40;
+  z-index: var(--z-index-rail);
   overflow-y: auto;
   pointer-events: auto !important;
 }
@@ -215,7 +237,6 @@ body, html {
   transition: all 0.15s ease-in-out;
 }
 
-/* PILL TOGGLE SELECTION VISIBILITY FIXES */
 button.active-toggle {
   background-color: white !important;
   color: #111827 !important;
@@ -236,42 +257,17 @@ button.inactive-toggle:hover {
   border-color: #d1d5db;
 }
 
-/* Make selected mode toggle more visually distinct */
-.bg-gray-100.rounded-full button.bg-white {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-  font-weight: 600 !important;
-  color: #374151 !important;
-}
-
-/* Make inactive toggle option lighter */
-.bg-gray-100.rounded-full button:not(.bg-white) {
-  color: #6b7280 !important;
-}
-
-/* Enhance header toggle styling */
-header .inline-flex {
-  border: 1px solid rgba(209, 213, 219, 0.5);
-  min-width: 200px;
-}
-
-header .rounded-full {
-  padding: 2px;
-  background-color: #f3f4f6;
-}
-
-header button.font-semibold {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
 /* --- Main Content Area --- */
 .main-content {
   width: 100% !important;
   padding-left: var(--rail-width);
   scroll-behavior: smooth;
-  z-index: 20;
+  z-index: var(--z-index-base) !important;
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding-top: 70px !important;
+  position: relative !important;
 }
 
 .main-content > div {
@@ -287,12 +283,12 @@ header button.font-semibold {
   overflow-y: visible !important;
 }
 
-/* --- Chat Interface Positioning --- */
+/* --- Chat UI --- */
 .chat-button-container {
   position: fixed !important;
   bottom: 24px !important;
   right: 24px !important;
-  z-index: 900 !important;
+  z-index: var(--z-index-chat-button) !important;
   transform: none !important;
 }
 
@@ -306,11 +302,10 @@ header button.font-semibold {
   box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
 }
 
-.fixed.shadow-lg.rounded-lg.overflow-hidden {
-  z-index: 899 !important;
+.fixed.shadow-lg.rounded-lg.overflow-hidden.chat-container {
+  z-index: var(--z-index-chat-window) !important;
 }
 
-/* --- Chat Interface Styles --- */
 .ai-avatar {
   width: 2rem;
   height: 2rem;
@@ -365,34 +360,97 @@ header button.font-semibold {
 .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
 .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 
-/* --- Modal Z-Index Fixes --- */
-.fixed.inset-0.bg-gray-600.bg-opacity-50 {
-  z-index: 999 !important;
+.message-content {
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
 }
 
-.fixed.inset-0.bg-gray-600.bg-opacity-50 > div {
-  z-index: 1000 !important;
+/* --- Header Styling --- */
+header.bg-white.shadow-sm {
+  z-index: var(--z-index-header) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
-.h-screen .fixed.inset-0.bg-gray-800.bg-opacity-80 {
-  z-index: 1001 !important;
+header .container {
+  min-height: 60px;
 }
 
-/* --- Animations --- */
-@keyframes minimizeCard { from { max-height: 2000px; opacity: 1; } to { max-height: 60px; opacity: 0.9; } }
-@keyframes expandCard   { from { max-height: 60px; } to { max-height: 2000px; } }
-@keyframes fadeInExpand { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 500px; } }
-@keyframes fadeIn       { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes typing       { 0% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(-5px); opacity: 1; } 100% { transform: translateY(0); opacity: 0.6; } }
+header .bg-gray-100.rounded-full {
+  padding: 2px;
+  min-width: 220px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
 
-.animate-fade-in { animation: fadeIn 0.5s ease-out; }
+header .bg-gray-100.rounded-full button.bg-white {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  font-weight: 600 !important;
+  color: #111827 !important;
+}
 
-/* --- Feedback Status Indicators --- */
-.status-indicator { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; display: inline-block; }
-.status-good { background-color: #10B981; }
-.status-fair { background-color: #F59E0B; }
-.status-poor { background-color: #EF4444; }
-.status-none { background-color: #9CA3AF; }
+header .bg-gray-100.rounded-full button:not(.bg-white) {
+  color: #6b7280 !important;
+}
+
+header .bg-gray-100.rounded-full button:not(.bg-white):hover {
+  background-color: rgba(243, 244, 246, 0.8) !important;
+  color: #374151 !important;
+}
+
+header .bg-gray-100.rounded-full button {
+  transition: all 0.2s ease-in-out !important;
+}
+
+header button {
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 0.375rem !important;
+  border-color: #e2e8f0 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+header button:hover:not(:disabled) {
+  background-color: #f8fafc !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+header button:active:not(:disabled) {
+  transform: translateY(0) !important;
+}
+
+header button svg {
+  width: 1rem !important;
+  height: 1rem !important;
+  margin-right: 0.25rem !important;
+  flex-shrink: 0 !important;
+}
+
+header.bg-white.shadow-sm .container button[aria-label="Help"],
+header.bg-white.shadow-sm .container button[aria-label="Save"] {
+  max-width: 5.5rem !important;
+  width: 5.5rem !important;
+  min-width: 0 !important;
+  padding: 0.5rem 0.5rem !important;
+  margin: 0 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.375rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+header.bg-white.shadow-sm .container button .animate-spin {
+  margin-right: 0.25rem !important;
+}
+
+header.bg-white.shadow-sm .container button[aria-label="Help"] span,
+header.bg-white.shadow-sm .container button[aria-label="Save"] span {
+  padding: 0 !important;
+  margin: 0 !important;
+}
 
 /* --- Feedback Buttons --- */
 .feedback-button {
@@ -401,41 +459,54 @@ header button.font-semibold {
   justify-content: center;
   padding: 0.375rem 0.75rem;
   font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.25rem;
+  font-weight: 500 !important;
+  line-height: 1.25rem !important;
   border-radius: 0.375rem;
-  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease-in-out !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
-.feedback-button-default { background-color: #7c3aed; color: white; }
-.feedback-button-default:hover { background-color: #6d28d9; }
-.feedback-button-placeholder { background-color: #9ca3af; color: white; cursor: not-allowed; }
-.feedback-button-loading { background-color: #a78bfa; color: white; cursor: wait; }
-
-/* Rating-based colors */
-.feedback-button-1, .feedback-button-2, .feedback-button-3 { background-color: #ef4444; }
-.feedback-button-1:hover, .feedback-button-2:hover, .feedback-button-3:hover { background-color: #dc2626; }
-.feedback-button-4, .feedback-button-5 { background-color: #f97316; }
-.feedback-button-4:hover, .feedback-button-5:hover { background-color: #ea580c; }
-.feedback-button-6, .feedback-button-7 { background-color: #facc15; color: #374151; }
-.feedback-button-6:hover, .feedback-button-7:hover { background-color: #eab308; }
-.feedback-button-8, .feedback-button-9 { background-color: #84cc16; }
-.feedback-button-8:hover, .feedback-button-9:hover { background-color: #65a30d; }
-.feedback-button-10 { background-color: #22c55e; }
-.feedback-button-10:hover { background-color: #16a34a; }
-
-.section-card .feedback-button-8,
-.section-card .feedback-button-9,
-.section-card .feedback-button-10 {
-  background-color: #059669 !important;
-}
-.section-card .feedback-button-8:hover,
-.section-card .feedback-button-9:hover,
-.section-card .feedback-button-10:hover {
-  background-color: #047857 !important;
+.feedback-button:not([disabled]):hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px) !important;
 }
 
-/* --- Guide Mode Content Styling --- */
+.feedback-button:not([disabled]):active {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  transform: translateY(0) !important;
+}
+
+.feedback-button[disabled] {
+  background-color: #9ca3af !important;
+  color: #f9fafb !important;
+  opacity: 0.8 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+.feedback-button[disabled]:hover {
+  background-color: #9ca3af !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.feedback-button[disabled]:active {
+  opacity: 0.7 !important;
+}
+
+.feedback-button .animate-spin {
+  margin-right: 0.5rem !important;
+}
+
+.feedback-button svg {
+  flex-shrink: 0 !important;
+}
+
+/* --- Guide Mode Styling --- */
+.instructions-content {
+  padding-bottom: 3rem !important;
+}
+
 .instructions-content .rounded-lg {
   margin-bottom: 16px;
   transition: all 0.2s ease;
@@ -459,7 +530,87 @@ header button.font-semibold {
   font-size: var(--font-size-medium) !important;
 }
 
-/* --- Cleanup Fixes --- */
+.absolute.bottom-0.right-0.left-0.p-3 {
+  background-color: rgba(249, 250, 251, 0.95) !important;
+  border-top: 1px solid #e5e7eb !important;
+  z-index: 10 !important;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+.absolute.bottom-0.right-0.left-0.p-3 button {
+  font-size: 0.875rem !important;
+  padding: 0.375rem 0.75rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 0.375rem !important;
+  background-color: #7c3aed !important;
+  color: white !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.absolute.bottom-0.right-0.left-0.p-3 button:hover {
+  background-color: #6d28d9 !important;
+  transform: translateY(-1px) !important;
+}
+
+.absolute.bottom-0.right-0.left-0.p-3 button:active {
+  transform: translateY(0) !important;
+}
+
+.absolute.bottom-0.right-0.left-0.p-3 button svg {
+  width: 1rem !important;
+  height: 1rem !important;
+  margin-right: 0.25rem !important;
+  flex-shrink: 0 !important;
+}
+
+/* --- Modal Styling --- */
+.fixed.inset-0.bg-gray-800.bg-opacity-75,
+.fixed.inset-0.bg-gray-600.bg-opacity-50 {
+  z-index: var(--z-index-modal) !important;
+}
+
+.fixed.inset-0.bg-gray-800.bg-opacity-75 > div,
+.fixed.inset-0.bg-gray-600.bg-opacity-50 > div {
+  z-index: var(--z-index-modal-content) !important;
+}
+
+.fixed.inset-0.bg-gray-800.bg-opacity-80.flex.items-start {
+  z-index: var(--z-index-modal) !important;
+}
+
+#modal-root {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 0 !important;
+  z-index: var(--z-index-modal) !important;
+  pointer-events: none !important;
+}
+
+#modal-root > div {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: var(--z-index-modal-content) !important;
+  pointer-events: auto !important;
+}
+
+/* --- Animations --- */
+@keyframes typing {
+  0% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(-5px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0.6; }
+}
+
+/* --- Hide unused elements --- */
 .fixed-mode-toggle {
   display: none !important;
 }
@@ -473,7 +624,7 @@ header button.font-semibold {
   margin-bottom: 0 !important;
 }
 
-/* --- Responsive Adjustments --- */
+/* --- Responsive Styling --- */
 @media (max-width: 768px) {
   .main-content {
     padding-left: 0 !important;
@@ -488,117 +639,38 @@ header button.font-semibold {
   .rail.visible {
     transform: translateX(0);
   }
-}
-/* --- Header-specific CSS fixes --- */
-
-/* Ensure header has proper z-index and shadow */
-header.bg-white.shadow-sm {
-  z-index: 1000 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* Better header height management */
-header .container {
-  min-height: 60px;
-}
-
-/* More distinct mode toggle in header */
-header .bg-gray-100.rounded-full {
-  padding: 2px;
-  min-width: 220px; /* Ensure minimum width */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-/* Make active toggle button more prominent */
-header .bg-gray-100.rounded-full button.bg-white {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-  font-weight: 600 !important;
-  color: #111827 !important; /* gray-900 for better contrast */
+  
+  .chat-container .messages-container {
+    -webkit-overflow-scrolling: touch !important;
+    overflow-y: auto !important;
+    flex-grow: 1 !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  
+  .chat-container .chat-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+  }
+  
+  .chat-container .p-3.border-t.border-gray-200.bg-white {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 20 !important;
+  }
 }
 
-/* Enhance inactive toggle button */
-header .bg-gray-100.rounded-full button:not(.bg-white) {
-  color: #6b7280 !important; /* gray-500 */
-}
-
-header .bg-gray-100.rounded-full button:not(.bg-white):hover {
-  background-color: rgba(243, 244, 246, 0.8) !important;
-  color: #374151 !important; /* gray-700 */
-}
-
-/* Add animation to toggle transition */
-header .bg-gray-100.rounded-full button {
-  transition: all 0.2s ease-in-out !important;
-}
-
-/* Responsive header adjustments */
 @media (max-width: 767px) {
-  /* More space for the mode toggle */
+  .main-content {
+    padding-top: 100px !important;
+  }
+  
   header .flex-col .py-1 {
     padding-top: 0.5rem !important;
     padding-bottom: 0.5rem !important;
   }
   
-  /* Smaller buttons on mobile */
-  header button {
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-  }
-  
-  /* Increase space between rows in mobile view */
-  header .flex-col > .mb-2 {
-    margin-bottom: 0.5rem !important;
-  }
-}
-
-/* Ensure content starts below header */
-.main-content {
-  padding-top: 70px !important;
-}
-
-@media (max-width: 767px) {
-  .main-content {
-    padding-top: 100px !important; /* More space for two-row header */
-  }
-}
-/* --- Tight Header Button Styles --- */
-
-/* Make header buttons compact but keep text */
-header button {
-  /* Tighter padding */
-  padding: 0.5rem 0.75rem !important;
-  
-  /* Better visual style */
-  border-radius: 0.375rem !important;
-  border-color: #e2e8f0 !important;
-  
-  /* More compact appearance */
-  font-size: 0.875rem !important;
-  line-height: 1.25rem !important;
-  
-  /* Improve hover states */
-  transition: all 0.15s ease-in-out !important;
-}
-
-header button:hover:not(:disabled) {
-  background-color: #f8fafc !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
-}
-
-header button:active:not(:disabled) {
-  transform: translateY(0) !important;
-}
-
-/* Make the icons smaller and ensure consistent spacing */
-header button svg {
-  width: 1rem !important;
-  height: 1rem !important;
-  margin-right: 0.25rem !important;
-}
-
-/* Fix for tight buttons at small screen sizes */
-@media (max-width: 767px) {
   header button {
     padding: 0.375rem 0.5rem !important;
     font-size: 0.75rem !important;
@@ -608,74 +680,11 @@ header button svg {
     width: 0.875rem !important;
     height: 0.875rem !important;
   }
-}
-
-/* Set max widths on buttons to avoid excessive whitespace */
-header .space-x-2 button:nth-child(1) { /* Help button */
-  max-width: 5.5rem !important;
-  width: auto !important;
-}
-
-header .space-x-2 button:nth-child(2) { /* Save button */
-  max-width: 5.5rem !important;
-  width: auto !important;
-}
-
-/* --- Force Tight Header Button Styles with High Specificity --- */
-
-/* Target header buttons with very high specificity */
-header.bg-white.shadow-sm .container button[aria-label="Help"],
-header.bg-white.shadow-sm .container button[aria-label="Save"] {
-  /* Extreme width constraints */
-  max-width: 5.5rem !important;
-  width: 5.5rem !important;
-  min-width: 0 !important;
   
-  /* Tight internal spacing */
-  padding: 0.5rem 0.5rem !important;
-  margin: 0 !important;
+  header .flex-col > .mb-2 {
+    margin-bottom: 0.5rem !important;
+  }
   
-  /* Text sizing */
-  font-size: 0.875rem !important;
-  line-height: 1.25rem !important;
-
-  /* Force correct border styles */
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 0.375rem !important;
-  
-  /* Force flex layout */
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-/* Force button icons to be small */
-header.bg-white.shadow-sm .container button svg {
-  width: 1rem !important;
-  height: 1rem !important;
-  margin-right: 0.25rem !important;
-  flex-shrink: 0 !important;
-}
-
-/* Specific hover styling */
-header.bg-white.shadow-sm .container button:hover:not(:disabled) {
-  background-color: #f8fafc !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
-}
-
-/* Override any default transition styles */
-header.bg-white.shadow-sm .container button {
-  transition: all 0.15s ease-in-out !important;
-}
-
-/* Force styles for loading icon */
-header.bg-white.shadow-sm .container button .animate-spin {
-  margin-right: 0.25rem !important;
-}
-
-/* Mobile-specific adjustments with high specificity */
-@media (max-width: 767px) {
   header.bg-white.shadow-sm .container button[aria-label="Help"],
   header.bg-white.shadow-sm .container button[aria-label="Save"] {
     width: 4.5rem !important;
@@ -683,31 +692,15 @@ header.bg-white.shadow-sm .container button .animate-spin {
     padding: 0.375rem 0.375rem !important;
     font-size: 0.75rem !important;
   }
-  
-  header.bg-white.shadow-sm .container button svg {
-    width: 0.875rem !important;
-    height: 0.875rem !important;
-  }
 }
 
-/* Force the container to have no extra padding/margin */
-header.bg-white.shadow-sm .container button[aria-label="Help"] span,
-header.bg-white.shadow-sm .container button[aria-label="Save"] span {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-/* Add these styles to your PaperPlanner.css file */
-
-/* Better Mobile Splash Screen Positioning */
 @media (max-width: 640px) {
-  /* Ensure the splash screen is scrollable on small devices */
   .fixed.inset-0.bg-gray-800.bg-opacity-80 {
     align-items: flex-start !important; 
     overflow-y: auto !important;
     padding: 1rem !important;
   }
   
-  /* Add margin to the splash screen container */
   .fixed.inset-0.bg-gray-800.bg-opacity-80 > div.bg-white {
     margin-top: 1rem !important;
     margin-bottom: 2rem !important;
@@ -715,7 +708,6 @@ header.bg-white.shadow-sm .container button[aria-label="Save"] span {
     overflow-y: auto !important;
   }
   
-  /* Ensure the get started button is always visible */
   .fixed.inset-0.bg-gray-800.bg-opacity-80 .py-3.border-t {
     position: sticky !important;
     bottom: 0 !important;
@@ -725,51 +717,52 @@ header.bg-white.shadow-sm .container button[aria-label="Save"] span {
     z-index: 10 !important;
   }
   
-  /* Make the "Don't show this again" checkbox easier to tap */
   .fixed.inset-0.bg-gray-800.bg-opacity-80 label.flex.items-center {
     padding: 0.5rem 0 !important;
   }
   
-  /* Get started button - make it larger for easier tapping */
   .fixed.inset-0.bg-gray-800.bg-opacity-80 button.bg-purple-600 {
-    padding: 0.5rem 1.5rem !important;
+    padding: 0.75rem 2rem !important;
     font-size: 1rem !important;
   }
-}
-
-/* Mobile Chat Interface Improvements */
-@media (max-width: 640px) {
-  /* Adjust chat container width */
+  
   .fixed.shadow-lg.rounded-lg.overflow-hidden:not(.opacity-0) {
     width: 95vw !important;
-    right: 2.5vw !important; /* Center horizontally */
+    right: 2.5vw !important;
     left: 2.5vw !important;
-    max-height: 75vh !important; /* Ensure it doesn't take too much space */
+    max-height: 75vh !important;
   }
   
-  /* Make the chat button smaller on mobile */
   .chat-button-container button {
     font-size: 0.875rem !important;
     padding: 0.5rem 1rem !important;
   }
   
-  /* Hide long text in chat button on very small screens */
-  @media (max-width: 380px) {
-    .chat-button-container button span {
-      max-width: 180px !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      white-space: nowrap !important;
-    }
-  }
-  
-  /* Make bubbles take more width on mobile */
   .message-bubble {
     max-width: 90% !important;
   }
+  
+  .absolute.bottom-0.right-0.left-0.p-3 {
+    padding: 0.5rem 1rem !important;
+  }
+  
+  .absolute.bottom-0.right-0.left-0.p-3 button {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem !important;
+  }
 }
 
-/* Ensure fixed elements don't overlap important content on small screens */
+@media (max-width: 380px) {
+  .chat-button-container button span,
+  .chat-button-text {
+    max-width: 140px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: inline-block !important;
+  }
+}
+
 @media (max-height: 700px) {
   .chat-button-container {
     bottom: 16px !important;
@@ -780,436 +773,27 @@ header.bg-white.shadow-sm .container button[aria-label="Save"] span {
     max-height: 70vh !important;
   }
 }
-/* --- Add these mobile-specific styles to your PaperPlanner.css file --- */
 
-/* Better Mobile Chat Experience */
-@media (max-width: 768px) {
-  /* Improve chat message container scrolling */
-  .chat-container .messages-container {
-    -webkit-overflow-scrolling: touch !important; /* Smooth scrolling on iOS */
-    overflow-y: auto !important;
-    flex-grow: 1 !important;
-    height: auto !important;
-    min-height: 0 !important; /* Critical for flexbox scrolling on mobile */
-  }
-  
-  /* Ensure sticky positioning works for header and input */
-  .chat-container .chat-header {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 20 !important;
-  }
-  
-  /* Make sure the input area stays at the bottom */
-  .chat-container .p-3.border-t.border-gray-200.bg-white {
-    position: sticky !important;
-    bottom: 0 !important;
-    z-index: 20 !important;
-  }
-  
-  /* Make chat bubbles larger on mobile for better readability */
-  .message-bubble {
-    max-width: 85% !important;
-    padding: 0.75rem !important;
-  }
-  
-  /* Prevent long words from breaking layout */
-  .message-content {
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-  }
-
-  /* Truncate chat button text on very small screens */
-  @media (max-width: 380px) {
-    .chat-button-text {
-      max-width: 140px !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      display: inline-block !important;
-    }
-  }
-
-  /* Ensure the chat height doesn't exceed viewport on small devices */
-  .chat-container {
-    max-height: 80vh !important;
-  }
-}
-
-/* Better Mobile Splash Screen Positioning */
-@media (max-width: 640px) {
-  /* Ensure the splash screen is scrollable on small devices */
-  .fixed.inset-0.bg-gray-800.bg-opacity-80 {
-    align-items: flex-start !important; 
-    overflow-y: auto !important;
-    padding: 1rem !important;
-  }
-  
-  /* Add margin to the splash screen container */
-  .fixed.inset-0.bg-gray-800.bg-opacity-80 > div.bg-white {
-    margin-top: 1rem !important;
-    margin-bottom: 2rem !important;
-    max-height: calc(100vh - 4rem) !important;
-    overflow-y: auto !important;
-  }
-  
-  /* Ensure the get started button is always visible */
-  .fixed.inset-0.bg-gray-800.bg-opacity-80 .py-3.border-t {
-    position: sticky !important;
-    bottom: 0 !important;
-    background-color: white !important;
-    padding-top: 0.75rem !important;
-    padding-bottom: 0.75rem !important;
-    z-index: 10 !important;
-  }
-  
-  /* Make the "Don't show this again" checkbox easier to tap */
-  .fixed.inset-0.bg-gray-800.bg-opacity-80 label.flex.items-center {
-    padding: 0.5rem 0 !important;
-  }
-  
-  /* Get started button - make it larger for easier tapping */
-  .fixed.inset-0.bg-gray-800.bg-opacity-80 button.bg-purple-600 {
-    padding: 0.75rem 2rem !important;
-    font-size: 1rem !important;
-  }
-}
-
-/* Ensure fixed elements don't overlap important content on small screens */
 @media (max-height: 600px) {
-  .chat-button-container {
-    bottom: 16px !important;
-  }
-  
   .chat-container {
     bottom: 16px !important;
-    max-height: 70vh !important; /* Lower max height on very small screens */
+    max-height: 70vh !important;
   }
 }
 
-/* Fix iOS Safari issues */
 @supports (-webkit-touch-callout: none) {
-  /* iOS specific fixes */
   .chat-container {
     position: fixed !important;
-    transform: translateZ(0) !important; /* Force hardware acceleration */
+    transform: translateZ(0) !important;
   }
   
   .chat-container .messages-container {
     -webkit-overflow-scrolling: touch !important;
   }
   
-  /* Fix sticky positioning in Safari */
   .chat-container .chat-header,
   .chat-container .p-3.border-t.border-gray-200.bg-white {
     position: -webkit-sticky !important;
     position: sticky !important;
   }
-}
-/* Add these styles to your PaperPlanner.css file */
-
-/* Style consistency between Write and Guide mode buttons */
-.instructions-content {
-  padding-bottom: 3rem !important; /* Add padding at bottom for the button */
-}
-
-/* Fixed positioning for the back button container */
-.absolute.bottom-0.right-0.left-0.p-3 {
-  background-color: rgba(249, 250, 251, 0.95) !important; /* Slightly transparent background */
-  border-top: 1px solid #e5e7eb !important;
-  z-index: 10 !important;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05) !important; /* Subtle shadow for better visibility */
-}
-
-/* Ensure button matches the feedback button exactly */
-.absolute.bottom-0.right-0.left-0.p-3 button {
-  font-size: 0.875rem !important;
-  padding: 0.375rem 0.75rem !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 0.375rem !important;
-  background-color: #7c3aed !important; /* Purple-600 to match feedback button */
-  color: white !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-  transition: all 0.15s ease-in-out !important;
-}
-
-.absolute.bottom-0.right-0.left-0.p-3 button:hover {
-  background-color: #6d28d9 !important; /* Purple-700 on hover */
-  transform: translateY(-1px) !important;
-}
-
-.absolute.bottom-0.right-0.left-0.p-3 button:active {
-  transform: translateY(0) !important;
-}
-
-/* Make sure the SVG icon size is consistent */
-.absolute.bottom-0.right-0.left-0.p-3 button svg {
-  width: 1rem !important;
-  height: 1rem !important;
-  margin-right: 0.25rem !important;
-  flex-shrink: 0 !important;
-}
-
-/* Mobile optimization for the button */
-@media (max-width: 640px) {
-  .absolute.bottom-0.right-0.left-0.p-3 {
-    padding: 0.5rem 1rem !important; /* More padding on mobile */
-  }
-  
-  .absolute.bottom-0.right-0.left-0.p-3 button {
-    padding: 0.5rem 1rem !important; /* Larger tap target on mobile */
-    font-size: 0.875rem !important;
-  }
-}
-/* Add these styles to your PaperPlanner.css file */
-
-/* Enhanced Feedback Button States */
-.feedback-button {
-  transition: all 0.2s ease-in-out !important;
-}
-
-/* Disabled gray state */
-.feedback-button[disabled] {
-  background-color: #9ca3af !important; /* Gray-400 */
-  color: #f9fafb !important; /* Gray-50 */
-  opacity: 0.8 !important;
-  cursor: not-allowed !important;
-  box-shadow: none !important;
-}
-
-/* Make disabled state more obvious */
-.feedback-button[disabled]:hover {
-  background-color: #9ca3af !important; /* Stay gray on hover */
-  transform: none !important; /* No hover effect */
-  box-shadow: none !important;
-}
-
-/* Subtle feedback on click even when disabled */
-.feedback-button[disabled]:active {
-  opacity: 0.7 !important;
-}
-
-/* Loading state styling */
-.feedback-button .animate-spin {
-  margin-right: 0.5rem !important;
-}
-
-/* Make status text more readable */
-.feedback-button {
-  font-weight: 500 !important;
-  line-height: 1.25rem !important;
-}
-
-/* Clear visual indicator for active button state */
-.feedback-button:not([disabled]) {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-}
-
-.feedback-button:not([disabled]):hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
-  transform: translateY(-1px) !important;
-}
-
-.feedback-button:not([disabled]):active {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(0) !important;
-}
-
-/* Ensure proper icon placement */
-.feedback-button svg {
-  flex-shrink: 0 !important;
-}
-/* Add these styles to your PaperPlanner.css file to fix the incognito scrolling issue */
-
-/* Fix for the card opening issue in incognito mode by preventing unwanted scroll behavior */
-.section-card {
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  -moz-user-select: none !important;
-  -ms-user-select: none !important;
-  contain: content !important; /* Help contain events within the card */
-}
-
-/* When the card is expanded, allow text selection in the editor */
-.section-card.expanded .section-editor textarea {
-  user-select: text !important;
-  -webkit-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
-}
-
-/* Ensure click events behave properly */
-.section-card:not(.expanded) {
-  cursor: pointer !important;
-}
-
-/* Force clickable buttons to have pointer cursor */
-.section-card .minimize-toggle-btn,
-.section-card button.in-card-toggle button {
-  cursor: pointer !important;
-}
-
-/* Override any browser-specific default behavior in private/incognito modes */
-.section-card.minimized .section-header {
-  pointer-events: auto !important;
-}
-
-/* Add these rules to your PaperPlanner.css file */
-
-/* --- Enhanced Modal Z-Index Fixes --- */
-/* These rules ensure modals appear above ALL other UI elements */
-
-/* Confirm dialog specific z-index */
-.fixed.inset-0.bg-gray-800.bg-opacity-75 {
-  z-index: 9999 !important; /* Ultra high z-index */
-}
-
-/* General modal backdrop rule */
-.fixed.inset-0[class*="bg-gray-"] {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 9990 !important;
-}
-
-/* Ensure modal content appears above backdrop */
-.fixed.inset-0[class*="bg-gray-"] > div {
-  z-index: 9991 !important;
-  position: relative !important;
-}
-
-/* Force modals to be above the rail navigation */
-.rail {
-  z-index: 40;
-}
-
-/* Ensure no specific element can override modal z-index */
-div[style*="z-index"] {
-  z-index: auto !important;
-}
-/* --- Add to PaperPlanner.css --- */
-
-/* Ensure the modal container is at the highest z-index in the app */
-#modal-root {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 0 !important;
-  z-index: 999999 !important;
-  pointer-events: none !important;
-}
-
-/* Force modals to be on top of everything */
-#modal-root > div {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 9999999 !important;
-  pointer-events: auto !important;
-}
-
-/* Ensure the overlay covers absolutely everything */
-.modal-overlay {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 9999999 !important;
-  background-color: rgba(0, 0, 0, 0.75) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  pointer-events: auto !important;
-}
-
-/* Add this to easily add modal behavior to any component */
-.render-on-top {
-  z-index: 99999999 !important;
-  position: relative !important;
-}
-/* --- Add to PaperPlanner.css --- */
-
-/**
- * COMPREHENSIVE Z-INDEX HIERARCHY
- * This establishes a clear z-index ordering for all elements
- */
-
-/* Base z-index values - used for all normal UI components */
-:root {
-  --z-index-base: 1;
-  --z-index-rail: 40;
-  --z-index-header: 50;
-  --z-index-chat-button: 100;
-  --z-index-chat-window: 99;
-  --z-index-modal: 1000;
-  --z-index-modal-content: 1001;
-}
-
-/* Header always stays on top of normal content */
-header.bg-white.shadow-sm.fixed {
-  z-index: var(--z-index-header) !important;
-}
-
-/* Rail navigation */
-.rail {
-  z-index: var(--z-index-rail) !important;
-}
-
-/* Main content area normal z-index */
-.main-content {
-  z-index: var(--z-index-base) !important;
-  position: relative !important;
-}
-
-/* Chat button needs to be above content but below modals */
-.chat-button-container {
-  z-index: var(--z-index-chat-button) !important;
-}
-
-/* Chat window appears just below the chat button */
-.fixed.shadow-lg.rounded-lg.overflow-hidden.chat-container {
-  z-index: var(--z-index-chat-window) !important;
-}
-
-/* Modals must be above everything */
-.fixed.inset-0.bg-gray-800.bg-opacity-75,
-.fixed.inset-0.bg-gray-600.bg-opacity-50 {
-  z-index: var(--z-index-modal) !important;
-}
-
-.fixed.inset-0.bg-gray-800.bg-opacity-75 > div,
-.fixed.inset-0.bg-gray-600.bg-opacity-50 > div {
-  z-index: var(--z-index-modal-content) !important;
-}
-
-/* Portal container for modals */
-#modal-root {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 0 !important;
-  z-index: var(--z-index-modal) !important;
-  pointer-events: none !important;
-}
-
-/* Modal content - above overlay */
-#modal-root > div {
-  z-index: var(--z-index-modal-content) !important;
-}
-
-/* Splashscreen is a special case, should be highest */
-.fixed.inset-0.bg-gray-800.bg-opacity-80.flex.items-start {
-  z-index: var(--z-index-modal) !important;
 }
