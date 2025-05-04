@@ -5,7 +5,7 @@ import useAppStore from '../../store/appStore';
 
 /**
  * Enhanced Confirmation dialog that handles both regular resets and import confirmations
- * COMPLETELY FIXED: Full screen overlay with proper hook placement
+ * FIXED: Using proper Tailwind classes to match the working SplashScreen implementation
  */
 const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }) => {
   // Get the import confirmation operation from the store
@@ -82,14 +82,13 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
   useEffect(() => {
     if (showConfirmDialog) {
       // Save the current overflow style
-      const originalStyle = document.body.style.cssText;
-      // Disable scrolling on the body AND prevent interactions
+      const originalStyle = document.body.style.overflow;
+      // Disable scrolling on the body
       document.body.style.overflow = 'hidden';
-      document.body.style.pointerEvents = 'none';
       
       return () => {
-        // Restore original style when component unmounts or dialog closes
-        document.body.style.cssText = originalStyle;
+        // Restore original overflow when component unmounts or dialog closes
+        document.body.style.overflow = originalStyle;
       };
     }
   }, [showConfirmDialog]);
@@ -100,32 +99,9 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      width: '100vw',
-      height: '100vh',
-      background: 'rgba(0, 0, 0, 0.75)',
-      backdropFilter: 'blur(2px)',
-      zIndex: 999999,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      pointerEvents: 'auto' // Enable pointer events on the dialog
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '0.5rem',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        padding: '1.5rem',
-        width: '90%',
-        maxWidth: '28rem',
-        position: 'relative',
-        pointerEvents: 'auto' // Ensure pointer events work on the modal
-      }}>
+    // Use the same structure as SplashScreen for consistency
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center overflow-hidden" style={{ zIndex: 1090 }}>
+      <div className="bg-white rounded-lg shadow-xl max-w-md mx-auto w-full animate-fade-in p-6">
         <h3 className="text-xl font-bold mb-4 text-gray-800">{title}</h3>
         <p className="mb-6 text-gray-600">
           {message}
