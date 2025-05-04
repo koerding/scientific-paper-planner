@@ -1,10 +1,12 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
+// FIXED: Added ReactMarkdown support for tooltip content to enable clickable links
 // FIXED: Standardized font sizes to match the root variable definitions
 // FIXED: Made styling more consistent throughout the guide panel
 // FIXED: Corrected variable reference in tooltip rendering
 // FIXED: Moved Back to Write button to bottom to match feedback button in Write mode
 
 import React, { useState, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown for tooltip content
 import useAppStore from '../../store/appStore';
 
 // --- Helper functions (Defined ONCE here) ---
@@ -53,7 +55,17 @@ const renderOriginalInstructionsContent = (currentSection, expandedTooltips, tog
             </div>
             {subsection.tooltip && expandedTooltips[subsection.id] && (
               <div className="mt-2 mb-3 pl-3 border-l-2 border-blue-300 text-base italic text-gray-700 bg-blue-50 p-3 rounded">
-                {subsection.tooltip}
+                {/* Use ReactMarkdown to render tooltip content with clickable links */}
+                <ReactMarkdown 
+                  className="prose prose-sm prose-a:text-blue-600 prose-a:underline prose-a:font-medium"
+                  components={{
+                    a: ({node, ...props}) => (
+                      <a target="_blank" rel="noopener noreferrer" {...props} />
+                    )
+                  }}
+                >
+                  {subsection.tooltip}
+                </ReactMarkdown>
               </div>
             )}
           </div>
@@ -113,7 +125,17 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
              
              {origSubsection.tooltip && expandedTooltips[origSubsection.id] && (
                <div className="mt-3 mb-0 ml-0 pl-3 border-l-2 border-blue-300 italic text-gray-700 bg-blue-50 p-3 rounded-md">
-                 {origSubsection.tooltip}
+                 {/* Use ReactMarkdown to render tooltip content with clickable links */}
+                 <ReactMarkdown 
+                   className="prose prose-sm prose-a:text-blue-600 prose-a:underline prose-a:font-medium"
+                   components={{
+                     a: ({node, ...props}) => (
+                       <a target="_blank" rel="noopener noreferrer" {...props} />
+                     )
+                   }}
+                 >
+                   {origSubsection.tooltip}
+                 </ReactMarkdown>
                </div>
              )}
            </div>
