@@ -1055,3 +1055,41 @@ header.bg-white.shadow-sm .container button[aria-label="Save"] span {
 .section-card.minimized .section-header {
   pointer-events: auto !important;
 }
+
+/* Add these rules to your PaperPlanner.css file */
+
+/* --- Enhanced Modal Z-Index Fixes --- */
+/* These rules ensure modals appear above ALL other UI elements */
+
+/* Confirm dialog specific z-index */
+.fixed.inset-0.bg-gray-800.bg-opacity-75 {
+  z-index: 9999 !important; /* Ultra high z-index */
+}
+
+/* General modal backdrop rule */
+.fixed.inset-0[class*="bg-gray-"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9990 !important;
+}
+
+/* Ensure modal content appears above backdrop */
+.fixed.inset-0[class*="bg-gray-"] > div {
+  z-index: 9991 !important;
+  position: relative !important;
+}
+
+/* Force modals to be above the rail navigation */
+.rail {
+  z-index: 40;
+}
+
+/* Ensure no specific element can override modal z-index */
+div[style*="z-index"] {
+  z-index: auto !important;
+}
