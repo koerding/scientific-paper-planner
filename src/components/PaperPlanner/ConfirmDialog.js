@@ -5,7 +5,7 @@ import useAppStore from '../../store/appStore';
 
 /**
  * Enhanced Confirmation dialog that handles both regular resets and import confirmations
- * FIXED: Added proper full-screen overlay with semi-transparent background
+ * FIXED: Proper full-screen overlay with maximum z-index to cover ALL UI elements
  */
 const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }) => {
   // Get the import confirmation operation from the store
@@ -81,17 +81,16 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
   // Prevent body scrolling when dialog is open
   useEffect(() => {
     if (showConfirmDialog) {
+      // Save the current overflow style
+      const originalOverflow = document.body.style.overflow;
       // Disable scrolling on the body
       document.body.style.overflow = 'hidden';
-    } else {
-      // Re-enable scrolling when dialog closes
-      document.body.style.overflow = '';
+      
+      return () => {
+        // Restore original overflow when component unmounts or dialog closes
+        document.body.style.overflow = originalOverflow;
+      };
     }
-    
-    // Cleanup function to ensure scrolling is re-enabled
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [showConfirmDialog]);
 
   if (!showConfirmDialog) {
@@ -99,8 +98,32 @@ const ConfirmDialog = ({ showConfirmDialog, setShowConfirmDialog, resetProject }
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-[1000] overflow-hidden">
-      <div className="bg-white p-6 rounded-lg shadow-xl max-w-md mx-auto animate-fade-in">
+    <div 
+      className="fixed inset-0 overflow-hidden" 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999, // Super high z-index to ensure it's above everything
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-md mx-auto animate-fade-in"
+        style={{
+          padding: '1.5rem',
+          width: '90%',
+          maxWidth: '28rem',
+          position: 'relative'
+        }}
+      >
         <h3 className="text-xl font-bold mb-4 text-gray-800">{title}</h3>
         <p className="mb-6 text-gray-600">
           {message}
