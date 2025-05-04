@@ -1138,3 +1138,78 @@ div[style*="z-index"] {
   z-index: 99999999 !important;
   position: relative !important;
 }
+/* --- Add to PaperPlanner.css --- */
+
+/**
+ * COMPREHENSIVE Z-INDEX HIERARCHY
+ * This establishes a clear z-index ordering for all elements
+ */
+
+/* Base z-index values - used for all normal UI components */
+:root {
+  --z-index-base: 1;
+  --z-index-rail: 40;
+  --z-index-header: 50;
+  --z-index-chat-button: 100;
+  --z-index-chat-window: 99;
+  --z-index-modal: 1000;
+  --z-index-modal-content: 1001;
+}
+
+/* Header always stays on top of normal content */
+header.bg-white.shadow-sm.fixed {
+  z-index: var(--z-index-header) !important;
+}
+
+/* Rail navigation */
+.rail {
+  z-index: var(--z-index-rail) !important;
+}
+
+/* Main content area normal z-index */
+.main-content {
+  z-index: var(--z-index-base) !important;
+  position: relative !important;
+}
+
+/* Chat button needs to be above content but below modals */
+.chat-button-container {
+  z-index: var(--z-index-chat-button) !important;
+}
+
+/* Chat window appears just below the chat button */
+.fixed.shadow-lg.rounded-lg.overflow-hidden.chat-container {
+  z-index: var(--z-index-chat-window) !important;
+}
+
+/* Modals must be above everything */
+.fixed.inset-0.bg-gray-800.bg-opacity-75,
+.fixed.inset-0.bg-gray-600.bg-opacity-50 {
+  z-index: var(--z-index-modal) !important;
+}
+
+.fixed.inset-0.bg-gray-800.bg-opacity-75 > div,
+.fixed.inset-0.bg-gray-600.bg-opacity-50 > div {
+  z-index: var(--z-index-modal-content) !important;
+}
+
+/* Portal container for modals */
+#modal-root {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 0 !important;
+  z-index: var(--z-index-modal) !important;
+  pointer-events: none !important;
+}
+
+/* Modal content - above overlay */
+#modal-root > div {
+  z-index: var(--z-index-modal-content) !important;
+}
+
+/* Splashscreen is a special case, should be highest */
+.fixed.inset-0.bg-gray-800.bg-opacity-80.flex.items-start {
+  z-index: var(--z-index-modal) !important;
+}
