@@ -4,7 +4,7 @@ import React from 'react';
 
 /**
  * Splash screen component to welcome new users
- * REDESIGNED: Significantly more compact with tighter spacing
+ * REDESIGNED: Integrated the app guide content from gray card
  * FIXED: Better mobile positioning and scrollable content
  */
 const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
@@ -90,8 +90,20 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             </div>
           </div>
           
+          {/* Integrated App Guide Content */}
+          <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 mb-4">
+            <h3 className="text-gray-800 font-medium mb-2 text-sm">How it works</h3>
+            <ul className="list-disc pl-5 mb-2">
+              <li className="text-gray-700 text-sm">New sections (Hypotheses, Audience, etc.) unlock once you score ≥ 6 on the previous step.</li>
+              <li className="text-gray-700 text-sm">Turn on <strong>Pro Mode</strong> to reveal all sections at once.</li>
+            </ul>
+            <p className="text-sm text-gray-700 font-bold mt-2">
+              This app guides you through the steps of planning your research. This is key to successful science. Spending 10 hours on this is not a waste. Start by editing above.
+            </p>
+          </div>
+          
           {/* Additional tips with horizontal rule separator */}
-          <div className="border-t border-gray-200 pt-3 mt-2">
+          <div className="mb-3">
             <h3 className="text-gray-700 font-medium mb-2 text-sm">Need more help?</h3>
             
             <div className="space-y-2">
