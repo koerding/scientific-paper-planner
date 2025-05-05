@@ -41,7 +41,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
         {/* Content area - now scrollable if needed */}
         <div className="px-4 py-3 overflow-y-auto">
           <p className="text-gray-800 font-medium mb-3">
-            Design a scientific project, step-by-step:
+            Design a scientific project (or improve an existing one), step-by-step:
           </p>
           
           <div className="space-y-2 mb-4">
