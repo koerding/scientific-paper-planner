@@ -1,4 +1,5 @@
 // FILE: src/components/modals/ReviewPaperModal.js
+// FIXED: Made modal larger to use more screen space, similar to other dialogs
 // FIXED: Added robust date checking for past review display
 
 import React, { useState, useEffect } from 'react';
@@ -122,8 +123,10 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
   const showCurrentError = activeTab === 'current' && reviewData && !reviewData.success;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 overflow-y-auto p-4"> {/* Added padding */}
-      <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-auto max-h-[90vh] flex flex-col"> {/* Removed my-8, use padding on outer div */}
+    // FIXED: Made the backdrop take up full screen with improved z-index
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center z-[1000] overflow-hidden">
+      {/* FIXED: Made modal wider (max-w-6xl instead of max-w-5xl) and taller (max-h-[95vh] instead of max-h-[90vh]) */}
+      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] mx-auto flex flex-col">
         {/* Header */}
         <div className="bg-teal-600 px-6 py-4 rounded-t-lg flex justify-between items-center flex-shrink-0">
              <h2 className="text-xl font-bold text-white">Scientific Paper Review</h2>
