@@ -3,7 +3,7 @@
   "sections": [
     {
       "id": "question",
-      "title": "Question",
+      "title": "Question/ Significance",
       "type": "text",
       "maxLength": 3000,
       "inputPlaceholder": "Start writing your research question here...",
