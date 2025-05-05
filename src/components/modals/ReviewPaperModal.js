@@ -1,10 +1,12 @@
 // FILE: src/components/modals/ReviewPaperModal.js
-// FIXED: Made modal larger to use more screen space, similar to other dialogs
+// FIXED: Completely reworked modal styling to match ConfirmDialog.js
 // FIXED: Added robust date checking for past review display
+// FIXED: Much wider modal with full-screen backdrop
 
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { exportReview } from '../../services/paperReviewService'; // Assuming path is correct
+import ReactDOM from 'react-dom'; // Added for createPortal
+import { exportReview } from '../../services/paperReviewService';
 
 const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper }) => {
   // --- Component State ---
@@ -15,8 +17,29 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
   const [selectedPastReview, setSelectedPastReview] = useState(null);
   const [newReviewLoading, setNewReviewLoading] = useState(false);
 
-  // --- Effects and Handlers ---
-  // Load past reviews effect
+  // --- Create Modal Root Effect ---
+  useEffect(() => {
+    // Create a global modal container if one doesn't exist
+    let modalRoot = document.getElementById('modal-root');
+    
+    if (!modalRoot) {
+      modalRoot = document.createElement('div');
+      modalRoot.id = 'modal-root';
+      // Absolutely force this to the top of z-index hierarchy
+      modalRoot.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 0;
+        z-index: 99999;
+        pointer-events: none;
+      `;
+      document.body.appendChild(modalRoot);
+    }
+  }, []);
+
+  // --- Load past reviews effect ---
   useEffect(() => {
       if (showModal) {
         try {
@@ -37,7 +60,7 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
       }
   }, [showModal]);
 
-  // Save current review effect
+  // --- Save current review effect ---
   useEffect(() => {
       if (reviewData && reviewData.success && reviewData.review) {
         try {
@@ -63,6 +86,45 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
       }
   }, [reviewData]); // Re-run when new reviewData arrives
 
+  // --- Prevent body scrolling when dialog is open ---
+  useEffect(() => {
+    if (showModal) {
+      // Save the current styles
+      const prevBodyStyles = {
+        overflow: document.body.style.overflow,
+        paddingRight: document.body.style.paddingRight,
+      };
+      
+      // Force body to not scroll
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = '15px'; // Add padding to prevent layout shift
+      
+      // Ensure rail menu can't be clicked
+      const rail = document.querySelector('.rail');
+      const prevRailStyles = rail ? { 
+        pointerEvents: rail.style.pointerEvents,
+        zIndex: rail.style.zIndex 
+      } : null;
+      
+      if (rail) {
+        rail.style.pointerEvents = 'none';
+        rail.style.zIndex = '39'; // Ensure it's below our modal
+      }
+      
+      return () => {
+        // Restore original styles
+        document.body.style.overflow = prevBodyStyles.overflow;
+        document.body.style.paddingRight = prevBodyStyles.paddingRight;
+        
+        if (rail && prevRailStyles) {
+          rail.style.pointerEvents = prevRailStyles.pointerEvents;
+          rail.style.zIndex = prevRailStyles.zIndex;
+        }
+      };
+    }
+  }, [showModal]);
+
+  // --- Event Handlers ---
   const handleSelectPastReview = (review) => { setSelectedPastReview(review); };
 
   const handleExport = async () => {
@@ -110,7 +172,7 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
    };
 
   // --- Render Logic ---
-  // Conditional Render based on prop
+  // Early return if dialog is not showing
   if (!showModal) {
     return null;
   }
@@ -122,11 +184,38 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
   const showEmptyPastReviews = activeTab === 'past' && (!pastReviews || pastReviews.length === 0);
   const showCurrentError = activeTab === 'current' && reviewData && !reviewData.success;
 
-  return (
-    // FIXED: Made the backdrop take up full screen with improved z-index
-    <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center z-[1000] overflow-hidden">
-      {/* FIXED: Made modal wider (max-w-6xl instead of max-w-5xl) and taller (max-h-[95vh] instead of max-h-[90vh]) */}
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] mx-auto flex flex-col">
+  // The modal content with inline styling to match ConfirmDialog.js
+  const modalContent = (
+    // Overlay with insanely high z-index
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 999999,
+      pointerEvents: 'auto'
+    }}>
+      {/* Modal window with even higher z-index */}
+      <div style={{
+        position: 'relative',
+        backgroundColor: 'white',
+        borderRadius: '0.5rem',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        zIndex: 1000000,
+        pointerEvents: 'auto',
+        width: '95%',
+        maxWidth: '1400px',
+        maxHeight: '90vh',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
         {/* Header */}
         <div className="bg-teal-600 px-6 py-4 rounded-t-lg flex justify-between items-center flex-shrink-0">
              <h2 className="text-xl font-bold text-white">Scientific Paper Review</h2>
@@ -246,6 +335,12 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
       </div>
     </div>
   );
+
+  // Get the modal container
+  const modalRoot = document.getElementById('modal-root') || document.body;
+  
+  // Use createPortal to render outside normal hierarchy
+  return ReactDOM.createPortal(modalContent, modalRoot);
 };
 
 export default ReviewPaperModal;
