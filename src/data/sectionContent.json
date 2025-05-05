@@ -18,9 +18,15 @@
         {
           "id": "question_motivation_and_importance",
           "title": "Motivation and Importance",
-          "instruction": "Make sure to clearly explain why this question matters, to you and to the field? This part is just as important as the question itself. Why care? What is exciting about it? Make sure the scientific stake is clear: What changes if we know the answer? Why would others in the field care? What problem, gap, or idea does it speak to?",
+          "instruction": "Make sure to clearly explain why this question matters, to you and to the field. This part is just as important as the question itself. Why care? What is exciting about it? Make sure the scientific stake is clear: What changes if we know the answer? Why would others in the field care? What problem, gap, or idea does it speak to?",
           "tooltip": "Motivation breathes life into your research question. By pinpointing why the question matters, you show its relevance and potential impact on both theory and practice. A strong rationale helps you stand out in a crowded field, secures backing from mentors or funding agencies, and keeps you personally invested. Researchers—especially reviewers—want to see a clear \"so what\" behind your work. Clarifying the potential changes or insights that might follow from answering the question not only strengthens your case for doing the research, but also helps you stay focused on the broader context that gives your study true significance."
         },
+        {
+          "id": "question_novelty",
+          "title": "Novelty",
+          "instruction": "Make sure to clearly explain how this research goes beyond what is currently known (or if it is a replication study). You must be clear about what is already known.",
+          "tooltip": "Novelty is the cornerstone of advancing knowledge. By clearly articulating how your study goes beyond current findings—or, in the case of a replication, what new perspective or rigor it adds—you demonstrate original contribution and avoid redundancy. Explicitly situating your work within the existing literature highlights the gap you’re addressing and guides reviewers to see the value of your approach. This clarity not only strengthens your proposal but also shapes your methodology and interpretation toward genuine innovation."       
+        },  
         {
           "id": "question_specificity_and_scope",
           "title": "Specificity and Scope",
