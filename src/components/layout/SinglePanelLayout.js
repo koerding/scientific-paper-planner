@@ -4,11 +4,12 @@ import LeftPanel from './LeftPanel';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import useAppStore from '../../store/appStore';
 import { showWelcomeSplash } from '../modals/SplashScreenManager';
+import { isTouchDevice, setupSwipeHint } from '../../utils/touchDetection';
 
 /**
  * A single panel layout that handles both write and guide modes with slide animation
  * ENHANCED: Added horizontal slide animation between write and guide modes
- * ENHANCED: Added swipe gestures for mode switching
+ * ENHANCED: Added swipe gestures for mode switching with visual feedback
  * FIXED: Corrected animation to properly show guide content
  * FIXED: Now correctly manages scroll position when switching modes
  */
@@ -35,8 +36,11 @@ const SinglePanelLayout = ({
   
   // Swipe gesture state
   const [touchStartX, setTouchStartX] = useState(null);
-  const [touchEndX, setTouchEndX] = useState(null);
-  const swipeThreshold = 100; // Minimum pixels to consider a swipe
+  const [touchMoveX, setTouchMoveX] = useState(null);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState(null); // 'left' or 'right'
+  const swipeThreshold = 75; // Minimum pixels to consider a swipe
+  const swipeActiveThreshold = 10; // Pixels to start showing swipe visual feedback
   
   // Use currentChatSectionId as the source of truth for which section is active
   const activeSectionId = currentChatSectionId || activeSection;
@@ -45,9 +49,10 @@ const SinglePanelLayout = ({
   const currentSection = useAppStore((state) => activeSectionId ? state.sections[activeSectionId] : null);
   const sectionTitle = currentSection?.title || "Select a section";
   
-  // Ref for scrolling to sections
+  // Refs for elements
   const contentRef = useRef(null);
   const panelsContainerRef = useRef(null);
+  const cardContainerRef = useRef(null);
   
   // Update previous mode ref when uiMode changes
   useEffect(() => {
@@ -56,8 +61,46 @@ const SinglePanelLayout = ({
     }
   }, [uiMode]);
   
+  // Setup swipe hint on mount
+  useEffect(() => {
+    if (isTouchDevice()) {
+      setupSwipeHint();
+    }
+  }, []);
+  
+  // Add active mode class to card container
+  useEffect(() => {
+    if (cardContainerRef.current) {
+      // Remove previous classes
+      cardContainerRef.current.classList.remove('write-active', 'guide-active');
+      // Add current mode class
+      cardContainerRef.current.classList.add(`${uiMode}-active`);
+    }
+  }, [uiMode]);
+  
+  // Update swipe direction classes
+  useEffect(() => {
+    if (!cardContainerRef.current || !isSwiping || !swipeDirection) return;
+    
+    // Remove previous classes
+    cardContainerRef.current.classList.remove('swiping-left', 'swiping-right');
+    
+    // Add current direction class
+    cardContainerRef.current.classList.add(`swiping-${swipeDirection}`);
+    
+    return () => {
+      // Clean up
+      if (cardContainerRef.current) {
+        cardContainerRef.current.classList.remove('swiping-left', 'swiping-right');
+      }
+    };
+  }, [isSwiping, swipeDirection]);
+  
   // Handlers for switching between write and guide modes
   const handleSwitchToGuide = () => {
+    // Prevent switching during transition
+    if (isTransitioning) return;
+    
     // Store current scroll position before switching to guide mode
     if (contentRef && contentRef.current) {
       localStorage.setItem('writeScrollPosition', contentRef.current.scrollTop);
@@ -81,6 +124,9 @@ const SinglePanelLayout = ({
   };
   
   const handleSwitchToWrite = () => {
+    // Prevent switching during transition
+    if (isTransitioning) return;
+    
     // Set transition direction and state
     setTransitionDirection('right');
     setIsTransitioning(true);
@@ -110,46 +156,105 @@ const SinglePanelLayout = ({
   
   // Handle touch start
   const handleTouchStart = (e) => {
+    // Store initial touch position
     setTouchStartX(e.touches[0].clientX);
-    setTouchEndX(null); // Reset end position
+    setTouchMoveX(e.touches[0].clientX);
+    setIsSwiping(false);
+    setSwipeDirection(null);
+    
+    // Add swiping class to disable transitions during active swipe
+    if (panelsContainerRef.current) {
+      panelsContainerRef.current.classList.add('swiping');
+    }
   };
   
   // Handle touch move
   const handleTouchMove = (e) => {
-    setTouchEndX(e.touches[0].clientX);
+    // Update current touch position
+    const currentX = e.touches[0].clientX;
+    setTouchMoveX(currentX);
+    
+    // Calculate distance from start
+    if (touchStartX !== null) {
+      const distance = currentX - touchStartX;
+      
+      // Check if we've moved enough to consider it a swipe attempt
+      if (Math.abs(distance) > swipeActiveThreshold) {
+        setIsSwiping(true);
+        setSwipeDirection(distance > 0 ? 'right' : 'left');
+        
+        // Optional: Add live panning effect - uncommenting this will make the panel follow finger
+        // For smoother animation, consider moving this to requestAnimationFrame
+        /*
+        if (panelsContainerRef.current) {
+          const baseOffset = uiMode === 'guide' ? -50 : 0;
+          const maxPan = 15; // Max percentage to pan
+          const panAmount = Math.min(Math.abs(distance) / 5, maxPan); // Calculate pan amount
+          
+          // Apply pan transformation, limited to maxPan
+          const transform = `translateX(${baseOffset + (distance > 0 ? panAmount : -panAmount)}%)`;
+          panelsContainerRef.current.style.transform = transform;
+        }
+        */
+      }
+    }
   };
   
-  // Handle touch end
+  // Handle touch end - determine if swipe was completed
   const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX) return;
-    
-    const distance = touchEndX - touchStartX;
-    const isSignificantSwipe = Math.abs(distance) > swipeThreshold;
-    
-    if (!isSignificantSwipe) {
-      // Not a significant swipe, ignore
-      setTouchStartX(null);
-      setTouchEndX(null);
-      return;
+    // Remove swiping class to re-enable transitions
+    if (panelsContainerRef.current) {
+      panelsContainerRef.current.classList.remove('swiping');
+      // Reset any manual transform
+      const baseTransform = uiMode === 'guide' ? '-50%' : '0%';
+      panelsContainerRef.current.style.transform = `translateX(${baseTransform})`;
     }
     
-    if (distance > 0) {
-      // Swiped right
-      if (uiMode === 'guide') {
-        // In guide mode, swiping right goes to write mode
-        handleSwitchToWrite();
-      }
-    } else {
-      // Swiped left
-      if (uiMode === 'write') {
-        // In write mode, swiping left goes to guide mode
-        handleSwitchToGuide();
+    // Calculate final swipe distance
+    if (touchStartX !== null && touchMoveX !== null) {
+      const distance = touchMoveX - touchStartX;
+      const isSignificantSwipe = Math.abs(distance) > swipeThreshold;
+      
+      if (isSignificantSwipe) {
+        // Determine swipe direction and execute appropriate action
+        if (distance > 0) {
+          // Swiped right
+          if (uiMode === 'guide') {
+            // In guide mode, swiping right goes to write mode
+            handleSwitchToWrite();
+          }
+        } else {
+          // Swiped left
+          if (uiMode === 'write') {
+            // In write mode, swiping left goes to guide mode
+            handleSwitchToGuide();
+          }
+        }
       }
     }
     
-    // Reset touch positions
+    // Reset touch tracking
     setTouchStartX(null);
-    setTouchEndX(null);
+    setTouchMoveX(null);
+    setIsSwiping(false);
+    setSwipeDirection(null);
+  };
+  
+  // Handle touch cancel - just cleanup state
+  const handleTouchCancel = () => {
+    // Same cleanup as touch end, but don't trigger actions
+    if (panelsContainerRef.current) {
+      panelsContainerRef.current.classList.remove('swiping');
+      // Reset any manual transform
+      const baseTransform = uiMode === 'guide' ? '-50%' : '0%';
+      panelsContainerRef.current.style.transform = `translateX(${baseTransform})`;
+    }
+    
+    // Reset touch tracking
+    setTouchStartX(null);
+    setTouchMoveX(null);
+    setIsSwiping(false);
+    setSwipeDirection(null);
   };
   
   // ------- END SWIPE GESTURE HANDLERS --------
@@ -164,14 +269,17 @@ const SinglePanelLayout = ({
         className="w-full max-w-[740px] px-4 flex-grow overflow-visible z-30 relative mx-auto mb-20" /* Added bottom margin for mobile */
         aria-live="polite"
       >
-        {/* Wrap everything in a common container */}
+        {/* Wrap everything in a common container with touch handlers */}
         <div 
-          className="card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          ref={cardContainerRef}
+          className={`card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md 
+                     transition-shadow border border-gray-200 ${uiMode}-active`}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
           role="region"
-          aria-label={`${uiMode} mode panel`}
+          aria-label={`${uiMode} mode panel, swipe to switch modes`}
         >
           {/* Animation container for sliding panels */}
           <div 
@@ -227,7 +335,7 @@ const SinglePanelLayout = ({
             </div>
           </div>
           
-          {/* Optional: Swipe hint indicator (shows briefly on first load) */}
+          {/* Swipe hint element for first-time users */}
           <div className="swipe-hint"></div>
         </div>
       </div>
