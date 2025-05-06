@@ -1119,3 +1119,94 @@ header .bg-gray-100.rounded-full {
     transition-duration: 150ms; /* Slightly faster on mobile */
   }
 }
+/* Add these updated styles to your src/styles/PaperPlanner.css file */
+
+/* --- Style for lightweight Write mode buttons --- */
+.write-mode-button {
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  color: #4f46e5; /* indigo-600 */
+}
+
+.write-mode-button:hover {
+  background-color: rgba(79, 70, 229, 0.1); /* Indigo with opacity */
+  transform: translateY(-1px);
+}
+
+.write-mode-button:active {
+  transform: translateY(0);
+}
+
+.write-mode-button span:first-child {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* Remove the heavy button styles */
+.instructions-content ~ div button,
+.instructions-content > div > button {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: #4f46e5 !important;
+}
+
+/* Add mouse cursor styles for swipe gestures */
+html.mouse-swipe-enabled .card-container {
+  cursor: grab;
+}
+
+html.mouse-swipe-enabled .card-container:active {
+  cursor: grabbing;
+}
+
+/* Ensure both guide and write buttons have consistent styling */
+.guide-button,
+.write-mode-button {
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.guide-button {
+  color: #7c3aed; /* Purple for guide mode */
+}
+
+.write-mode-button {
+  color: #4f46e5; /* Indigo for write mode */
+}
+
+.guide-button:hover {
+  background-color: rgba(124, 58, 237, 0.1); /* Purple with opacity */
+  transform: translateY(-1px);
+}
+
+.write-mode-button:hover {
+  background-color: rgba(79, 70, 229, 0.1); /* Indigo with opacity */
+  transform: translateY(-1px);
+}
+
+.guide-button:active,
+.write-mode-button:active {
+  transform: translateY(0);
+}
+
+/* Make sure the mode switch buttons are always visible */
+.instructions-content ~ div,
+.instructions-content > div:first-child {
+  background-color: transparent;
+  z-index: 5;
+}
+
+/* Style for the bottom write mode button to stand out from content */
+.absolute.bottom-0.right-0.left-0.p-3 {
+  background-color: rgba(249, 250, 251, 0.95) !important;
+  backdrop-filter: blur(5px);
+  border-top: 1px solid #e5e7eb !important;
+  z-index: 10 !important;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05) !important;
+}
