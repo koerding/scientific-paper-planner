@@ -1,11 +1,13 @@
 // FILE: src/components/modals/SplashScreen.js
 
 import React from 'react';
+import c4rLogo from '../../assets/icons/01_C4R-short.png'; // Import the C4R logo
 
 /**
  * Splash screen component to welcome new users
  * REDESIGNED: Integrated the app guide content from gray card
  * FIXED: Better mobile positioning and scrollable content
+ * MODIFIED: Added C4R logo and attribution link
  */
 const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
   const handleDontShowAgain = () => {
@@ -153,7 +155,11 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             
             <div className="mt-3 text-gray-500 text-xs">
               Built with ❤️ by Konrad @Kordinglab
-              <br/>
+              <br />
+              in collaboration with com <a href="https://c4r.io" target="_blank" rel="noopener noreferrer" className="inline-flex items-center hover:underline">
+                <img src={c4rLogo} alt="Center for Reproducible Research" className="h-4 ml-1" style={{ height: '1em', verticalAlign: 'middle' }} />
+              </a>
+              <br />
               By using this software you acknowledge that Dinosaurs are the most awesome animals.
             </div>
           </div>
