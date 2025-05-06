@@ -1,5 +1,6 @@
 // FILE: src/components/layout/AppHeader.js
 // REDESIGNED: Better responsive layout with tight text+icon buttons
+// MODIFIED: Removed the logo icon
 
 import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store/appStore'; // Import store
@@ -64,7 +65,7 @@ const AppHeader = ({
         {isMobileView ? (
           // Mobile Layout: Stack elements vertically with toggle at the bottom
           <div className="flex flex-col">
-            {/* Top row: Hamburger menu on left, logo and buttons on right */}
+            {/* Top row: Hamburger menu on left, buttons on right */}
             <div className="flex items-center justify-between mb-2">
               {/* Left: Hamburger Menu */}
               <div className="flex items-center">
@@ -80,7 +81,7 @@ const AppHeader = ({
                 />
               </div>
               
-              {/* Right: Help, Save buttons and logo */}
+              {/* Right: Help, Save buttons */}
               <div className="flex items-center space-x-2">
                 {/* Help Button - TIGHT VERSION */}
                 <button 
@@ -115,12 +116,6 @@ const AppHeader = ({
                     </>
                   )}
                 </button>
-
-                {/* Logo 
-                <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center ml-1">
-                  <span className="font-bold text-lg">SP</span>
-                </div>
-                */
               </div>
             </div>
             
@@ -159,7 +154,7 @@ const AppHeader = ({
               />
             </div>
 
-            {/* Right section: Help, Save buttons and logo - TIGHT VERSION */}
+            {/* Right section: Help, Save buttons - TIGHT VERSION */}
             <div className="flex items-center w-1/4 justify-end space-x-2">
               {/* Help Button - Text + Icon with tight spacing */}
               <button 
@@ -194,11 +189,6 @@ const AppHeader = ({
                   </>
                 )}
               </button>
-
-              {/* Logo */}
-              <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center ml-1">
-                <span className="font-bold text-lg">SP</span>
-              </div>
             </div>
           </div>
         )}
