@@ -3,6 +3,7 @@
 // FIXED: Added ReactMarkdown support for tooltip content to enable clickable links
 // FIXED: Standardized font sizes to match the root variable definitions
 // FIXED: Made styling more consistent throughout the guide panel
+// FIXED: Added section description at the top of the guide
 
 import React, { useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown for tooltip content
@@ -47,8 +48,20 @@ const CustomLink = ({node, ...props}) => (
 const renderOriginalInstructionsContent = (currentSection, expandedTooltips, toggleTooltip) => {
   if (!currentSection || !currentSection.originalInstructions) return null;
   const subsections = currentSection.originalInstructions;
+  
+  // Check for section description (introText)
+  const sectionDef = currentSection.sectionDefinition || {};
+  const introText = sectionDef.introText;
+  
   return (
     <>
+      {/* Section Description - Show at the top */}
+      {introText && (
+        <div className="mb-6 bg-indigo-50 p-4 rounded-lg border border-indigo-100 shadow-sm">
+          <p className="text-gray-800 leading-relaxed">{introText}</p>
+        </div>
+      )}
+      
       {Array.isArray(subsections) && subsections.map((subsection, index) => {
         // Add null check for subsection itself
         if (!subsection || !subsection.id) return <div key={`orig-err-${index}`}>Invalid subsection data</div>;
@@ -95,9 +108,20 @@ const renderImprovedInstructionsContent = (currentSection, expandedTooltips, tog
    const rating = improvement.rating ? Math.round(improvement.rating) : null;
    const ratingColor = getRatingColor(rating);
    const ratingLabel = getRatingLabel(rating);
+   
+   // Check for section description (introText)
+   const sectionDef = currentSection.sectionDefinition || {};
+   const introText = sectionDef.introText;
 
    return (
      <>
+       {/* Section Description - Show at the top */}
+       {introText && (
+         <div className="mb-6 bg-indigo-50 p-4 rounded-lg border border-indigo-100 shadow-sm">
+           <p className="text-gray-800 leading-relaxed">{introText}</p>
+         </div>
+       )}
+       
        {/* Overall feedback - using standardized font size */}
        <div className="mb-4 font-medium text-purple-700 p-4 bg-purple-50 rounded-lg border border-purple-100 shadow-sm">
          {improvement.overallFeedback || "Feedback:"}
@@ -171,13 +195,25 @@ const FullHeightInstructionsPanel = ({
     activeSectionId && state.sections ? state.sections[activeSectionId] : null
   );
   
+  // Get section definition from sectionContent to access the intro text
+  const sectionDefs = useAppStore(state => state.sectionDefinitions || []);
+  const sectionDefinition = sectionDefs.find(def => def && def.id === activeSectionId);
+  
+  // Enhance current section with the definition
+  const enhancedSection = currentSection ? {
+    ...currentSection,
+    sectionDefinition: sectionDefinition
+  } : null;
+  
   const [expandedTooltips, setExpandedTooltips] = useState({});
   
   // Debug logging
   console.log(`Rendering guide panel for section: ${activeSectionId}`, {
     hasSection: !!currentSection,
     title: currentSection?.title,
-    hasFeedback: !!currentSection?.aiInstructions
+    hasFeedback: !!currentSection?.aiInstructions,
+    hasSectionDef: !!sectionDefinition,
+    introText: sectionDefinition?.introText?.substring(0, 50)
   });
 
   const toggleTooltip = useCallback((id) => {
@@ -185,7 +221,7 @@ const FullHeightInstructionsPanel = ({
   }, []);
 
   // If no section data is found, show an error message
-  if (!currentSection) {
+  if (!enhancedSection) {
     return (
       <div className="flex items-center justify-center h-full p-4 text-red-500">
         <div className="text-center">
@@ -203,9 +239,9 @@ const FullHeightInstructionsPanel = ({
     <div className="w-full h-full overflow-y-auto pb-20 box-border flex-shrink-0 bg-gray-50 relative">
       {/* Main content area - using class to standardize font sizes */}
       <div className="instructions-content p-2">
-        {currentSection.aiInstructions
-            ? renderImprovedInstructionsContent(currentSection, expandedTooltips, toggleTooltip)
-            : renderOriginalInstructionsContent(currentSection, expandedTooltips, toggleTooltip)}
+        {enhancedSection.aiInstructions
+            ? renderImprovedInstructionsContent(enhancedSection, expandedTooltips, toggleTooltip)
+            : renderOriginalInstructionsContent(enhancedSection, expandedTooltips, toggleTooltip)}
       </div>
 
       {/* Back to Write Mode Button - Now at bottom to match feedback button */}
