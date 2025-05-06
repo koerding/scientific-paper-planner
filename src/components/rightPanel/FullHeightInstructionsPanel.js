@@ -1,12 +1,8 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
-// FIXED: Enhanced link styling with proper colors and hover effects
-// FIXED: Added ReactMarkdown support for tooltip content to enable clickable links
-// FIXED: Standardized font sizes to match the root variable definitions
-// FIXED: Made styling more consistent throughout the guide panel
-// FIXED: Added section description at the top of the guide
+// UPDATED: Added top and bottom navigation buttons for returning to Write mode
 
 import React, { useState, useCallback } from 'react';
-import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown for tooltip content
+import ReactMarkdown from 'react-markdown';
 import useAppStore from '../../store/appStore';
 
 // --- Helper functions (Defined ONCE here) ---
@@ -237,6 +233,19 @@ const FullHeightInstructionsPanel = ({
   return (
     // Root div with improved background color and relative positioning
     <div className="w-full h-full overflow-y-auto pb-20 box-border flex-shrink-0 bg-gray-50 relative">
+      {/* Top Write Mode Button */}
+      {onRequestWrite && (
+        <div className="mb-4 flex">
+          <button
+            onClick={onRequestWrite}
+            className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+          >
+            <span className="text-xl mr-1">◀✎</span>
+            Back to Write mode
+          </button>
+        </div>
+      )}
+      
       {/* Main content area - using class to standardize font sizes */}
       <div className="instructions-content p-2">
         {enhancedSection.aiInstructions
@@ -244,16 +253,14 @@ const FullHeightInstructionsPanel = ({
             : renderOriginalInstructionsContent(enhancedSection, expandedTooltips, toggleTooltip)}
       </div>
 
-      {/* Back to Write Mode Button - Now at bottom to match feedback button */}
+      {/* Bottom Write Mode Button */}
       {onRequestWrite && (
-        <div className="absolute bottom-0 right-0 left-0 p-3 bg-gray-50 border-t border-gray-200 flex justify-end">
+        <div className="absolute bottom-0 right-0 left-0 p-3 bg-gray-50 border-t border-gray-200 flex justify-start">
           <button
             onClick={onRequestWrite}
-            className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+            className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
+            <span className="text-xl mr-1">◀✎</span>
             Back to Write mode
           </button>
         </div>
