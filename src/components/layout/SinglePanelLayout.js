@@ -10,6 +10,7 @@ import { isTouchDevice, setupSwipeHint } from '../../utils/touchDetection';
  * A single panel layout that handles both write and guide modes with slide animation
  * ENHANCED: Added horizontal slide animation between write and guide modes
  * ENHANCED: Added swipe gestures for mode switching with visual feedback
+ * UPDATED: Added write mode icon to the left of the title in Guide mode header
  * FIXED: Corrected animation to properly show guide content
  * FIXED: Now correctly manages scroll position when switching modes
  */
@@ -317,8 +318,19 @@ const SinglePanelLayout = ({
             
             {/* Guide Mode Panel (with Header) */}
             <div className="panel guide-panel w-1/2 flex-shrink-0">
-              {/* Guide Mode Header */}
-              <div className="bg-white rounded-t-lg px-5 py-3 border-b border-gray-200">
+              {/* Guide Mode Header with Write mode icon to the left */}
+              <div className="bg-white rounded-t-lg px-5 py-3 border-b border-gray-200 flex items-center">
+                {/* Write Mode Icon Button - positioned to the left of the title */}
+                <button
+                  onClick={handleSwitchToWrite}
+                  className="write-mode-button text-indigo-600 hover:text-indigo-800 focus:outline-none transition-colors mr-3"
+                  aria-label="Switch to Write mode"
+                  title="Switch to Write mode"
+                >
+                  <span className="text-xl">◀✎</span>
+                </button>
+                
+                {/* Section Title */}
                 <h2 className="text-xl font-semibold text-gray-800">{sectionTitle}</h2>
               </div>
               
