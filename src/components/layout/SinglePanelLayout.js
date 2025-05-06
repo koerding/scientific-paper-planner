@@ -8,6 +8,7 @@ import { showWelcomeSplash } from '../modals/SplashScreenManager';
 /**
  * A single panel layout that handles both write and guide modes with slide animation
  * ENHANCED: Added horizontal slide animation between write and guide modes
+ * FIXED: Corrected animation to properly show guide content
  * FIXED: Now correctly manages scroll position when switching modes
  */
 const SinglePanelLayout = ({
@@ -109,53 +110,59 @@ const SinglePanelLayout = ({
         className="w-full max-w-[740px] px-4 flex-grow overflow-visible z-30 relative mx-auto mb-20" /* Added bottom margin for mobile */
         aria-live="polite"
       >
-        {/* Card header - Now just shows title in guide mode without toggle */}
-        <div className="bg-white rounded-t-lg border border-gray-200 shadow-sm px-5 py-3 mb-0 flex items-center">
-          {/* Only show title in guide mode */}
-          {uiMode === 'guide' && (
-            <h2 className="text-xl font-semibold text-gray-800">{sectionTitle}</h2>
-          )}
-          {/* This is empty in write mode */}
-          {uiMode === 'write' && <div></div>}
-        </div>
-        
-        {/* Card body with animation container */}
-        <div className="bg-white rounded-b-lg border-l border-r border-b border-gray-200 shadow-sm hover:shadow-md transition-shadow px-0 py-0 mb-6 overflow-hidden">
+        {/* Wrap everything in a common container */}
+        <div className="card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200">
           {/* Animation container for sliding panels */}
           <div 
             ref={panelsContainerRef}
-            className="panels-container relative w-full"
+            className="panels-container relative"
             style={{
               display: 'flex',
               transition: 'transform 200ms ease-in-out',
-              transform: `translateX(${uiMode === 'guide' ? '-100%' : '0%'})`,
+              transform: `translateX(${uiMode === 'guide' ? '-50%' : '0%'})`,
               width: '200%', // Double width to hold both panels
             }}
             onTransitionEnd={handleTransitionEnd}
           >
-            {/* Write mode panel (always rendered, visibility controlled by transform) */}
-            <div className="panel write-panel w-full px-5 py-4 flex-shrink-0">
-              <LeftPanel
-                activeSection={activeSectionId}
-                handleSectionFocus={handleSectionFocus}
-                handleApproachToggle={handleApproachToggle}
-                handleDataMethodToggle={handleDataMethodToggle}
-                handleMagic={handleMagic}
-                proMode={proMode}
-                onRequestFeedback={handleSwitchToGuide}
-                contentRef={contentRef}
-              />
+            {/* Write Mode Panel (with Header) */}
+            <div className="panel write-panel w-1/2 flex-shrink-0">
+              {/* Write Mode Header */}
+              <div className="bg-white rounded-t-lg px-5 py-3 border-b border-gray-200">
+                <div></div> {/* Empty for write mode */}
+              </div>
+              
+              {/* Write Mode Content */}
+              <div className="bg-white px-5 py-4">
+                <LeftPanel
+                  activeSection={activeSectionId}
+                  handleSectionFocus={handleSectionFocus}
+                  handleApproachToggle={handleApproachToggle}
+                  handleDataMethodToggle={handleDataMethodToggle}
+                  handleMagic={handleMagic}
+                  proMode={proMode}
+                  onRequestFeedback={handleSwitchToGuide}
+                  contentRef={contentRef}
+                />
+              </div>
             </div>
             
-            {/* Guide mode panel (always rendered, visibility controlled by transform) */}
-            <div className="panel guide-panel w-full px-5 py-4 flex-shrink-0">
-              <FullHeightInstructionsPanel
-                key={`guide-${activeSectionId}`}
-                activeSectionId={activeSectionId}
-                improveInstructions={handleMagic}
-                loading={isAnyAiLoading}
-                onRequestWrite={handleSwitchToWrite}
-              />
+            {/* Guide Mode Panel (with Header) */}
+            <div className="panel guide-panel w-1/2 flex-shrink-0">
+              {/* Guide Mode Header */}
+              <div className="bg-white rounded-t-lg px-5 py-3 border-b border-gray-200">
+                <h2 className="text-xl font-semibold text-gray-800">{sectionTitle}</h2>
+              </div>
+              
+              {/* Guide Mode Content */}
+              <div className="bg-white px-5 py-4">
+                <FullHeightInstructionsPanel
+                  key={`guide-${activeSectionId}`}
+                  activeSectionId={activeSectionId}
+                  improveInstructions={handleMagic}
+                  loading={isAnyAiLoading}
+                  onRequestWrite={handleSwitchToWrite}
+                />
+              </div>
             </div>
           </div>
         </div>
