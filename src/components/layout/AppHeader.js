@@ -116,10 +116,11 @@ const AppHeader = ({
                   )}
                 </button>
 
-                {/* Logo */}
+                {/* Logo 
                 <div className="w-8 h-8 bg-purple-600 text-white rounded-md flex items-center justify-center ml-1">
                   <span className="font-bold text-lg">SP</span>
                 </div>
+                */
               </div>
             </div>
             
