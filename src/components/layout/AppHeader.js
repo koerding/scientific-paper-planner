@@ -132,7 +132,6 @@ const AppHeader = ({
             
             {/* Middle section: App Title */}
             <div className="flex items-center w-2/4 justify-center">
-              <h1 className="text-lg font-medium text-gray-700">Scientific Project Planner</h1>
             </div>
 
             {/* Right section: Help, Save buttons - TIGHT VERSION */}
