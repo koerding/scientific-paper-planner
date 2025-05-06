@@ -1,11 +1,10 @@
 // FILE: src/components/sections/SectionCard.js
-// FIXED: Simplified placeholder detection to ensure button turns purple
+// UPDATED: Modified to always show expanded content and use new navigation
 
 import React, { useState, useCallback, useEffect } from 'react';
 import useAppStore from '../../store/appStore';
 import SectionHeader from './SectionHeader';
 import ToggleHeader from './ToggleHeader';
-import SectionPreview from './SectionPreview';
 import SectionEditor from './SectionEditor';
 import FeedbackButton from './FeedbackButton';
 
@@ -33,33 +32,21 @@ const SectionCard = ({
   // Derived State
   const {
     title = 'Untitled', content = '', placeholder = 'Start writing...',
-    isMinimized = true, aiInstructions, feedbackRating, editedSinceFeedback,
+    isMinimized = false, // Now always set to false to show expanded content
+    aiInstructions, feedbackRating, editedSinceFeedback,
     maxLength
   } = section || {};
   const hasFeedback = !!feedbackRating;
   
-  // SIMPLIFIED checks for placeholder content
-  const isDefaultPlaceholderText = (text) => {
-    if (!text) return true;
-    text = text.trim();
-    if (text === '') return true;
-    
-    // Look for the default placeholder-like content
-    if (text.includes('[Clear, focused')) return true;
-    
-    // Check if it's too short to be meaningful
-    return text.length < 15;
-  };
-  
   // This is what determines if the button should be gray
-  const isPlaceholderContent = isDefaultPlaceholderText(content);
+  const isPlaceholderContent = content === placeholder || content.trim() === '';
 
   // Callbacks
   const handleTextChange = useCallback((e) => {
     updateSectionContent(sectionId, e.target.value);
   }, [sectionId, updateSectionContent]);
 
-  // FIXED: Better event handling for card clicks
+  // Keep this for potential future use
   const handleToggleMinimize = useCallback((e) => {
     if(e) {
       e.preventDefault();
@@ -79,16 +66,14 @@ const SectionCard = ({
     }
   }, [sectionId, onRequestFeedback]);
 
-  // FIXED: Better event handling for card clicks
+  // FIXED: Better event handling for card clicks - now just for section focus
   const handleCardClick = (e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     
-    if (isMinimized) {
-      handleToggleMinimize(e);
-    } else if (typeof handleSectionFocus === 'function') {
+    if (typeof handleSectionFocus === 'function') {
       handleSectionFocus(sectionId);
     }
   };
@@ -105,18 +90,16 @@ const SectionCard = ({
   }, []);
 
   // --- Styling ---
-  const getBorderClasses = () => isCurrentSection ? 'border-4 border-blue-500 shadow-md' : 'border-2 border-gray-300';
+  const getBorderClasses = () => isCurrentSection ? 'border-2 border-blue-500 shadow-md' : 'border border-gray-300';
   const getBackgroundColor = () => isCurrentSection ? 'bg-blue-50' : 'bg-white';
-  // Define classes based on minimized state
-  const minimizedClasses = 'max-h-14 overflow-hidden'; // Classes for minimized state
+  
+  // Always use expanded classes now
   const expandedClasses = ''; // No height/overflow constraints for expanded state
 
   const sectionClasses = `
     section-card rounded-lg ${getBackgroundColor()} p-2 mb-2 transition-all
-    duration-300 ease-in-out ${getBorderClasses()} ${!isMinimized ? 'expanded' : 'minimized'}
-    ${isMinimized ? minimizedClasses : expandedClasses} relative
+    duration-300 ease-in-out ${getBorderClasses()} expanded
     ${isCurrentSection ? 'current-active' : ''}
-    cursor-pointer ${isMinimized ? 'hover:bg-gray-100 hover:shadow-sm' : ''}
     ${isToggleSection ? 'toggle-section' : ''}
     hover:shadow
   `;
@@ -138,6 +121,7 @@ const SectionCard = ({
           isHovered={isHovered || isTextareaFocused}
           isFocused={isCurrentSection}
           toggleMinimized={handleToggleMinimize}
+          onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
         />
       ) : (
         <SectionHeader
@@ -149,39 +133,31 @@ const SectionCard = ({
           isHovered={isHovered || isTextareaFocused}
           isFocused={isCurrentSection}
           toggleMinimized={handleToggleMinimize}
+          onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
         />
       )}
 
-      {/* Render Preview or Editor based on isMinimized */}
-      {isMinimized ?
-        ( <SectionPreview textValue={content} /> )
-        :
-        ( <>
-          <SectionEditor
-            sectionId={sectionId}
-            textValue={content}
-            placeholder={placeholder || "Start writing..."}
-            maxLength={maxLength}
-            onFocus={handleEditorFocus}
-            onBlur={handleEditorBlur}
-            handleTextChange={handleTextChange}
-          />
-          <FeedbackButton
-            hasEditedContent={!isPlaceholderContent} // Simply the inverse of placeholder content
-            hasFeedback={hasFeedback}
-            editedSinceFeedback={editedSinceFeedback}
-            feedbackRating={feedbackRating}
-            handleFeedbackRequest={handleFeedbackRequest}
-            sectionId={sectionId}
-            isPlaceholderContent={isPlaceholderContent} // Pass the simplified placeholder check
-            onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
-          />
-        </>
-        )
-      }
-
-      {/* Gradient overlay for minimized cards */}
-      {isMinimized && ( <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-t from-gray-100 via-gray-50 to-transparent pointer-events-none"></div> )}
+      {/* Always render Editor now */}
+      <SectionEditor
+        sectionId={sectionId}
+        textValue={content}
+        placeholder={placeholder || "Start writing..."}
+        maxLength={maxLength}
+        onFocus={handleEditorFocus}
+        onBlur={handleEditorBlur}
+        handleTextChange={handleTextChange}
+      />
+      
+      <FeedbackButton
+        hasEditedContent={!isPlaceholderContent}
+        hasFeedback={hasFeedback}
+        editedSinceFeedback={editedSinceFeedback}
+        feedbackRating={feedbackRating}
+        handleFeedbackRequest={handleFeedbackRequest}
+        sectionId={sectionId}
+        isPlaceholderContent={isPlaceholderContent}
+        onSwitchToGuide={onSwitchToGuide} // Pass the mode switch function
+      />
     </div>
   );
 };
