@@ -1,11 +1,10 @@
 // FILE: src/components/layout/AppHeader.js
-// REDESIGNED: Better responsive layout with tight text+icon buttons
+// MODIFIED: Removed the guide/write mode toggle pill
 // MODIFIED: Removed the logo icon
 
 import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store/appStore'; // Import store
 import HamburgerMenu from '../menu/HamburgerMenu'; // Import our hamburger menu component
-import SectionModePicker from './SectionModePicker'; // Import the toggle component
 
 const AppHeader = ({
   resetProject,
@@ -18,9 +17,7 @@ const AppHeader = ({
 }) => {
   // --- Get global loading state directly from store ---
   const isAiBusy = useAppStore((state) => state.isAnyLoading());
-  const uiMode = useAppStore((state) => state.uiMode);
-  const setUiMode = useAppStore((state) => state.setUiMode);
-
+  
   // --- Add local state for import loading and responsive behavior ---
   const [localImportLoading, setLocalImportLoading] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -63,73 +60,61 @@ const AppHeader = ({
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-2">
         {isMobileView ? (
-          // Mobile Layout: Stack elements vertically with toggle at the bottom
-          <div className="flex flex-col">
-            {/* Top row: Hamburger menu on left, buttons on right */}
-            <div className="flex items-center justify-between mb-2">
-              {/* Left: Hamburger Menu */}
-              <div className="flex items-center">
-                <HamburgerMenu
-                  resetProject={resetProject}
-                  exportProject={exportProject}
-                  loadProject={loadProject}
-                  importDocumentContent={importDocumentContent}
-                  onOpenReviewModal={onOpenReviewModal}
-                  showHelpSplash={showHelpSplash}
-                  isAiBusy={isAiBusy}
-                  localImportLoading={localImportLoading}
-                />
-              </div>
-              
-              {/* Right: Help, Save buttons */}
-              <div className="flex items-center space-x-2">
-                {/* Help Button - TIGHT VERSION */}
-                <button 
-                  onClick={handleHelpClick} 
-                  disabled={isAiBusy || localImportLoading} 
-                  className={getTightButtonClasses()}
-                  aria-label="Help"
-                >
-                  {isAiBusy ? loadingSpinner : (
-                    <>
-                      <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Help
-                    </>
-                  )}
-                </button>
-
-                {/* Save Button - TIGHT VERSION */}
-                <button 
-                  onClick={saveProject} 
-                  disabled={isAiBusy || localImportLoading} 
-                  className={getTightButtonClasses()}
-                  aria-label="Save"
-                >
-                  {isAiBusy ? loadingSpinner : (
-                    <>
-                      <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                      </svg>
-                      Save
-                    </>
-                  )}
-                </button>
-              </div>
+          // Mobile Layout: Simple row with hamburger menu and buttons
+          <div className="flex items-center justify-between">
+            {/* Left: Hamburger Menu */}
+            <div className="flex items-center">
+              <HamburgerMenu
+                resetProject={resetProject}
+                exportProject={exportProject}
+                loadProject={loadProject}
+                importDocumentContent={importDocumentContent}
+                onOpenReviewModal={onOpenReviewModal}
+                showHelpSplash={showHelpSplash}
+                isAiBusy={isAiBusy}
+                localImportLoading={localImportLoading}
+              />
             </div>
             
-            {/* Bottom row: Centered Write/Guide toggle */}
-            <div className="flex items-center justify-center py-1">
-              <SectionModePicker 
-                currentMode={uiMode} 
-                onModeChange={setUiMode}
-                disabled={isAiBusy}
-              />
+            {/* Right: Help, Save buttons */}
+            <div className="flex items-center space-x-2">
+              {/* Help Button - TIGHT VERSION */}
+              <button 
+                onClick={handleHelpClick} 
+                disabled={isAiBusy || localImportLoading} 
+                className={getTightButtonClasses()}
+                aria-label="Help"
+              >
+                {isAiBusy ? loadingSpinner : (
+                  <>
+                    <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Help
+                  </>
+                )}
+              </button>
+
+              {/* Save Button - TIGHT VERSION */}
+              <button 
+                onClick={saveProject} 
+                disabled={isAiBusy || localImportLoading} 
+                className={getTightButtonClasses()}
+                aria-label="Save"
+              >
+                {isAiBusy ? loadingSpinner : (
+                  <>
+                    <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    Save
+                  </>
+                )}
+              </button>
             </div>
           </div>
         ) : (
-          // Desktop Layout: Three-column layout
+          // Desktop Layout: Centered content with left and right sidebar sections
           <div className="flex items-center justify-between">
             {/* Left section: Hamburger menu */}
             <div className="flex items-center w-1/4 justify-start">
@@ -145,13 +130,9 @@ const AppHeader = ({
               />
             </div>
             
-            {/* Middle section: Write/Guide toggle */}
+            {/* Middle section: App Title */}
             <div className="flex items-center w-2/4 justify-center">
-              <SectionModePicker 
-                currentMode={uiMode} 
-                onModeChange={setUiMode}
-                disabled={isAiBusy}
-              />
+              <h1 className="text-lg font-medium text-gray-700">Scientific Project Planner</h1>
             </div>
 
             {/* Right section: Help, Save buttons - TIGHT VERSION */}
