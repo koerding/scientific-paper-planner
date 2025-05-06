@@ -2,6 +2,7 @@
 // MODIFIED: Add uiMode to store for single-panel layout toggle
 // MODIFIED: Added setActiveSectionId and enhanced setUiMode functions
 // MODIFIED: Enhanced setUiMode with scroll position management
+// MODIFIED: Added sectionDefinitions to store state for guide mode display
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -61,6 +62,9 @@ const initialState = {
     
     // --- UI MODE STATE ---
     uiMode: 'write', // 'write' or 'guide'
+    
+    // --- SECTION DEFINITIONS ---
+    sectionDefinitions: sectionContent.sections || [], // Store section definitions for guide mode
 };
 
 
@@ -360,6 +364,8 @@ const useAppStore = create(
             reviewData: null,
             currentChatMessage: '',
             currentChatSectionId: 'question',
+            // Keep section definitions
+            sectionDefinitions: sectionContent.sections || [],
             // onboarding: data.onboarding || initialState.onboarding, // Optionally load onboarding state
         };
 
