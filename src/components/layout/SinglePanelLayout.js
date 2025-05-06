@@ -8,6 +8,7 @@ import { showWelcomeSplash } from '../modals/SplashScreenManager';
 /**
  * A single panel layout that handles both write and guide modes with slide animation
  * ENHANCED: Added horizontal slide animation between write and guide modes
+ * ENHANCED: Added swipe gestures for mode switching
  * FIXED: Corrected animation to properly show guide content
  * FIXED: Now correctly manages scroll position when switching modes
  */
@@ -31,6 +32,11 @@ const SinglePanelLayout = ({
   // Animation state
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState('right'); // 'left' or 'right'
+  
+  // Swipe gesture state
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
+  const swipeThreshold = 100; // Minimum pixels to consider a swipe
   
   // Use currentChatSectionId as the source of truth for which section is active
   const activeSectionId = currentChatSectionId || activeSection;
@@ -100,6 +106,54 @@ const SinglePanelLayout = ({
     setIsTransitioning(false);
   };
   
+  // ------- SWIPE GESTURE HANDLERS --------
+  
+  // Handle touch start
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+    setTouchEndX(null); // Reset end position
+  };
+  
+  // Handle touch move
+  const handleTouchMove = (e) => {
+    setTouchEndX(e.touches[0].clientX);
+  };
+  
+  // Handle touch end
+  const handleTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    
+    const distance = touchEndX - touchStartX;
+    const isSignificantSwipe = Math.abs(distance) > swipeThreshold;
+    
+    if (!isSignificantSwipe) {
+      // Not a significant swipe, ignore
+      setTouchStartX(null);
+      setTouchEndX(null);
+      return;
+    }
+    
+    if (distance > 0) {
+      // Swiped right
+      if (uiMode === 'guide') {
+        // In guide mode, swiping right goes to write mode
+        handleSwitchToWrite();
+      }
+    } else {
+      // Swiped left
+      if (uiMode === 'write') {
+        // In write mode, swiping left goes to guide mode
+        handleSwitchToGuide();
+      }
+    }
+    
+    // Reset touch positions
+    setTouchStartX(null);
+    setTouchEndX(null);
+  };
+  
+  // ------- END SWIPE GESTURE HANDLERS --------
+  
   return (
     <div 
       ref={contentRef}
@@ -111,7 +165,14 @@ const SinglePanelLayout = ({
         aria-live="polite"
       >
         {/* Wrap everything in a common container */}
-        <div className="card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+        <div 
+          className="card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          role="region"
+          aria-label={`${uiMode} mode panel`}
+        >
           {/* Animation container for sliding panels */}
           <div 
             ref={panelsContainerRef}
@@ -165,6 +226,9 @@ const SinglePanelLayout = ({
               </div>
             </div>
           </div>
+          
+          {/* Optional: Swipe hint indicator (shows briefly on first load) */}
+          <div className="swipe-hint"></div>
         </div>
       </div>
     </div>
