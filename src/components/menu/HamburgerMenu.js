@@ -243,7 +243,6 @@ const HamburgerMenu = ({
             <p>Scientific Project Planner</p>
             <p className="mt-1">
               Built with ❤️ by Konrad @Kordinglab
-              <br />
               in collaboration with <a href="https://c4r.io" target="_blank" rel="noopener noreferrer" className="inline-flex items-center hover:underline">
                 <img src={c4rLogo} alt="Center for Reproducible Research" className="ml-1" style={{ height: '1em', verticalAlign: 'middle' }} />
               </a>
