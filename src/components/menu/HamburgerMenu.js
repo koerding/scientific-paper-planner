@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ProModeToggle from '../toggles/ProModeToggle';
+import c4rLogo from '../../assets/icons/01_C4R-short.png'; // Import the C4R logo
 
 const HamburgerMenu = ({
   resetProject,
@@ -237,10 +238,16 @@ const HamburgerMenu = ({
             </ul>
           </div>
 
-          {/* Footer Text */}
+          {/* Footer Text - With Added C4R Logo */}
           <div className="absolute bottom-4 left-4 right-4 text-xs text-gray-500 text-center">
             <p>Scientific Project Planner</p>
-            <p className="mt-1">Built with ❤️ by Konrad @Kordinglab</p>
+            <p className="mt-1">
+              Built with ❤️ by Konrad @Kordinglab
+              <br />
+              in collaboration with com <a href="https://c4r.io" target="_blank" rel="noopener noreferrer" className="inline-flex items-center hover:underline">
+                <img src={c4rLogo} alt="Center for Reproducible Research" className="ml-1" style={{ height: '1em', verticalAlign: 'middle' }} />
+              </a>
+            </p>
           </div>
         </nav>
       </div>
