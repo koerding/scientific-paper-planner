@@ -74,12 +74,13 @@ Use these criteria to evaluate the paper taking into account all the sections an
 Format your review as follows:
 1. Paper Summary (1-2 paragraphs)
 2. Section-by-Section list Major issues (violations of criteria provided). Spend something like 3 sentences on each point if it presents a problem. Only focus on the major issues with the paper. If there are no issues about a subsection or section, do not mention it.
-  2a. While doing so, make sure that the paper is one of experimental, data generation, or theory, and check only the corresponding subsection. 
+  2a. While doing so, make sure that the paper is one of experimental, data generation, or theory, and check only the corresponding subsection. If the paper is a mixture comment on that.
   2b. Also check if this is hypothesis driven, needs driven, or exploratory research and check if the key criteria of those sections are fulfilled. If it is unclear what it is, say so.
   2c. Ignore the Audience section
   2d. Make sure that you check if the paper properly cites and relates to its relevant intellectual traditions.
   2e. Focus on relations. e.g. Do the hypotheses go with the question? Are they answered?
   2f. Make sure that all the relevant subsections are labeled with the same titles as in the json so the reader knows how it maps onto their knowledge base.
+  2g. Be very careful about flagging the following logic of a paper. Often times papers set up a big question (e.g. in their abstract), then their research does not really answer the question, but their text suggested that it contributed to answering the question using soft words. If the paper uses this structure, flag it.
 
 Key background.
 The goal of this is to show readers the ins and outs of writing good papers, so clarity is of utmost importance while politeness is less central. 
