@@ -1,5 +1,5 @@
 // FILE: src/components/rightPanel/FullHeightInstructionsPanel.js
-// UPDATED: Added top and bottom navigation buttons for returning to Write mode
+// UPDATED: Replaced heavy buttons with lightweight icons matching the write mode
 
 import React, { useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -42,6 +42,7 @@ const CustomLink = ({node, ...props}) => (
 
 // Render function for original instructions content
 const renderOriginalInstructionsContent = (currentSection, expandedTooltips, toggleTooltip) => {
+  // ... existing function (no changes) ...
   if (!currentSection || !currentSection.originalInstructions) return null;
   const subsections = currentSection.originalInstructions;
   
@@ -98,6 +99,7 @@ const renderOriginalInstructionsContent = (currentSection, expandedTooltips, tog
 
 // Render function for improved instructions content
 const renderImprovedInstructionsContent = (currentSection, expandedTooltips, toggleTooltip) => {
+   // ... existing function (no changes) ...
    if (!currentSection || !currentSection.aiInstructions) return null;
    const improvement = currentSection.aiInstructions;
    const originalSubsections = currentSection.originalInstructions || [];
@@ -233,15 +235,17 @@ const FullHeightInstructionsPanel = ({
   return (
     // Root div with improved background color and relative positioning
     <div className="w-full h-full overflow-y-auto pb-20 box-border flex-shrink-0 bg-gray-50 relative">
-      {/* Top Write Mode Button */}
+      {/* Top Write Mode Button - NOW LIGHTWEIGHT ICON */}
       {onRequestWrite && (
-        <div className="mb-4 flex">
+        <div className="mb-4 flex justify-start px-2 pt-2">
           <button
             onClick={onRequestWrite}
-            className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            className="write-mode-button text-indigo-600 hover:text-indigo-800 focus:outline-none transition-colors"
+            aria-label="Switch to Write mode"
+            title="Switch to Write mode"
           >
-            <span className="text-xl mr-1">◀✎</span>
-            Back to Write mode
+            <span className="text-xl">◀✎</span>
+            <span className="ml-1 text-sm font-medium">Write mode</span>
           </button>
         </div>
       )}
@@ -253,15 +257,17 @@ const FullHeightInstructionsPanel = ({
             : renderOriginalInstructionsContent(enhancedSection, expandedTooltips, toggleTooltip)}
       </div>
 
-      {/* Bottom Write Mode Button */}
+      {/* Bottom Write Mode Button - NOW LIGHTWEIGHT ICON */}
       {onRequestWrite && (
         <div className="absolute bottom-0 right-0 left-0 p-3 bg-gray-50 border-t border-gray-200 flex justify-start">
           <button
             onClick={onRequestWrite}
-            className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            className="write-mode-button text-indigo-600 hover:text-indigo-800 focus:outline-none transition-colors"
+            aria-label="Switch to Write mode"
+            title="Switch to Write mode"
           >
-            <span className="text-xl mr-1">◀✎</span>
-            Back to Write mode
+            <span className="text-xl">◀✎</span>
+            <span className="ml-1 text-sm font-medium">Write mode</span>
           </button>
         </div>
       )}
