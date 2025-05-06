@@ -882,3 +882,93 @@ header.bg-white.shadow-sm .container button[aria-label="Save"] span {
   background-color: #4f46e5;
   transform: scale(1.2);
 }
+/* Add these styles to your src/styles/PaperPlanner.css file */
+
+/* --- Animation Container Styles --- */
+.card-container {
+  overflow: hidden;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.panels-container {
+  display: flex;
+  width: 200%;
+  transition: transform 200ms ease-in-out;
+  /* Ensure content doesn't overflow during transition */
+  overflow: hidden;
+}
+
+.panel {
+  width: 50%;
+  flex-shrink: 0;
+}
+
+.write-panel, .guide-panel {
+  /* Ensure content scrolling works within each panel */
+  overflow-y: visible;
+}
+
+/* Enhance shadows during transition */
+.panels-container:not(.static) {
+  will-change: transform;
+}
+
+/* Ensure the header heights match */
+.write-panel .bg-white.rounded-t-lg,
+.guide-panel .bg-white.rounded-t-lg {
+  min-height: 3.5rem; /* Match header heights */
+  display: flex;
+  align-items: center;
+}
+
+/* Ensure the bottom part of the panels have the same behavior */
+.write-panel .panel-content,
+.guide-panel .panel-content {
+  min-height: 400px; /* Provide minimum height to ensure proper layout */
+}
+
+/* Ensure scrolling works correctly */
+.section-instruction-panel {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Prevent content from appearing to jump during animation */
+.panels-container * {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Optional: Add slide indicators at the bottom of the card */
+.slide-indicators {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px;
+  z-index: 10;
+}
+
+.slide-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  transition: all 200ms ease;
+}
+
+.slide-indicator.active {
+  background-color: #4f46e5;
+  transform: scale(1.2);
+}
+
+/* Mobile optimization */
+@media (max-width: 480px) {
+  .panels-container {
+    transition-duration: 150ms; /* Slightly faster on mobile */
+  }
+}
