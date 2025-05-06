@@ -3,13 +3,14 @@ import React from 'react';
 
 const SectionHeader = ({ 
   title, 
-  isMinimized, 
+  isMinimized, // Keeping this for future use but not using currently
   hasFeedback, 
   feedbackRating, 
   editedSinceFeedback, 
   isHovered, 
   isFocused,
-  toggleMinimized 
+  toggleMinimized, // Keeping this for future use but not using currently
+  onSwitchToGuide // New prop for switching to guide mode
 }) => {
   const getMinimizedIndicatorColor = () => {
     if (!hasFeedback || !feedbackRating) return 'bg-gray-300';
@@ -28,8 +29,8 @@ const SectionHeader = ({
           {title}
         </h2>
         
-        {/* Rating indicator dot for minimized cards */}
-        {isMinimized && hasFeedback && feedbackRating && (
+        {/* Rating indicator dot */}
+        {hasFeedback && feedbackRating && (
           <div 
             className={`w-3 h-3 rounded-full ml-1 ${getMinimizedIndicatorColor()}`} 
             title={`Rated ${feedbackRating}/10`}
@@ -37,7 +38,7 @@ const SectionHeader = ({
         )}
         
         {/* Show edited indicator if content changed since last feedback */}
-        {isMinimized && editedSinceFeedback && (
+        {editedSinceFeedback && (
           <div className="ml-1 text-xs text-purple-600 font-medium">
             (edited)
           </div>
@@ -45,17 +46,20 @@ const SectionHeader = ({
       </div>
       
       <div className="flex items-center">
-        {/* Edit indicator icon */}
-        <div className={`edit-icon transition-opacity duration-200 mr-2 ${isHovered || isFocused ? 'opacity-100' : 'opacity-0'}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-          </svg>
-        </div>
+        {/* New Guide Mode Button - using 💡▶ */}
+        <button 
+          onClick={onSwitchToGuide}
+          className="guide-button text-purple-600 hover:text-purple-800 focus:outline-none ml-2 transition-colors"
+          aria-label="Switch to Guide mode"
+          title="Switch to Guide mode"
+        >
+          <span className="text-xl">💡▶</span>
+        </button>
         
-        {/* Toggle button */}
+        {/* The toggle minimize button is kept in the code but hidden with CSS */}
         <button 
           onClick={toggleMinimized}
-          className="minimize-toggle-btn text-gray-500 hover:text-gray-700 focus:outline-none"
+          className="minimize-toggle-btn hidden"
           aria-label={isMinimized ? "Expand section" : "Minimize section"}
           title={isMinimized ? "Expand section" : "Minimize section"}
         >
