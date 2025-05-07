@@ -22,27 +22,22 @@ const SinglePanelLayout = ({
   
   const [isTransitioning, setIsTransitioning] = useState(false);
   
-  // Touch swipe gesture state
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchMoveX, setTouchMoveX] = useState(null);
   const [isSwiping, setIsSwiping] = useState(false); 
   const [swipeDirection, setSwipeDirection] = useState(null); 
   
-  // Mouse drag swipe gesture state
   const [mouseDown, setMouseDown] = useState(false);
   const [mouseStartX, setMouseStartX] = useState(null);
   const latestMouseMoveXRef = useRef(null); 
 
-  // --- Refs for simpler wheel swipe detection ---
-  const isWheelSwipeActive = useRef(false); // Flag to debounce triggers
+  const isWheelSwipeActive = useRef(false); 
   const wheelSwipeDebounceTimeoutId = useRef(null); 
 
-  // Configuration
   const swipeThreshold = 75; 
   const swipeActiveThreshold = 10; 
-  // *** USER-TUNED VALUE ***
-  const WHEEL_TRIGGER_THRESHOLD = 5; // User found this works best for triggering
-  const WHEEL_DEBOUNCE_TIME = 150; // Keep debounce relatively short
+  const WHEEL_TRIGGER_THRESHOLD = 5; // User preferred value
+  const WHEEL_DEBOUNCE_TIME = 150; 
 
   const activeSectionId = currentChatSectionId || activeSection;
   const currentSection = useAppStore((state) => activeSectionId ? state.sections[activeSectionId] : null);
@@ -67,25 +62,25 @@ const SinglePanelLayout = ({
   
   const handleSwitchToGuide = useCallback(() => {
     if (isTransitioning) return;
-    console.log(`[DEBUG-WHEEL-S2] handleSwitchToGuide called. Current uiMode: ${uiMode}`); 
+    console.log(`[DEBUG-WHEEL-S3] Initiating switch to Guide. Current uiMode was: ${uiMode}`); 
     if (contentRef.current) localStorage.setItem('writeScrollPosition', contentRef.current.scrollTop.toString());
     setIsTransitioning(true);
-    setUiMode('guide'); // State update happens here
+    setUiMode('guide'); 
     setTimeout(() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 50);
-  }, [isTransitioning, uiMode, setUiMode]); // Added uiMode to deps for logging clarity
+  }, [isTransitioning, uiMode, setUiMode]); 
   
   const handleSwitchToWrite = useCallback(() => {
     if (isTransitioning) return;
-    console.log(`[DEBUG-WHEEL-S2] handleSwitchToWrite called. Current uiMode: ${uiMode}`);
+    console.log(`[DEBUG-WHEEL-S3] Initiating switch to Write. Current uiMode was: ${uiMode}`);
     setIsTransitioning(true);
-    setUiMode('write'); // State update happens here
+    setUiMode('write'); 
     setTimeout(() => {
       const storedScrollPos = localStorage.getItem('writeScrollPosition');
       if (storedScrollPos && contentRef.current) {
         contentRef.current.scrollTo({ top: parseInt(storedScrollPos, 10), behavior: 'smooth' });
       }
     }, 50);
-  }, [isTransitioning, uiMode, setUiMode]); // Added uiMode to deps for logging clarity
+  }, [isTransitioning, uiMode, setUiMode]); 
   
   const handleTransitionEnd = () => {
       console.log("[DEBUG] Transition Ended. Setting isTransitioning=false");
@@ -187,18 +182,18 @@ const SinglePanelLayout = ({
   }, [mouseDown, mouseStartX, uiMode, swipeThreshold, handleSwitchToWrite, handleSwitchToGuide]);
 
 
-  // --- Two-finger Trackpad Swipe Handler ---
+  // --- Two-finger Trackpad Swipe Handler (Strategy 3: Reversed Direction + Refined Debounce) ---
   const handleWheelSwipe = useCallback((event) => {
-    // *** ADDED LOG HERE ***
-    console.log(`[DEBUG-WHEEL-S2] handleWheelSwipe: ENTERED. deltaX=${event.deltaX.toFixed(2)}, uiMode (at event time): ${uiMode}`);
-    
+    // Check if debouncing (from a previous successful switch)
     if (isWheelSwipeActive.current) {
-        console.log('[DEBUG-WHEEL-S2] Ignoring event, swipe still active/debouncing.');
+        // console.log('[DEBUG-WHEEL-S3] Ignoring event, debounce active.');
         return;
     }
 
+    // console.log(`[DEBUG-WHEEL-S3] handleWheelSwipe: ENTERED. deltaX=${event.deltaX.toFixed(2)}, uiMode (at event time): ${uiMode}`);
+
     if (isTransitioning || mouseDown || isSwiping) {
-      console.log(`[DEBUG-WHEEL-S2] handleWheelSwipe - Bailing: Interaction active (T:${isTransitioning}, MD:${mouseDown}, S:${isSwiping})`);
+      // console.log(`[DEBUG-WHEEL-S3] handleWheelSwipe - Bailing: Interaction active (T:${isTransitioning}, MD:${mouseDown}, S:${isSwiping})`);
       return;
     }
 
@@ -206,45 +201,52 @@ const SinglePanelLayout = ({
     const isSignificantTriggerDelta = Math.abs(event.deltaX) > WHEEL_TRIGGER_THRESHOLD; 
 
     if (isHorizontalDominant && isSignificantTriggerDelta) {
-        console.log(`[DEBUG-WHEEL-S2] Significant horizontal swipe event detected (deltaX: ${event.deltaX.toFixed(2)}). Threshold: ${WHEEL_TRIGGER_THRESHOLD}. Preventing default.`);
+        console.log(`[DEBUG-WHEEL-S3] Significant horizontal swipe event detected (deltaX: ${event.deltaX.toFixed(2)}). Threshold: ${WHEEL_TRIGGER_THRESHOLD}. Preventing default.`);
         event.preventDefault(); 
 
-        // Determine direction and trigger switch (using the uiMode from the function's closure)
-        if (event.deltaX < 0) { // Swiped fingers left
-             console.log(`[DEBUG-WHEEL-S2] Swipe Left determined. Mode check: ${uiMode}`);
-            if (uiMode === 'write') {
-                handleSwitchToGuide(); 
-            } else {
-                 console.log(`[DEBUG-WHEEL-S2] No action needed for left swipe in mode: ${uiMode}`);
-            }
-        } else { // Swiped fingers right (event.deltaX > 0)
-            console.log(`[DEBUG-WHEEL-S2] Swipe Right determined. Mode check: ${uiMode}`);
-            if (uiMode === 'guide') {
+        let switchTriggered = false;
+
+        // *** REVERSED DIRECTION LOGIC TO MATCH USER EXPECTATION ***
+        if (event.deltaX < 0) { // Swiped fingers left (Negative deltaX)
+             console.log(`[DEBUG-WHEEL-S3] Swipe Left determined. Mode check: ${uiMode}`);
+            if (uiMode === 'guide') { // Should switch from Guide to Write
                 handleSwitchToWrite(); 
+                switchTriggered = true;
             } else {
-                 console.log(`[DEBUG-WHEEL-S2] No action needed for right swipe in mode: ${uiMode}`);
+                 console.log(`[DEBUG-WHEEL-S3] No action needed for left swipe in mode: ${uiMode}`);
+            }
+        } else { // Swiped fingers right (Positive deltaX)
+            console.log(`[DEBUG-WHEEL-S3] Swipe Right determined. Mode check: ${uiMode}`);
+            if (uiMode === 'write') { // Should switch from Write to Guide
+                handleSwitchToGuide(); 
+                switchTriggered = true;
+            } else {
+                 console.log(`[DEBUG-WHEEL-S3] No action needed for right swipe in mode: ${uiMode}`);
             }
         }
 
-        isWheelSwipeActive.current = true;
-        console.log(`[DEBUG-WHEEL-S2] Swipe triggered (or check passed), setting debounce flag for ${WHEEL_DEBOUNCE_TIME}ms.`);
+        // *** ADJUSTED DEBOUNCE LOGIC ***
+        // Only set debounce if a switch was actually initiated
+        if (switchTriggered) {
+            isWheelSwipeActive.current = true;
+            console.log(`[DEBUG-WHEEL-S3] Mode switch initiated, setting debounce flag for ${WHEEL_DEBOUNCE_TIME}ms.`);
 
-        if (wheelSwipeDebounceTimeoutId.current) {
-            clearTimeout(wheelSwipeDebounceTimeoutId.current);
+            if (wheelSwipeDebounceTimeoutId.current) {
+                clearTimeout(wheelSwipeDebounceTimeoutId.current);
+            }
+
+            wheelSwipeDebounceTimeoutId.current = setTimeout(() => {
+                console.log('[DEBUG-WHEEL-S3] Debounce setTimeout CALLED. Resetting isWheelSwipeActive=false.'); 
+                isWheelSwipeActive.current = false;
+            }, WHEEL_DEBOUNCE_TIME);
+        } else {
+             console.log('[DEBUG-WHEEL-S3] Significant swipe detected, but no mode switch needed.');
         }
-
-        wheelSwipeDebounceTimeoutId.current = setTimeout(() => {
-            // *** ADDED LOG HERE ***
-            console.log('[DEBUG-WHEEL-S2] Debounce setTimeout CALLED. Resetting isWheelSwipeActive=false.'); 
-            isWheelSwipeActive.current = false;
-            // Original log kept for consistency if needed:
-            // console.log('[DEBUG-WHEEL-S2] Debounce timeout finished, allowing next swipe.'); 
-        }, WHEEL_DEBOUNCE_TIME);
 
     } // else {
-      // console.log('[DEBUG-WHEEL-S2] Not a dominant or significant horizontal swipe trigger event.'); // Can be noisy
+      // console.log('[DEBUG-WHEEL-S3] Not a dominant or significant horizontal swipe trigger event.');
     //}
-  }, [uiMode, isTransitioning, mouseDown, isSwiping, handleSwitchToGuide, handleSwitchToWrite, WHEEL_TRIGGER_THRESHOLD, WHEEL_DEBOUNCE_TIME]); // uiMode IS a dependency here
+  }, [uiMode, isTransitioning, mouseDown, isSwiping, handleSwitchToGuide, handleSwitchToWrite, WHEEL_TRIGGER_THRESHOLD, WHEEL_DEBOUNCE_TIME]); 
 
 
   // --- Effects ---
@@ -270,23 +272,24 @@ const SinglePanelLayout = ({
   useEffect(() => {
     const currentSwipeArea = contentRef.current; 
     if (!currentSwipeArea) {
-        console.error('[DEBUG-WHEEL-S2] ERROR: contentRef.current is NOT available when trying to add wheel listener!');
+        console.error('[DEBUG-WHEEL-S3] ERROR: contentRef.current is NOT available when trying to add wheel listener!');
         return;
     }
     
-    console.log(`[DEBUG-WHEEL-S2] Adding wheel listener. handleWheelSwipe dependency uiMode is currently: ${uiMode}`); // Log uiMode when listener is added
+    // console.log(`[DEBUG-WHEEL-S3] Adding wheel listener. handleWheelSwipe dependency uiMode is currently: ${uiMode}`); 
     currentSwipeArea.addEventListener('wheel', handleWheelSwipe, { passive: false });
     
     return () => {
-        console.log('[DEBUG-WHEEL-S2] Removing wheel listener.'); // Simplified log
+        // console.log('[DEBUG-WHEEL-S3] Removing wheel listener.'); 
         if (currentSwipeArea) { 
             currentSwipeArea.removeEventListener('wheel', handleWheelSwipe);
         }
         if (wheelSwipeDebounceTimeoutId.current) { 
             clearTimeout(wheelSwipeDebounceTimeoutId.current);
+            // console.log('[DEBUG-WHEEL-S3] Cleared wheel swipe debounce timeout on cleanup of wheel listener effect.');
         }
     };
-  }, [handleWheelSwipe]); // handleWheelSwipe is memoized, depends on uiMode
+  }, [handleWheelSwipe]); 
   
   // --- JSX Return ---
   return (
@@ -320,7 +323,7 @@ const SinglePanelLayout = ({
               transform: `translateX(${uiMode === 'guide' ? '-50%' : '0%'})`,
               width: '200%', 
             }}
-            onTransitionEnd={handleTransitionEnd} // Ensure transition end sets isTransitioning=false
+            onTransitionEnd={handleTransitionEnd}
           >
             {/* Write Mode Panel */}
             <div className="panel write-panel w-1/2 flex-shrink-0">
