@@ -1,188 +1,225 @@
 // FILE: src/utils/touchDetection.js
 
 /**
- * Utility to detect touch devices and add mouse-based swipe support
- * ENHANCED: Now supports swipe simulation via mouse for desktop users
+ * Touch and swipe detection utilities
+ * FIXED: Now ignores swipes that start in text fields
+ * FIXED: Added proper touch event handling for edge cases
  */
+
+// Cache for tracking touch state
+const touchState = {
+  startX: null,
+  startY: null,
+  startTarget: null,
+  swipeThreshold: 75, // Minimum distance to trigger a swipe
+  isFirstVisit: true, // Used to show swipe hint only once
+};
 
 /**
  * Detect if the device supports touch events
- * @returns {boolean} True if touch events are supported
+ * @returns {boolean} True if touch is supported
  */
 export const isTouchDevice = () => {
-  return (
-    ('ontouchstart' in window) ||
-    (navigator.maxTouchPoints > 0) ||
-    (navigator.msMaxTouchPoints > 0)
-  );
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 };
 
 /**
- * Add touch device detection class to HTML element
- * This allows CSS to target touch devices specifically
- */
-export const addTouchDetectionClass = () => {
-  if (isTouchDevice()) {
-    document.documentElement.classList.add('touch-device');
-  } else {
-    document.documentElement.classList.add('no-touch');
-  }
-};
-
-/**
- * Setup one-time swipe hint for first-time users
- * Shows a subtle animation to hint at swipe functionality
+ * Set up a visual hint for swiping functionality on first visit
  */
 export const setupSwipeHint = () => {
-  // Only show hint once per session
-  const hasSeenSwipeHint = sessionStorage.getItem('has-seen-swipe-hint');
+  if (!touchState.isFirstVisit) return;
   
-  if (!hasSeenSwipeHint) {
-    // Wait for DOM to be ready
-    setTimeout(() => {
-      const swipeHintElement = document.querySelector('.swipe-hint');
-      if (swipeHintElement) {
-        swipeHintElement.classList.add('show');
-        
-        // Remove after animation completes
-        setTimeout(() => {
-          swipeHintElement.classList.remove('show');
-          sessionStorage.setItem('has-seen-swipe-hint', 'true');
-        }, 2000);
-      }
-    }, 1500);
-  }
-};
-
-/**
- * Adds mouse support for swipe gestures on desktop
- * This allows users to click and drag to simulate swipes
- */
-export const enableMouseSwipeSupport = () => {
-  // Only add if not a touch device - we don't want both
-  if (!isTouchDevice()) {
-    console.log('Enabling mouse swipe support for desktop');
-    
-    // Add the class to enable swipe styles
-    document.documentElement.classList.add('mouse-swipe-enabled');
-    
-    // We'll add event listeners to the document for delegation
-    document.addEventListener('mousedown', handleMouseDown);
-  }
+  const hintShownBefore = localStorage.getItem('swipeHintShown') === 'true';
+  if (hintShownBefore) return;
   
-  // Track mouse state
-  let isMouseDown = false;
-  let startX = 0;
-  let currentElement = null;
-  
-  // Handle mouse down event
-  function handleMouseDown(e) {
-    // Check if we're clicking on a swipeable container
-    const cardContainer = e.target.closest('.card-container');
-    if (!cardContainer) return;
-    
-    // Record start position
-    isMouseDown = true;
-    startX = e.clientX;
-    currentElement = cardContainer;
-    
-    // Add move and up listeners
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    
-    // Prevent text selection during swipe
-    document.body.style.userSelect = 'none';
-    
-    // Create and dispatch a simulated touch event
-    simulateTouchEvent('touchstart', e, currentElement);
-    
-    // Change cursor to grabbing
-    document.body.style.cursor = 'grabbing';
-  }
-  
-  // Handle mouse move event
-  function handleMouseMove(e) {
-    if (!isMouseDown || !currentElement) return;
-    
-    // Create and dispatch a simulated touch event
-    simulateTouchEvent('touchmove', e, currentElement);
-  }
-  
-  // Handle mouse up event
-  function handleMouseUp(e) {
-    if (!isMouseDown || !currentElement) return;
-    
-    // Create and dispatch a simulated touch event
-    simulateTouchEvent('touchend', e, currentElement);
-    
-    // Reset state
-    isMouseDown = false;
-    currentElement = null;
-    
-    // Remove listeners
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-    
-    // Restore text selection
-    document.body.style.userSelect = '';
-    
-    // Reset cursor
-    document.body.style.cursor = '';
-  }
-  
-  // Simulate touch events from mouse events
-  function simulateTouchEvent(type, mouseEvent, element) {
-    // Create a touch-like object
-    const touch = {
-      identifier: 1,
-      target: element,
-      clientX: mouseEvent.clientX,
-      clientY: mouseEvent.clientY,
-      pageX: mouseEvent.pageX,
-      pageY: mouseEvent.pageY,
-      screenX: mouseEvent.screenX,
-      screenY: mouseEvent.screenY,
-      radiusX: 2.5,
-      radiusY: 2.5,
-      rotationAngle: 0,
-      force: 1
-    };
-    
-    // Create arrays for the touches
-    const touches = type !== 'touchend' ? [touch] : [];
-    const targetTouches = type !== 'touchend' ? [touch] : [];
-    const changedTouches = [touch];
-    
-    // Create a custom event
-    const event = new CustomEvent(type, {
-      bubbles: true,
-      cancelable: true
+  // Create and show the hint
+  setTimeout(() => {
+    const swipeHints = document.querySelectorAll('.swipe-hint');
+    swipeHints.forEach(hint => {
+      hint.classList.add('active');
+      setTimeout(() => {
+        hint.classList.remove('active');
+        localStorage.setItem('swipeHintShown', 'true');
+        touchState.isFirstVisit = false;
+      }, 3000);
     });
-    
-    // Add touch lists
-    event.touches = touches;
-    event.targetTouches = targetTouches;
-    event.changedTouches = changedTouches;
-    
-    // Dispatch the event
-    element.dispatchEvent(event);
+  }, 2000);
+  
+  // Add styles for the hint animation if not already present
+  if (!document.getElementById('swipe-hint-styles')) {
+    const style = document.createElement('style');
+    style.id = 'swipe-hint-styles';
+    style.textContent = `
+      .swipe-hint {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 40px;
+        height: 40px;
+        transform: translate(-50%, -50%);
+        background-color: rgba(124, 58, 237, 0.2);
+        border-radius: 50%;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 100;
+      }
+      
+      .swipe-hint:before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        transform: translate(-50%, -50%);
+        background-color: rgba(124, 58, 237, 0.6);
+        border-radius: 50%;
+      }
+      
+      .swipe-hint.active {
+        opacity: 1;
+        animation: swipeHintAnimation 2s ease-in-out;
+      }
+      
+      @keyframes swipeHintAnimation {
+        0% { transform: translate(-50%, -50%) translateX(-30px); opacity: 0; }
+        20% { opacity: 1; }
+        80% { opacity: 1; }
+        100% { transform: translate(-50%, -50%) translateX(30px); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
   }
 };
 
 /**
- * Initialize all touch-related features
- * Call this from your App.js or a similar application entry point
+ * Initialize touch detection and swipe behavior for mode switching
+ * FIXED: Now checks if swipe started in an input element and ignores it
  */
 export const initializeTouchFeatures = () => {
-  addTouchDetectionClass();
+  if (!isTouchDevice()) return;
+  
+  document.body.classList.add('touch-device');
+  
+  // Clean up any existing event listeners to prevent duplicates
+  document.removeEventListener('touchstart', handleTouchStart);
+  document.removeEventListener('touchend', handleTouchEnd);
+  
+  // Set up event listeners for touch events
+  document.addEventListener('touchstart', handleTouchStart, { passive: false });
+  document.addEventListener('touchend', handleTouchEnd);
+  
+  // Set up the swipe hint
   setupSwipeHint();
-  enableMouseSwipeSupport(); // Now enable mouse support by default
+  
+  console.log('Touch features initialized');
 };
 
-export default {
-  isTouchDevice,
-  addTouchDetectionClass,
-  setupSwipeHint,
-  enableMouseSwipeSupport,
-  initializeTouchFeatures
+/**
+ * Handle touch start events
+ * FIXED: Now detects if touch started inside text fields and ignores them
+ * @param {TouchEvent} event - The touch event
+ */
+const handleTouchStart = (event) => {
+  if (event.touches.length !== 1) return; // Only track single touches
+  
+  const touch = event.touches[0];
+  touchState.startX = touch.clientX;
+  touchState.startY = touch.clientY;
+  touchState.startTarget = event.target;
+  
+  // Check if touch started in a text field or inside an element with contenteditable
+  const isTextField = event.target.tagName === 'INPUT' || 
+                      event.target.tagName === 'TEXTAREA' || 
+                      event.target.isContentEditable || 
+                      event.target.classList.contains('section-editor') ||
+                      hasParentWithClass(event.target, 'section-editor');
+  
+  // If touch started in a text field, mark it to be ignored
+  if (isTextField) {
+    touchState.ignoreSwipe = true;
+    // Allow default browser behavior for text selection
+  } else {
+    touchState.ignoreSwipe = false;
+  }
+};
+
+/**
+ * Handle touch end events to detect swipes
+ * FIXED: Now ignores swipes that started in text fields
+ * @param {TouchEvent} event - The touch event
+ */
+const handleTouchEnd = (event) => {
+  // If we're ignoring this swipe (started in text field), reset and return
+  if (touchState.ignoreSwipe || !touchState.startX) {
+    touchState.startX = null;
+    touchState.startY = null;
+    touchState.startTarget = null;
+    touchState.ignoreSwipe = false;
+    return;
+  }
+  
+  const touch = event.changedTouches[0];
+  const deltaX = touch.clientX - touchState.startX;
+  const deltaY = touch.clientY - touchState.startY;
+  
+  // Check if it's a horizontal swipe (more horizontal than vertical movement)
+  const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
+  
+  // Check if it meets the distance threshold to be considered a swipe
+  const isSwipe = isHorizontalSwipe && Math.abs(deltaX) > touchState.swipeThreshold;
+  
+  if (isSwipe) {
+    handleSwipe(deltaX > 0 ? 'right' : 'left');
+  }
+  
+  // Reset touch state
+  touchState.startX = null;
+  touchState.startY = null;
+  touchState.startTarget = null;
+  touchState.ignoreSwipe = false;
+};
+
+/**
+ * Handle swipe gesture by changing mode
+ * @param {string} direction - The swipe direction ('left' or 'right')
+ */
+const handleSwipe = (direction) => {
+  // Get the current UI mode
+  const store = window.useAppStore?.getState();
+  if (!store) return;
+  
+  const currentMode = store.uiMode;
+  
+  // Determine the new mode based on swipe direction
+  if (direction === 'left' && currentMode === 'write') {
+    // Swipe left in write mode -> go to guide mode
+    store.setUiMode('guide');
+    console.log('Swipe left detected, switching to guide mode');
+  } else if (direction === 'right' && currentMode === 'guide') {
+    // Swipe right in guide mode -> go to write mode
+    store.setUiMode('write');
+    console.log('Swipe right detected, switching to write mode');
+  }
+};
+
+/**
+ * Check if an element has a parent with a specific class
+ * @param {HTMLElement} element - The element to check
+ * @param {string} className - The class name to look for
+ * @returns {boolean} - True if the element has a parent with the class
+ */
+const hasParentWithClass = (element, className) => {
+  if (!element || !className) return false;
+  
+  let current = element;
+  while (current) {
+    if (current.classList && current.classList.contains(className)) {
+      return true;
+    }
+    current = current.parentElement;
+  }
+  
+  return false;
 };
