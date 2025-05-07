@@ -8,9 +8,8 @@ import { isTouchDevice, setupSwipeHint } from '../../utils/touchDetection';
 
 /**
  * A single panel layout that handles both write and guide modes with slide animation
- * FIXED: Removed thin top border line
  * FIXED: Moved card higher on the page by reducing top padding
- * FIXED: Improved animation and transition behavior
+ * FIXED: Ensured consistent title placement between write and guide modes
  */
 const SinglePanelLayout = ({
   activeSection,
@@ -152,9 +151,8 @@ const SinglePanelLayout = ({
   };
   
   // ------- SWIPE GESTURE HANDLERS --------
-  
-  // NOTE: These are now moved to the touchDetection.js utility
-  // We keep them here but they won't be used directly
+  // Note: These are now primarily handled by touchDetection.js
+  // but we keep basic handling here for components that need direct access
   
   // Handle touch start
   const handleTouchStart = (e) => {
@@ -275,8 +273,8 @@ const SinglePanelLayout = ({
   return (
     <div 
       ref={contentRef}
-      className="flex flex-col items-center pt-4 pb-12 w-full h-full overflow-y-auto bg-fafafd">
-      {/* FIXED: Reduced top padding from pt-10 to pt-4 */}
+      className="flex flex-col items-center pt-2 pb-12 w-full h-full overflow-y-auto bg-fafafd">
+      {/* FIXED: Reduced top padding further from pt-4 to pt-2 to position higher */}
       
       {/* Main content panel with card design */}
       <div 
@@ -303,11 +301,12 @@ const SinglePanelLayout = ({
             }}
             onTransitionEnd={handleTransitionEnd}
           >
-            {/* Write Mode Panel (with Header) */}
+            {/* Write Mode Panel */}
             <div className="panel write-panel w-1/2 flex-shrink-0">
-              {/* Write Mode Header - FIXED: Removed the border-b line */}
-              <div className="bg-white rounded-t-lg px-5 py-3">
-                <div></div> {/* Empty for write mode */}
+              {/* Write Mode Header - FIXED: Added consistent header with section title */}
+              <div className="bg-white rounded-t-lg px-5 py-3 flex items-center min-h-[3.5rem]">
+                {/* Show the section title in write mode too */}
+                <h2 className="text-xl font-semibold text-gray-800">{sectionTitle}</h2>
               </div>
               
               {/* Write Mode Content */}
@@ -325,10 +324,10 @@ const SinglePanelLayout = ({
               </div>
             </div>
             
-            {/* Guide Mode Panel (with Header) */}
+            {/* Guide Mode Panel */}
             <div className="panel guide-panel w-1/2 flex-shrink-0">
-              {/* Guide Mode Header with Write mode icon to the left - FIXED: Removed the border-b line */}
-              <div className="bg-white rounded-t-lg px-5 py-3 flex items-center">
+              {/* Guide Mode Header - FIXED: Consistent height and spacing */}
+              <div className="bg-white rounded-t-lg px-5 py-3 flex items-center min-h-[3.5rem]">
                 {/* Write Mode Icon Button - positioned to the left of the title */}
                 <button
                   onClick={handleSwitchToWrite}
