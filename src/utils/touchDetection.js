@@ -2,8 +2,8 @@
 
 /**
  * Touch and swipe detection utilities
- * FIXED: Now ignores swipes that start in text fields
- * FIXED: Added proper touch event handling for edge cases
+ * FIXED: Re-enabled mouse swiping support
+ * FIXED: Improved swipe detection for both mouse and touch
  */
 
 // Cache for tracking touch state
@@ -13,6 +13,15 @@ const touchState = {
   startTarget: null,
   swipeThreshold: 75, // Minimum distance to trigger a swipe
   isFirstVisit: true, // Used to show swipe hint only once
+};
+
+// Mouse swipe state
+const mouseState = {
+  isDown: false,
+  startX: null,
+  startY: null,
+  startTarget: null,
+  swipeThreshold: 75, // Minimum distance for mouse swipe
 };
 
 /**
@@ -95,30 +104,40 @@ export const setupSwipeHint = () => {
 
 /**
  * Initialize touch detection and swipe behavior for mode switching
- * FIXED: Now checks if swipe started in an input element and ignores it
+ * FIXED: Re-enabled mouse swipe and improved initialization
  */
 export const initializeTouchFeatures = () => {
-  if (!isTouchDevice()) return;
-  
-  document.body.classList.add('touch-device');
+  // Add a class to indicate touch support
+  if (isTouchDevice()) {
+    document.body.classList.add('touch-device');
+  } else {
+    document.body.classList.add('mouse-device');
+  }
   
   // Clean up any existing event listeners to prevent duplicates
   document.removeEventListener('touchstart', handleTouchStart);
   document.removeEventListener('touchend', handleTouchEnd);
+  document.removeEventListener('mousedown', handleMouseDown);
+  document.removeEventListener('mouseup', handleMouseUp);
+  document.removeEventListener('mousemove', handleMouseMove);
   
   // Set up event listeners for touch events
   document.addEventListener('touchstart', handleTouchStart, { passive: false });
   document.addEventListener('touchend', handleTouchEnd);
   
+  // Set up event listeners for mouse events (re-enabled)
+  document.addEventListener('mousedown', handleMouseDown);
+  document.addEventListener('mouseup', handleMouseUp);
+  document.addEventListener('mousemove', handleMouseMove);
+  
   // Set up the swipe hint
   setupSwipeHint();
   
-  console.log('Touch features initialized');
+  console.log('Touch and mouse swipe features initialized');
 };
 
 /**
  * Handle touch start events
- * FIXED: Now detects if touch started inside text fields and ignores them
  * @param {TouchEvent} event - The touch event
  */
 const handleTouchStart = (event) => {
@@ -147,7 +166,6 @@ const handleTouchStart = (event) => {
 
 /**
  * Handle touch end events to detect swipes
- * FIXED: Now ignores swipes that started in text fields
  * @param {TouchEvent} event - The touch event
  */
 const handleTouchEnd = (event) => {
@@ -179,6 +197,99 @@ const handleTouchEnd = (event) => {
   touchState.startY = null;
   touchState.startTarget = null;
   touchState.ignoreSwipe = false;
+};
+
+/**
+ * Handle mouse down event to start tracking potential swipe
+ * FIXED: Re-enabled mouse swipe functionality
+ * @param {MouseEvent} event - The mouse event
+ */
+const handleMouseDown = (event) => {
+  // Only track left mouse button
+  if (event.button !== 0) return;
+  
+  // Check if started in text field
+  const isTextField = event.target.tagName === 'INPUT' || 
+                    event.target.tagName === 'TEXTAREA' || 
+                    event.target.isContentEditable || 
+                    event.target.classList.contains('section-editor') ||
+                    hasParentWithClass(event.target, 'section-editor');
+
+  // Skip if in a text field
+  if (isTextField) {
+    mouseState.isDown = false;
+    return;
+  }
+  
+  // Store start position
+  mouseState.isDown = true;
+  mouseState.startX = event.clientX;
+  mouseState.startY = event.clientY;
+  mouseState.startTarget = event.target;
+  
+  // Check if we're in a card or panel container - look for these classes or parents
+  const isInCardContainer = event.target.classList.contains('card-container') || 
+                           hasParentWithClass(event.target, 'card-container') ||
+                           hasParentWithClass(event.target, 'panels-container');
+  
+  if (!isInCardContainer) {
+    mouseState.isDown = false;
+  } else {
+    // Add a visual class to indicate swipeable
+    document.body.classList.add('mouse-swipe-enabled');
+  }
+};
+
+/**
+ * Handle mouse move to track swipe progress
+ * @param {MouseEvent} event - The mouse event
+ */
+const handleMouseMove = (event) => {
+  if (!mouseState.isDown || mouseState.startX === null) return;
+  
+  const deltaX = event.clientX - mouseState.startX;
+  const deltaY = event.clientY - mouseState.startY;
+  
+  // Add a data attribute to body for current drag direction
+  if (Math.abs(deltaX) > 10) {
+    document.body.setAttribute('data-swipe-direction', deltaX > 0 ? 'right' : 'left');
+  }
+};
+
+/**
+ * Handle mouse up to detect completed swipe
+ * @param {MouseEvent} event - The mouse event
+ */
+const handleMouseUp = (event) => {
+  if (!mouseState.isDown || mouseState.startX === null) {
+    mouseState.isDown = false;
+    document.body.classList.remove('mouse-swipe-enabled');
+    document.body.removeAttribute('data-swipe-direction');
+    return;
+  }
+  
+  const deltaX = event.clientX - mouseState.startX;
+  const deltaY = event.clientY - mouseState.startY;
+  
+  // Check if it's a horizontal swipe
+  const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
+  
+  // Check if it meets the threshold to be considered a swipe
+  const isSwipe = isHorizontalSwipe && Math.abs(deltaX) > mouseState.swipeThreshold;
+  
+  if (isSwipe) {
+    handleSwipe(deltaX > 0 ? 'right' : 'left');
+  }
+  
+  // Reset mouse state
+  mouseState.isDown = false;
+  mouseState.startX = null;
+  mouseState.startY = null;
+  mouseState.startTarget = null;
+  
+  // Remove visual indicators
+  document.body.classList.remove('mouse-swipe-enabled');
+  document.body.removeAttribute('data-swipe-direction');
 };
 
 /**
