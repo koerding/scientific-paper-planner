@@ -1398,16 +1398,30 @@ body[data-swipe-direction="right"] .card-container {
     font-size: 1.125rem !important;
   }
 }
-css/* Hide the standalone Question/Significance heading */
-.main-content > div > h1:first-child,
-.main-content > div > .text-2xl:first-child,
-.main-content > div > .text-3xl:first-child {
+/* Add these specific styles to the bottom of your PaperPlanner.css file */
+
+/* Hide the standalone heading above the card */
+.main-content > div > h1,
+.main-content > div > h2,
+.main-content > div > .text-2xl,
+.main-content > div > .text-3xl {
   display: none !important;
 }
 
-/* Make sure card headings remain visible */
+/* Make sure that headings inside the card are not affected */
+.card-container h1,
 .card-container h2,
+.panels-container h1,
+.panels-container h2,
 .write-panel h2,
 .guide-panel h2 {
   display: block !important;
+}
+
+/* This super-specific selector should work for most app structures */
+body .max-w-\[740px\] > h1:first-child,
+body .max-w-\[740px\] > h2:first-child,
+body .w-full > h1:first-child,
+body .w-full > h2:first-child {
+  display: none !important;
 }
