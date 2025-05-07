@@ -8,7 +8,7 @@ import { isTouchDevice, setupSwipeHint } from '../../utils/touchDetection';
 
 /**
  * A single panel layout that handles both write and guide modes with slide animation
- * FIXED: Moved card higher on the page by reducing top padding
+ * FIXED: Moved card higher on the page and added direct mouse swipe support
  * FIXED: Ensured consistent title placement between write and guide modes
  */
 const SinglePanelLayout = ({
@@ -32,11 +32,18 @@ const SinglePanelLayout = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState('right'); // 'left' or 'right'
   
-  // Swipe gesture state
+  // Touch swipe gesture state
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchMoveX, setTouchMoveX] = useState(null);
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(null); // 'left' or 'right'
+  
+  // Mouse swipe gesture state
+  const [mouseDown, setMouseDown] = useState(false);
+  const [mouseStartX, setMouseStartX] = useState(null);
+  const [mouseMoveX, setMouseMoveX] = useState(null);
+  
+  // Configuration
   const swipeThreshold = 75; // Minimum pixels to consider a swipe
   const swipeActiveThreshold = 10; // Pixels to start showing swipe visual feedback
   
@@ -75,6 +82,18 @@ const SinglePanelLayout = ({
       cardContainerRef.current.classList.add(`${uiMode}-active`);
     }
   }, [uiMode]);
+  
+  // Setup mouse event listeners on mount and cleanup on unmount
+  useEffect(() => {
+    // We attach these to document to capture mouse events even if they leave the component
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [mouseDown, mouseStartX]);
   
   // Update swipe direction classes
   useEffect(() => {
@@ -150,9 +169,7 @@ const SinglePanelLayout = ({
     setIsTransitioning(false);
   };
   
-  // ------- SWIPE GESTURE HANDLERS --------
-  // Note: These are now primarily handled by touchDetection.js
-  // but we keep basic handling here for components that need direct access
+  // ------- TOUCH GESTURE HANDLERS --------
   
   // Handle touch start
   const handleTouchStart = (e) => {
@@ -268,7 +285,109 @@ const SinglePanelLayout = ({
     setSwipeDirection(null);
   };
   
-  // ------- END SWIPE GESTURE HANDLERS --------
+  // ------- MOUSE GESTURE HANDLERS --------
+  
+  // Handle mouse down - start tracking potential swipe
+  const handleMouseDown = (e) => {
+    // Only handle left mouse button
+    if (e.button !== 0) return;
+    
+    // Don't handle clicks in text areas or form elements
+    if (e.target.tagName === 'TEXTAREA' || 
+        e.target.tagName === 'INPUT' ||
+        e.target.isContentEditable ||
+        e.target.classList.contains('section-editor') ||
+        hasParentWithClass(e.target, 'section-editor')) {
+      return;
+    }
+    
+    // Set mouse tracking state
+    setMouseDown(true);
+    setMouseStartX(e.clientX);
+    setMouseMoveX(e.clientX);
+    
+    // Add a cursor style to indicate swipeability
+    if (cardContainerRef.current) {
+      cardContainerRef.current.style.cursor = 'grab';
+    }
+    
+    // Add class to body to indicate active mouse swipe
+    document.body.classList.add('mouse-swiping');
+  };
+  
+  // Handle mouse move - track movement for potential swipe
+  const handleMouseMove = (e) => {
+    // Only track movement if mouse is down
+    if (!mouseDown || mouseStartX === null) return;
+    
+    // Update current position
+    setMouseMoveX(e.clientX);
+    
+    // Calculate distance from start
+    const distance = e.clientX - mouseStartX;
+    
+    // Visual feedback during swipe
+    if (Math.abs(distance) > swipeActiveThreshold) {
+      // Update cursor style
+      if (cardContainerRef.current) {
+        cardContainerRef.current.style.cursor = 'grabbing';
+      }
+      
+      // Add direction attribute to body
+      document.body.setAttribute('data-swipe-direction', distance > 0 ? 'right' : 'left');
+    }
+  };
+  
+  // Handle mouse up - process completed swipe
+  const handleMouseUp = (e) => {
+    // Only process if we were tracking mouse down
+    if (!mouseDown || mouseStartX === null) {
+      // Still cleanup state
+      setMouseDown(false);
+      setMouseStartX(null);
+      setMouseMoveX(null);
+      
+      // Reset styles
+      if (cardContainerRef.current) {
+        cardContainerRef.current.style.cursor = '';
+      }
+      document.body.classList.remove('mouse-swiping');
+      document.body.removeAttribute('data-swipe-direction');
+      
+      return;
+    }
+    
+    // Calculate distance and determine if it was a swipe
+    const distance = mouseMoveX - mouseStartX;
+    const isSignificantSwipe = Math.abs(distance) > swipeThreshold;
+    
+    if (isSignificantSwipe) {
+      // Process swipe based on direction
+      if (distance > 0) {
+        // Swiped right
+        if (uiMode === 'guide') {
+          handleSwitchToWrite();
+        }
+      } else {
+        // Swiped left
+        if (uiMode === 'write') {
+          handleSwitchToGuide();
+        }
+      }
+    }
+    
+    // Reset state
+    setMouseDown(false);
+    setMouseStartX(null);
+    setMouseMoveX(null);
+    
+    // Reset styles
+    if (cardContainerRef.current) {
+      cardContainerRef.current.style.cursor = '';
+    }
+    document.body.classList.remove('mouse-swiping');
+    document.body.removeAttribute('data-swipe-direction');
+  };
   
   return (
     <div 
@@ -281,11 +400,16 @@ const SinglePanelLayout = ({
         className="w-full max-w-[740px] px-4 flex-grow overflow-visible z-30 relative mx-auto mb-20" /* Added bottom margin for mobile */
         aria-live="polite"
       >
-        {/* Wrap everything in a common container with touch handlers */}
+        {/* Wrap everything in a common container with touch/mouse handlers */}
         <div 
           ref={cardContainerRef}
           className="card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md 
                    transition-shadow border border-gray-200 write-active"
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
           role="region"
           aria-label={`${uiMode} mode panel, swipe to switch modes`}
         >
