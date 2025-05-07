@@ -7,7 +7,7 @@
       "type": "text",
       "maxLength": 3000,
       "inputPlaceholder": "Start writing your research question here...",
-      "introText": "A strong research question is the foundation of a successful project. It defines the scope, focus, and purpose of your work and guides all decisions from design to analysis. A well-formulated question ensures clarity, relevance, and feasibility.",
+      "introText": "A strong research question is the foundation of a successful project. It defines the scope, focus, and purpose of your work and guides all decisions from design to analysis. A well-formulated question ensures clarity, relevance, and feasibility. [Good questions = Good writing](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005619)",
       "subsections": [
         {
           "id": "question_question_clarity",
