@@ -40,7 +40,7 @@ const SinglePanelLayout = ({
   // Configuration
   const swipeThreshold = 75; // Pixels for touch/mouse drag
   const swipeActiveThreshold = 10; // Pixels to start mouse drag visual feedback
-  const WHEEL_TRIGGER_THRESHOLD = 5; // Pixels for wheel event deltaX trigger
+  const WHEEL_TRIGGER_THRESHOLD = 5; // Pixels for wheel event deltaX trigger (User preferred)
   const WHEEL_DEBOUNCE_TIME = 150; // ms debounce for wheel swipe
 
   const activeSectionId = currentChatSectionId || activeSection;
@@ -68,7 +68,6 @@ const SinglePanelLayout = ({
 
   // Effect for global mouse listeners (for mouse drag swipe)
   useEffect(() => {
-    // Define handlers locally or ensure stability if defined outside
     const handleMouseMoveGlobal = (e) => handleMouseMove(e);
     const handleMouseUpGlobal = (e) => handleMouseUp(e);
 
@@ -81,7 +80,7 @@ const SinglePanelLayout = ({
       document.removeEventListener('mouseup', handleMouseUpGlobal);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mouseDown, mouseStartX]); // Re-bind if drag starts
+  }, [mouseDown, mouseStartX]);
 
   // Effect for touch swipe visual feedback (panel class)
   useEffect(() => {
@@ -96,17 +95,14 @@ const SinglePanelLayout = ({
     const currentSwipeArea = contentRef.current;
     if (!currentSwipeArea) return;
 
-    // Memoized handler passed directly
     const wheelHandler = (e) => handleWheelSwipe(e);
-
     currentSwipeArea.addEventListener('wheel', wheelHandler, { passive: false });
 
     return () => {
         if (currentSwipeArea) {
             currentSwipeArea.removeEventListener('wheel', wheelHandler);
         }
-        // Clear debounce timer ONLY if it exists when component unmounts
-        // It should NOT be cleared just because the listener effect re-runs
+        // Clear debounce timer on unmount
         if (wheelSwipeDebounceTimeoutId.current) {
             clearTimeout(wheelSwipeDebounceTimeoutId.current);
         }
@@ -164,7 +160,6 @@ const SinglePanelLayout = ({
     if (touchStartX === null || !isSwiping) return;
     const currentX = e.touches[0].clientX;
     setTouchMoveX(currentX);
-    // Update visual direction if needed for CSS animations/feedback
     const distance = currentX - touchStartX;
     setSwipeDirection(distance > 0 ? 'right' : 'left');
   }, [touchStartX, isSwiping]);
@@ -173,7 +168,7 @@ const SinglePanelLayout = ({
     if (touchStartX !== null && touchMoveX !== null && isSwiping) {
       const distance = touchMoveX - touchStartX;
       if (Math.abs(distance) > swipeThreshold) {
-        // Standard direction: Left brings Guide, Right brings Write
+        // User expectation: Left brings Guide, Right brings Write
         if (distance < 0 && uiMode === 'write') handleSwitchToGuide(); // Swipe Left
         else if (distance > 0 && uiMode === 'guide') handleSwitchToWrite(); // Swipe Right
       }
@@ -223,7 +218,7 @@ const SinglePanelLayout = ({
     const distance = moveXVal - startXVal;
     const isSignificant = Math.abs(distance) > swipeThreshold;
 
-    // Standard direction: Left brings Guide, Right brings Write
+    // User expectation: Left brings Guide, Right brings Write
     if (isSignificant) {
         if (distance < 0 && uiMode === 'write') handleSwitchToGuide(); // Swipe Left
         else if (distance > 0 && uiMode === 'guide') handleSwitchToWrite(); // Swipe Right
@@ -250,21 +245,22 @@ const SinglePanelLayout = ({
         event.preventDefault();
         let switchTriggered = false;
 
-        // *** USER REQUESTED DIRECTION ***
-        // Swipe Left  (deltaX < 0) -> Show Guide (from Write)
-        // Swipe Right (deltaX > 0) -> Show Write (from Guide)
+        // *** USER REQUESTED DIRECTION (REVERSED FROM PREVIOUS ATTEMPT) ***
+        // Swipe Left  (deltaX < 0) -> Show Write (from Guide)
+        // Swipe Right (deltaX > 0) -> Show Guide (from Write)
         if (event.deltaX < 0) { // Swiped fingers left
-            if (uiMode === 'write') {
-                handleSwitchToGuide();
+            if (uiMode === 'guide') { // If in Guide, switch to Write
+                handleSwitchToWrite();
                 switchTriggered = true;
             }
         } else { // Swiped fingers right
-            if (uiMode === 'guide') {
-                handleSwitchToWrite();
+            if (uiMode === 'write') { // If in Write, switch to Guide
+                handleSwitchToGuide();
                 switchTriggered = true;
             }
         }
 
+        // Only set debounce if a switch was actually initiated
         if (switchTriggered) {
             isWheelSwipeActive.current = true;
             if (wheelSwipeDebounceTimeoutId.current) {
