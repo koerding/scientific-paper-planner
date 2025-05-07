@@ -8,11 +8,9 @@ import { isTouchDevice, setupSwipeHint } from '../../utils/touchDetection';
 
 /**
  * A single panel layout that handles both write and guide modes with slide animation
- * ENHANCED: Added horizontal slide animation between write and guide modes
- * ENHANCED: Added swipe gestures for mode switching with visual feedback
- * UPDATED: Added write mode icon to the left of the title in Guide mode header
- * FIXED: Corrected animation to properly show guide content
- * FIXED: Now correctly manages scroll position when switching modes
+ * FIXED: Removed thin top border line
+ * FIXED: Moved card higher on the page by reducing top padding
+ * FIXED: Improved animation and transition behavior
  */
 const SinglePanelLayout = ({
   activeSection,
@@ -155,8 +153,20 @@ const SinglePanelLayout = ({
   
   // ------- SWIPE GESTURE HANDLERS --------
   
+  // NOTE: These are now moved to the touchDetection.js utility
+  // We keep them here but they won't be used directly
+  
   // Handle touch start
   const handleTouchStart = (e) => {
+    // Check if touch is in a text field - if so, don't process swipe
+    if (e.target.tagName === 'TEXTAREA' || 
+        e.target.tagName === 'INPUT' ||
+        e.target.isContentEditable ||
+        e.target.classList.contains('section-editor') ||
+        hasParentWithClass(e.target, 'section-editor')) {
+      return;
+    }
+    
     // Store initial touch position
     setTouchStartX(e.touches[0].clientX);
     setTouchMoveX(e.touches[0].clientX);
@@ -169,8 +179,24 @@ const SinglePanelLayout = ({
     }
   };
   
+  // Helper function to check if element has parent with class
+  const hasParentWithClass = (element, className) => {
+    if (!element) return false;
+    let parent = element.parentElement;
+    while (parent) {
+      if (parent.classList && parent.classList.contains(className)) {
+        return true;
+      }
+      parent = parent.parentElement;
+    }
+    return false;
+  };
+  
   // Handle touch move
   const handleTouchMove = (e) => {
+    // If not tracking a touch, exit early
+    if (touchStartX === null) return;
+    
     // Update current touch position
     const currentX = e.touches[0].clientX;
     setTouchMoveX(currentX);
@@ -183,20 +209,6 @@ const SinglePanelLayout = ({
       if (Math.abs(distance) > swipeActiveThreshold) {
         setIsSwiping(true);
         setSwipeDirection(distance > 0 ? 'right' : 'left');
-        
-        // Optional: Add live panning effect - uncommenting this will make the panel follow finger
-        // For smoother animation, consider moving this to requestAnimationFrame
-        /*
-        if (panelsContainerRef.current) {
-          const baseOffset = uiMode === 'guide' ? -50 : 0;
-          const maxPan = 15; // Max percentage to pan
-          const panAmount = Math.min(Math.abs(distance) / 5, maxPan); // Calculate pan amount
-          
-          // Apply pan transformation, limited to maxPan
-          const transform = `translateX(${baseOffset + (distance > 0 ? panAmount : -panAmount)}%)`;
-          panelsContainerRef.current.style.transform = transform;
-        }
-        */
       }
     }
   };
@@ -263,7 +275,8 @@ const SinglePanelLayout = ({
   return (
     <div 
       ref={contentRef}
-      className="flex flex-col items-center pt-10 pb-12 w-full h-full overflow-y-auto bg-fafafd">
+      className="flex flex-col items-center pt-4 pb-12 w-full h-full overflow-y-auto bg-fafafd">
+      {/* FIXED: Reduced top padding from pt-10 to pt-4 */}
       
       {/* Main content panel with card design */}
       <div 
@@ -273,12 +286,8 @@ const SinglePanelLayout = ({
         {/* Wrap everything in a common container with touch handlers */}
         <div 
           ref={cardContainerRef}
-          className={`card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md 
-                     transition-shadow border border-gray-200 ${uiMode}-active`}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchCancel}
+          className="card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md 
+                   transition-shadow border border-gray-200 write-active"
           role="region"
           aria-label={`${uiMode} mode panel, swipe to switch modes`}
         >
@@ -296,8 +305,8 @@ const SinglePanelLayout = ({
           >
             {/* Write Mode Panel (with Header) */}
             <div className="panel write-panel w-1/2 flex-shrink-0">
-              {/* Write Mode Header */}
-              <div className="bg-white rounded-t-lg px-5 py-3 border-b border-gray-200">
+              {/* Write Mode Header - FIXED: Removed the border-b line */}
+              <div className="bg-white rounded-t-lg px-5 py-3">
                 <div></div> {/* Empty for write mode */}
               </div>
               
@@ -318,8 +327,8 @@ const SinglePanelLayout = ({
             
             {/* Guide Mode Panel (with Header) */}
             <div className="panel guide-panel w-1/2 flex-shrink-0">
-              {/* Guide Mode Header with Write mode icon to the left */}
-              <div className="bg-white rounded-t-lg px-5 py-3 border-b border-gray-200 flex items-center">
+              {/* Guide Mode Header with Write mode icon to the left - FIXED: Removed the border-b line */}
+              <div className="bg-white rounded-t-lg px-5 py-3 flex items-center">
                 {/* Write Mode Icon Button - positioned to the left of the title */}
                 <button
                   onClick={handleSwitchToWrite}
