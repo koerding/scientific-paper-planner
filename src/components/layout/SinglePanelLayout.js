@@ -6,8 +6,11 @@ import useAppStore from '../../store/appStore';
 import { showWelcomeSplash } from '../modals/SplashScreenManager';
 import { isTouchDevice, setupSwipeHint } from '../../utils/touchDetection';
 
-// ... (keep other imports and component setup as is)
-
+/**
+ * A single panel layout that handles both write and guide modes with slide animation
+ * FIXED: Moved card higher on the page and added direct mouse swipe support
+ * FIXED: Ensured consistent title placement between write and guide modes
+ */
 const SinglePanelLayout = ({
   activeSection,
   activeApproach,
@@ -18,11 +21,123 @@ const SinglePanelLayout = ({
   proMode,
   handleMagic,
 }) => {
+  // Get UI mode and current section ID from the store
   const uiMode = useAppStore((state) => state.uiMode);
   const setUiMode = useAppStore((state) => state.setUiMode);
-  // ... (keep other state and refs as is)
-
-  // Helper function to check if element has parent with class (keep this as is)
+  const previousMode = useRef(uiMode); // Keep track of previous mode for transition direction
+  const isAnyAiLoading = useAppStore((state) => state.isAnyLoading());
+  const currentChatSectionId = useAppStore((state) => state.currentChatSectionId);
+  
+  // Animation state
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionDirection, setTransitionDirection] = useState('right'); // 'left' or 'right'
+  
+  // Touch swipe gesture state
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchMoveX, setTouchMoveX] = useState(null);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState(null); // 'left' or 'right'
+  
+  // Mouse swipe gesture state
+  const [mouseDown, setMouseDown] = useState(false);
+  const [mouseStartX, setMouseStartX] = useState(null);
+  const [mouseMoveX, setMouseMoveX] = useState(null);
+  
+  // Configuration
+  const swipeThreshold = 75; // Minimum pixels to consider a swipe
+  const swipeActiveThreshold = 10; // Pixels to start showing swipe visual feedback
+  
+  // Use currentChatSectionId as the source of truth for which section is active
+  const activeSectionId = currentChatSectionId || activeSection;
+  
+  // Get section info for the header (only shown in guide mode)
+  const currentSection = useAppStore((state) => activeSectionId ? state.sections[activeSectionId] : null);
+  const sectionTitle = currentSection?.title || "Select a section";
+  
+  // Refs for elements
+  const contentRef = useRef(null);
+  const panelsContainerRef = useRef(null);
+  const cardContainerRef = useRef(null);
+  
+  // Update previous mode ref when uiMode changes
+  useEffect(() => {
+    if (previousMode.current !== uiMode) {
+      previousMode.current = uiMode;
+    }
+  }, [uiMode]);
+  
+  // Setup swipe hint on mount
+  useEffect(() => {
+    if (isTouchDevice()) {
+      setupSwipeHint();
+    }
+  }, []);
+  
+  // Add active mode class to card container
+  useEffect(() => {
+    if (cardContainerRef.current) {
+      // Remove previous classes
+      cardContainerRef.current.classList.remove('write-active', 'guide-active');
+      // Add current mode class
+      cardContainerRef.current.classList.add(`${uiMode}-active`);
+    }
+  }, [uiMode]);
+  
+  // Update swipe direction classes for touch
+  useEffect(() => {
+    if (!cardContainerRef.current || !isSwiping || !swipeDirection) return;
+    
+    cardContainerRef.current.classList.remove('swiping-left', 'swiping-right');
+    cardContainerRef.current.classList.add(`swiping-${swipeDirection}`);
+    
+    return () => {
+      if (cardContainerRef.current) {
+        cardContainerRef.current.classList.remove('swiping-left', 'swiping-right');
+      }
+    };
+  }, [isSwiping, swipeDirection]);
+  
+  // Handlers for switching between write and guide modes
+  const handleSwitchToGuide = () => {
+    if (isTransitioning) return;
+    if (contentRef.current) {
+      localStorage.setItem('writeScrollPosition', contentRef.current.scrollTop.toString());
+      // console.log(`[SinglePanelLayout] Stored write scroll position: ${contentRef.current.scrollTop}px`);
+    }
+    setTransitionDirection('left');
+    setIsTransitioning(true);
+    setUiMode('guide');
+    setTimeout(() => {
+      if (contentRef.current) {
+        contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        // console.log('[SinglePanelLayout] Scrolled to top for guide mode');
+      }
+    }, 50);
+  };
+  
+  const handleSwitchToWrite = () => {
+    if (isTransitioning) return;
+    setTransitionDirection('right');
+    setIsTransitioning(true);
+    setUiMode('write');
+    setTimeout(() => {
+      const storedScrollPos = localStorage.getItem('writeScrollPosition');
+      if (storedScrollPos && contentRef.current) {
+        contentRef.current.scrollTo({ 
+          top: parseInt(storedScrollPos, 10), 
+          behavior: 'smooth' 
+        });
+        // console.log(`[SinglePanelLayout] Restored write scroll position: ${storedScrollPos}px`);
+      }
+    }, 50);
+  };
+  
+  // Handle animation end
+  const handleTransitionEnd = () => {
+    setIsTransitioning(false);
+  };
+  
+  // Helper function to check if element has parent with class
   const hasParentWithClass = (element, className) => {
     if (!element) return false;
     let parent = element.parentElement;
@@ -35,21 +150,86 @@ const SinglePanelLayout = ({
     return false;
   };
 
-  // ... (useEffect hooks and other handlers like handleSwitchToGuide, handleTouchStart etc. remain as is)
-
-  // ------- MOUSE GESTURE HANDLERS --------
+  // ------- TOUCH GESTURE HANDLERS --------
+  const handleTouchStart = (e) => {
+    if (e.target.tagName === 'TEXTAREA' || 
+        e.target.tagName === 'INPUT' ||
+        e.target.isContentEditable ||
+        e.target.classList.contains('section-editor') ||
+        hasParentWithClass(e.target, 'section-editor') ||
+        hasParentWithClass(e.target, 'ProseMirror')) {
+      return;
+    }
+    setTouchStartX(e.touches[0].clientX);
+    setTouchMoveX(e.touches[0].clientX); // Initialize to startX
+    setIsSwiping(false);
+    setSwipeDirection(null);
+    if (panelsContainerRef.current) {
+      panelsContainerRef.current.classList.add('swiping');
+    }
+  };
   
+  const handleTouchMove = (e) => {
+    if (touchStartX === null) return;
+    const currentX = e.touches[0].clientX;
+    setTouchMoveX(currentX);
+    if (touchStartX !== null) {
+      const distance = currentX - touchStartX;
+      if (Math.abs(distance) > swipeActiveThreshold) {
+        setIsSwiping(true);
+        setSwipeDirection(distance > 0 ? 'right' : 'left');
+      } else {
+        // If swipe is not active yet, reset isSwiping and swipeDirection
+        // This prevents brief visual flicker if user moves slightly then stops
+        setIsSwiping(false);
+        setSwipeDirection(null);
+      }
+    }
+  };
+  
+  const handleTouchEnd = () => {
+    if (panelsContainerRef.current) {
+      panelsContainerRef.current.classList.remove('swiping');
+      const baseTransform = uiMode === 'guide' ? '-50%' : '0%';
+      panelsContainerRef.current.style.transform = `translateX(${baseTransform})`;
+    }
+    if (touchStartX !== null && touchMoveX !== null) {
+      const distance = touchMoveX - touchStartX;
+      const isSignificantSwipe = Math.abs(distance) > swipeThreshold;
+      if (isSignificantSwipe) {
+        if (distance > 0 && uiMode === 'guide') {
+          handleSwitchToWrite();
+        } else if (distance < 0 && uiMode === 'write') {
+          handleSwitchToGuide();
+        }
+      }
+    }
+    setTouchStartX(null);
+    setTouchMoveX(null);
+    setIsSwiping(false);
+    setSwipeDirection(null);
+  };
+  
+  const handleTouchCancel = () => {
+    if (panelsContainerRef.current) {
+      panelsContainerRef.current.classList.remove('swiping');
+      const baseTransform = uiMode === 'guide' ? '-50%' : '0%';
+      panelsContainerRef.current.style.transform = `translateX(${baseTransform})`;
+    }
+    setTouchStartX(null);
+    setTouchMoveX(null);
+    setIsSwiping(false);
+    setSwipeDirection(null);
+  };
+  
+  // ------- MOUSE GESTURE HANDLERS --------
   const handleMouseDown = (e) => {
-    // DEBUG: Log entry and initial state
-    console.log('[DEBUG] handleMouseDown: Entry. Target:', e.target, 'Button:', e.button);
-
+    console.log('[DEBUG] handleMouseDown: Entry. Target:', e.target, 'Button:', e.button); // DEBUG
     if (e.button !== 0) {
-      // DEBUG: Log non-left button click
-      console.log('[DEBUG] handleMouseDown: Non-left button, returning.');
+      console.log('[DEBUG] handleMouseDown: Non-left button, returning.'); // DEBUG
       return;
     }
     
-    // DEBUG: Log conditions before checking them
     const isTextarea = e.target.tagName === 'TEXTAREA';
     const isInput = e.target.tagName === 'INPUT';
     const isContentEditable = e.target.isContentEditable;
@@ -57,65 +237,54 @@ const SinglePanelLayout = ({
     const hasParentSectionEditor = hasParentWithClass(e.target, 'section-editor');
     const hasParentProseMirror = hasParentWithClass(e.target, 'ProseMirror');
 
-    console.log('[DEBUG] handleMouseDown: Conditions:', {
-        isTextarea,
-        isInput,
-        isContentEditable,
-        hasSectionEditorClass,
-        hasParentSectionEditor,
-        hasParentProseMirror,
+    console.log('[DEBUG] handleMouseDown: Conditions:', { // DEBUG
+        isTextarea, isInput, isContentEditable, hasSectionEditorClass,
+        hasParentSectionEditor, hasParentProseMirror,
     });
 
     if (isTextarea || isInput || isContentEditable || hasSectionEditorClass || hasParentSectionEditor || hasParentProseMirror) {
-      // DEBUG: Log reason for returning
-      console.log('[DEBUG] handleMouseDown: Editable content detected, returning.');
+      console.log('[DEBUG] handleMouseDown: Editable content detected, returning.'); // DEBUG
       return;
     }
     
-    // DEBUG: Log before setting state
-    console.log('[DEBUG] handleMouseDown: Proceeding to set mouse state. ClientX:', e.clientX);
+    console.log('[DEBUG] handleMouseDown: Proceeding to set mouse state. ClientX:', e.clientX); // DEBUG
     setMouseDown(true);
     setMouseStartX(e.clientX);
-    setMouseMoveX(e.clientX);
+    setMouseMoveX(e.clientX); // Initialize to startX
     
     document.body.style.cursor = 'grab'; 
     document.body.classList.add('mouse-swiping');
-    // DEBUG: Log after setting state
-    console.log('[DEBUG] handleMouseDown: Mouse state set. mouseDown:', true, 'mouseStartX:', e.clientX);
+    console.log('[DEBUG] handleMouseDown: Mouse state set. mouseDown:', true, 'mouseStartX:', e.clientX); // DEBUG
   };
   
   const handleMouseMove = (e) => {
     if (!mouseDown || mouseStartX === null) return;
-
-    // DEBUG: Log entry and current state
-    // console.log('[DEBUG] handleMouseMove: Entry. ClientX:', e.clientX, 'Current mouseDown:', mouseDown, 'Current mouseStartX:', mouseStartX);
+    // console.log('[DEBUG] handleMouseMove: Entry. ClientX:', e.clientX, 'Current mouseDown:', mouseDown, 'Current mouseStartX:', mouseStartX); // DEBUG (verbose)
     
-    const currentMouseMoveX = e.clientX;
-    setMouseMoveX(currentMouseMoveX);
+    const currentMoveX = e.clientX;
+    setMouseMoveX(currentMoveX);
     
-    const distance = currentMouseMoveX - mouseStartX;
-    // DEBUG: Log distance
-    // console.log('[DEBUG] handleMouseMove: Distance:', distance, 'ActiveThreshold:', swipeActiveThreshold);
+    const distance = currentMoveX - mouseStartX;
+    // console.log('[DEBUG] handleMouseMove: Distance:', distance, 'ActiveThreshold:', swipeActiveThreshold); // DEBUG (verbose)
     
     if (Math.abs(distance) > swipeActiveThreshold) {
       document.body.style.cursor = 'grabbing';
       document.body.setAttribute('data-swipe-direction', distance > 0 ? 'right' : 'left');
-      // DEBUG: Log cursor change to grabbing
-      // console.log('[DEBUG] handleMouseMove: Cursor set to grabbing. Direction:', distance > 0 ? 'right' : 'left');
+      // console.log('[DEBUG] handleMouseMove: Cursor set to grabbing. Direction:', distance > 0 ? 'right' : 'left'); // DEBUG (verbose)
     } else {
-       if (mouseDown) {
+       if (mouseDown) { // Check mouseDown again as it might have changed by a rapid mouseup
         document.body.style.cursor = 'grab';
-        // console.log('[DEBUG] handleMouseMove: Cursor reverted to grab.');
+        // console.log('[DEBUG] handleMouseMove: Cursor reverted to grab.'); // DEBUG (verbose)
        }
     }
   };
   
   const handleMouseUp = (e) => {
-    // DEBUG: Log entry and current state
-    console.log('[DEBUG] handleMouseUp: Entry. mouseDown:', mouseDown, 'mouseStartX:', mouseStartX, 'mouseMoveX:', mouseMoveX);
-
+    console.log('[DEBUG] handleMouseUp: Entry. Current mouseDown:', mouseDown, 'mouseStartX:', mouseStartX, 'current state mouseMoveX:', mouseMoveX); // DEBUG
+    
     if (!mouseDown || mouseStartX === null) {
-      console.log('[DEBUG] handleMouseUp: Not a tracked mouse down or mouseStartX is null, cleaning up.');
+      console.log('[DEBUG] handleMouseUp: Not a tracked mouse down or mouseStartX is null, cleaning up.'); // DEBUG
+      // Ensure cleanup even if not a tracked swipe
       setMouseDown(false);
       setMouseStartX(null);
       setMouseMoveX(null);
@@ -125,36 +294,35 @@ const SinglePanelLayout = ({
       return;
     }
     
-    const finalMouseMoveX = mouseMoveX; // Use the state value
-    const distance = finalMouseMoveX - mouseStartX;
-    const isSignificantSwipe = Math.abs(distance) > swipeThreshold;
+    // Use the state value of mouseMoveX which was updated by handleMouseMove
+    const finalDistance = mouseMoveX - mouseStartX;
+    const isSignificantSwipe = Math.abs(finalDistance) > swipeThreshold;
     
-    // DEBUG: Log distance and swipe decision
-    console.log('[DEBUG] handleMouseUp: Distance:', distance, 'SwipeThreshold:', swipeThreshold, 'IsSignificantSwipe:', isSignificantSwipe, 'Current uiMode:', uiMode);
+    console.log('[DEBUG] handleMouseUp: finalDistance:', finalDistance, 'SwipeThreshold:', swipeThreshold, 'IsSignificantSwipe:', isSignificantSwipe, 'Current uiMode:', uiMode); // DEBUG
     
     if (isSignificantSwipe) {
-      if (distance > 0) {
-        console.log('[DEBUG] handleMouseUp: Swipe Right detected.');
+      if (finalDistance > 0) { // Swiped Right
+        console.log('[DEBUG] handleMouseUp: Swipe Right detected.'); // DEBUG
         if (uiMode === 'guide') {
-          console.log('[DEBUG] handleMouseUp: Switching to Write mode.');
+          console.log('[DEBUG] handleMouseUp: Switching to Write mode.'); // DEBUG
           handleSwitchToWrite();
         } else {
-          console.log('[DEBUG] handleMouseUp: Already in Write mode or other, no switch.');
+          console.log('[DEBUG] handleMouseUp: Already in Write mode or other, no switch for right swipe.'); // DEBUG
         }
-      } else {
-        console.log('[DEBUG] handleMouseUp: Swipe Left detected.');
+      } else { // Swiped Left
+        console.log('[DEBUG] handleMouseUp: Swipe Left detected.'); // DEBUG
         if (uiMode === 'write') {
-          console.log('[DEBUG] handleMouseUp: Switching to Guide mode.');
+          console.log('[DEBUG] handleMouseUp: Switching to Guide mode.'); // DEBUG
           handleSwitchToGuide();
         } else {
-          console.log('[DEBUG] handleMouseUp: Already in Guide mode or other, no switch.');
+          console.log('[DEBUG] handleMouseUp: Already in Guide mode or other, no switch for left swipe.'); // DEBUG
         }
       }
     } else {
-        console.log('[DEBUG] handleMouseUp: Swipe not significant.');
+        console.log('[DEBUG] handleMouseUp: Swipe not significant.'); // DEBUG
     }
     
-    console.log('[DEBUG] handleMouseUp: Resetting state.');
+    console.log('[DEBUG] handleMouseUp: Resetting state.'); // DEBUG
     setMouseDown(false);
     setMouseStartX(null);
     setMouseMoveX(null);
@@ -163,107 +331,41 @@ const SinglePanelLayout = ({
     document.body.removeAttribute('data-swipe-direction');
   };
 
-  // Ensure the mousemove and mouseup listeners are correctly set up in useEffect
+  // Setup global mouse event listeners
   useEffect(() => {
-    // DEBUG: Log effect registration
-    // console.log('[DEBUG] useEffect for mouse listeners: Registering. mouseDown:', mouseDown);
+    // console.log('[DEBUG] useEffect for mouse listeners: mouseDown is', mouseDown); // DEBUG (can be verbose)
     
-    // Define handlers within useEffect or ensure they are stable if defined outside
-    // The current `handleMouseMove` and `handleMouseUp` rely on state variables like `mouseDown`, `mouseStartX`, `mouseMoveX`
-    // which are updated by their respective setters.
-    // The functions themselves are stable if not recreated on every render unless their dependencies change.
-    // Given they are defined in the component scope, they are recreated on each render.
-    // The dependency array [mouseDown, mouseStartX] for this useEffect is key.
-
-    const currentHandleMouseMove = (e) => {
-        // This inner function will close over the `mouseDown`, `mouseStartX` etc. from the render it was defined in.
-        // This is why the dependency array is important, to re-bind when those values crucial for starting/tracking change.
-        // However, setMouseMoveX will schedule a re-render, and the new mouseMoveX value will be available in the *next* render's mouse handlers.
-        handleMouseMove(e);
-    };
-
-    const currentHandleMouseUp = (e) => {
-        handleMouseUp(e);
-    };
-
-    if (mouseDown) { // Only add mousemove and mouseup if mouse is actually down
-        // console.log('[DEBUG] useEffect for mouse listeners: Actually ADDING mousemove/mouseup to document.');
-        document.addEventListener('mousemove', currentHandleMouseMove);
-        document.addEventListener('mouseup', currentHandleMouseUp);
-    }
-    
-    return () => {
-      // DEBUG: Log effect cleanup
-      // console.log('[DEBUG] useEffect for mouse listeners: Cleaning up. Removing mousemove/mouseup from document.');
-      document.removeEventListener('mousemove', currentHandleMouseMove);
-      document.removeEventListener('mouseup', currentHandleMouseUp);
-    };
-  // }, [mouseDown, mouseStartX, handleMouseMove, handleMouseUp]); // Original: [mouseDown, mouseStartX]
-  // Let's try to make handlers stable with useCallback or simplify dependencies if possible.
-  // For now, let's ensure the core logic of adding/removing based on `mouseDown` is the focus.
-  // The original [mouseDown, mouseStartX] dependency meant new listeners were added when a drag started.
-  // A simpler approach for global listeners is to add them once and let them internally check `mouseDown`.
-  // The current `useEffect` approach only adds them when `mouseDown` is true (or `mouseStartX` changes while `mouseDown` is true)
-  // Let's revert to a simpler useEffect for adding these listeners once and relying on internal checks
-  }, [mouseDown]); // Let's simplify the dependency array to just mouseDown.
-                  // When mouseDown becomes true, we add. When it becomes false, this effect *might* not re-run
-                  // to remove them immediately if not structured carefully.
-                  // The original was fine: [mouseDown, mouseStartX]
-
-  // Reverting to the original useEffect dependency array as it's a common pattern for drag interactions
-  // The functions handleMouseMove and handleMouseUp are redefined on each render,
-  // so they will use the latest state values if this effect re-runs.
-  
-  // --- Reinstating original useEffect for listeners to ensure correct closure behavior ---
-  useEffect(() => {
-    // console.log('[DEBUG] useEffect for mouse listeners: mouseDown is', mouseDown);
-    // These listeners are added to the document. They will use the `handleMouseMove` and `handleMouseUp`
-    // from the render in which this effect ran.
-    // If `mouseDown` is true, we want them active.
-    
-    // The `handleMouseMove` and `handleMouseUp` functions defined in the component scope
-    // are recreated on each render. When this effect re-runs due to `mouseDown` or `mouseStartX` changing,
-    // it will use the newest versions of these functions.
-
-    // A common pattern is to add listeners when `mouseDown` becomes true and remove them in cleanup.
-    // The original dependency array [mouseDown, mouseStartX] should correctly manage this.
-
-    const eventMouseMove = (e) => handleMouseMove(e);
-    const eventMouseUp = (e) => handleMouseUp(e);
+    // Define event handlers for add/removeEventListener to ensure the same function reference
+    const boundMouseMove = (e) => handleMouseMove(e);
+    const boundMouseUp = (e) => handleMouseUp(e);
 
     if (mouseDown) {
-        // console.log('[DEBUG] useEffect: Adding document mousemove and mouseup listeners because mouseDown is true.');
-        document.addEventListener('mousemove', eventMouseMove);
-        document.addEventListener('mouseup', eventMouseUp);
+      // console.log('[DEBUG] useEffect: Adding document mousemove and mouseup listeners.'); // DEBUG
+      document.addEventListener('mousemove', boundMouseMove);
+      document.addEventListener('mouseup', boundMouseUp);
     } else {
-        // console.log('[DEBUG] useEffect: mouseDown is false. Listeners should be removed if they were added by a previous state.');
-        // The cleanup function handles removal.
+      // This else block is not strictly necessary if cleanup always occurs,
+      // but emphasizes that listeners are conditional on `mouseDown`.
+      // console.log('[DEBUG] useEffect: mouseDown is false, listeners should be removed by cleanup.'); // DEBUG
     }
 
     return () => {
-        // console.log('[DEBUG] useEffect: Cleanup. Removing document mousemove and mouseup listeners.');
-        document.removeEventListener('mousemove', eventMouseMove);
-        document.removeEventListener('mouseup', eventMouseUp);
+      // console.log('[DEBUG] useEffect: Cleanup. Removing document mousemove and mouseup listeners.'); // DEBUG
+      document.removeEventListener('mousemove', boundMouseMove);
+      document.removeEventListener('mouseup', boundMouseUp);
     };
-}, [mouseDown, mouseStartX]); // This dependency array means the effect re-runs if mouseDown or mouseStartX changes.
-                               // When mouseDown goes from false to true, listeners are added.
-                               // When mouseDown goes from true to false (in handleMouseUp),
-                               // the effect re-runs, `mouseDown` is false, so listeners from *this run* aren't added,
-                               // and the cleanup from the *previous run* (where mouseDown was true) removes them. This is correct.
+  }, [mouseDown]); // Re-run this effect only when mouseDown changes.
+                   // This is crucial: when mouseDown becomes true, listeners are added.
+                   // When mouseDown becomes false (set in handleMouseUp), this effect's cleanup function
+                   // from the *previous render* (where mouseDown was true) is called, removing the listeners.
 
-
-  // ... (rest of the component including the return statement remains as is)
-  // Make sure to place the onMouseDown={handleMouseDown} on the correct div as per previous instructions.
-  // For this debugging, assuming it's on the `contentRef` div:
-  
   return (
     <div 
       ref={contentRef}
       className="flex flex-col items-center pt-2 pb-12 w-full h-full overflow-y-auto bg-fafafd"
-      onMouseDown={handleMouseDown} // << ENSURE THIS IS ON THE INTENDED SWIPE AREA
+      onMouseDown={handleMouseDown} // MouseDown listener on the overall swipeable area
       role="application" 
     >
-      {/* ... rest of your JSX ... */}
       <div 
         className="w-full max-w-[740px] px-4 flex-grow overflow-visible z-30 relative mx-auto mb-20"
         aria-live="polite"
@@ -271,8 +373,8 @@ const SinglePanelLayout = ({
         <div 
           ref={cardContainerRef}
           className="card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md 
-                   transition-shadow border border-gray-200 write-active"
-          // onMouseDown={handleMouseDown} // << REMOVED FROM HERE
+                   transition-shadow border border-gray-200" // Removed write-active from here, handled by useEffect
+          // Touch handlers are specific to the card usually
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -280,13 +382,12 @@ const SinglePanelLayout = ({
           role="region"
           aria-label={`${uiMode} mode panel, swipe to switch modes`}
         >
-          {/* ... rest of your panel structure ... */}
           <div 
             ref={panelsContainerRef}
             className="panels-container relative"
             style={{
               display: 'flex',
-              transition: 'transform 200ms ease-in-out',
+              transition: isSwiping || mouseDown ? 'none' : 'transform 200ms ease-in-out', // Disable transition during active swipe/drag
               transform: `translateX(${uiMode === 'guide' ? '-50%' : '0%'})`,
               width: '200%',
             }}
@@ -305,8 +406,8 @@ const SinglePanelLayout = ({
                   handleDataMethodToggle={handleDataMethodToggle}
                   handleMagic={handleMagic}
                   proMode={proMode}
-                  onRequestFeedback={handleSwitchToGuide}
-                  contentRef={contentRef}
+                  onRequestFeedback={handleSwitchToGuide} // Prop for LeftPanel to trigger guide mode
+                  contentRef={contentRef} // Pass contentRef if LeftPanel needs it for scrolling
                 />
               </div>
             </div>
@@ -326,11 +427,11 @@ const SinglePanelLayout = ({
               </div>
               <div className="bg-white px-5 py-4">
                 <FullHeightInstructionsPanel
-                  key={`guide-${activeSectionId}`}
+                  key={`guide-${activeSectionId}`} // Ensure re-render on section change
                   activeSectionId={activeSectionId}
-                  improveInstructions={handleMagic}
+                  improveInstructions={handleMagic} // Assuming handleMagic is for AI improvement
                   loading={isAnyAiLoading}
-                  onRequestWrite={handleSwitchToWrite}
+                  onRequestWrite={handleSwitchToWrite} // Prop for FullHeightInstructionsPanel to trigger write mode
                 />
               </div>
             </div>
