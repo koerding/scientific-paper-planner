@@ -32,8 +32,9 @@ const SinglePanelLayout = ({
   
   const [mouseDown, setMouseDown] = useState(false);
   const [mouseStartX, setMouseStartX] = useState(null);
-  const [mouseMoveX, setMouseMoveX] = useState(null);
-  
+  const [mouseMoveX, setMouseMoveX] = useState(null); // We'll keep this for potential UI feedback if needed
+  const latestMouseMoveXRef = useRef(null); // *** NEW REF ***
+
   const swipeThreshold = 75;
   const swipeActiveThreshold = 10;
   
@@ -161,58 +162,59 @@ const SinglePanelLayout = ({
     console.log('[DEBUG] handleMouseDown: Proceeding. ClientX:', e.clientX);
     setMouseDown(true);
     setMouseStartX(e.clientX);
-    setMouseMoveX(e.clientX); // Initialize mouseMoveX here
+    setMouseMoveX(e.clientX); 
+    latestMouseMoveXRef.current = e.clientX; // *** INITIALIZE REF ***
     document.body.style.cursor = 'grab'; 
     document.body.classList.add('mouse-swiping');
-    console.log(`[DEBUG] handleMouseDown: State set -> mouseDown: true, mouseStartX: ${e.clientX}, initial mouseMoveX: ${e.clientX}`);
+    console.log(`[DEBUG] handleMouseDown: State set -> mouseDown: true, mouseStartX: ${e.clientX}, initial mouseMoveX: ${e.clientX}, latestMouseMoveXRef: ${latestMouseMoveXRef.current}`);
   };
   
   const handleMouseMove = (e) => {
-    // This `mouseDown` is from the closure of when the listener was added.
-    // For accurate check, it's better if this handler is re-bound or we use a ref for mouseDown.
-    // However, the `useEffect` dependency on `mouseDown` should handle re-binding.
     if (!mouseDown || mouseStartX === null) return; 
     
     const currentX = e.clientX;
-    console.log(`[DEBUG] handleMouseMove: Entry. ClientX: ${currentX}. Current mouseStartX (from closure/state): ${mouseStartX}`);
-    setMouseMoveX(currentX); // This schedules an update.
-    // The `mouseMoveX` value available *immediately* here is from the *previous* render.
-    // The new value will be available in the *next* render.
+    console.log(`[DEBUG] handleMouseMove: Entry. ClientX: ${currentX}. Current mouseStartX: ${mouseStartX}`);
+    setMouseMoveX(currentX); 
+    latestMouseMoveXRef.current = currentX; // *** UPDATE REF ***
 
     const distance = currentX - (mouseStartX || 0); 
-    console.log(`[DEBUG] handleMouseMove: Called setMouseMoveX(${currentX}). Calculated distance: ${distance}. (Note: mouseMoveX state logged here is pre-update)`);
+    console.log(`[DEBUG] handleMouseMove: Called setMouseMoveX(${currentX}), latestMouseMoveXRef.current = ${latestMouseMoveXRef.current}. Calculated distance: ${distance}.`);
 
     if (Math.abs(distance) > swipeActiveThreshold) {
       document.body.style.cursor = 'grabbing';
       document.body.setAttribute('data-swipe-direction', distance > 0 ? 'right' : 'left');
       console.log('[DEBUG] handleMouseMove: Cursor is grabbing.');
-    } else if (mouseDown) { // Only revert to grab if still in drag sequence
+    } else if (mouseDown) { 
       document.body.style.cursor = 'grab';
       console.log('[DEBUG] handleMouseMove: Cursor is grab.');
     }
   };
   
   const handleMouseUp = (e) => {
-    console.log(`[DEBUG] handleMouseUp: Entry. State reads -> mouseDown: ${mouseDown}, mouseStartX: ${mouseStartX}, mouseMoveX (from current render state): ${mouseMoveX}`);
+    // Read the LATEST mouse position from the ref
+    const finalMoveX = latestMouseMoveXRef.current; 
+    console.log(`[DEBUG] handleMouseUp: Entry. State reads -> mouseDown: ${mouseDown}, mouseStartX: ${mouseStartX}, mouseMoveX (state): ${mouseMoveX}, latestMouseMoveXRef.current: ${finalMoveX}`);
     
-    if (!mouseDown && mouseStartX === null) { // If not even started a swipe
+    if (!mouseDown && mouseStartX === null) {
       console.log('[DEBUG] handleMouseUp: No active mousedown sequence.');
-      // Minimal cleanup if needed, but main state reset is below
       document.body.style.cursor = ''; 
       document.body.classList.remove('mouse-swiping');
       document.body.removeAttribute('data-swipe-direction');
-      setMouseDown(false); // Ensure clean state
+      setMouseDown(false); 
       setMouseStartX(null);
       setMouseMoveX(null);
+      latestMouseMoveXRef.current = null; // Reset ref
       return;
     }
 
-    // Use the `mouseMoveX` state value, which should reflect the last update from `handleMouseMove` after a re-render.
-    const finalMoveX = mouseMoveX === null ? (mouseStartX || 0) : mouseMoveX;
-    const distance = finalMoveX - (mouseStartX || 0);
+    // Ensure mouseStartX and finalMoveX are not null before calculating distance
+    conststartX = mouseStartX === null ? 0 : mouseStartX;
+    constmoveX = finalMoveX === null ? startX : finalMoveX; // If ref is null for some reason, use startX to avoid NaN
+
+    const distance = moveX - startX;
     const isSignificant = Math.abs(distance) > swipeThreshold;
 
-    console.log(`[DEBUG] handleMouseUp: finalDistance: ${distance}, IsSignificant: ${isSignificant}, uiMode: ${uiMode}`);
+    console.log(`[DEBUG] handleMouseUp: finalDistance (using ref): ${distance}, IsSignificant: ${isSignificant}, uiMode: ${uiMode}`);
     
     if (isSignificant) {
       if (distance > 0 && uiMode === 'guide') {
@@ -229,7 +231,8 @@ const SinglePanelLayout = ({
     console.log('[DEBUG] handleMouseUp: Resetting state.');
     setMouseDown(false);
     setMouseStartX(null);
-    setMouseMoveX(null); // Crucial to reset this
+    setMouseMoveX(null); 
+    latestMouseMoveXRef.current = null; // *** RESET REF ***
     document.body.style.cursor = '';
     document.body.classList.remove('mouse-swiping');
     document.body.removeAttribute('data-swipe-direction');
@@ -243,19 +246,13 @@ const SinglePanelLayout = ({
       console.log(`[DEBUG] useEffect: ADDING listeners. mouseDown: ${mouseDown}, mouseStartX: ${mouseStartX}`);
       document.addEventListener('mousemove', boundMouseMove);
       document.addEventListener('mouseup', boundMouseUp);
-    } else {
-      // Listeners are removed by the cleanup function from the previous effect run
-      // when mouseDown was true.
-      // console.log(`[DEBUG] useEffect: mouseDown is false. Cleanup from previous effect should have removed listeners.`);
     }
-
     return () => {
       console.log(`[DEBUG] useEffect: CLEANUP. REMOVING listeners. mouseDown for this closure: ${mouseDown}, mouseStartX for this closure: ${mouseStartX}`);
       document.removeEventListener('mousemove', boundMouseMove);
       document.removeEventListener('mouseup', boundMouseUp);
     };
-  }, [mouseDown, mouseStartX]); // Re-run if mouseDown or mouseStartX changes.
-                                // This ensures fresh handlers with correct closures are bound when a drag starts.
+  }, [mouseDown, mouseStartX]); 
   
   useEffect(() => {
     if (!cardContainerRef.current || !isSwiping || !swipeDirection) return;
