@@ -208,8 +208,8 @@ const SinglePanelLayout = ({
     }
 
     // Ensure mouseStartX and finalMoveX are not null before calculating distance
-    conststartX = mouseStartX === null ? 0 : mouseStartX;
-    constmoveX = finalMoveX === null ? startX : finalMoveX; // If ref is null for some reason, use startX to avoid NaN
+    const startX = mouseStartX === null ? 0 : mouseStartX;
+    const moveX = finalMoveX === null ? startX : finalMoveX; // If ref is null for some reason, use startX to avoid NaN
 
     const distance = moveX - startX;
     const isSignificant = Math.abs(distance) > swipeThreshold;
