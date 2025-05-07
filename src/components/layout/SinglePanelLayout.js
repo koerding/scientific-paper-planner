@@ -332,9 +332,6 @@ const SinglePanelLayout = ({
           >
             {/* Write Mode Panel */}
             <div className="panel write-panel w-1/2 flex-shrink-0">
-              <div className="bg-white rounded-t-lg px-5 py-3 flex items-center min-h-[3.5rem]">
-               /* <h2 className="text-xl font-semibold text-gray-800">{sectionTitle}</h2> */
-              </div>
               <div className="bg-white px-5 py-4">
                 <LeftPanel
                   activeSection={activeSectionId} handleSectionFocus={handleSectionFocus}
