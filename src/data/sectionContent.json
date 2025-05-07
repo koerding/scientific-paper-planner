@@ -7,13 +7,13 @@
       "type": "text",
       "maxLength": 3000,
       "inputPlaceholder": "Start writing your research question here...",
-      "introText": "A strong research question is the foundation of a successful project. It defines the scope, focus, and purpose of your work and guides all decisions from design to analysis. A well-formulated question ensures clarity, relevance, and feasibility. [Good questions = Good writing](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005619)",
+      "introText": "A strong research question is the foundation of a successful project. It defines the scope, focus, and purpose of your work and guides all decisions from design to analysis. A well-formulated question ensures clarity, relevance, and feasibility.",
       "subsections": [
         {
           "id": "question_question_clarity",
           "title": "Question Clarity",
           "instruction": "Make sure the research question is clearly and unambiguously stated and that there is exactly one question and not more than one. A well-formed question should be understandable on its own. Avoid vague terms unless you define them. Use absolutely no jargon. Ideally, a peer from your program should know what you are asking just by reading this sentence or two.",
-          "tooltip": "Clarity anchors your entire research endeavor. When your question is unambiguous, it helps align your methods, data collection, and interpretation. It also gives peers and advisors an immediate grasp of what you're investigating, making their feedback more targeted and constructive. Ambiguity, on the other hand, can lead to misaligned expectations or conflicting interpretations. By defining each term and concept up front, you reduce confusion, create a strong foundation for hypothesis building, and facilitate clearer communication. Ultimately, the clearer your research question, the more coherent and persuasive your final dissertation will be."
+          "tooltip": "Clarity anchors your entire research endeavor. When your question is unambiguous, it helps align your methods, data collection, and interpretation. It also gives peers and advisors an immediate grasp of what you're investigating, making their feedback more targeted and constructive. Ambiguity, on the other hand, can lead to misaligned expectations or conflicting interpretations. By defining each term and concept up front, you reduce confusion, create a strong foundation for hypothesis building, and facilitate clearer communication. Ultimately, the clearer your research question, the more coherent and persuasive your final project will be. [Good questions = Good writing](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005619),[The art of Questions](https://medium.com/@walid.ouaret/from-curiosity-to-clarity-mastering-the-art-of-research-questions-32b27eb83af2)"
         },
         {
           "id": "question_motivation_and_importance",
