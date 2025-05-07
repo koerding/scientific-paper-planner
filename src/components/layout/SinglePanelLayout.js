@@ -41,7 +41,7 @@ const SinglePanelLayout = ({
   const swipeThreshold = 75; 
   const swipeActiveThreshold = 10; 
   // *** TUNED VALUES ***
-  const WHEEL_TRIGGER_THRESHOLD = 25; // Increased sensitivity threshold (was 10, orig 20) - Requires a more distinct initial swipe event
+  const WHEEL_TRIGGER_THRESHOLD = 5; // Increased sensitivity threshold (was 10, orig 20) - Requires a more distinct initial swipe event
   const WHEEL_DEBOUNCE_TIME = 150; // Keep debounce relatively short (was 300)
 
   const activeSectionId = currentChatSectionId || activeSection;
