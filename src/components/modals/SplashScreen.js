@@ -5,6 +5,7 @@ import c4rLogo from '../../assets/icons/01_C4R-short.png'; // Import the C4R log
 
 /**
  * Splash screen component to welcome new users
+ * MODIFIED: Updated guide mode icon to match the main interface (lightbulb with arrow)
  * REDESIGNED: Integrated the app guide content from gray card
  * FIXED: Better mobile positioning and scrollable content
  * MODIFIED: Added C4R logo and attribution link
@@ -58,13 +59,12 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
               </div>
             </div>
             
-            {/* Step 2: Use the guide */}
+            {/* Step 2: Use the guide - UPDATED WITH LIGHTBULB ARROW ICON */}
             <div className="flex items-center bg-gray-50 p-2 rounded-lg border border-gray-100 shadow-sm">
               <div className="rounded-full mr-3 flex items-center justify-center text-white font-bold bg-gray-600 h-6 w-6 flex-shrink-0 text-xs">2</div>
               <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke={iconColors.guide}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
+                {/* Use the new lightbulb arrow icon instead of old lightbulb */}
+                <span className="text-lg mr-2 text-purple-600">💡▶</span>
                 <p className="font-medium text-gray-800 text-sm">Use the guide</p>
               </div>
             </div>
@@ -156,7 +156,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             <div className="mt-3 text-gray-500 text-xs">
               Built with ❤️ by Konrad @Kordinglab
               in collaboration with <a href="https://c4r.io" target="_blank" rel="noopener noreferrer" className="inline-flex items-center hover:underline">
-                <img src={c4rLogo} alt="Center for Reproducible Research" className="h-4 ml-1" style={{ height: '1em', verticalAlign: 'middle' }} />
+                <img src={c4rLogo} alt="Center for Reproducible Research" className="ml-1" style={{ height: '1em', verticalAlign: 'middle' }} />
               </a>
               <br />
               By using this software you acknowledge that Dinosaurs are the most awesome animals.
