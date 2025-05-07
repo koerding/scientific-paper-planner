@@ -1398,17 +1398,29 @@ body[data-swipe-direction="right"] .card-container {
     font-size: 1.125rem !important;
   }
 }
-/* Add these specific styles to the bottom of your PaperPlanner.css file */
 
-/* Hide the standalone heading above the card */
-.main-content > div > h1,
-.main-content > div > h2,
-.main-content > div > .text-2xl,
-.main-content > div > .text-3xl {
+/* Add these styles to the very bottom of your PaperPlanner.css file */
+
+/* Target the exact standalone heading outside of the card */
+.flex.flex-col.items-center.pt-2 > div > h1:first-of-type,
+.flex.flex-col.items-center.pt-2 > div > h2:first-of-type {
   display: none !important;
 }
 
-/* Make sure that headings inside the card are not affected */
+/* Target heading that appears before card-container */
+.w-full.max-w-\[740px\] > h1:first-of-type, 
+.w-full.max-w-\[740px\] > h2:first-of-type {
+  display: none !important;
+}
+
+/* Target more specifically using section title related classes */
+.text-2xl:not(.card-container *),
+.font-bold.text-gray-800:not(.card-container *),
+.font-semibold.text-gray-800:not(.card-container *) {
+  display: none !important;
+}
+
+/* Make sure the headings inside the card containers remain visible */
 .card-container h1,
 .card-container h2,
 .panels-container h1,
@@ -1416,12 +1428,4 @@ body[data-swipe-direction="right"] .card-container {
 .write-panel h2,
 .guide-panel h2 {
   display: block !important;
-}
-
-/* This super-specific selector should work for most app structures */
-body .max-w-\[740px\] > h1:first-child,
-body .max-w-\[740px\] > h2:first-child,
-body .w-full > h1:first-child,
-body .w-full > h2:first-child {
-  display: none !important;
 }
