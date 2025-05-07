@@ -22,18 +22,22 @@ const SinglePanelLayout = ({
   
   const [isTransitioning, setIsTransitioning] = useState(false);
   
+  // Touch swipe gesture state
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchMoveX, setTouchMoveX] = useState(null);
   const [isSwiping, setIsSwiping] = useState(false); 
   const [swipeDirection, setSwipeDirection] = useState(null); 
   
+  // Mouse drag swipe gesture state
   const [mouseDown, setMouseDown] = useState(false);
   const [mouseStartX, setMouseStartX] = useState(null);
   const latestMouseMoveXRef = useRef(null); 
 
+  // Two-finger trackpad swipe gesture state
   const accumulatedWheelDeltaX = useRef(0);
   const wheelSwipeTimeoutId = useRef(null);
 
+  // Configuration
   const swipeThreshold = 75; 
   const swipeActiveThreshold = 10; 
   const WHEEL_SWIPE_THRESHOLD = 50; 
@@ -62,7 +66,7 @@ const SinglePanelLayout = ({
   
   const handleSwitchToGuide = useCallback(() => {
     if (isTransitioning) return;
-    // console.log('[DEBUG-WHEEL] Initiating switch to Guide'); // Keep this if you want to see when switch occurs
+    // console.log('[DEBUG-WHEEL] Initiating switch to Guide'); 
     if (contentRef.current) localStorage.setItem('writeScrollPosition', contentRef.current.scrollTop.toString());
     setIsTransitioning(true);
     setUiMode('guide');
@@ -71,7 +75,7 @@ const SinglePanelLayout = ({
   
   const handleSwitchToWrite = useCallback(() => {
     if (isTransitioning) return;
-    // console.log('[DEBUG-WHEEL] Initiating switch to Write'); // Keep this if you want to see when switch occurs
+    // console.log('[DEBUG-WHEEL] Initiating switch to Write');
     setIsTransitioning(true);
     setUiMode('write');
     setTimeout(() => {
@@ -177,79 +181,72 @@ const SinglePanelLayout = ({
   }, [mouseDown, mouseStartX, uiMode, swipeThreshold, handleSwitchToWrite, handleSwitchToGuide]);
 
   const processWheelSwipe = useCallback(() => {
-    // *** ADD LOG IF NOT ALREADY PRESENT OR ENHANCE ***
-    console.log('[DEBUG-WHEEL] processWheelSwipe called');
-    const delta = accumulatedWheelDeltaX.current;
+    const currentDelta = accumulatedWheelDeltaX.current; // Read once
+    console.log(`[DEBUG-WHEEL] processWheelSwipe CALLED. Accumulated Delta at call: ${currentDelta}, Threshold: ${WHEEL_SWIPE_THRESHOLD}`);
+    
     accumulatedWheelDeltaX.current = 0; 
+    wheelSwipeTimeoutId.current = null; // Clear the timeout ID as it has been processed
 
-    console.log(`[DEBUG-WHEEL] processWheelSwipe - Accumulated Delta: ${delta}, Threshold: ${WHEEL_SWIPE_THRESHOLD}, Transitioning: ${isTransitioning}`);
+    console.log(`[DEBUG-WHEEL] processWheelSwipe - Reset accumulatedDeltaX to 0. isTransitioning: ${isTransitioning}`);
 
     if (isTransitioning) {
-      console.log('[DEBUG-WHEEL] processWheelSwipe - Bailing: Already transitioning');
+      console.log('[DEBUG-WHEEL] processWheelSwipe - Bailing: Already transitioning.');
       return;
     }
 
-    if (Math.abs(delta) > WHEEL_SWIPE_THRESHOLD) {
-      if (delta < 0) { 
-        console.log(`[DEBUG-WHEEL] processWheelSwipe - Swipe Left detected. Current mode: ${uiMode}`);
+    if (Math.abs(currentDelta) > WHEEL_SWIPE_THRESHOLD) {
+      if (currentDelta < 0) { 
+        console.log(`[DEBUG-WHEEL] processWheelSwipe - Swipe Left determined (Delta: ${currentDelta}). Current mode: ${uiMode}`);
         if (uiMode === 'write') {
           handleSwitchToGuide();
+        } else {
+          console.log('[DEBUG-WHEEL] processWheelSwipe - No action: Already in guide or not write mode for left swipe.');
         }
       } else { 
-        console.log(`[DEBUG-WHEEL] processWheelSwipe - Swipe Right detected. Current mode: ${uiMode}`);
+        console.log(`[DEBUG-WHEEL] processWheelSwipe - Swipe Right determined (Delta: ${currentDelta}). Current mode: ${uiMode}`);
         if (uiMode === 'guide') {
           handleSwitchToWrite();
+        } else {
+          console.log('[DEBUG-WHEEL] processWheelSwipe - No action: Already in write or not guide mode for right swipe.');
         }
       }
     } else {
-      console.log('[DEBUG-WHEEL] processWheelSwipe - Swipe not significant enough.');
+      console.log(`[DEBUG-WHEEL] processWheelSwipe - Swipe not significant enough (Delta: ${currentDelta}).`);
     }
   }, [uiMode, isTransitioning, handleSwitchToGuide, handleSwitchToWrite, WHEEL_SWIPE_THRESHOLD]);
 
-// In SinglePanelLayout.js
-
   const handleWheelSwipe = useCallback((event) => {
     console.log(`[DEBUG-WHEEL] handleWheelSwipe: ENTERED. deltaX=${event.deltaX}, deltaY=${event.deltaY}, target=${event.target.className}`);
-    console.log(`[DEBUG-WHEEL] Conditions: isTransitioning=${isTransitioning}, mouseDown=${mouseDown}, isSwiping=${isSwiping}`);
+    // console.log(`[DEBUG-WHEEL] Conditions: isTransitioning=${isTransitioning}, mouseDown=${mouseDown}, isSwiping=${isSwiping}`); // Can be noisy
 
     if (isTransitioning || mouseDown || isSwiping) {
-      console.log('[DEBUG-WHEEL] handleWheelSwipe - Bailing: Other interaction active.');
+      // console.log('[DEBUG-WHEEL] handleWheelSwipe - Bailing: Other interaction active.'); // Can be noisy
       return;
     }
 
-    // Check if it's a horizontal scroll attempt
-    // If deltaX is non-zero and more significant than deltaY
-    const isHorizontalDominant = Math.abs(event.deltaX) > Math.abs(event.deltaY) * 0.5; // Adjusted multiplier slightly, ensure deltaX has *some* value
-                                                                                      // Can also use: event.deltaX !== 0 && Math.abs(event.deltaX) > Math.abs(event.deltaY)
-    
-    // ---- MODIFICATION START ----
-    // We will accumulate if it's horizontally dominant, even if individual deltaX is small.
-    // The final decision will be based on accumulatedWheelDeltaX.current against WHEEL_SWIPE_THRESHOLD.
-    // Remove the `isSignificantDeltaX` check for individual events here.
-    // const isSignificantDeltaX = Math.abs(event.deltaX) > 3; 
-    console.log(`[DEBUG-WHEEL] isHorizontalDominant: ${isHorizontalDominant}, raw event.deltaX: ${event.deltaX}`);
+    const isHorizontalDominant = Math.abs(event.deltaX) > Math.abs(event.deltaY) * 0.5;
+    // console.log(`[DEBUG-WHEEL] isHorizontalDominant: ${isHorizontalDominant}, raw event.deltaX: ${event.deltaX}`); // Can be noisy
 
-    // if (isHorizontalDominant && isSignificantDeltaX) { // OLD CONDITION
-    if (isHorizontalDominant && event.deltaX !== 0) { // NEW CONDITION: If horizontal and there's any deltaX
-    // ---- MODIFICATION END ----
-        console.log('[DEBUG-WHEEL] Horizontal swipe component detected. Preventing default.');
+    if (isHorizontalDominant && event.deltaX !== 0) { 
+        // console.log('[DEBUG-WHEEL] Horizontal swipe component detected. Preventing default.'); // Can be noisy
         event.preventDefault(); 
         
         accumulatedWheelDeltaX.current += event.deltaX;
-        console.log(`[DEBUG-WHEEL] Accumulated deltaX: ${accumulatedWheelDeltaX.current}`);
+        // console.log(`[DEBUG-WHEEL] Accumulated deltaX: ${accumulatedWheelDeltaX.current}`); // Can be noisy
 
         if (wheelSwipeTimeoutId.current) {
             clearTimeout(wheelSwipeTimeoutId.current);
-            // console.log('[DEBUG-WHEEL] Cleared existing timeout.'); // Can be noisy
         }
-
+        
+        // *** ADDED THIS LOG FOR MORE DETAIL ***
+        console.log(`[DEBUG-WHEEL] Setting timeout to call processWheelSwipe. Current accumulatedDeltaX: ${accumulatedWheelDeltaX.current}. Timeout ID to be set.`);
         wheelSwipeTimeoutId.current = setTimeout(() => {
-            console.log('[DEBUG-WHEEL] Timeout! Calling processWheelSwipe.');
+            // You can add a log here if processWheelSwipe itself doesn't seem to log its entry:
+            // console.log('[DEBUG-WHEEL] setTimeout EXECUTED! Calling processWheelSwipe.');
             processWheelSwipe();
         }, WHEEL_GESTURE_END_TIMEOUT);
-        // console.log(`[DEBUG-WHEEL] Set new timeout ID: ${wheelSwipeTimeoutId.current}`); // Can be noisy
     } else {
-      console.log('[DEBUG-WHEEL] Not a dominant horizontal swipe or deltaX is zero.');
+      // console.log('[DEBUG-WHEEL] Not a dominant horizontal swipe or deltaX is zero.'); // Can be noisy
     }
   }, [processWheelSwipe, isTransitioning, mouseDown, isSwiping, WHEEL_GESTURE_END_TIMEOUT]);
 
@@ -272,10 +269,8 @@ const SinglePanelLayout = ({
     return () => cardContainerRef.current?.classList.remove('swiping-left', 'swiping-right');
   }, [isSwiping, swipeDirection]);
 
-  // Effect for wheel swipe listener
   useEffect(() => {
     const currentSwipeArea = contentRef.current; 
-    // *** THIS LOG IS VERY IMPORTANT FOR SETUP ***
     if (!currentSwipeArea) {
         console.error('[DEBUG-WHEEL] ERROR: contentRef.current is NOT available when trying to add wheel listener!');
         return;
@@ -286,15 +281,15 @@ const SinglePanelLayout = ({
     
     return () => {
         console.log('[DEBUG-WHEEL] Removing wheel event listener from contentRef. Current element:', currentSwipeArea);
-        if (currentSwipeArea) { // Check again in case it became null somehow before cleanup
+        if (currentSwipeArea) { 
             currentSwipeArea.removeEventListener('wheel', handleWheelSwipe);
         }
         if (wheelSwipeTimeoutId.current) { 
             clearTimeout(wheelSwipeTimeoutId.current);
-            console.log('[DEBUG-WHEEL] Cleared wheel swipe timeout on cleanup.');
+            console.log('[DEBUG-WHEEL] Cleared wheel swipe timeout on cleanup of wheel listener effect.');
         }
     };
-  }, [handleWheelSwipe]); // handleWheelSwipe is memoized
+  }, [handleWheelSwipe]); 
   
   return (
     <div 
