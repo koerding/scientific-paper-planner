@@ -41,8 +41,8 @@ const SinglePanelLayout = ({
   const swipeThreshold = 75; 
   const swipeActiveThreshold = 10; 
   // *** TUNED VALUES ***
-  const WHEEL_TRIGGER_THRESHOLD = 10; // Lowered sensitivity threshold (was 20)
-  const WHEEL_DEBOUNCE_TIME = 150; // Shortened debounce time (was 300)
+  const WHEEL_TRIGGER_THRESHOLD = 25; // Increased sensitivity threshold (was 10, orig 20) - Requires a more distinct initial swipe event
+  const WHEEL_DEBOUNCE_TIME = 150; // Keep debounce relatively short (was 300)
 
   const activeSectionId = currentChatSectionId || activeSection;
   const currentSection = useAppStore((state) => activeSectionId ? state.sections[activeSectionId] : null);
@@ -67,7 +67,7 @@ const SinglePanelLayout = ({
   
   const handleSwitchToGuide = useCallback(() => {
     if (isTransitioning) return;
-    // console.log('[DEBUG-WHEEL-S2] Initiating switch to Guide'); 
+    console.log('[DEBUG-WHEEL-S2] Initiating switch to Guide'); 
     if (contentRef.current) localStorage.setItem('writeScrollPosition', contentRef.current.scrollTop.toString());
     setIsTransitioning(true);
     setUiMode('guide');
@@ -76,7 +76,7 @@ const SinglePanelLayout = ({
   
   const handleSwitchToWrite = useCallback(() => {
     if (isTransitioning) return;
-    // console.log('[DEBUG-WHEEL-S2] Initiating switch to Write');
+    console.log('[DEBUG-WHEEL-S2] Initiating switch to Write');
     setIsTransitioning(true);
     setUiMode('write');
     setTimeout(() => {
@@ -198,7 +198,7 @@ const SinglePanelLayout = ({
     // console.log(`[DEBUG-WHEEL-S2] isHorizontalDominant: ${isHorizontalDominant}, event.deltaX: ${event.deltaX}, isSignificantTriggerDelta: ${isSignificantTriggerDelta}`); // Keep commented unless needed
 
     if (isHorizontalDominant && isSignificantTriggerDelta) {
-        console.log(`[DEBUG-WHEEL-S2] Significant horizontal swipe event detected (deltaX: ${event.deltaX}). Preventing default.`); // Keep this log for now
+        console.log(`[DEBUG-WHEEL-S2] Significant horizontal swipe event detected (deltaX: ${event.deltaX}). Threshold: ${WHEEL_TRIGGER_THRESHOLD}. Preventing default.`); // Added Threshold to log
         event.preventDefault(); 
 
         // Determine direction and trigger switch
