@@ -22,26 +22,22 @@ const SinglePanelLayout = ({
 
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Touch swipe gesture state
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchMoveX, setTouchMoveX] = useState(null);
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(null);
 
-  // Mouse drag swipe gesture state
   const [mouseDown, setMouseDown] = useState(false);
   const [mouseStartX, setMouseStartX] = useState(null);
   const latestMouseMoveXRef = useRef(null);
 
-  // Wheel swipe gesture state
-  const isWheelSwipeActive = useRef(false); // Flag to debounce triggers
+  const isWheelSwipeActive = useRef(false);
   const wheelSwipeDebounceTimeoutId = useRef(null);
 
-  // Configuration
-  const swipeThreshold = 75; // Pixels for touch/mouse drag
-  const swipeActiveThreshold = 10; // Pixels to start mouse drag visual feedback
-  const WHEEL_TRIGGER_THRESHOLD = 5; // Pixels for wheel event deltaX trigger (User preferred)
-  const WHEEL_DEBOUNCE_TIME = 150; // ms debounce for wheel swipe
+  const swipeThreshold = 75;
+  const swipeActiveThreshold = 10;
+  const WHEEL_TRIGGER_THRESHOLD = 5;
+  const WHEEL_DEBOUNCE_TIME = 150;
 
   const activeSectionId = currentChatSectionId || activeSection;
   const currentSection = useAppStore((state) => activeSectionId ? state.sections[activeSectionId] : null);
@@ -51,66 +47,7 @@ const SinglePanelLayout = ({
   const panelsContainerRef = useRef(null);
   const cardContainerRef = useRef(null);
 
-  // --- Effects ---
-
-  useEffect(() => {
-    if (isTouchDevice()) {
-      setupSwipeHint();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (cardContainerRef.current) {
-      cardContainerRef.current.classList.remove('write-active', 'guide-active');
-      cardContainerRef.current.classList.add(`${uiMode}-active`);
-    }
-  }, [uiMode]);
-
-  // Effect for global mouse listeners (for mouse drag swipe)
-  useEffect(() => {
-    const handleMouseMoveGlobal = (e) => handleMouseMove(e);
-    const handleMouseUpGlobal = (e) => handleMouseUp(e);
-
-    if (mouseDown) {
-      document.addEventListener('mousemove', handleMouseMoveGlobal);
-      document.addEventListener('mouseup', handleMouseUpGlobal);
-    }
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMoveGlobal);
-      document.removeEventListener('mouseup', handleMouseUpGlobal);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mouseDown, mouseStartX]);
-
-  // Effect for touch swipe visual feedback (panel class)
-  useEffect(() => {
-    if (!cardContainerRef.current || !isSwiping || !swipeDirection) return;
-    cardContainerRef.current.classList.remove('swiping-left', 'swiping-right');
-    cardContainerRef.current.classList.add(`swiping-${swipeDirection}`);
-    return () => cardContainerRef.current?.classList.remove('swiping-left', 'swiping-right');
-  }, [isSwiping, swipeDirection]);
-
-  // Effect for wheel swipe listener
-  useEffect(() => {
-    const currentSwipeArea = contentRef.current;
-    if (!currentSwipeArea) return;
-
-    const wheelHandler = (e) => handleWheelSwipe(e);
-    currentSwipeArea.addEventListener('wheel', wheelHandler, { passive: false });
-
-    return () => {
-        if (currentSwipeArea) {
-            currentSwipeArea.removeEventListener('wheel', wheelHandler);
-        }
-        // Clear debounce timer on unmount
-        if (wheelSwipeDebounceTimeoutId.current) {
-            clearTimeout(wheelSwipeDebounceTimeoutId.current);
-        }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handleWheelSwipe]); // handleWheelSwipe is memoized
-
-  // --- Callbacks ---
+  // --- Callbacks (Define these first as other hooks/callbacks might depend on them) ---
 
   const handleSwitchToGuide = useCallback(() => {
     if (isTransitioning) return;
@@ -118,7 +55,7 @@ const SinglePanelLayout = ({
     setIsTransitioning(true);
     setUiMode('guide');
     setTimeout(() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 50);
-  }, [isTransitioning, setUiMode]);
+  }, [isTransitioning, setUiMode]); // Removed uiMode from deps as it's read via closure from component scope if needed
 
   const handleSwitchToWrite = useCallback(() => {
     if (isTransitioning) return;
@@ -130,7 +67,7 @@ const SinglePanelLayout = ({
         contentRef.current.scrollTo({ top: parseInt(storedScrollPos, 10), behavior: 'smooth' });
       }
     }, 50);
-  }, [isTransitioning, setUiMode]);
+  }, [isTransitioning, setUiMode]); // Removed uiMode from deps
 
   const handleTransitionEnd = useCallback(() => setIsTransitioning(false), []);
 
@@ -157,24 +94,25 @@ const SinglePanelLayout = ({
   }, [isTransitioning, mouseDown, hasParentWithClass]);
 
   const handleTouchMove = useCallback((e) => {
+    // Read touchStartX from state directly inside the handler
     if (touchStartX === null || !isSwiping) return;
     const currentX = e.touches[0].clientX;
     setTouchMoveX(currentX);
     const distance = currentX - touchStartX;
     setSwipeDirection(distance > 0 ? 'right' : 'left');
-  }, [touchStartX, isSwiping]);
+  }, [touchStartX, isSwiping]); // Depend on state variables read inside
 
   const handleTouchEnd = useCallback(() => {
+    // Read needed state inside
     if (touchStartX !== null && touchMoveX !== null && isSwiping) {
       const distance = touchMoveX - touchStartX;
       if (Math.abs(distance) > swipeThreshold) {
-        // User expectation: Left brings Guide, Right brings Write
         if (distance < 0 && uiMode === 'write') handleSwitchToGuide(); // Swipe Left
         else if (distance > 0 && uiMode === 'guide') handleSwitchToWrite(); // Swipe Right
       }
     }
     setTouchStartX(null); setTouchMoveX(null); setIsSwiping(false); setSwipeDirection(null);
-  }, [touchStartX, touchMoveX, isSwiping, uiMode, swipeThreshold, handleSwitchToWrite, handleSwitchToGuide]);
+  }, [touchStartX, touchMoveX, isSwiping, uiMode, swipeThreshold, handleSwitchToWrite, handleSwitchToGuide]); // Include all dependencies read
 
   const handleTouchCancel = useCallback(() => {
     setTouchStartX(null); setTouchMoveX(null); setIsSwiping(false); setSwipeDirection(null);
@@ -197,6 +135,7 @@ const SinglePanelLayout = ({
   }, [isTransitioning, isSwiping, hasParentWithClass]);
 
   const handleMouseMove = useCallback((e) => {
+    // Read state/refs needed inside
     if (!mouseDown || mouseStartX === null) return;
     const currentX = e.clientX;
     latestMouseMoveXRef.current = currentX;
@@ -204,12 +143,13 @@ const SinglePanelLayout = ({
     if (Math.abs(distance) > swipeActiveThreshold) {
       document.body.style.cursor = 'grabbing';
       document.body.setAttribute('data-swipe-direction', distance > 0 ? 'right' : 'left');
-    } else if (mouseDown) {
+    } else if (mouseDown) { // Check mouseDown state again
       document.body.style.cursor = 'grab';
     }
-  }, [mouseDown, mouseStartX, swipeActiveThreshold]);
+  }, [mouseDown, mouseStartX, swipeActiveThreshold]); // Depend on state vars read
 
   const handleMouseUp = useCallback(() => {
+    // Read state/refs needed inside
     if (!mouseDown) return;
 
     const finalMoveX = latestMouseMoveXRef.current;
@@ -218,7 +158,6 @@ const SinglePanelLayout = ({
     const distance = moveXVal - startXVal;
     const isSignificant = Math.abs(distance) > swipeThreshold;
 
-    // User expectation: Left brings Guide, Right brings Write
     if (isSignificant) {
         if (distance < 0 && uiMode === 'write') handleSwitchToGuide(); // Swipe Left
         else if (distance > 0 && uiMode === 'guide') handleSwitchToWrite(); // Swipe Right
@@ -230,12 +169,11 @@ const SinglePanelLayout = ({
     document.body.style.cursor = '';
     document.body.classList.remove('mouse-swiping');
     document.body.removeAttribute('data-swipe-direction');
-  }, [mouseDown, mouseStartX, uiMode, swipeThreshold, handleSwitchToWrite, handleSwitchToGuide]);
+  }, [mouseDown, mouseStartX, uiMode, swipeThreshold, handleSwitchToWrite, handleSwitchToGuide]); // Include all deps
 
   // --- Two-finger Trackpad Swipe Handler ---
   const handleWheelSwipe = useCallback((event) => {
     if (isWheelSwipeActive.current) return; // Debouncing
-
     if (isTransitioning || mouseDown || isSwiping) return; // Other interaction active
 
     const isHorizontalDominant = Math.abs(event.deltaX) > Math.abs(event.deltaY) * 0.5;
@@ -245,22 +183,19 @@ const SinglePanelLayout = ({
         event.preventDefault();
         let switchTriggered = false;
 
-        // *** USER REQUESTED DIRECTION (REVERSED FROM PREVIOUS ATTEMPT) ***
-        // Swipe Left  (deltaX < 0) -> Show Write (from Guide)
-        // Swipe Right (deltaX > 0) -> Show Guide (from Write)
+        // User requested direction: Left brings Guide, Right brings Write
         if (event.deltaX < 0) { // Swiped fingers left
-            if (uiMode === 'guide') { // If in Guide, switch to Write
-                handleSwitchToWrite();
+            if (uiMode === 'write') {
+                handleSwitchToGuide();
                 switchTriggered = true;
             }
         } else { // Swiped fingers right
-            if (uiMode === 'write') { // If in Write, switch to Guide
-                handleSwitchToGuide();
+            if (uiMode === 'guide') {
+                handleSwitchToWrite();
                 switchTriggered = true;
             }
         }
 
-        // Only set debounce if a switch was actually initiated
         if (switchTriggered) {
             isWheelSwipeActive.current = true;
             if (wheelSwipeDebounceTimeoutId.current) {
@@ -272,6 +207,69 @@ const SinglePanelLayout = ({
         }
     }
   }, [uiMode, isTransitioning, mouseDown, isSwiping, handleSwitchToGuide, handleSwitchToWrite, WHEEL_TRIGGER_THRESHOLD, WHEEL_DEBOUNCE_TIME]);
+
+
+  // --- Effects ---
+
+  useEffect(() => {
+    if (isTouchDevice()) {
+      setupSwipeHint();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cardContainerRef.current) {
+      cardContainerRef.current.classList.remove('write-active', 'guide-active');
+      cardContainerRef.current.classList.add(`${uiMode}-active`);
+    }
+  }, [uiMode]);
+
+  // Effect for global mouse listeners (for mouse drag swipe)
+  useEffect(() => {
+    // Define local handlers to ensure stable references if needed,
+    // but direct usage of useCallback handlers should be fine if deps are correct.
+    const mouseMoveHandler = (e) => handleMouseMove(e);
+    const mouseUpHandler = (e) => handleMouseUp(e);
+
+    if (mouseDown) {
+      document.addEventListener('mousemove', mouseMoveHandler);
+      document.addEventListener('mouseup', mouseUpHandler);
+    }
+    return () => {
+      document.removeEventListener('mousemove', mouseMoveHandler);
+      document.removeEventListener('mouseup', mouseUpHandler);
+    };
+    // *** RESTORED DEPENDENCIES & REMOVED eslint-disable COMMENT ***
+  }, [mouseDown, handleMouseMove, handleMouseUp]);
+
+  // Effect for touch swipe visual feedback (panel class)
+  useEffect(() => {
+    if (!cardContainerRef.current || !isSwiping || !swipeDirection) return;
+    cardContainerRef.current.classList.remove('swiping-left', 'swiping-right');
+    cardContainerRef.current.classList.add(`swiping-${swipeDirection}`);
+    return () => cardContainerRef.current?.classList.remove('swiping-left', 'swiping-right');
+  }, [isSwiping, swipeDirection]);
+
+  // Effect for wheel swipe listener
+  useEffect(() => {
+    const currentSwipeArea = contentRef.current;
+    if (!currentSwipeArea) return;
+
+    const wheelHandler = (e) => handleWheelSwipe(e);
+    currentSwipeArea.addEventListener('wheel', wheelHandler, { passive: false });
+
+    return () => {
+        if (currentSwipeArea) {
+            currentSwipeArea.removeEventListener('wheel', wheelHandler);
+        }
+        // Clear debounce timer on unmount - This is safe here.
+        // The issue was clearing it during the remove/re-add cycle caused by uiMode change.
+        if (wheelSwipeDebounceTimeoutId.current) {
+            clearTimeout(wheelSwipeDebounceTimeoutId.current);
+        }
+    };
+    // No eslint-disable needed if handleWheelSwipe is stable via useCallback
+  }, [handleWheelSwipe]);
 
 
   // --- JSX Return ---
