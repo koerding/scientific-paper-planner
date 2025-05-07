@@ -93,7 +93,7 @@ const SinglePanelLayout = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [mouseDown, mouseStartX]);
+  }, [mouseDown, mouseStartX]); // Dependency array includes mouseDown and mouseStartX
   
   // Update swipe direction classes
   useEffect(() => {
@@ -297,7 +297,8 @@ const SinglePanelLayout = ({
         e.target.tagName === 'INPUT' ||
         e.target.isContentEditable ||
         e.target.classList.contains('section-editor') ||
-        hasParentWithClass(e.target, 'section-editor')) {
+        hasParentWithClass(e.target, 'section-editor') ||
+        hasParentWithClass(e.target, 'ProseMirror')) { // Added check for ProseMirror editor
       return;
     }
     
@@ -307,9 +308,8 @@ const SinglePanelLayout = ({
     setMouseMoveX(e.clientX);
     
     // Add a cursor style to indicate swipeability
-    if (cardContainerRef.current) {
-      cardContainerRef.current.style.cursor = 'grab';
-    }
+    // Apply to body or a higher-level element if preferred for broader effect
+    document.body.style.cursor = 'grab'; 
     
     // Add class to body to indicate active mouse swipe
     document.body.classList.add('mouse-swiping');
@@ -329,12 +329,15 @@ const SinglePanelLayout = ({
     // Visual feedback during swipe
     if (Math.abs(distance) > swipeActiveThreshold) {
       // Update cursor style
-      if (cardContainerRef.current) {
-        cardContainerRef.current.style.cursor = 'grabbing';
-      }
+      document.body.style.cursor = 'grabbing';
       
       // Add direction attribute to body
       document.body.setAttribute('data-swipe-direction', distance > 0 ? 'right' : 'left');
+    } else {
+       // If not enough movement, revert to grab if still mousedown
+       if (mouseDown) {
+        document.body.style.cursor = 'grab';
+       }
     }
   };
   
@@ -342,15 +345,13 @@ const SinglePanelLayout = ({
   const handleMouseUp = (e) => {
     // Only process if we were tracking mouse down
     if (!mouseDown || mouseStartX === null) {
-      // Still cleanup state
+      // Still cleanup state even if not a full swipe process
       setMouseDown(false);
       setMouseStartX(null);
       setMouseMoveX(null);
       
       // Reset styles
-      if (cardContainerRef.current) {
-        cardContainerRef.current.style.cursor = '';
-      }
+      document.body.style.cursor = ''; // Reset body cursor
       document.body.classList.remove('mouse-swiping');
       document.body.removeAttribute('data-swipe-direction');
       
@@ -382,9 +383,7 @@ const SinglePanelLayout = ({
     setMouseMoveX(null);
     
     // Reset styles
-    if (cardContainerRef.current) {
-      cardContainerRef.current.style.cursor = '';
-    }
+    document.body.style.cursor = ''; // Reset body cursor
     document.body.classList.remove('mouse-swiping');
     document.body.removeAttribute('data-swipe-direction');
   };
@@ -392,7 +391,10 @@ const SinglePanelLayout = ({
   return (
     <div 
       ref={contentRef}
-      className="flex flex-col items-center pt-2 pb-12 w-full h-full overflow-y-auto bg-fafafd">
+      className="flex flex-col items-center pt-2 pb-12 w-full h-full overflow-y-auto bg-fafafd"
+      onMouseDown={handleMouseDown} // << MOVED MOUSEDOWN HANDLER HERE
+      role="application" // Added role for better semantics
+    >
       {/* FIXED: Reduced top padding further from pt-4 to pt-2 to position higher */}
       
       {/* Main content panel with card design */}
@@ -405,7 +407,7 @@ const SinglePanelLayout = ({
           ref={cardContainerRef}
           className="card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md 
                    transition-shadow border border-gray-200 write-active"
-          onMouseDown={handleMouseDown}
+          // onMouseDown={handleMouseDown} // << REMOVED MOUSEDOWN HANDLER FROM HERE
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
