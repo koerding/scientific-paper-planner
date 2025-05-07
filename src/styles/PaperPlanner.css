@@ -1210,3 +1210,97 @@ html.mouse-swipe-enabled .card-container:active {
   z-index: 10 !important;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05) !important;
 }
+/* --- Add these styles to your src/styles/PaperPlanner.css file --- */
+
+/* --- Remove thin line and improve card appearance --- */
+.write-panel .bg-white.rounded-t-lg,
+.guide-panel .bg-white.rounded-t-lg {
+  border-bottom: none !important; /* Remove the bottom border */
+  min-height: 3.5rem; /* Ensure consistent header height */
+}
+
+/* --- Reduce top spacing to bring card higher on screen --- */
+.flex.flex-col.items-center.pt-4 {
+  padding-top: 1rem !important; /* Further reduce top padding */
+}
+
+.card-container {
+  margin-top: 0.5rem; /* Add a small top margin to the card */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important; /* Slightly enhanced shadow */
+  border-color: rgba(229, 231, 235, 0.5) !important; /* Lighter border */
+}
+
+/* --- Prevent swipe functionality in editors --- */
+.section-editor,
+.section-editor * {
+  touch-action: auto !important; /* Allow native touch actions in text editor */
+}
+
+.section-editor textarea {
+  pointer-events: auto !important; /* Ensure text selection works */
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* --- Improved transition smoothness --- */
+.panels-container {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* --- Prevent swipe indicator from showing in text areas --- */
+.section-editor .swipe-hint {
+  display: none !important;
+}
+
+/* --- Enhanced active panel appearance --- */
+.card-container.write-active,
+.card-container.guide-active {
+  transition: transform 200ms ease-in-out, box-shadow 200ms ease;
+}
+
+.card-container:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* --- Fix rounded corners --- */
+.panel.write-panel > div:first-child,
+.panel.guide-panel > div:first-child {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+/* --- Fix section card margins --- */
+.section-card {
+  margin-bottom: 0.75rem !important; /* Slightly reduced margin */
+}
+
+.section-card:first-child {
+  margin-top: 0 !important; /* Remove top margin from first card */
+}
+
+/* --- Fix touch swiping for mobile --- */
+.touch-device .card-container {
+  touch-action: pan-y !important; /* Allow vertical scrolling but capture horizontal swipes */
+}
+
+/* Prevent accidental swipes in text areas */
+.touch-device .section-editor {
+  touch-action: auto !important; /* Allow all native touch actions */
+}
+
+/* --- Mobile optimizations --- */
+@media (max-width: 767px) {
+  .flex.flex-col.items-center.pt-4 {
+    padding-top: 0.5rem !important; /* Even less padding on small screens */
+  }
+  
+  .card-container {
+    margin-top: 0.25rem; /* Less margin on small screens */
+  }
+}
