@@ -206,10 +206,10 @@ const SinglePanelLayout = ({
     }
   }, [uiMode, isTransitioning, handleSwitchToGuide, handleSwitchToWrite, WHEEL_SWIPE_THRESHOLD]);
 
+// In SinglePanelLayout.js
+
   const handleWheelSwipe = useCallback((event) => {
-    // *** THIS IS THE VERY FIRST LOG TO CHECK ***
     console.log(`[DEBUG-WHEEL] handleWheelSwipe: ENTERED. deltaX=${event.deltaX}, deltaY=${event.deltaY}, target=${event.target.className}`);
-    
     console.log(`[DEBUG-WHEEL] Conditions: isTransitioning=${isTransitioning}, mouseDown=${mouseDown}, isSwiping=${isSwiping}`);
 
     if (isTransitioning || mouseDown || isSwiping) {
@@ -217,13 +217,22 @@ const SinglePanelLayout = ({
       return;
     }
 
-    const isHorizontalDominant = Math.abs(event.deltaX) > Math.abs(event.deltaY) * 0.75;
-    const isSignificantDeltaX = Math.abs(event.deltaX) > 3; 
+    // Check if it's a horizontal scroll attempt
+    // If deltaX is non-zero and more significant than deltaY
+    const isHorizontalDominant = Math.abs(event.deltaX) > Math.abs(event.deltaY) * 0.5; // Adjusted multiplier slightly, ensure deltaX has *some* value
+                                                                                      // Can also use: event.deltaX !== 0 && Math.abs(event.deltaX) > Math.abs(event.deltaY)
     
-    console.log(`[DEBUG-WHEEL] isHorizontalDominant: ${isHorizontalDominant}, isSignificantDeltaX: ${isSignificantDeltaX}`);
+    // ---- MODIFICATION START ----
+    // We will accumulate if it's horizontally dominant, even if individual deltaX is small.
+    // The final decision will be based on accumulatedWheelDeltaX.current against WHEEL_SWIPE_THRESHOLD.
+    // Remove the `isSignificantDeltaX` check for individual events here.
+    // const isSignificantDeltaX = Math.abs(event.deltaX) > 3; 
+    console.log(`[DEBUG-WHEEL] isHorizontalDominant: ${isHorizontalDominant}, raw event.deltaX: ${event.deltaX}`);
 
-    if (isHorizontalDominant && isSignificantDeltaX) {
-        console.log('[DEBUG-WHEEL] Horizontal swipe detected. Preventing default.');
+    // if (isHorizontalDominant && isSignificantDeltaX) { // OLD CONDITION
+    if (isHorizontalDominant && event.deltaX !== 0) { // NEW CONDITION: If horizontal and there's any deltaX
+    // ---- MODIFICATION END ----
+        console.log('[DEBUG-WHEEL] Horizontal swipe component detected. Preventing default.');
         event.preventDefault(); 
         
         accumulatedWheelDeltaX.current += event.deltaX;
@@ -231,16 +240,16 @@ const SinglePanelLayout = ({
 
         if (wheelSwipeTimeoutId.current) {
             clearTimeout(wheelSwipeTimeoutId.current);
-            console.log('[DEBUG-WHEEL] Cleared existing timeout.');
+            // console.log('[DEBUG-WHEEL] Cleared existing timeout.'); // Can be noisy
         }
 
         wheelSwipeTimeoutId.current = setTimeout(() => {
             console.log('[DEBUG-WHEEL] Timeout! Calling processWheelSwipe.');
             processWheelSwipe();
         }, WHEEL_GESTURE_END_TIMEOUT);
-        console.log(`[DEBUG-WHEEL] Set new timeout ID: ${wheelSwipeTimeoutId.current}`);
+        // console.log(`[DEBUG-WHEEL] Set new timeout ID: ${wheelSwipeTimeoutId.current}`); // Can be noisy
     } else {
-      console.log('[DEBUG-WHEEL] Not a dominant horizontal swipe or deltaX too small.');
+      console.log('[DEBUG-WHEEL] Not a dominant horizontal swipe or deltaX is zero.');
     }
   }, [processWheelSwipe, isTransitioning, mouseDown, isSwiping, WHEEL_GESTURE_END_TIMEOUT]);
 
