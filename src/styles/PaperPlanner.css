@@ -1398,31 +1398,3 @@ body[data-swipe-direction="right"] .card-container {
     font-size: 1.125rem !important;
   }
 }
-/* Add this to your src/styles/PaperPlanner.css file */
-
-/* Hide the duplicate heading at the top of the page */
-.main-content > div > h1:first-of-type,
-.main-content > div > h1.text-xl:first-of-type,
-.main-content > div > .text-2xl:first-of-type,
-.main-content > div > .text-3xl:first-of-type {
-  display: none !important;
-}
-
-/* Ensure the header inside the card remains visible and properly styled */
-.card-container .write-panel h2,
-.card-container .guide-panel h2 {
-  display: block !important;
-  font-size: 1.25rem !important;
-  font-weight: 600 !important;
-  margin-bottom: 0 !important;
-}
-
-/* If the above doesn't catch it, try this selector which is more aggressive */
-.flex.flex-col.items-center.pt-2 > div > *:first-child:not(.card-container) {
-  display: none !important;
-}
-
-/* If you still see the heading, this should definitely hide it */
-.main-content > div > *:first-child:not(.card-container):not(.instructions-content) {
-  display: none !important;
-}
