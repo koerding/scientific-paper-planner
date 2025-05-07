@@ -1,5 +1,5 @@
 // FILE: src/components/layout/SinglePanelLayout.js
-import React, { useEffect, useRef, useState, useCallback } from 'react'; // Added useCallback
+import React, { useEffect, useRef, useState, useCallback } from 'react'; 
 import LeftPanel from './LeftPanel';
 import FullHeightInstructionsPanel from '../rightPanel/FullHeightInstructionsPanel';
 import useAppStore from '../../store/appStore';
@@ -22,26 +22,22 @@ const SinglePanelLayout = ({
   
   const [isTransitioning, setIsTransitioning] = useState(false);
   
-  // Touch swipe gesture state
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchMoveX, setTouchMoveX] = useState(null);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState(null);
+  const [isSwiping, setIsSwiping] = useState(false); 
+  const [swipeDirection, setSwipeDirection] = useState(null); 
   
-  // Mouse drag swipe gesture state
   const [mouseDown, setMouseDown] = useState(false);
   const [mouseStartX, setMouseStartX] = useState(null);
   const latestMouseMoveXRef = useRef(null); 
 
-  // Two-finger trackpad swipe gesture state
   const accumulatedWheelDeltaX = useRef(0);
   const wheelSwipeTimeoutId = useRef(null);
 
-  // Configuration
   const swipeThreshold = 75; 
   const swipeActiveThreshold = 10; 
-  const WHEEL_SWIPE_THRESHOLD = 50; // Threshold for trackpad swipe
-  const WHEEL_GESTURE_END_TIMEOUT = 200; // ms to wait for more wheel events
+  const WHEEL_SWIPE_THRESHOLD = 50; 
+  const WHEEL_GESTURE_END_TIMEOUT = 200; 
 
   const activeSectionId = currentChatSectionId || activeSection;
   const currentSection = useAppStore((state) => activeSectionId ? state.sections[activeSectionId] : null);
@@ -66,6 +62,7 @@ const SinglePanelLayout = ({
   
   const handleSwitchToGuide = useCallback(() => {
     if (isTransitioning) return;
+    // console.log('[DEBUG-WHEEL] Initiating switch to Guide'); // Keep this if you want to see when switch occurs
     if (contentRef.current) localStorage.setItem('writeScrollPosition', contentRef.current.scrollTop.toString());
     setIsTransitioning(true);
     setUiMode('guide');
@@ -74,6 +71,7 @@ const SinglePanelLayout = ({
   
   const handleSwitchToWrite = useCallback(() => {
     if (isTransitioning) return;
+    // console.log('[DEBUG-WHEEL] Initiating switch to Write'); // Keep this if you want to see when switch occurs
     setIsTransitioning(true);
     setUiMode('write');
     setTimeout(() => {
@@ -96,26 +94,21 @@ const SinglePanelLayout = ({
     return false;
   };
   
-  // --- Touch Gesture Handlers ---
   const handleTouchStart = useCallback((e) => {
-    if (isTransitioning || mouseDown) return; // Prevent touch during other interactions
+    if (isTransitioning || mouseDown) return; 
     if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.isContentEditable ||
         e.target.classList.contains('section-editor') || hasParentWithClass(e.target, 'section-editor') ||
         hasParentWithClass(e.target, 'ProseMirror')) return;
     setTouchStartX(e.touches[0].clientX);
     setTouchMoveX(e.touches[0].clientX);
-    setIsSwiping(true); // Indicate potential swipe early for transition disabling
+    setIsSwiping(true); 
     setSwipeDirection(null);
-    // panelsContainerRef.current?.classList.add('swiping'); // Class for visual feedback if needed
   }, [isTransitioning, mouseDown]);
   
   const handleTouchMove = useCallback((e) => {
-    if (touchStartX === null || !isSwiping) return; // Only process if actively swiping
+    if (touchStartX === null || !isSwiping) return; 
     const currentX = e.touches[0].clientX;
     setTouchMoveX(currentX);
-    const distance = currentX - touchStartX;
-    // Determine direction for visual feedback if any (already handled by isSwiping for transition)
-    // setSwipeDirection(distance > 0 ? 'right' : 'left');
   }, [touchStartX, isSwiping]);
   
   const handleTouchEnd = useCallback(() => {
@@ -127,17 +120,14 @@ const SinglePanelLayout = ({
       }
     }
     setTouchStartX(null); setTouchMoveX(null); setIsSwiping(false); setSwipeDirection(null);
-    // panelsContainerRef.current?.classList.remove('swiping');
   }, [touchStartX, touchMoveX, isSwiping, uiMode, swipeThreshold, handleSwitchToWrite, handleSwitchToGuide]);
   
   const handleTouchCancel = useCallback(() => {
     setTouchStartX(null); setTouchMoveX(null); setIsSwiping(false); setSwipeDirection(null);
-    // panelsContainerRef.current?.classList.remove('swiping');
   }, []);
   
-  // --- Mouse Drag Swipe Gesture Handlers ---
   const handleMouseDown = useCallback((e) => {
-    if (isTransitioning || isSwiping) return; // Prevent mouse drag during other interactions
+    if (isTransitioning || isSwiping) return; 
     if (e.button !== 0) return;
     if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.isContentEditable ||
         e.target.classList.contains('section-editor') || hasParentWithClass(e.target, 'section-editor') ||
@@ -165,7 +155,7 @@ const SinglePanelLayout = ({
   }, [mouseDown, mouseStartX, swipeActiveThreshold]);
   
   const handleMouseUp = useCallback(() => {
-    if (!mouseDown) return; // Only process if mouse was down
+    if (!mouseDown) return; 
 
     const finalMoveX = latestMouseMoveXRef.current; 
     const startXVal = mouseStartX === null ? 0 : mouseStartX;
@@ -186,54 +176,75 @@ const SinglePanelLayout = ({
     document.body.removeAttribute('data-swipe-direction');
   }, [mouseDown, mouseStartX, uiMode, swipeThreshold, handleSwitchToWrite, handleSwitchToGuide]);
 
-  // --- Two-finger Trackpad Swipe Gesture Handlers ---
   const processWheelSwipe = useCallback(() => {
+    // *** ADD LOG IF NOT ALREADY PRESENT OR ENHANCE ***
+    console.log('[DEBUG-WHEEL] processWheelSwipe called');
     const delta = accumulatedWheelDeltaX.current;
-    accumulatedWheelDeltaX.current = 0; // Reset for the next distinct gesture
+    accumulatedWheelDeltaX.current = 0; 
 
-    if (isTransitioning) return; // Don't process if already changing modes
+    console.log(`[DEBUG-WHEEL] processWheelSwipe - Accumulated Delta: ${delta}, Threshold: ${WHEEL_SWIPE_THRESHOLD}, Transitioning: ${isTransitioning}`);
+
+    if (isTransitioning) {
+      console.log('[DEBUG-WHEEL] processWheelSwipe - Bailing: Already transitioning');
+      return;
+    }
 
     if (Math.abs(delta) > WHEEL_SWIPE_THRESHOLD) {
-      // Typical trackpad: swipe fingers LEFT (content moves left, new content from right) -> deltaX is NEGATIVE
-      // Typical trackpad: swipe fingers RIGHT (content moves right, new content from left) -> deltaX is POSITIVE
-      if (delta < 0) { // Swiped fingers left
+      if (delta < 0) { 
+        console.log(`[DEBUG-WHEEL] processWheelSwipe - Swipe Left detected. Current mode: ${uiMode}`);
         if (uiMode === 'write') {
           handleSwitchToGuide();
         }
-      } else { // Swiped fingers right
+      } else { 
+        console.log(`[DEBUG-WHEEL] processWheelSwipe - Swipe Right detected. Current mode: ${uiMode}`);
         if (uiMode === 'guide') {
           handleSwitchToWrite();
         }
       }
+    } else {
+      console.log('[DEBUG-WHEEL] processWheelSwipe - Swipe not significant enough.');
     }
   }, [uiMode, isTransitioning, handleSwitchToGuide, handleSwitchToWrite, WHEEL_SWIPE_THRESHOLD]);
 
   const handleWheelSwipe = useCallback((event) => {
-    // Don't interfere with other gestures or if not a clear horizontal swipe
-    if (isTransitioning || mouseDown || isSwiping) return;
+    // *** THIS IS THE VERY FIRST LOG TO CHECK ***
+    console.log(`[DEBUG-WHEEL] handleWheelSwipe: ENTERED. deltaX=${event.deltaX}, deltaY=${event.deltaY}, target=${event.target.className}`);
+    
+    console.log(`[DEBUG-WHEEL] Conditions: isTransitioning=${isTransitioning}, mouseDown=${mouseDown}, isSwiping=${isSwiping}`);
 
-    // Heuristic: deltaX is dominant and not tiny. Adjust multiplier as needed.
-    // Allow for some minor unintentional vertical movement.
+    if (isTransitioning || mouseDown || isSwiping) {
+      console.log('[DEBUG-WHEEL] handleWheelSwipe - Bailing: Other interaction active.');
+      return;
+    }
+
     const isHorizontalDominant = Math.abs(event.deltaX) > Math.abs(event.deltaY) * 0.75;
-    const isSignificantDeltaX = Math.abs(event.deltaX) > 3; // Ignore tiny movements
+    const isSignificantDeltaX = Math.abs(event.deltaX) > 3; 
+    
+    console.log(`[DEBUG-WHEEL] isHorizontalDominant: ${isHorizontalDominant}, isSignificantDeltaX: ${isSignificantDeltaX}`);
 
     if (isHorizontalDominant && isSignificantDeltaX) {
-        event.preventDefault(); // Prevent default browser scroll for handled horizontal swipes
+        console.log('[DEBUG-WHEEL] Horizontal swipe detected. Preventing default.');
+        event.preventDefault(); 
         
         accumulatedWheelDeltaX.current += event.deltaX;
+        console.log(`[DEBUG-WHEEL] Accumulated deltaX: ${accumulatedWheelDeltaX.current}`);
 
         if (wheelSwipeTimeoutId.current) {
             clearTimeout(wheelSwipeTimeoutId.current);
+            console.log('[DEBUG-WHEEL] Cleared existing timeout.');
         }
 
         wheelSwipeTimeoutId.current = setTimeout(() => {
+            console.log('[DEBUG-WHEEL] Timeout! Calling processWheelSwipe.');
             processWheelSwipe();
         }, WHEEL_GESTURE_END_TIMEOUT);
+        console.log(`[DEBUG-WHEEL] Set new timeout ID: ${wheelSwipeTimeoutId.current}`);
+    } else {
+      console.log('[DEBUG-WHEEL] Not a dominant horizontal swipe or deltaX too small.');
     }
   }, [processWheelSwipe, isTransitioning, mouseDown, isSwiping, WHEEL_GESTURE_END_TIMEOUT]);
 
 
-  // Effect for global mouse listeners (for mouse drag swipe)
   useEffect(() => {
     if (mouseDown) {
       document.addEventListener('mousemove', handleMouseMove);
@@ -243,14 +254,10 @@ const SinglePanelLayout = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [mouseDown, handleMouseMove, handleMouseUp]); // handleMouseMove/Up are memoized
-
-  // Effect for touch swipe visual feedback (panel class)
+  }, [mouseDown, handleMouseMove, handleMouseUp]); 
+  
   useEffect(() => {
     if (!cardContainerRef.current || !isSwiping || !swipeDirection) return;
-    // This effect was for adding 'swiping-left'/'swiping-right' classes to cardContainerRef.
-    // If direct transform manipulation or other feedback is preferred, adjust here.
-    // For now, let's assume this class-based feedback is still desired.
     cardContainerRef.current.classList.remove('swiping-left', 'swiping-right');
     cardContainerRef.current.classList.add(`swiping-${swipeDirection}`);
     return () => cardContainerRef.current?.classList.remove('swiping-left', 'swiping-right');
@@ -259,23 +266,33 @@ const SinglePanelLayout = ({
   // Effect for wheel swipe listener
   useEffect(() => {
     const currentSwipeArea = contentRef.current; 
-    if (currentSwipeArea) {
-        currentSwipeArea.addEventListener('wheel', handleWheelSwipe, { passive: false });
-        return () => {
-            currentSwipeArea.removeEventListener('wheel', handleWheelSwipe);
-            if (wheelSwipeTimeoutId.current) { // Clear timeout on unmount/cleanup
-                clearTimeout(wheelSwipeTimeoutId.current);
-            }
-        };
+    // *** THIS LOG IS VERY IMPORTANT FOR SETUP ***
+    if (!currentSwipeArea) {
+        console.error('[DEBUG-WHEEL] ERROR: contentRef.current is NOT available when trying to add wheel listener!');
+        return;
     }
+    
+    console.log('[DEBUG-WHEEL] Adding wheel event listener to contentRef. Current element:', currentSwipeArea);
+    currentSwipeArea.addEventListener('wheel', handleWheelSwipe, { passive: false });
+    
+    return () => {
+        console.log('[DEBUG-WHEEL] Removing wheel event listener from contentRef. Current element:', currentSwipeArea);
+        if (currentSwipeArea) { // Check again in case it became null somehow before cleanup
+            currentSwipeArea.removeEventListener('wheel', handleWheelSwipe);
+        }
+        if (wheelSwipeTimeoutId.current) { 
+            clearTimeout(wheelSwipeTimeoutId.current);
+            console.log('[DEBUG-WHEEL] Cleared wheel swipe timeout on cleanup.');
+        }
+    };
   }, [handleWheelSwipe]); // handleWheelSwipe is memoized
   
   return (
     <div 
       ref={contentRef}
       className="flex flex-col items-center pt-2 pb-12 w-full h-full overflow-y-auto bg-fafafd"
-      onMouseDown={handleMouseDown} // Mouse drag init
-      onTouchStart={handleTouchStart} // Touch init
+      onMouseDown={handleMouseDown} 
+      onTouchStart={handleTouchStart} 
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
@@ -289,8 +306,6 @@ const SinglePanelLayout = ({
           ref={cardContainerRef}
           className="card-container overflow-hidden rounded-lg shadow-sm hover:shadow-md 
                    transition-shadow border border-gray-200"
-          // Note: Touch handlers are on the parent (contentRef) now for broader area.
-          // If you want touch only on the card, move them back here.
           role="region"
           aria-label={`${uiMode} mode panel, swipe to switch modes`}
         >
@@ -299,7 +314,6 @@ const SinglePanelLayout = ({
             className="panels-container relative"
             style={{
               display: 'flex',
-              // Disable CSS transition during any active swipe/drag to prevent lag
               transition: isSwiping || mouseDown ? 'none' : 'transform 200ms ease-in-out',
               transform: `translateX(${uiMode === 'guide' ? '-50%' : '0%'})`,
               width: '200%', 
