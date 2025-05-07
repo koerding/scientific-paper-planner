@@ -1398,3 +1398,16 @@ body[data-swipe-direction="right"] .card-container {
     font-size: 1.125rem !important;
   }
 }
+css/* Hide the standalone Question/Significance heading */
+.main-content > div > h1:first-child,
+.main-content > div > .text-2xl:first-child,
+.main-content > div > .text-3xl:first-child {
+  display: none !important;
+}
+
+/* Make sure card headings remain visible */
+.card-container h2,
+.write-panel h2,
+.guide-panel h2 {
+  display: block !important;
+}
