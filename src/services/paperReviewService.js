@@ -81,7 +81,7 @@ Format your review as follows:
   2e. Focus on relations. e.g. Do the hypotheses go with the question? Are they answered?
   2f. Make sure that all the relevant subsections are labeled with the same titles as in the json so the reader knows how it maps onto their knowledge base.
   2g. Be very careful about flagging the following logic of a paper. Often times papers set up a big question (e.g. in their abstract), then their research does not really answer the question, but their text suggested that it contributed to answering the question using soft words. If the paper uses this structure, flag it.
-With all these criteria, doublecheck found criticism, it is embarrassing to accuse a paper of a mistake it did not make.
+With all these criteria, doublecheck found criticism, it is embarrassing to accuse a paper of a mistake it did not make. When pointing out problems, where possible summarize the aspects with which the paper goes into the right direction before highlighting how it should have gone further.
 
 Key background.
 The goal of this is to show readers the ins and outs of writing good papers, so clarity is of utmost importance while politeness is less central. 
