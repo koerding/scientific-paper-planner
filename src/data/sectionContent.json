@@ -7,7 +7,7 @@
       "type": "text",
       "maxLength": 3000,
       "inputPlaceholder": "Start writing your research question here...",
-      "introText": "A strong research question is the foundation of a successful project and ultimately is what makes the resulting papers userful for the world. It defines the scope, focus, and purpose of your work and guides all decisions from design to analysis. A well-formulated question ensures clarity, relevance, and feasibility.",
+      "introText": "A strong research question is the foundation of a successful project and ultimately is what makes the resulting project userful for the world. It defines the scope, focus, and purpose of your work and guides all decisions from design to analysis. A well-formulated question ensures clarity, relevance, and feasibility.",
       "subsections": [
         {
           "id": "question_question_clarity",
@@ -247,7 +247,7 @@
         {
           "id": "exploratoryresearch_guarding_against_noise",
           "title": "Guarding Against Noise",
-          "instruction": "Say how you'll know if a pattern is real. Reference strategies like cross-validation, expert review, or statistical tests.",
+          "instruction": "Say how you'll know if a pattern is likely to be real. Reference strategies like cross-validation, expert review, or statistical tests.",
           "tooltip": "Exploratory projects can easily stumble into spurious correlations or patterns driven by random variation. Explicitly stating how you'll validate or check the robustness of any emerging patterns mitigates this risk. Cross-validation techniques, consultation with domain experts, or significance tests each provide different forms of evidence to confirm that what you're seeing isn't just noise. Declaring these strategies early on also keeps you honest, ensuring you don't overinterpret convenient coincidences. Ultimately, building in mechanisms to guard against false positives enriches your exploration, making it more credible and beneficial for subsequent in-depth research."
         }
       ],
@@ -269,9 +269,9 @@
         },
         {
           "id": "relatedpapers_connect_to_each",
-          "title": "Connect to Each",
-          "instruction": "For each, say how it relates to your own work. Which part of your idea builds on it? Where do you differ?",
-          "tooltip": "This step cements your position in the scholarly conversation. Merely listing references doesn't show depth of engagement; explaining the links does. If a paper outlines a relevant experiment, note how you'll replicate or modify its protocol. If another offers a competing theory, clarify which elements you adopt or challenge. This contextual mapping reveals how your research emerges from, disputes, or extends established findings. By articulating these intersections clearly, you offer a roadmap for how your project builds on past successes, or addresses persistent gaps and inconsistencies."
+          "title": "Connect to each Paper",
+          "instruction": "For each paper you list, say how it relates to your own work. Which part of your idea builds on it? Where do you differ?",
+          "tooltip": "This step cements your position in the scholarly conversation. Merely listing references doesn't show depth of engagement; explaining the links does. E.g., if a paper outlines a relevant experiment, note how you'll replicate or modify its protocol. If another offers a competing theory, clarify which elements you adopt or challenge. This contextual mapping reveals how your research emerges from, disputes, or extends established findings. By articulating these intersections clearly, you offer a roadmap for how your project builds on past successes, or addresses persistent gaps and inconsistencies."
         },
         {
           "id": "relatedpapers_identify_the_gap",
@@ -323,7 +323,7 @@
         {
           "id": "experiment_predicted_results",
           "title": "Predicted Results",
-          "instruction": "If testing hypotheses, say what you expect under each. Helps make your logic transparent and testable.",
+          "instruction": "If testing hypotheses, say what you expect under each and which data or measurements will inform them. This helps make your logic transparent and testable.",
           "tooltip": "You can't always predict specific numeric outcomes, but you can anticipate patterns, trends, or significant relationships. If you have multiple hypotheses, articulate how each might manifest in your results, for instance, a difference between experimental and control groups, or a correlation within a certain threshold. This transparency signals that you've pre-committed to certain interpretations, reducing the temptation to retrofit explanations later. It also helps you design appropriate statistical analyses in advance. And if the data diverge from your predictions, you'll know immediately that something new or unexpected is at play."
         },
         {
@@ -518,7 +518,7 @@
           "id": "abstract_objective_question",
           "title": "Objective / Question",
           "instruction": "State the question, hypothesis, or problem. This is your one-sentence North Star.",
-          "tooltip": "Placing your research question front and center in the abstract is key. It immediately tells readers what issue you're tackling, providing a strong anchor they can refer back to as they read on. This one-sentence statement should encapsulate the main thrust of your entire project. Ambiguity in the abstract can confuse or disinterest potential readers, so brevity and directness matter. A crisp objective or question also helps you maintain a coherent focus, ensuring that the rest of the abstract (and paper) consistently ties back to this guiding beacon."
+          "tooltip": "Placing your research question front and center in the abstract is key. It immediately tells readers what issue you're tackling, providing a strong anchor they can refer back to as they read on. This one-sentence statement should encapsulate the main thrust of your entire project. Ambiguity in the abstract can confuse or disinterest potential readers, so brevity and directness matter. A crisp objective or question also helps you maintain a coherent focus, ensuring that the rest of the abstract consistently ties back to this guiding beacon."
         },
         {
           "id": "abstract_methods",
@@ -535,7 +535,7 @@
         {
           "id": "abstract_conclusion_implications",
           "title": "Conclusion / Implications",
-          "instruction": "State the main expected impact. What should your reader believe, do, or study next after reading your paper? Make sure the implications draw from the answer.",
+          "instruction": "State the main expected impact. What should your reader believe, do, or study next after reading what you will end up writing? Make sure the implications draw from the answer.",
           "tooltip": "Wrapping up your abstract with a concise statement of why your study matters leaves a strong impression. Maybe your findings can reshape a clinical protocol, spark an entirely new research direction, or confirm a theoretical stance. By articulating these implications clearly, you encourage readers to think about how they can apply or extend your work. It also frames your study's contribution within the broader scholarly or practical landscape. An impactful conclusion often helps your paper stand out, signaling that your research is more than an isolated investigation: it has tangible takeaways for the field and beyond."
         }
       ],
