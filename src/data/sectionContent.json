@@ -165,7 +165,7 @@
       "type": "text",
       "maxLength": 2000,
       "inputPlaceholder": "Define the needs your research addresses...",
-      "introText": "Needs-based research starts from a real-world problem that someone experiences and builds the project around addressing it. Many times the needs are those of the scientific community: building useful tools is almost always needs based, as are medical developments. This ensures your work is relevant and impactful for specific stakeholders. It also clarifies the value of your contribution beyond academia.",
+      "introText": "Needs-based research starts from a real-world problem that someone experiences and builds the project around addressing it. Many times the needs are those of the scientific community: building useful tools is almost always needs based, as are medical developments. This ensures your work is relevant and impactful for specific stakeholders. It also clarifies the value of your contribution beyond academia, where relevant.",
       "subsections": [
         {
           "id": "needsresearch_alignment_with_your_question",
@@ -176,7 +176,7 @@
         {
           "id": "needsresearch_identify_the_beneficiaries",
           "title": "Identify the Beneficiaries",
-          "instruction": "Say exactly who benefits from solving this problem. Be specific. Are you talking about clinicians, patients with a condition, developers, or policymakers?",
+          "instruction": "Say exactly who benefits from solving this problem. Be specific — e.g., other academics, clinicians, patients with a condition, developers, engineers, policymakers.",
           "tooltip": "Pinpointing beneficiaries makes your research human-centered. Whether it's improving patient outcomes, easing a developer's workload, or informing policy, clarity on whom you're helping provides sharp direction. This specificity also shapes how you measure success: outcomes should matter to the identified group rather than just academic metrics. Moreover, naming the beneficiaries can guide partnerships and funding sources, as they're more likely to support work that aligns with their mandates or interests. Ultimately, a needs-based project that explicitly states its target audience carries a more persuasive rationale and is more likely to gain momentum."
         },
         {
@@ -187,7 +187,7 @@
         },
         {
           "id": "needsresearch_current_solutions_gaps",
-          "title": "Current Solutions & Gaps",
+          "title": "Existing Solutions & Gaps",
           "instruction": "Explain what's already available and why it isn't enough. This sets up the value of your work and shows what's missing.",
           "tooltip": "By showcasing existing solutions, you illustrate the competitive landscape and underscore the need for innovation or improvement. This step is critical to avoid duplication of effort: you're demonstrating that you know what's out there and precisely where it falls short. Maybe the solutions are too expensive, inaccurate, or inaccessible to those who need them most. Pinpointing these deficiencies gives your project a clear raison d'être. It also helps potential collaborators or funders see how your work could close the gap, fostering interest and support. Demonstrating this awareness strengthens your credibility and can guide your own approach to building a better answer."
         },
@@ -204,7 +204,7 @@
           "tooltip": "Nothing is more convincing than direct confirmation from the people facing the issue. Engaging stakeholders through co-creation of research,  interviews, surveys, or focus groups provides first-hand validation of your project's importance. The strongest needs-based research is directly co-created with stakeholders. Alternatively, referencing official reports, academic literature, or usage data can also confirm that the need is significant and widespread. This step prevents you from "solving" a problem that doesn't actually exist or is already well-resolved. Verification also safeguards your resources and time, channeling them into a line of investigation that truly addresses a recognized gap. Plus, credible evidence of need makes your argument far more compelling to peers and funders."
         }
       ],
-      "placeholder": "Beneficiaries: [Who specifically needs this research]\nProblem Statement: [Concrete problem they experience]\nCurrent Solutions & Limitations: [What exists and why it's inadequate]\nSuccess Criteria: [How you'll measure if your solution works]\nVerification: [How you know this need is real and important]"
+      "placeholder": "Beneficiaries: [Who specifically needs this research]\nProblem Statement: [Concrete problem they experience]\nExisting Solutions & Limitations: [What exists and why it's inadequate]\nSuccess Criteria: [How you'll measure if your solution works]\nVerification: [How you know this need is real and important]"
     },
     {
       "id": "exploratoryresearch",
