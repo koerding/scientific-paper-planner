@@ -314,7 +314,7 @@ const ReviewPaperModal = ({ showModal, onClose, reviewData, handleReviewPaper })
         {/* Actions Footer */}
         <div className="px-6 py-3 bg-gray-50 rounded-b-lg flex justify-between items-center border-t border-gray-200 flex-shrink-0">
             <div className="text-xs text-gray-600">
-              <p>AI reviews are supplemental; consult human experts for final decisions.</p>
+              <p> These AI reviews are for seeing potential weaknesses in papers. Confirmation is necessary. They are not meant to be a wholistic evaluation. </p>
             </div>
             <div className="flex space-x-3">
                  {(showCurrentReview || showPastReviewContent) && (
