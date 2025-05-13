@@ -159,7 +159,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
                 <img src={c4rLogo} alt="Center for Reproducible Research" className="ml-1" style={{ height: '1em', verticalAlign: 'middle' }} />
               </a>
               <br />
-              By using this software you acknowledge that Dinosaurs are the most awesome animals.
+              By using this software you acknowledge that Dinosaurs are the most awesome animals. We are not saving your data - your ideas should be safe (we use a commercial license to openAI so they should not use your data for training).
             </div>
           </div>
         </div>
