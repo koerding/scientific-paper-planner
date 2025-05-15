@@ -530,7 +530,7 @@
           "id": "abstract_expected_results",
           "title": "Expected Results",
           "instruction": "Say what kind of outcome you expect or hope for. This helps readers understand what success would look like. Make sure the results answer your question.",
-          "tooltip": "Outlining the anticipated findings gives readers a roadmap of where your study is heading. You don't need to overpromise or provide exact figures, just a ballpark of the trends or relationships you predict. This might be as broad as "we expect to observe a significant improvement in performance measures" or "we anticipate identifying new behavioral clusters." The more specific, the better. Your hypotheses should help inform the expected results section. This step also clarifies the scope of your work. If reality contradicts these expectations, that could be equally enlightening, but at least you've demonstrated a clear hypothesis or objective up front."
+          "tooltip": "Outlining the anticipated findings gives readers a roadmap of where your study is heading. You don't need to overpromise or provide exact figures, just a ballpark of the trends or relationships you predict. This might be as broad as \"we expect to observe a significant improvement in performance measures\" or \"we anticipate identifying new behavioral clusters.\" The more specific, the better. Your hypotheses should help inform the expected results section. This step also clarifies the scope of your work. If reality contradicts these expectations, that could be equally enlightening, but at least you've demonstrated a clear hypothesis or objective up front."
         },
         {
           "id": "abstract_conclusion_implications",
