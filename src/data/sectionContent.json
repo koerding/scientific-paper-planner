@@ -36,7 +36,7 @@
         {
           "id": "question_type_of_question",
           "title": "Type of Question",
-          "instruction": "Is it clear whether the question is descriptive (what), mechanistic (how), or explanatory/causal (why)? You don't have to use these exact terms, but you should know what kind of answer you're aiming for — and make sure your framing supports it.",
+          "instruction": "Is it clear whether the question is descriptive (what), mechanistic (how), or explanatory/causal (why)? You don't have to use these exact terms, but you should know what kind of answer you're aiming for and make sure your framing supports it.",
           "tooltip": "Before diving into theory, data analysis or experiments, identify whether your question aims to characterize an unknown phenomenon, reveal the processes behind it, or determine cause-effect relationships. This distinction shapes everything: from the design of your study to the analytical tools you use. A descriptive question, for instance, might rely on observational data, while a mechanistic or causal question demands more controlled or comparative studies. By clarifying the nature of your question at the outset, you guide your own research decisions and help readers anticipate the kind of evidence or argument you'll provide. It also keeps you from conflating correlation with causation."
         }
       ],
@@ -89,7 +89,7 @@
           "id": "hypothesis_alignment_with_your_question",
           "title": "Alignment With Your Question",
           "instruction": "Hypotheses should directly reflect and address your research question. Make sure your hypotheses flow logically from your Research Question. They must be plausible answers to that question, not independent ideas. If your hypotheses don’t address the research question, then you need to revisit one or the other.",
-          "tooltip": "Strong hypotheses are rooted in the overarching research question, translating it into testable predictions. This close alignment avoids scattered or unrelated explorations that fail to advance your core inquiry. When hypotheses naturally grow out of your question, you create a clean line of reasoning that helps you design effective experiments, theories, and analyses. Reviewers often check for this consistency as a marker of well-structured research. Moreover, the process of deriving hypotheses from the question forces you to articulate what, specifically, you expect to learn—paving the way for more robust and conclusive interpretations."
+          "tooltip": "Strong hypotheses are rooted in the overarching research question, translating it into testable predictions. This close alignment avoids scattered or unrelated explorations that fail to advance your core inquiry. When hypotheses naturally grow out of your question, you create a clean line of reasoning that helps you design effective experiments, theories, and analyses. Reviewers often check for this consistency as a marker of well-structured research. Moreover, the process of deriving hypotheses from the question forces you to articulate what, specifically, you expect to learn, paving the way for more robust and conclusive interpretations."
         },
         {
           "id": "hypothesis_formulate_2_distinct_hypotheses",
@@ -107,7 +107,7 @@
           "id": "hypothesis_scientific_importance",
           "title": "Scientific Importance",
           "instruction": "Explain why distinguishing between these hypotheses matters to science and to you. What do we learn if hypothesis A is right? What if B is? Why do you care? Why should others?",
-          "tooltip": "Hypotheses are most valuable when each potential outcome tells a different and meaningful story. By articulating the importance of each hypothetical result, you demonstrate the intellectual merit of your project. Whether the finding supports one hypothesis or another, the field stands to learn something tangible. This significance can range from confirming previous findings via resolving a debated mechanism to illuminating an entirely novel phenomenon. For your own motivation, framing the hypotheses' importance also keeps you engaged—knowing that your work might clarify core issues in the literature or inspire new lines of inquiry. Such framing is often persuasive for funding bodies and conference audiences too."
+          "tooltip": "Hypotheses are most valuable when each potential outcome tells a different and meaningful story. By articulating the importance of each hypothetical result, you demonstrate the intellectual merit of your project. Whether the finding supports one hypothesis or another, the field stands to learn something tangible. This significance can range from confirming previous findings via resolving a debated mechanism to illuminating an entirely novel phenomenon. For your own motivation, framing the hypotheses' importance also keeps you engaged, knowing that your work might clarify core issues in the literature or inspire new lines of inquiry. Such framing is often persuasive for funding bodies and conference audiences too."
         }
       ],
       "placeholder": "Hypothesis 1: [First specific, testable prediction]\nHypothesis 2: [Alternative prediction that contrasts with H1]\nWhy distinguishing these hypotheses matters:\n- [Scientific implication if H1 is supported]\n- [Different impact if H2 is supported]"
@@ -148,7 +148,7 @@
           "id": "theorysimulation_validation",
           "title": "Validation",
           "instruction": "Say how you will test if your theory matches reality. Compare predictions to known results, data, or other models.",
-          "tooltip": "Theoretical models can diverge from empirical truths in unexpected ways, so validation is essential. You might compare your model's outputs to real-world data, or benchmark them against simpler theoretical frameworks that have proven reliable. Documenting these validation checkpoints shows you're not just working in isolation, rather, you're continuously checking if your ideas align with evidence. If discrepancies arise, you can refine assumptions or incorporate additional factors. Demonstrating a clear validation plan assures others that your model isn't purely abstract but has a credible claim to describing or predicting real phenomena."
+          "tooltip": "Theoretical models can diverge from empirical truths in unexpected ways, so validation is essential. You might compare your model's outputs to real-world data, or benchmark them against simpler theoretical frameworks that have proven reliable. Documenting these validation checkpoints shows you're not just working in isolation; rather, you're continuously checking if your ideas align with evidence. This requires alignment between model variables/outputs and experimentally measurable quantities in data so that the model can meaningfully interface with data. If discrepancies between model and data arise, you can refine assumptions or incorporate additional factors. Sometimes the lack of alignment between model and data points toward the wrong model toolkit being used. Demonstrating a clear validation plan assures others that your model isn't purely abstract but has a credible claim to describing or predicting real phenomena."
         },
         {
           "id": "theorysimulation_limitations_contribution",
@@ -171,12 +171,12 @@
           "id": "needsresearch_alignment_with_your_question",
           "title": "Alignment With Your Question",
           "instruction": "The research question should directly emerge from a practical need. Your project should address a problem that someone experiences. That problem should be clearly visible in your question.",
-          "tooltip": "A needs-based approach grounds your research in real-world challenges, ensuring immediate relevance. If a concrete need underpins your question, it's easier to show utility and attract interest from practitioners or stakeholders. This focus also guides your methods and measures: data collection can directly speak to practical concerns, making your findings more actionable. By placing the human or societal problem at the heart of your question, you orient your entire project toward solutions. The alignment between question and need is what differentiates pure academic curiosity from research with a tangible, problem-solving mission."
+          "tooltip": "Exploratory research doesn't require a rigid hypothesis, but it does need an overarching theme or focus. If you plan to do this work and think it’s exciting, it’s likely that you have at least some intuition about what to expect. Maybe you have qualitative observations, maybe you draw parallel with other fields, maybe you can think of analogous phenomena. By setting a guiding question and loose hypotheses/expectations, you ensure that data collection and interpretation aren't purely haphazard. This clarity also helps collaborators and advisors understand the purpose behind your exploration and provide meaningful input. Even if your end goal is simply to unearth patterns or gather preliminary insights, a loosely defined question keeps the project on track. Having this structure can lead to more coherent results that lay the foundation for future confirmatory studies."
         },
         {
           "id": "needsresearch_identify_the_beneficiaries",
           "title": "Identify the Beneficiaries",
-          "instruction": "Say exactly who benefits from solving this problem. Be specific — e.g., other academics, clinicians, patients with a condition, developers, engineers, policymakers.",
+          "instruction": "Say exactly who benefits from solving this problem. Be specific. This may be other academics, clinicians, patients with a condition, developers, engineers, policymakers.",
           "tooltip": "Pinpointing beneficiaries makes your research human-centered. Whether it's improving patient outcomes, easing a developer's workload, or informing policy, clarity on whom you're helping provides sharp direction. This specificity also shapes how you measure success: outcomes should matter to the identified group rather than just academic metrics. Moreover, naming the beneficiaries can guide partnerships and funding sources, as they're more likely to support work that aligns with their mandates or interests. Ultimately, a needs-based project that explicitly states its target audience carries a more persuasive rationale and is more likely to gain momentum."
         },
         {
@@ -217,7 +217,7 @@
         {
           "id": "exploratoryresearch_alignment_with_your_question",
           "title": "Alignment With Your Question",
-          "instruction": "Even exploratory work should address a clearly stated question or curiosity. You should know what you are exploring and why it might be worth it — even if you are not making predictions.",
+          "instruction": "Even exploratory work should address a clearly stated question or curiosity. You should know what you are exploring and why it might be worth it even if you are not making predictions.",
           "tooltip": "Exploratory research doesn't require a rigid hypothesis, but it does need an overarching theme or focus. By setting a guiding question, you ensure that data collection and interpretation aren't purely haphazard. This clarity also helps collaborators understand the purpose behind your exploration and provide meaningful input. Even if your end goal is simply to unearth patterns or gather preliminary insights, a loosely defined question keeps the project on track. Having this structure can lead to more coherent results that lay the foundation for future confirmatory studies."
         },
         {
@@ -230,7 +230,7 @@
           "id": "exploratoryresearch_potential_patterns",
           "title": "Potential Patterns",
           "instruction": "List a few things you hope to find or investigate. You are not committing to finding them, just showing thoughtful anticipation.",
-          "tooltip": "Even when your goal is open-ended discovery, identifying potential patterns or relationships ahead of time helps shape your analysis plan. Perhaps you suspect certain variables correlate, or you want to see if clusters naturally emerge from the data. By articulating these possibilities, you approach the project with a sense of direction instead of aimless searching. It also helps you plan which analytical tools to deploy. If none of these patterns manifest, you still gain valuable knowledge. If they do, you've laid the groundwork for a more targeted follow-up study. This balance of openness and preliminary guidance enriches your exploratory work."
+          "tooltip": "Even when your goal is open-ended discovery, identifying potential patterns or relationships ahead of time helps shape your analysis plan. Given your invested interest in the question, you have likely thought deeply about this and surely have intuitive expectations. Perhaps you suspect certain variables correlate, or you want to see if clusters naturally emerge from the data. By articulating these possibilities, you approach the project with a sense of direction instead of aimless searching. It also helps you plan which analytical tools to deploy. If none of these patterns manifest, you still gain valuable knowledge. If they do, you've laid the groundwork for a more targeted follow-up study. This balance of openness and preliminary guidance enriches your exploratory work."
         },
         {
           "id": "exploratoryresearch_novelty_and_value",
@@ -265,7 +265,7 @@
           "id": "relatedpapers_find_relevant_work",
           "title": "Find Relevant Work",
           "instruction": "List at least 5 key papers related to your topic. These should test similar hypotheses, use related methods, or target the same problem.",
-          "tooltip": "Identifying at least five cornerstone studies anchors your research in the existing knowledge base. Each paper should be chosen deliberately, serving as a critical point of comparison or a methodological foundation. This ensures you're not working in a vacuum or reinventing the wheel. Importantly, it also allows others—committee members or peer reviewers—to see how well you've mapped the intellectual landscape. By systematically addressing these key papers, you highlight how your approach or question differs or complements prior work, demonstrating scholarly diligence."
+          "tooltip": "Identifying at least five cornerstone studies anchors your research in the existing knowledge base. Each paper should be chosen deliberately, serving as a critical point of comparison or a methodological foundation. This ensures you're not working in a vacuum or reinventing the wheel. Importantly, it also allows others, such as collaborators or peer reviewers to see how well you've mapped the intellectual landscape. By systematically addressing these key papers, you highlight how your approach or question differs or complements prior work, demonstrating scholarly diligence."
         },
         {
           "id": "relatedpapers_connect_to_each",
@@ -277,7 +277,7 @@
           "id": "relatedpapers_identify_the_gap",
           "title": "Identify the Gap",
           "instruction": "Say what your project does that they didn't. This is the core reason your project matters. If your study is a replication study, make sure you mention that.",
-          "tooltip": "Pinpointing an unresolved question or neglected angle illuminates the uniqueness of your contribution. Maybe prior papers used small sample sizes or overlooked a particular demographic. Possibly they established correlation but never explored causation. Whatever the shortcoming, placing it front and center shows reviewers and readers exactly why your study is needed. If it's a replication, emphasize what sets yours apart—perhaps a more diverse population or updated tools. This clarity about the gap guarantees your work isn't just an incremental addition but a meaningful step forward in the academic dialogue."
+          "tooltip": "Pinpointing an unresolved question or neglected angle illuminates the uniqueness of your contribution. Maybe prior papers used small sample sizes or overlooked a particular demographic. Possibly they established correlation but never explored causation. Whatever the shortcoming, placing it front and center shows reviewers and readers exactly why your study is needed. If it's a replication, emphasize what sets yours apart: perhaps a more diverse population or updated tools. This clarity about the gap guarantees your work isn't just an incremental addition but a meaningful step forward in the academic dialogue."
         },
         {
           "id": "relatedpapers_consider_contrasts",
@@ -330,7 +330,7 @@
           "id": "experiment_confounds_controls",
           "title": "Confounds & Controls",
           "instruction": "Identify possible confounds and how you'll reduce them. This improves your design and increases confidence in your results.",
-          "tooltip": "Confounds are lurking variables that could explain your findings instead of—or in addition to—your main variables of interest. Acknowledging them early shows that you've critically evaluated your design. You might control these confounds by random assignment, matching participants on certain characteristics, or standardizing conditions. This proactive step tightens the causal argument (if your study is structured to support one) or clarifies correlation strength. Explicitly listing potential confounds also helps empower reviewers. Addressing these concerns before data collection can prevent major headaches down the line."
+          "tooltip": "Confounds are lurking variables that could explain your findings instead of (or in addition to) your main variables of interest. Acknowledging them early shows that you've critically evaluated your design. You might control these confounds by random assignment, matching participants on certain characteristics, or standardizing conditions. This proactive step tightens the causal argument (if your study is structured to support one) or clarifies correlation strength. Explicitly listing potential confounds also helps empower reviewers. Addressing these concerns before data collection can prevent major headaches down the line."
         },
         {
           "id": "experiment_blinding_and_masking",
@@ -377,7 +377,7 @@
           "id": "existingdata_access_permissions",
           "title": "Access & Permissions",
           "instruction": "Confirm you can legally and ethically use the data. Mention licensing, IRB approval, or data agreements as needed.",
-          "tooltip": "Data usage can involve strict regulations, especially if it includes personal or sensitive information. By clarifying that you have the right approvals—whether from institutional review boards, data providers, or licensing authorities; you protect both participants' rights and your own research credibility. This section helps you avoid legal complications and ensures that your dissertation or publications won't be retracted for unauthorized data use. Detailing how you acquired the dataset, any relevant contracts, or anonymization processes also builds trust with collaborators and reviewers, who want to see that your methods uphold best practices for privacy and compliance."
+          "tooltip": "Data usage can involve strict regulations, especially if it includes personal or sensitive information. By clarifying that you have the right approvals, whether from institutional review boards, data providers, or licensing authorities; you protect both participants' rights and your own research credibility. This section helps you avoid legal complications and ensures that your project or publications won't be retracted for unauthorized data use. Detailing how you acquired the dataset, any relevant contracts, or anonymization processes also builds trust with collaborators and reviewers, who want to see that your methods uphold best practices for privacy and compliance."
         },
         {
           "id": "existingdata_data_quality",
@@ -411,8 +411,8 @@
         {
           "id": "analysis_statistical_methods",
           "title": "Statistical Methods",
-          "instruction": "Specify your main analysis tools and why they're appropriate. Connect to your research question and hypotheses.",
-          "tooltip": "The statistical or computational techniques you choose should be guided by the type of data and your central research aims. Are you using regression for predictive insights, a t-test for group comparisons, or a Bayesian framework for probabilistic modeling? Explaining this rationale helps readers grasp how you'll test each hypothesis and interpret results. It also preempts criticisms that you applied the wrong tool for the job. By clearly linking your methods to your research question and hypotheses, you demonstrate a coherent plan that stands up to scrutiny, increases validity, and makes your results more compelling."
+          "instruction": "Specify your main analysis tools and why they're appropriate. Connect them to your research question and hypotheses.",
+          "tooltip": "The statistical or computational techniques you choose should be guided by the type of data and your central research aims. Are you using regression for predictive insights, a t-test for group comparisons, or a Bayesian framework for probabilistic modeling?Explaining this rationale helps readers grasp how you'll test each hypothesis and interpret results. It also preempts criticisms that you applied the wrong tool for the job. By clearly linking your methods to your research question and hypotheses, you demonstrate a coherent plan that stands up to scrutiny, increases validity, and makes your results more compelling."
         },
         {
           "id": "analysis_uncertainty_robustness",
@@ -448,7 +448,7 @@
           "id": "analysis_power_calculations",
           "title": "Power Calculations",
           "instruction": "Determine if your study has adequate statistical power. Consider effect sizes, sample size needs, and sensitivity across different scenarios.",
-          "tooltip": "Power calculations aren't just bureaucratic hoops—they're critical guides that determine if your study can actually answer your question. Be brutally honest about expected effect sizes, as the literature often contains inflated estimates due to publication bias - realistic effects are generally small relative to the standard deviation. Calculate sample sizes before collecting data using tools like G*Power or custom simulations. Run sensitivity analyses across a range of plausible effect sizes to see how robust your design is when assumptions are wrong (they usually are). Establish stopping rules in advance to prevent p-hacking through continuous sampling. Have contingency plans for if you discover mid-collection that you're underpowered. Avoid the trap of retrospective power calculations after seeing results—it's circular reasoning. Remember: an underpowered study isn't just inefficient—it's potentially misleading and contributes to replication problems across science."
+          "tooltip": "Power calculations aren't just bureaucratic hoops, they're critical guides that determine if your study can actually answer your question. Be brutally honest about expected effect sizes, as the literature often contains inflated estimates due to publication bias - realistic effects are generally small relative to the standard deviation. Calculate sample sizes before collecting data using tools like G*Power or custom simulations. Run sensitivity analyses across a range of plausible effect sizes to see how robust your design is when assumptions are wrong (they usually are). Establish stopping rules in advance to prevent p-hacking through continuous sampling. Have contingency plans for if you discover mid-collection that you're underpowered. Avoid the trap of retrospective power calculations after seeing results: it's circular reasoning. Remember: an underpowered study isn't just inefficient, it's potentially misleading and contributes to replication problems across science."
         },
         {
           "id": "analysis_interpreting_all_outcomes",
@@ -483,27 +483,21 @@
           "id": "process_datacode_management",
           "title": "Data/Code Management",
           "instruction": "Plan how you'll share and document your work. Use version control and consider open-access tools when possible.",
-          "tooltip": "Good data and code management ensures your research remains reproducible and transparent. By using version control systems like Git, you prevent confusion about file versions or overwriting vital scripts. Consistent file naming and directory structures help future you (and any collaborators) quickly locate and understand materials. Consider public repositories for open science if ethics and permissions allow, expanding your project's visibility. Proper documentation, such as READMEs or inline comments, clarifies workflows and fosters collaboration. Ultimately, a solid management plan not only aids your own efficiency but also amplifies your research's reach and credibility."
+          "tooltip": "Good data and code management ensures your research remains reproducible and transparent. By using version control systems like Git, you prevent confusion about file versions or overwriting vital scripts. Consistent file naming and directory structures help future you and any collaborators quickly locate and understand materials. Consider public data repositories for open science if ethics and permissions allow, expanding your project's visibility. Proper documentation, such as READMEs, metadata or inline comments, clarifies workflows, explains data content and fosters collaboration. Ultimately, a solid management plan not only aids your own efficiency but also amplifies your research's reach and credibility."
         },
         {
           "id": "process_timeline_milestones",
           "title": "Timeline & Milestones",
-          "instruction": "Lay out a feasible schedule with deliverables. Helps you stay on track and catch delays early. Most projects take twice as long than planned. Recursively.",
-          "tooltip": "Projects can sprawl, so breaking them into defined tasks with deadlines is essential. Outline major phases (like literature review, data collection, analysis, and writing) then set specific goals and checkpoints for each. This structure provides a roadmap to gauge progress and adjust if unexpected delays arise. Hitting (or missing) milestones gives valuable feedback on whether your scope is realistic. It also keeps collaborators informed, enabling them to schedule their contributions effectively. A well-thought-out timeline promotes accountability, motivation, and a clearer sense of how all the pieces fit together toward dissertation completion."
+          "instruction": "Lay out a feasible schedule with deliverables. This helps you stay on track and catch delays early. Most projects take twice as long than planned. Recursively.",
+          "tooltip": "Projects can sprawl, so breaking them into defined tasks with deadlines is essential. Outline major phases (like literature review, data collection, analysis, and writing) then set specific goals and checkpoints for each. This structure provides a roadmap to gauge progress and adjust if unexpected delays arise. Hitting (or missing) milestones gives valuable feedback on whether your scope is realistic. It also keeps collaborators informed, enabling them to schedule their contributions effectively. A well-thought-out timeline promotes accountability, motivation, and a clearer sense of how all the pieces fit together toward project completion."
         },
         {
           "id": "process_risk_planning",
           "title": "Risk Planning",
           "instruction": "Identify major risks and fallback strategies. Anticipate what could go wrong and how you'll adapt.",
           "tooltip": "Risk is unavoidable in research: equipment might fail, data collection could stall, or pilot results may reveal design flaws. By proactively listing these vulnerabilities, you give yourself the opportunity to create contingency plans: alternative datasets, revised protocols, or extra buffer time. This forward thinking reduces the chance of being blindsided and helps maintain momentum when things don't go perfectly. It also demonstrates maturity and preparedness to advisors or committee members, who appreciate seeing that you're not taking success for granted. A thorough risk assessment ensures that inevitable roadblocks won't derail your entire project."
-        },
-        {
-          "id": "process_open_science",
-          "title": "Open Science",
-          "instruction": "Adopt open practices where possible and clarify constraints. This builds trust and increases the impact of your work.",
-          "tooltip": "Open science encompasses sharing data, code, and sometimes even preliminary analyses or registrations. Adopting these practices fosters transparency and collaboration, enabling other researchers to replicate or extend your work. However, not all data can be freely shared; confidentiality, security, or proprietary concerns might limit full openness. Be upfront about these constraints so readers understand why certain materials remain private. Embracing open science where feasible can lead to broader recognition, more citations, and stronger community support. Ultimately, it signals your commitment to rigorous and ethical research."
         }
-      ],
+         ],
       "placeholder": "Skills Needed vs. Available: [Required expertise and how to address gaps]\nCollaborators & Roles: [Who's involved and their contributions]\nData/Code Management: [Version control, sharing, documentation]\nTimeline & Milestones: [Realistic schedule with key deliverables]\nRisk Assessment: [Potential obstacles and contingency plans]\nOpen Science Practices: [Transparency, reproducibility measures]"
     },
     {
@@ -512,7 +506,7 @@
       "type": "text",
       "maxLength": 1500,
       "inputPlaceholder": "Draft your abstract here...",
-      "introText": "The abstract is the first (and sometimes only) part of your work that others will read. It should clearly summarize your question, methods, expected results, and significance in a concise, accessible way. A strong abstract draws in your audience and highlights the value of your work.",
+      "introText": "The abstract is the first (and sometimes only) part of your work that others will read. It should clearly summarize your question, methods, expected results, and significance in a concise, accessible way. A strong abstract draws in your audience and highlights the value of your work. We strongly promote the writing of a prospective abstract, which approximates how the abstract may look after completing the work. This helps  align collaborators, debug logic, communicate intentions, identify knowledge gap, etc.",
       "subsections": [
         {
           "id": "abstract_background",
@@ -529,14 +523,14 @@
         {
           "id": "abstract_methods",
           "title": "Methods",
-          "instruction": "Summarize how you'll answer the question. Briefly include key techniques, datasets, or models. Make sure the methods perfectly answer the question.",
+          "instruction": "Summarize how you'll answer the question. Briefly describe key techniques, datasets, or models. Make sure the methods perfectly address the question.",
           "tooltip": "This section should be a bite-sized overview of your research approach, not a full protocol. If you're running a double-blind experiment, say so. If you're analyzing a large public dataset, mention that. If you're building a computational model, name the main algorithmic techniques. Readers want just enough detail to gauge validity and relevance. By highlighting your core methods, you convey the rigor behind your work without bogging down the abstract with procedural minutiae. It reassures other researchers that you've used appropriate tools to tackle your stated question."
         },
         {
           "id": "abstract_expected_results",
           "title": "Expected Results",
-          "instruction": "Say what kind of outcome you expect or hope for. This helps readers understand what success would look like. Make sure the results are the answer.",
-          "tooltip": "Outlining the anticipated findings gives readers a roadmap of where your study is heading. You don't need to overpromise or provide exact figures, just a ballpark of the trends or relationships you predict. This might be as broad as we expect to observe a significant improvement in performance measures or \"we anticipate identifying new behavioral clusters.\" This step also clarifies the scope of your work. If reality contradicts these expectations, that could be equally enlightening, but at least you've demonstrated a clear hypothesis or objective up front."
+          "instruction": "Say what kind of outcome you expect or hope for. This helps readers understand what success would look like. Make sure the results answer your question.",
+          "tooltip": "Outlining the anticipated findings gives readers a roadmap of where your study is heading. You don't need to overpromise or provide exact figures, just a ballpark of the trends or relationships you predict. This might be as broad as "we expect to observe a significant improvement in performance measures" or "we anticipate identifying new behavioral clusters." The more specific, the better. Your hypotheses should help inform the expected results section. This step also clarifies the scope of your work. If reality contradicts these expectations, that could be equally enlightening, but at least you've demonstrated a clear hypothesis or objective up front."
         },
         {
           "id": "abstract_conclusion_implications",
