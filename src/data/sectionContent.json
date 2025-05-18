@@ -103,6 +103,12 @@
           "instruction": "Your study must allow you to tell these hypotheses apart. If your data can not actually differentiate your hypotheses, you need to revise them or rethink your design.",
           "tooltip": "Proposing multiple hypotheses only matters if your methods and data can separate one possibility from another. It's crucial to identify the metrics, experimental conditions, or statistical thresholds that would support one hypothesis while undermining the others. This clarity of measurement and analysis is foundational for meaningful findings. Without it, you risk ambiguous interpretations or arguments that any result fits. Planning in advance for how you'll distinguish among hypotheses shows that you're serious about testing alternative ideas. It also keeps your study from falling into the trap of confirming a single perspective simply because the design wasn't set up to refute it."
         },
+                {
+          "id": "hypothesis_alternatives",
+          "title": "Considered alternatives",
+          "instruction": "You need clarity which potential alternative hypotheses could explain the same results. Make sure you only consider hypotheses of the same kind, e.g. alternative mechanistic hypotheses.",
+          "tooltip": "Addressing alternative hypotheses demonstrates intellectual honesty and strengthens your research design. By explicitly considering competing explanations that could produce similar outcomes, you protect against confirmation bias and premature conclusions. This practice forces you to think critically about which specific aspects of your data would differentiate between mechanistically different processes—even when surface-level results look similar. Focusing on hypotheses of the same kind (e.g., all mechanistic or all functional) ensures meaningful comparisons rather than mixing incompatible explanatory frameworks. This approach enhances your study's rigor by acknowledging the complexity of potential interpretations, while simultaneously sharpening your ability to design decisive tests. Remember that the goal isn't to list every conceivable alternative, but rather to identify the most plausible competing explanations that your methodology must address."
+        },
         {
           "id": "hypothesis_scientific_importance",
           "title": "Scientific Importance",
