@@ -113,3 +113,18 @@ export const areRequiredSectionsComplete = (state) => {
     sectionId && isSectionComplete(sectionId, state)
   );
 };
+
+// Calculate which sections should be unlocked based on progression
+// This function is kept for compatibility but returns all sections as unlocked
+export const calculateUnlockedSections = (state) => {
+  if (!state || !state.sections) return {};
+  
+  // Get all section IDs
+  const allSectionIds = Object.keys(state.sections);
+  
+  // Return an object with all sections marked as unlocked
+  return allSectionIds.reduce((result, sectionId) => {
+    result[sectionId] = true;
+    return result;
+  }, {});
+};
