@@ -1,5 +1,5 @@
 // FILE: src/components/navigation/LeftRailNavigation.js
-// FIXED: Removed intersection observer to stop unwanted auto-scrolling/focus
+// FIXED: Modified to always show all sections regardless of progression
 // ADDED: Tooltip for unlocking sections when hovering bottom of rail in non-Pro mode
 // MODIFIED: Always show rail with visual distinction for non-pro mode
 
@@ -9,9 +9,7 @@ import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sect
 
 /**
  * Left rail navigation with mode-aware section switching and improved active state
- * FIXED: Removed intersection observer that was causing unwanted scrolling/focusing
- * FIXED: Simplified to only respond to explicit user clicks
- * ADDED: Unlock hint tooltip when hovering bottom of rail in non-Pro mode
+ * FIXED: Always shows all sections regardless of progression state
  * MODIFIED: Always visible with visual distinction for non-pro mode
  * @param {Object} props - Component props
  * @returns {React.ReactElement} The left rail navigation component
@@ -130,7 +128,7 @@ const LeftRailNavigation = () => {
     }
   };
   
-  // Filter and sort navigation items
+  // Filter and sort navigation items - MODIFIED TO ALWAYS SHOW ALL SECTIONS
   const generateNavItems = () => {
     if (!sections) return [];
     
@@ -146,7 +144,7 @@ const LeftRailNavigation = () => {
     ];
     
     return navOrder
-      .filter(id => sections[id] && sections[id].isVisible !== false)
+      .filter(id => sections[id]) // Only filter out sections that don't exist in the store
       .map(id => ({
         id,
         // Simplify titles - remove "Research" prefix
