@@ -1,5 +1,6 @@
 // FILE: src/components/layout/MainLayout.js
 // FIXED: Better centered content with proper margins
+// MODIFIED: Always show rail regardless of pro mode
 
 import React, { useState } from 'react';
 import AppHeader from './AppHeader';
@@ -54,9 +55,9 @@ const MainLayout = ({
       <ForwardedSplashScreenManager ref={splashManagerRef} />
       <AppHeader {...appHeaderProps} />
       <div className="flex flex-grow overflow-hidden relative">
-        {/* Rail with proper z-index */}
+        {/* Rail with proper z-index - now always visible regardless of pro mode */}
         <div style={{ position: 'relative', zIndex: 20 }}>
-          <LeftRailNavigation visible={showMobileRail} />
+          <LeftRailNavigation />
         </div>
         
         {/* Main content area - better centered */}
