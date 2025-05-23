@@ -1,6 +1,7 @@
 // FILE: src/components/navigation/LeftRailNavigation.js
 // FIXED: Removed intersection observer to stop unwanted auto-scrolling/focus
 // ADDED: Tooltip for unlocking sections when hovering bottom of rail in non-Pro mode
+// MODIFIED: Always show rail with visual distinction for non-pro mode
 
 import React, { useState, useEffect, useRef } from 'react';
 import useAppStore from '../../store/appStore';
@@ -11,11 +12,11 @@ import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sect
  * FIXED: Removed intersection observer that was causing unwanted scrolling/focusing
  * FIXED: Simplified to only respond to explicit user clicks
  * ADDED: Unlock hint tooltip when hovering bottom of rail in non-Pro mode
+ * MODIFIED: Always visible with visual distinction for non-pro mode
  * @param {Object} props - Component props
- * @param {boolean} props.visible - Whether the rail is visible
  * @returns {React.ReactElement} The left rail navigation component
  */
-const LeftRailNavigation = ({ visible = true }) => {
+const LeftRailNavigation = () => {
   // Get necessary state from store
   const sections = useAppStore((state) => state.sections);
   const activeToggles = useAppStore((state) => state.activeToggles);
@@ -162,9 +163,6 @@ const LeftRailNavigation = ({ visible = true }) => {
   // Get current section title for the tooltip
   const currentSectionTitle = sections[currentSectionId]?.title?.replace('Research ', '') || 'current section';
   
-  // Early return if not visible
-  if (!visible) return null;
-  
   // Style adjustments for feedback ratings - solid color approach
   const getRatingColor = (rating) => {
     if (!rating) return '#d3d4dc'; // default grey
@@ -175,12 +173,21 @@ const LeftRailNavigation = ({ visible = true }) => {
     return '#10B981'; // green-500
   };
   
+  // Add non-pro mode styles - always show rail but with visual distinction
+  const nonProModeStyles = !proMode ? {
+    opacity: 0.7,  // Make it slightly transparent
+    filter: 'grayscale(30%)',  // Add some grayscale
+    backgroundColor: '#f5f5f5', // Lighter background
+    borderRight: '1px solid #e5e7eb' // Subtle border
+  } : {};
+
   return (
     <div 
       className="rail"
       role="navigation"
       aria-label="Section navigation"
       ref={railRef}
+      style={nonProModeStyles} // Apply non-pro mode styles
     >
       {navItems.map(item => (
         <button
