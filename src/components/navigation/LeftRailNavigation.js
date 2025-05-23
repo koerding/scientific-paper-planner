@@ -1,16 +1,15 @@
 // FILE: src/components/navigation/LeftRailNavigation.js
-// FIXED: Modified to always show all sections regardless of progression
-// ADDED: Tooltip for unlocking sections when hovering bottom of rail in non-Pro mode
-// MODIFIED: Always show rail with visual distinction for non-pro mode
+// FIXED: Modified to show all sections but make unstarted ones non-clickable and grayed out
+// ADDED: Visual distinction for sections that haven't been started yet
 
 import React, { useState, useEffect, useRef } from 'react';
 import useAppStore from '../../store/appStore';
 import { getApproachSectionIds, getDataMethodSectionIds } from '../../utils/sectionOrderUtils';
+import { isSectionVisible } from '../../logic/progressionLogic';
 
 /**
  * Left rail navigation with mode-aware section switching and improved active state
- * FIXED: Always shows all sections regardless of progression state
- * MODIFIED: Always visible with visual distinction for non-pro mode
+ * MODIFIED: Shows all sections but makes unstarted ones non-clickable and grayed out
  * @param {Object} props - Component props
  * @returns {React.ReactElement} The left rail navigation component
  */
@@ -21,6 +20,7 @@ const LeftRailNavigation = () => {
   const currentSectionId = useAppStore((state) => state.currentChatSectionId);
   const uiMode = useAppStore((state) => state.uiMode);
   const proMode = useAppStore((state) => state.proMode);
+  const storeState = useAppStore((state) => state);
   
   // Get state updaters from store
   const handleSectionFocus = useAppStore((state) => state.setActiveSectionId);
@@ -37,7 +37,29 @@ const LeftRailNavigation = () => {
   const approachSections = getApproachSectionIds();
   const dataMethodSections = getDataMethodSectionIds();
   
-  // Setup tooltip area at the bottom of the rail
+  // Helper function to check if a section has been started
+  const isSectionStarted = (sectionId) => {
+    const section = sections[sectionId];
+    if (!section) return false;
+    
+    // Get the section definition to compare against placeholder
+    const sectionDef = storeState.sectionDefinitions?.find(def => def.id === sectionId);
+    const placeholder = sectionDef?.placeholder || '';
+    
+    // A section is considered "started" if it has content different from the placeholder
+    return section.content && section.content.trim() !== '' && section.content !== placeholder;
+  };
+  
+  // Helper function to check if a section is accessible (clickable)
+  const isSectionAccessible = (sectionId) => {
+    // Pro mode makes everything accessible
+    if (proMode) return true;
+    
+    // Check if section is visible according to progression logic
+    return isSectionVisible(sectionId, storeState);
+  };
+  
+  // Setup tooltip area at the bottom of the rail for non-pro mode
   useEffect(() => {
     if (railRef.current && !proMode) {
       const railHeight = railRef.current.offsetHeight;
@@ -94,11 +116,16 @@ const LeftRailNavigation = () => {
   }, [railRef, proMode]);
   
   /**
-   * Handle navigation with mode awareness
-   * When in guide mode, clicking a section should switch to that section's guide
+   * Handle navigation with mode awareness and accessibility checks
    * @param {string} sectionId - The section ID to navigate to
    */
   const handleNavigation = (sectionId) => {
+    // Check if section is accessible before allowing navigation
+    if (!isSectionAccessible(sectionId)) {
+      console.log(`Section ${sectionId} is not accessible yet`);
+      return; // Don't navigate to inaccessible sections
+    }
+    
     // Log for debugging
     console.log(`Rail navigation: Clicked on section ${sectionId}`);
     
@@ -128,7 +155,7 @@ const LeftRailNavigation = () => {
     }
   };
   
-  // Filter and sort navigation items - MODIFIED TO ALWAYS SHOW ALL SECTIONS
+  // Filter and sort navigation items - SHOW ALL SECTIONS but mark accessibility
   const generateNavItems = () => {
     if (!sections) return [];
     
@@ -152,7 +179,9 @@ const LeftRailNavigation = () => {
         isActive: id === currentSectionId,
         isApproach: approachSections.includes(id),
         isDataMethod: dataMethodSections.includes(id),
-        rating: sections[id]?.feedbackRating || null
+        rating: sections[id]?.feedbackRating || null,
+        isStarted: isSectionStarted(id),
+        isAccessible: isSectionAccessible(id)
       }));
   };
   
@@ -171,13 +200,40 @@ const LeftRailNavigation = () => {
     return '#10B981'; // green-500
   };
   
-  // Add non-pro mode styles - always show rail but with visual distinction
-  const nonProModeStyles = !proMode ? {
-    opacity: 0.7,  // Make it slightly transparent
-    filter: 'grayscale(30%)',  // Add some grayscale
-    backgroundColor: '#f5f5f5', // Lighter background
-    borderRight: '1px solid #e5e7eb' // Subtle border
-  } : {};
+  // Get button classes based on accessibility and started state
+  const getButtonClasses = (item) => {
+    const baseClasses = 'rail-btn transition-all duration-200';
+    
+    if (!item.isAccessible) {
+      // Inaccessible sections - very grayed out and no hover effects
+      return `${baseClasses} opacity-30 cursor-not-allowed text-gray-400`;
+    }
+    
+    if (!item.isStarted) {
+      // Accessible but not started - somewhat grayed out
+      return `${baseClasses} opacity-60 text-gray-500 hover:opacity-80`;
+    }
+    
+    // Started sections - normal appearance
+    if (item.isActive) {
+      return `${baseClasses} rail-btn-in-view`;
+    }
+    
+    return `${baseClasses} hover:bg-gray-100`;
+  };
+  
+  // Get tooltip text based on section state
+  const getTooltipText = (item) => {
+    if (!item.isAccessible) {
+      return `Complete previous sections to unlock ${item.title}`;
+    }
+    
+    if (!item.isStarted) {
+      return `${item.title} - Click to start (${uiMode === 'guide' ? 'Guide' : 'Write'} Mode)`;
+    }
+    
+    return `${item.title} (${uiMode === 'guide' ? 'Guide' : 'Write'} Mode)`;
+  };
 
   return (
     <div 
@@ -185,35 +241,44 @@ const LeftRailNavigation = () => {
       role="navigation"
       aria-label="Section navigation"
       ref={railRef}
-      style={nonProModeStyles} // Apply non-pro mode styles
     >
       {navItems.map(item => (
         <button
           key={item.id}
           onClick={() => handleNavigation(item.id)}
-          className={`rail-btn ${item.isActive ? 'rail-btn-in-view' : ''}`}
+          disabled={!item.isAccessible}
+          className={getButtonClasses(item)}
           aria-current={item.isActive ? 'page' : undefined}
-          title={`${item.title} (${uiMode === 'guide' ? 'Guide' : 'Write'} Mode)`}
+          title={getTooltipText(item)}
         >
           <div className="rail-icon">
-            {/* Circle SVG with customized solid fill based on rating */}
+            {/* Circle SVG with customized solid fill based on rating and accessibility */}
             <svg width="24" height="24" viewBox="0 0 24 24">
               <circle 
                 cx="12" 
                 cy="12" 
                 r="10" 
-                fill={getRatingColor(item.rating)} 
-                stroke={item.isActive ? "#4F46E5" : "#E5E7EB"} 
+                fill={item.isAccessible ? getRatingColor(item.rating) : '#e5e7eb'} 
+                stroke={item.isActive ? "#4F46E5" : (item.isAccessible ? "#E5E7EB" : "#f3f4f6")} 
                 strokeWidth={item.isActive ? "2" : "1"}
+                opacity={item.isAccessible ? (item.isStarted ? 1 : 0.7) : 0.4}
               />
-              {/* Removed rating number text - now using solid color instead */}
+              {/* Add a lock icon for inaccessible sections */}
+              {!item.isAccessible && (
+                <g transform="translate(12,12) scale(0.6)" fill="#9ca3af">
+                  <path d="M-4,-6 L-4,-4 L4,-4 L4,-4 L4,4 L-4,4 Z M-2,-6 L-2,-8 Q-2,-9 -1,-9 L1,-9 Q2,-9 2,-8 L2,-6"/>
+                  <circle cx="0" cy="0" r="1"/>
+                </g>
+              )}
             </svg>
           </div>
-          <span className="truncate">{item.title}</span>
+          <span className={`truncate ${!item.isAccessible ? 'text-gray-400' : (!item.isStarted ? 'text-gray-500' : '')}`}>
+            {item.title}
+          </span>
         </button>
       ))}
       
-      {/* Unlock tooltip */}
+      {/* Unlock tooltip for non-pro mode */}
       {showUnlockTooltip && !proMode && (
         <div 
           className="unlock-tooltip"
