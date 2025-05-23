@@ -29,7 +29,7 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
           {/* Added GIF demonstration - make sure your GIF URL is correct */}
           <div className="mb-5 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
             <img 
-              src="/path/to/your-explanation.gif" 
+              src="/Explain App.gif" 
               alt="How to use Scientific Project Planner" 
               className="w-full"
               style={{ maxHeight: '300px', objectFit: 'contain' }}
