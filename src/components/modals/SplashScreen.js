@@ -98,6 +98,35 @@ const SplashScreen = ({ onClose, showDontShowAgainOption = true }) => {
             </div>
           </div>
         </div>
+
+       {/* Additional tips with horizontal rule separator */}
+          <div className="mb-3">
+            <h3 className="text-gray-700 font-medium mb-2 text-sm">Need more help?</h3>
+            
+            <div className="space-y-2">
+              {/* PDF Import Tip */}
+              <div className="flex items-center bg-gray-50 p-2 rounded-lg border border-gray-100 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-indigo-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke={iconColors.pdf}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-gray-700 text-xs">
+                  <span className="font-medium">Feeling stuck?</span> Take a great paper and use the "Pdf→Example" in the menu.
+                </p>
+              </div>
+              
+              {/* Review Paper Tip */}
+              <div className="flex items-center bg-gray-50 p-2 rounded-lg border border-gray-100 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-teal-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke={iconColors.review}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-gray-700 text-xs">
+                  <span className="font-medium">Want to see the rules in action?</span> Have the AI review an existing paper.
+                </p>
+              </div>
+            </div>
+          </div>
+     
+                
       </div>
     </div>
   );
